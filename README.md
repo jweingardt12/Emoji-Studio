@@ -1,4 +1,4 @@
-# 🥳🤠 Emoji Studio: Sometimes the most important OKRs are LOLs 📊📈
+# 🥳🤠 Emoji Studio: the missing dashboard for Slack emojis 📊📈
 
 ![Main Dashboard View](/assets/screenshots/og-image.png "Main Dashboard - Overview of emoji trends and leaderboard")
 
