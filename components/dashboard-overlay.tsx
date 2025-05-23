@@ -12,6 +12,7 @@ import Link from "next/link"
 import { EmojiWaterfall } from "./emoji-waterfall"
 import { useAnalytics } from "@/lib/analytics"
 import { useOpenPanel } from '@/lib/safe-openpanel'
+import { TextShimmer } from '@/components/ui/text-shimmer';
 
 // Simple mobile detection with SSR compatibility
 function useIsMobile() {
@@ -377,7 +378,16 @@ export function DashboardOverlay() {
               disabled={isImporting}
               className="text-sm text-primary hover:text-primary/80 hover:underline mt-3 transition-colors"
             >
-              {isImporting ? "Importing..." : "Try with demo data →"}
+              {isImporting ? (
+                <TextShimmer
+                  duration={1.5}
+                  className="text-sm"
+                >
+                  Importing...
+                </TextShimmer>
+              ) : (
+                "Try with demo data →"
+              )}
             </button>
             {importError && <p className="text-sm text-red-500 text-center mt-2">Error: {importError}</p>}
           </div>
