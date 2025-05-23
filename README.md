@@ -45,6 +45,10 @@ Here's a glimpse of what Emoji Studio can do:
 - Chart.js
 - Tailwind CSS
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ## Contributing
 
 [Pull requests](https://github.com/jweingardt12/Emoji-Studio) welcome! Bonus points for adding new charts, fixing bugs, or sneaking in more puns.
