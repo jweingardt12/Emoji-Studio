@@ -268,7 +268,7 @@ function ExplorerPage() {
         zip.generateAsync({ type: 'blob' })
           .then((content) => {
             if (signal.aborted) return; // Check again before saving
-            saveAs(content, `emojis-${searchQuery || 'all'}-${sortBy}.zip`);
+            saveAs(content, 'emoji-download.zip'); // Updated filename
             analytics.trackDownloadAllSuccess(totalFilesToDownload, searchQuery);
           })
           .catch((err) => {
