@@ -504,7 +504,7 @@ Or type "demo" to try with sample data`}
                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800">
                       <p className="font-medium">Important Notes:</p>
                       <ul className="list-disc pl-5 space-y-1">
-                        <li>The curl command contains your authentication tokens. Never share it with others.</li>
+                        <li>The curl command contains your authentication token. This specific one is only scoped to show emojis, so it's low-risk to share with this project. Again - everything here is performed locally in your browser.</li>
                         <li>Tokens expire after some time (unsure how long, exactly), so you may need to get a new curl command periodically.</li>
                         <li>For demo purposes, you can simply type "demo" in the field above and click "Fetch Emojis".</li>
                       </ul>

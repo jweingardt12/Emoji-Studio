@@ -55,11 +55,14 @@ export default function RootLayout({
 }
 
 export const metadata = {
-  title: "Emoji Studio - the custom emoji dashboard Slack won't build",
-  description: "Professional analytics dashboard for any company's custom Slack emojis.",
+  title: "Emoji Studio - Analytics for Slack Emojis",
+  description: "Emoji Studio is the missing analytics platform for custom Slack emojis.",
   generator: "v0.dev",
   icons: {
     icon: "/favicon.ico",
     apple: "/logo.png",
+  },
+  openGraph: {
+    images: ['/assets/screenshots/og-image.png'],
   },
 }
