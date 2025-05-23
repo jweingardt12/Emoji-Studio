@@ -74,7 +74,7 @@ export default function AboutPage() {
             <AccordionItem value="item-5">
               <AccordionTrigger>Is Emoji Studio secure?</AccordionTrigger>
               <AccordionContent>
-                Yes, Emoji Studio is completely secure. The application requires a user to fetch a specific curl command from their Slack workspace, which is then used to fetch emoji data from Slack. All data is processed locally in your browser - nothing is sent to any servers. Check out the GitHub repo for confirmation.
+                Yes, Emoji Studio is completely secure. The application requires a user to fetch a specific curl command from their Slack workspace, which is then used to fetch emoji data from Slack. All data is processed locally in your browser - nothing is sent to any servers. Check out the <a href="https://github.com/jweingardt12/Emoji-Studio" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">GitHub repo</a> for confirmation. Analytics are collected, but no tokens/company info is sent. You can view the public dashboard <a href="https://dashboard.openpanel.dev/share/overview/QNDjFZ" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">here</a>.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-6">
