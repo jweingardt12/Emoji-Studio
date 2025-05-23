@@ -1,0 +1,249 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "GeistSans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "GeistMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+@layer utilities {
+  .animate-fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 70% 50%;
+    --chart-3: 30 80% 60%;
+    --chart-4: 280 70% 60%;
+    --chart-5: 340 80% 65%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 80% 60%;
+    --chart-2: 160 80% 60%;
+    --chart-3: 30 90% 65%;
+    --chart-4: 280 80% 65%;
+    --chart-5: 340 85% 65%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Glowing border animation */
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.glow-border {
+  --border-size: 3px;
+  --border-radius: 50%;
+  --glow-color: rgba(255, 255, 255, 0.4);
+  --glow-spread: 10px;
+
+  width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2);
+  height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2);
+  border-radius: var(--border-radius);
+  position: absolute;
+  top: calc(-1 * var(--border-size) - var(--glow-spread));
+  left: calc(-1 * var(--border-size) - var(--glow-spread));
+  z-index: 0;
+
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 0, 0, 0.8),
+    rgba(255, 154, 0, 0.8),
+    rgba(208, 222, 33, 0.8),
+    rgba(79, 220, 74, 0.8),
+    rgba(63, 218, 216, 0.8),
+    rgba(47, 201, 226, 0.8),
+    rgba(28, 127, 238, 0.8),
+    rgba(95, 21, 242, 0.8),
+    rgba(186, 12, 248, 0.8),
+    rgba(251, 7, 217, 0.8),
+    rgba(255, 0, 0, 0.8)
+  );
+
+  filter: blur(var(--glow-spread));
+  animation: rotate 5s linear infinite, pulse 2s ease-in-out infinite;
+}
+
+/* Add this to the end of your globals.css file */
+.emoji-grid-item img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Add a glowing border animation for the logo */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px 2px rgba(62, 152, 199, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(62, 152, 199, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 5px 2px rgba(62, 152, 199, 0.3);
+  }
+}
+
+.glow-border {
+  border-radius: 50%;
+  animation: glow 2s infinite;
+}
+
+/* Emoji waterfall animation */
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-fall {
+  animation: fall linear forwards;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.8);
+}
+
+/* Fix for Radix UI Tooltip content z-index issue */
+.radix-tooltip-content-wrapper {
+  z-index: 200 !important; /* Ensure tooltips are above other elements */
+}
+
+/* Ensure Radix UI Dialog/Drawer overlays are above other fixed elements */
+.radix-dialog-overlay,
+.radix-drawer-overlay {
+  z-index: 100 !important; /* Higher than most fixed elements */
+}
+
+.radix-dialog-content,
+.radix-drawer-content {
+  z-index: 101 !important; /* Above its own overlay */
+}

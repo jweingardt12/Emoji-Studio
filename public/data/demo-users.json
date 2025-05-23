@@ -1,0 +1,574 @@
+{
+  "users": [
+    {
+      "user_id": "U01ABC123",
+      "user_display_name": "Sarah Johnson",
+      "emoji_count": 78,
+      "most_recent_emoji_timestamp": 1715961600,
+      "oldest_emoji_timestamp": 1683925200,
+      "l4wepw": 5.2,
+      "l4wepwChange": 25.0,
+      "emojis": [":skitty:", ":pikachu:", "parrot_beer", "burrito", ":cat_typing:", ":party_blob:"]
+    },
+    {
+      "user_id": "U02DEF456",
+      "user_display_name": "Alex Chen",
+      "emoji_count": 37,
+      "most_recent_emoji_timestamp": 1716048000,
+      "oldest_emoji_timestamp": 1685739600,
+      "l4wepw": 2.75,
+      "l4wepwChange": -5.2,
+      "emojis": [":detective_pikachu:", "smurfq", "coronaparrot"]
+    },
+    {
+      "user_id": "U03GHI789",
+      "user_display_name": "Miguel Rodriguez",
+      "emoji_count": 29,
+      "most_recent_emoji_timestamp": 1715875200,
+      "oldest_emoji_timestamp": 1687554000,
+      "l4wepw": 2.25,
+      "l4wepwChange": 10.5,
+      "emojis": ["jedi_smurf", ":hammock_swing:", ":wow_okay:"]
+    },
+    {
+      "user_id": "U04JKL012",
+      "user_display_name": "Emily Wilson",
+      "emoji_count": 53,
+      "most_recent_emoji_timestamp": 1716134400,
+      "oldest_emoji_timestamp": 1684011600,
+      "l4wepw": 4.0,
+      "l4wepwChange": 33.3,
+      "emojis": [":wiggle-ears_kitty:", "lady_smurf", ":pikachusantaq:"]
+    },
+    {
+      "user_id": "U05MNO345",
+      "user_display_name": "David Kim",
+      "emoji_count": 18,
+      "most_recent_emoji_timestamp": 1715788800,
+      "oldest_emoji_timestamp": 1690232400,
+      "l4wepw": 1.5,
+      "l4wepwChange": -12.8,
+      "emojis": ["nyancat_sky", ":fattest_pikachu:", "parrot_bean"]
+    },
+    {
+      "user_id": "U06PQR678",
+      "user_display_name": "Olivia Martinez",
+      "emoji_count": 61,
+      "most_recent_emoji_timestamp": 1716220800,
+      "oldest_emoji_timestamp": 1683838800,
+      "l4wepw": 4.5,
+      "l4wepwChange": 15.2,
+      "emojis": [":suskittyq:", ":pikachu_thisq:", ":hammock_sleeping:"]
+    },
+    {
+      "user_id": "U07STU901",
+      "user_display_name": "James Wilson",
+      "emoji_count": 24,
+      "most_recent_emoji_timestamp": 1715702400,
+      "oldest_emoji_timestamp": 1689022800,
+      "l4wepw": 2.0,
+      "l4wepwChange": 0.0,
+      "emojis": ["bananadance_smurf", ":lilpikachuq:", "rave_parrot"]
+    },
+    {
+      "user_id": "U08VWX234",
+      "user_display_name": "Sophia Lee",
+      "emoji_count": 47,
+      "most_recent_emoji_timestamp": 1716307200,
+      "oldest_emoji_timestamp": 1685048400,
+      "l4wepw": 3.25,
+      "l4wepwChange": 8.3,
+      "emojis": [":nyan_skittysprite:", ":pikachu-pokemon-card:", "paper_parrot"]
+    },
+    {
+      "user_id": "U09YZA567",
+      "user_display_name": "Ethan Brown",
+      "emoji_count": 32,
+      "most_recent_emoji_timestamp": 1715616000,
+      "oldest_emoji_timestamp": 1687986000,
+      "l4wepw": 2.5,
+      "l4wepwChange": -3.8,
+      "emojis": ["little_smurf", ":ashpikachuwtfq:", ":break_hammock:"]
+    },
+    {
+      "user_id": "U10BCD890",
+      "user_display_name": "Ava Garcia",
+      "emoji_count": 39,
+      "most_recent_emoji_timestamp": 1716393600,
+      "oldest_emoji_timestamp": 1686344400,
+      "l4wepw": 3.0,
+      "l4wepwChange": 20.0,
+      "emojis": [":skittycookieq:", ":detective_pikachu:", "fiji_parrot"]
+    },
+    {
+      "user_id": "U11EFG123",
+      "user_display_name": "Noah Taylor",
+      "emoji_count": 21,
+      "most_recent_emoji_timestamp": 1715529600,
+      "oldest_emoji_timestamp": 1689627600,
+      "l4wepw": 1.75,
+      "l4wepwChange": -8.5,
+      "emojis": [":xmas_kittyq:", ":pikachu-pokemon-card_128:", "parrot_arrow_up"]
+    },
+    {
+      "user_id": "U12HIJ456",
+      "user_display_name": "Isabella Thomas",
+      "emoji_count": 56,
+      "most_recent_emoji_timestamp": 1716480000,
+      "oldest_emoji_timestamp": 1684357200,
+      "l4wepw": 4.25,
+      "l4wepwChange": 28.8,
+      "emojis": [":4529_skittyq:", ":pikachu_excitedq:", "coronaparrot"]
+    },
+    {
+      "user_id": "U13KLM789",
+      "user_display_name": "William Anderson",
+      "emoji_count": 27,
+      "most_recent_emoji_timestamp": 1715443200,
+      "oldest_emoji_timestamp": 1688590800,
+      "l4wepw": 2.25,
+      "l4wepwChange": 5.0,
+      "emojis": ["smurfdance1", ":pikachu_thisq:", "hylics"]
+    },
+    {
+      "user_id": "U14NOP012",
+      "user_display_name": "Mia Jackson",
+      "emoji_count": 44,
+      "most_recent_emoji_timestamp": 1716566400,
+      "oldest_emoji_timestamp": 1685394000,
+      "l4wepw": 3.5,
+      "l4wepwChange": 16.7,
+      "emojis": [":buskitty0:", ":lilpikachuq:", "burrito"]
+    },
+    {
+      "user_id": "U15QRS345",
+      "user_display_name": "Benjamin White",
+      "emoji_count": 19,
+      "most_recent_emoji_timestamp": 1715356800,
+      "oldest_emoji_timestamp": 1690578000,
+      "l4wepw": 1.5,
+      "l4wepwChange": -15.0,
+      "emojis": ["smurf_chimney-sweeper", ":pikachusantaq:", "jane"]
+    },
+    {
+      "user_id": "U16TUV678",
+      "user_display_name": "Charlotte Harris",
+      "emoji_count": 58,
+      "most_recent_emoji_timestamp": 1716652800,
+      "oldest_emoji_timestamp": 1684184400,
+      "l4wepw": 4.5,
+      "l4wepwChange": 22.2,
+      "emojis": [":skitty_lol_lulq:", ":pikachu:", "parrot_beer"]
+    },
+    {
+      "user_id": "U17WXY901",
+      "user_display_name": "Elijah Martin",
+      "emoji_count": 23,
+      "most_recent_emoji_timestamp": 1715270400,
+      "oldest_emoji_timestamp": 1689195600,
+      "l4wepw": 2.0,
+      "l4wepwChange": -2.5,
+      "emojis": ["smurf_love", ":detective_pikachu:", "mr-uppity"]
+    },
+    {
+      "user_id": "U18ZAB234",
+      "user_display_name": "Amelia Thompson",
+      "emoji_count": 49,
+      "most_recent_emoji_timestamp": 1716739200,
+      "oldest_emoji_timestamp": 1684702800,
+      "l4wepw": 3.75,
+      "l4wepwChange": 12.5,
+      "emojis": [":suskittyq:", ":ashpikachuwtfq:", ":hammock_swing:"]
+    },
+    {
+      "user_id": "U19CDE567",
+      "user_display_name": "Lucas Clark",
+      "emoji_count": 31,
+      "most_recent_emoji_timestamp": 1715184000,
+      "oldest_emoji_timestamp": 1688158800,
+      "l4wepw": 2.5,
+      "l4wepwChange": 7.1,
+      "emojis": ["jedi_smurf", ":fattest_pikachu:", "nyancat_sky"]
+    },
+    {
+      "user_id": "U20FGH890",
+      "user_display_name": "Harper Lewis",
+      "emoji_count": 41,
+      "most_recent_emoji_timestamp": 1716825600,
+      "oldest_emoji_timestamp": 1685048400,
+      "l4wepw": 3.25,
+      "l4wepwChange": 18.2,
+      "emojis": [":wiggle-ears_kitty:", ":pikachu-pokemon-card:", ":break_hammock:"]
+    },
+    {
+      "user_id": "U21IJK123",
+      "user_display_name": "Mason Young",
+      "emoji_count": 17,
+      "most_recent_emoji_timestamp": 1715097600,
+      "oldest_emoji_timestamp": 1690923600,
+      "l4wepw": 1.25,
+      "l4wepwChange": -20.0,
+      "emojis": ["lady_smurf", ":pikachu_excitedq:", "paper_parrot"]
+    },
+    {
+      "user_id": "U22LMN456",
+      "user_display_name": "Evelyn Walker",
+      "emoji_count": 52,
+      "most_recent_emoji_timestamp": 1716912000,
+      "oldest_emoji_timestamp": 1684443600,
+      "l4wepw": 4.0,
+      "l4wepwChange": 25.0,
+      "emojis": [":nyan_skittysprite:", ":pikachu_thisq:", "rave_parrot"]
+    },
+    {
+      "user_id": "U23OPQ789",
+      "user_display_name": "Logan Hall",
+      "emoji_count": 25,
+      "most_recent_emoji_timestamp": 1715011200,
+      "oldest_emoji_timestamp": 1689022800,
+      "l4wepw": 2.0,
+      "l4wepwChange": 3.5,
+      "emojis": [":skittycookieq:", ":lilpikachuq:", "fiji_parrot"]
+    },
+    {
+      "user_id": "U24RST012",
+      "user_display_name": "Abigail Allen",
+      "emoji_count": 46,
+      "most_recent_emoji_timestamp": 1716998400,
+      "oldest_emoji_timestamp": 1684789200,
+      "l4wepw": 3.5,
+      "l4wepwChange": 14.3,
+      "emojis": [":4529_skittyq:", ":pikachusantaq:", "parrot_arrow_up"]
+    },
+    {
+      "user_id": "U25UVW345",
+      "user_display_name": "Jackson Scott",
+      "emoji_count": 20,
+      "most_recent_emoji_timestamp": 1714924800,
+      "oldest_emoji_timestamp": 1689714000,
+      "l4wepw": 1.75,
+      "l4wepwChange": -5.0,
+      "emojis": ["bananadance_smurf", ":pikachu:", "hylics"]
+    },
+    {
+      "user_id": "U26XYZ678",
+      "user_display_name": "Victoria Green",
+      "emoji_count": 55,
+      "most_recent_emoji_timestamp": 1717084800,
+      "oldest_emoji_timestamp": 1684270800,
+      "l4wepw": 4.25,
+      "l4wepwChange": 30.8,
+      "emojis": [":xmas_kittyq:", ":detective_pikachu:", "burrito"]
+    },
+    {
+      "user_id": "U27ABC901",
+      "user_display_name": "Aiden Baker",
+      "emoji_count": 28,
+      "most_recent_emoji_timestamp": 1714838400,
+      "oldest_emoji_timestamp": 1688504400,
+      "l4wepw": 2.25,
+      "l4wepwChange": 8.0,
+      "emojis": ["smurfq", ":ashpikachuwtfq:", "coronaparrot"]
+    },
+    {
+      "user_id": "U28DEF234",
+      "user_display_name": "Scarlett Adams",
+      "emoji_count": 43,
+      "most_recent_emoji_timestamp": 1717171200,
+      "oldest_emoji_timestamp": 1684875600,
+      "l4wepw": 3.5,
+      "l4wepwChange": 16.7,
+      "emojis": [":buskitty0:", ":fattest_pikachu:", ":hammock_sleeping:"]
+    },
+    {
+      "user_id": "U29GHI567",
+      "user_display_name": "Daniel Nelson",
+      "emoji_count": 22,
+      "most_recent_emoji_timestamp": 1714752000,
+      "oldest_emoji_timestamp": 1689368400,
+      "l4wepw": 1.75,
+      "l4wepwChange": -10.0,
+      "emojis": ["little_smurf", ":pikachu-pokemon-card:", "jane"]
+    },
+    {
+      "user_id": "U30JKL890",
+      "user_display_name": "Madison Carter",
+      "emoji_count": 50,
+      "most_recent_emoji_timestamp": 1717257600,
+      "oldest_emoji_timestamp": 1684616400,
+      "l4wepw": 4.0,
+      "l4wepwChange": 21.2,
+      "emojis": [":skitty_lol_lulq:", ":pikachu_excitedq:", "parrot_bean"]
+    },
+    {
+      "user_id": "U31MNO123",
+      "user_display_name": "Henry Mitchell",
+      "emoji_count": 26,
+      "most_recent_emoji_timestamp": 1714665600,
+      "oldest_emoji_timestamp": 1688936400,
+      "l4wepw": 2.0,
+      "l4wepwChange": 5.3,
+      "emojis": ["smurf_chimney-sweeper", ":pikachu_thisq:", "mr-uppity"]
+    },
+    {
+      "user_id": "U32PQR456",
+      "user_display_name": "Elizabeth Perez",
+      "emoji_count": 48,
+      "most_recent_emoji_timestamp": 1717344000,
+      "oldest_emoji_timestamp": 1684702800,
+      "l4wepw": 3.75,
+      "l4wepwChange": 19.4,
+      "emojis": [":suskittyq:", ":lilpikachuq:", "paper_parrot"]
+    },
+    {
+      "user_id": "U33STU789",
+      "user_display_name": "Sebastian Roberts",
+      "emoji_count": 16,
+      "most_recent_emoji_timestamp": 1714579200,
+      "oldest_emoji_timestamp": 1691269200,
+      "l4wepw": 1.25,
+      "l4wepwChange": -25.0,
+      "emojis": ["jedi_smurf", ":pikachusantaq:", "nyancat_sky"]
+    },
+    {
+      "user_id": "U34VWX012",
+      "user_display_name": "Avery Turner",
+      "emoji_count": 54,
+      "most_recent_emoji_timestamp": 1717430400,
+      "oldest_emoji_timestamp": 1684357200,
+      "l4wepw": 4.25,
+      "l4wepwChange": 27.3,
+      "emojis": [":4529_skittyq:", ":pikachu:", ":break_hammock:"]
+    },
+    {
+      "user_id": "U35YZA345",
+      "user_display_name": "Jack Phillips",
+      "emoji_count": 30,
+      "most_recent_emoji_timestamp": 1714492800,
+      "oldest_emoji_timestamp": 1688331600,
+      "l4wepw": 2.5,
+      "l4wepwChange": 10.0,
+      "emojis": ["lady_smurf", ":detective_pikachu:", "rave_parrot"]
+    },
+    {
+      "user_id": "U36BCD678",
+      "user_display_name": "Sofia Campbell",
+      "emoji_count": 45,
+      "most_recent_emoji_timestamp": 1717516800,
+      "oldest_emoji_timestamp": 1684789200,
+      "l4wepw": 3.5,
+      "l4wepwChange": 15.0,
+      "emojis": [":wiggle-ears_kitty:", ":ashpikachuwtfq:", "fiji_parrot"]
+    },
+    {
+      "user_id": "U37EFG901",
+      "user_display_name": "Leo Parker",
+      "emoji_count": 18,
+      "most_recent_emoji_timestamp": 1714406400,
+      "oldest_emoji_timestamp": 1690664400,
+      "l4wepw": 1.5,
+      "l4wepwChange": -13.3,
+      "emojis": ["bananadance_smurf", ":fattest_pikachu:", "parrot_arrow_up"]
+    },
+    {
+      "user_id": "U38HIJ234",
+      "user_display_name": "Lily Evans",
+      "emoji_count": 57,
+      "most_recent_emoji_timestamp": 1717603200,
+      "oldest_emoji_timestamp": 1684184400,
+      "l4wepw": 4.5,
+      "l4wepwChange": 32.4,
+      "emojis": [":nyan_skittysprite:", ":pikachu-pokemon-card:", "hylics"]
+    },
+    {
+      "user_id": "U39KLM567",
+      "user_display_name": "Gabriel Edwards",
+      "emoji_count": 24,
+      "most_recent_emoji_timestamp": 1714320000,
+      "oldest_emoji_timestamp": 1689195600,
+      "l4wepw": 2.0,
+      "l4wepwChange": 2.6,
+      "emojis": [":skittycookieq:", ":pikachu_excitedq:", "burrito"]
+    },
+    {
+      "user_id": "U40NOP890",
+      "user_display_name": "Chloe Collins",
+      "emoji_count": 40,
+      "most_recent_emoji_timestamp": 1717689600,
+      "oldest_emoji_timestamp": 1685048400,
+      "l4wepw": 3.25,
+      "l4wepwChange": 17.9,
+      "emojis": [":xmas_kittyq:", ":pikachu_thisq:", "coronaparrot"]
+    },
+    {
+      "user_id": "U41QRS123",
+      "user_display_name": "Isaac Stewart",
+      "emoji_count": 21,
+      "most_recent_emoji_timestamp": 1714233600,
+      "oldest_emoji_timestamp": 1689541200,
+      "l4wepw": 1.75,
+      "l4wepwChange": -7.9,
+      "emojis": ["smurfq", ":lilpikachuq:", "jane"]
+    },
+    {
+      "user_id": "U42TUV456",
+      "user_display_name": "Audrey Sanchez",
+      "emoji_count": 51,
+      "most_recent_emoji_timestamp": 1717776000,
+      "oldest_emoji_timestamp": 1684530000,
+      "l4wepw": 4.0,
+      "l4wepwChange": 23.1,
+      "emojis": [":buskitty0:", ":pikachusantaq:", ":hammock_swing:"]
+    },
+    {
+      "user_id": "U43WXY789",
+      "user_display_name": "Julian Morris",
+      "emoji_count": 27,
+      "most_recent_emoji_timestamp": 1714147200,
+      "oldest_emoji_timestamp": 1688763600,
+      "l4wepw": 2.25,
+      "l4wepwChange": 7.1,
+      "emojis": ["little_smurf", ":pikachu:", "mr-uppity"]
+    },
+    {
+      "user_id": "U44ZAB012",
+      "user_display_name": "Zoey Rogers",
+      "emoji_count": 44,
+      "most_recent_emoji_timestamp": 1717862400,
+      "oldest_emoji_timestamp": 1684875600,
+      "l4wepw": 3.5,
+      "l4wepwChange": 14.8,
+      "emojis": [":skitty_lol_lulq:", ":detective_pikachu:", "paper_parrot"]
+    },
+    {
+      "user_id": "U45CDE345",
+      "user_display_name": "Christopher Reed",
+      "emoji_count": 19,
+      "most_recent_emoji_timestamp": 1714060800,
+      "oldest_emoji_timestamp": 1690059600,
+      "l4wepw": 1.5,
+      "l4wepwChange": -16.7,
+      "emojis": ["smurf_love", ":ashpikachuwtfq:", "nyancat_sky"]
+    },
+    {
+      "user_id": "U46FGH678",
+      "user_display_name": "Claire Cook",
+      "emoji_count": 59,
+      "most_recent_emoji_timestamp": 1717948800,
+      "oldest_emoji_timestamp": 1684098000,
+      "l4wepw": 4.5,
+      "l4wepwChange": 28.6,
+      "emojis": [":suskittyq:", ":fattest_pikachu:", ":break_hammock:"]
+    },
+    {
+      "user_id": "U47IJK901",
+      "user_display_name": "Thomas Morgan",
+      "emoji_count": 29,
+      "most_recent_emoji_timestamp": 1713974400,
+      "oldest_emoji_timestamp": 1688504400,
+      "l4wepw": 2.25,
+      "l4wepwChange": 9.8,
+      "emojis": ["jedi_smurf", ":pikachu-pokemon-card:", "rave_parrot"]
+    },
+    {
+      "user_id": "U48LMN234",
+      "user_display_name": "Stella Bell",
+      "emoji_count": 38,
+      "most_recent_emoji_timestamp": 1718035200,
+      "oldest_emoji_timestamp": 1685221200,
+      "l4wepw": 3.0,
+      "l4wepwChange": 11.1,
+      "emojis": [":4529_skittyq:", ":pikachu_excitedq:", "fiji_parrot"]
+    },
+    {
+      "user_id": "U49OPQ567",
+      "user_display_name": "Ryan Hughes",
+      "emoji_count": 92,
+      "most_recent_emoji_timestamp": 1718121600,
+      "oldest_emoji_timestamp": 1683752400,
+      "l4wepw": 6.5,
+      "l4wepwChange": 35.4,
+      "emojis": [":party_parrot:", ":dancing_banana:", ":thumbs_up_animated:", ":coffee_spill:"]
+    },
+    {
+      "user_id": "U50RST890",
+      "user_display_name": "Jasmine Patel",
+      "emoji_count": 83,
+      "most_recent_emoji_timestamp": 1718208000,
+      "oldest_emoji_timestamp": 1684011600,
+      "l4wepw": 5.8,
+      "l4wepwChange": 27.9,
+      "emojis": [":meow_party:", ":cool_doge:", ":heart_eyes_cat:", ":rainbow_puke:"]
+    },
+    {
+      "user_id": "U51UVW123",
+      "user_display_name": "Marcus Washington",
+      "emoji_count": 76,
+      "most_recent_emoji_timestamp": 1718294400,
+      "oldest_emoji_timestamp": 1684270800,
+      "l4wepw": 5.3,
+      "l4wepwChange": 22.1,
+      "emojis": [":sonic_run:", ":mario_jump:", ":link_sword:", ":minecraft_diamond:"]
+    },
+    {
+      "user_id": "U52XYZ456",
+      "user_display_name": "Sophia Rodriguez",
+      "emoji_count": 88,
+      "most_recent_emoji_timestamp": 1718380800,
+      "oldest_emoji_timestamp": 1684530000,
+      "l4wepw": 6.2,
+      "l4wepwChange": 30.5,
+      "emojis": [":fire:", ":100_points:", ":chef_kiss:", ":mind_blown:"]
+    },
+    {
+      "user_id": "U53ABC789",
+      "user_display_name": "Liam O'Connor",
+      "emoji_count": 71,
+      "most_recent_emoji_timestamp": 1718467200,
+      "oldest_emoji_timestamp": 1684789200,
+      "l4wepw": 5.0,
+      "l4wepwChange": 19.8,
+      "emojis": [":irish_flag:", ":shamrock:", ":beer_mug:", ":potato:"]
+    },
+    {
+      "user_id": "U54DEF012",
+      "user_display_name": "Zoe Nakamura",
+      "emoji_count": 95,
+      "most_recent_emoji_timestamp": 1718553600,
+      "oldest_emoji_timestamp": 1683666000,
+      "l4wepw": 6.8,
+      "l4wepwChange": 38.2,
+      "emojis": [":kawaii_face:", ":cherry_blossom:", ":bento_box:", ":anime_sparkle:"]
+    },
+    {
+      "user_id": "U55GHI345",
+      "user_display_name": "Aiden Blackwood",
+      "emoji_count": 67,
+      "most_recent_emoji_timestamp": 1718640000,
+      "oldest_emoji_timestamp": 1685048400,
+      "l4wepw": 4.7,
+      "l4wepwChange": 15.3,
+      "emojis": [":dark_mode:", ":hacker:", ":matrix_code:", ":cyberpunk:"]
+    },
+    {
+      "user_id": "U56JKL678",
+      "user_display_name": "Harper Singh",
+      "emoji_count": 79,
+      "most_recent_emoji_timestamp": 1718726400,
+      "oldest_emoji_timestamp": 1684184400,
+      "l4wepw": 5.5,
+      "l4wepwChange": 24.7,
+      "emojis": [":peacock:", ":elephant:", ":lotus:", ":taj_mahal:"]
+    },
+    {
+      "user_id": "U57MNO901",
+      "user_display_name": "Diego Hernandez",
+      "emoji_count": 81,
+      "most_recent_emoji_timestamp": 1718812800,
+      "oldest_emoji_timestamp": 1684098000,
+      "l4wepw": 5.7,
+      "l4wepwChange": 26.3,
+      "emojis": [":soccer_ball:", ":taco:", ":sombrero:", ":maracas:"]
+    }
+  ]
+}
