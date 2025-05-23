@@ -56,7 +56,7 @@ export default function RootLayout({
 
 export const metadata = {
   title: "Emoji Studio - Analytics for Slack Emojis",
-  description: "Emoji Studio is the missing analytics platform for custom Slack emojis.",
+  description: "Emoji Studio is the missing analytics platform for custom Slack emojis. See leaderboards, visualizations, and insights into company culture.",
   generator: "v0.dev",
   icons: {
     icon: "/favicon.ico",
