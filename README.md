@@ -1,5 +1,6 @@
 # 🥳🤠 Emoji Studio: Sometimes the most important OKRs are LOLs 📊📈
-[View on GitHub](https://github.com/jweingardt12/Emoji-Studio)
+
+![Main Dashboard View](/assets/screenshots/og-image.png "Main Dashboard - Overview of emoji trends and leaderboard")
 
 ## What is this?
 
@@ -16,7 +17,7 @@ Every company I've worked at has had one thing in common: an extremely robust li
 
 Here's a glimpse of what Emoji Studio can do:
 
-![Main Dashboard View](/assets/screenshots/main-dashboard-view.png "Main Dashboard - Overview of emoji trends and leaderboard")
+![Main Dashboard View](/assets/screenshots/main-dashboard-view.png "")
 
 ![User Dashboard View](/assets/screenshots/user-dashboard-view.png "User Dashboard - Stats and activity for a specific user")
 
