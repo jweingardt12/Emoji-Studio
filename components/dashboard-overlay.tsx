@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { generateDemoData } from "@/lib/demo-data"
-import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare } from "lucide-react"
+import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download } from "lucide-react"
 import Link from "next/link"
 import { EmojiWaterfall } from "./emoji-waterfall"
 import { useAnalytics } from "@/lib/analytics"
@@ -264,6 +264,10 @@ export function DashboardOverlay() {
               <li className="flex items-start">
                 <Users className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
                 <span>Understand company culture by seeing top emoji creators in your workspace.</span>
+              </li>
+              <li className="flex items-start">
+                <Download className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
+                <span>Download one–or all–emojis for backup and portability.</span>
               </li>
               <li className="flex items-start">
                 <Lock className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
