@@ -83,6 +83,12 @@ export default function AboutPage() {
                   If you're asking this question, you're thinking entirely too hard about the seriousness of this project. However, if you have ideas,  <a href="https://jwe.in" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">shoot me a note!</a>
               </AccordionContent>
             </AccordionItem>
+            <AccordionItem value="item-7">
+              <AccordionTrigger>How do you plan to incorporate AI into this tool?</AccordionTrigger>
+              <AccordionContent>
+                  :you-have-to-be-kidding-me:
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
       </div>
