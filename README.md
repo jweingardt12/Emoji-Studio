@@ -9,6 +9,14 @@ Ever wondered how many custom emojis your Slack workspace has? Curious about the
 This dashboard takes your Slack emoji data (not usage!) and turns it into a smorgasbord of dazzling charts, fun facts, and interactive elements. Any Slack user can use it, and the app runs ok browser local storage entirely—nothing is stored on any server. 
 
 
+## What does it do?
+
+- View, search, and inspect all emojis in a Slack workspace
+- See a leaderboard of top emoji uploaders
+- Bulk download a selection–or all–emojis for maximum portability
+- Gain a deep understanding (or possibly more confusion) with beautiful charts and visualizations
+
+
 ## Why would you build this?
 
 Every company I've worked at has had one thing in common: an extremely robust library of custom Slack emojis. Slack provides no great way to explore this library, and it's frustrsting to understand the provenance of a given emoji. Emojis are an expression of company culture, and teams deserve the ability to explore, understand, and celebrate the creativity that goes into their creation.
