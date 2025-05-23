@@ -413,7 +413,7 @@ export function DashboardOverlay() {
           </a>
           <span className="mx-2">|</span>
           <a
-            href="https://github.com/jasonWEH/emoji-dashboard"
+            href="https://github.com/jweingardt12/Emoji-Studio"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-primary transition-colors inline-flex items-center"
