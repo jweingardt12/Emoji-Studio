@@ -50,7 +50,7 @@ export function DashboardOverlay() {
   const [isInitialCheckDone, setIsInitialCheckDone] = useState(false) // New state
   const [showChatBubble, setShowChatBubble] = useState(false) // For chat bubble animation
   const [showEmojiWaterfall, setShowEmojiWaterfall] = useState(false) // For emoji waterfall animation
-  const op = useOpenPanel() // For analytics tracking
+  const { track: opTrack } = useOpenPanel();
 
   // Check localStorage on mount and manage demo data
   useEffect(() => {
@@ -126,7 +126,7 @@ export function DashboardOverlay() {
       console.log("Starting demo data import...")
       
       // Track demo data import event
-      op.track('demo_data_import_start', {
+      opTrack('demo_data_import_start', {
         source: 'dashboard_overlay'
       })
       
@@ -147,7 +147,7 @@ export function DashboardOverlay() {
       localStorage.setItem("workspace", "Slack Emoji Collection")
       
       // Track successful demo data import
-      op.track('demo_data_import_success', {
+      opTrack('demo_data_import_success', {
         emoji_count: demoData.length,
         source: 'dashboard_overlay'
       })
@@ -278,7 +278,7 @@ export function DashboardOverlay() {
                 variant="outline"
                 onClick={() => {
                   // Track about page navigation
-                  op.track('navigate', {
+                  opTrack('navigate', {
                     destination: 'about',
                     source: 'dashboard_overlay'
                   });
@@ -295,7 +295,7 @@ export function DashboardOverlay() {
                 size="lg"
                 onClick={() => {
                   // Track settings page navigation
-                  op.track('navigate', {
+                  opTrack('navigate', {
                     destination: 'settings',
                     source: 'dashboard_overlay'
                   });
@@ -310,13 +310,69 @@ export function DashboardOverlay() {
               </Button>
             </div>
             <button
-              onClick={() => {
-                // Track demo data button click
-                op.track('click', {
-                  element: 'try_with_demo_data',
-                  source: 'dashboard_overlay'
+              onClick={async () => { 
+                opTrack('button_click', { 
+                  action: 'use_demo_data',
+                  source: 'dashboard_overlay' 
                 });
-                importDemoData();
+                setIsImporting(true);
+                setImportError(null);
+                try {
+                  console.log("Starting demo data import...")
+                  
+                  // Track demo data import event
+                  opTrack('demo_data_import_start', {
+                    source: 'dashboard_overlay'
+                  })
+                  
+                  // Get demo data
+                  const demoData = await generateDemoData()
+                  
+                  if (!demoData || demoData.length === 0) {
+                    throw new Error("Failed to generate demo data")
+                  }
+                  
+                  console.log(`Successfully generated ${demoData.length} demo emojis`)
+                  
+                  // Show loading animation for 3 seconds
+                  await new Promise(resolve => setTimeout(resolve, 3000))
+                  
+                  // Store demo data in localStorage
+                  localStorage.setItem("emojiData", JSON.stringify(demoData))
+                  localStorage.setItem("workspace", "Slack Emoji Collection")
+                  
+                  // Track successful demo data import
+                  opTrack('demo_data_import_success', {
+                    emoji_count: demoData.length,
+                    source: 'dashboard_overlay'
+                  })
+                  
+                  // Update state
+                  setHasRealData(true)
+                  
+                  // Dispatch event to notify components that emoji data has been updated
+                  window.dispatchEvent(new Event("emojiDataUpdated"))
+                  
+                  // Show emoji waterfall animation - IMPORTANT: Set this after data is loaded
+                  console.log("Starting emoji waterfall animation...")
+                  setShowEmojiWaterfall(true)
+                  
+                  // Wait for animation to complete before redirecting (4 seconds)
+                  // This matches the duration prop we'll pass to EmojiWaterfall
+                  await new Promise(resolve => setTimeout(resolve, 4000))
+                  console.log("Emoji animation complete, redirecting...")
+                  
+                  // Reset the animation state
+                  setShowEmojiWaterfall(false)
+                  
+                  // Redirect to dashboard
+                  router.push("/dashboard")
+                } catch (error) {
+                  console.error("Error importing demo data:", error)
+                  setImportError(error instanceof Error ? error.message : "Failed to import demo data")
+                } finally {
+                  setIsImporting(false)
+                }
               }}
               disabled={isImporting}
               className="text-sm text-primary hover:text-primary/80 hover:underline mt-3 transition-colors"
@@ -336,7 +392,7 @@ export function DashboardOverlay() {
             className="hover:text-primary transition-colors"
             onClick={() => {
               // Track creator link click
-              op.track('external_link_click', {
+              opTrack('external_link_click', {
                 destination: 'creator_website',
                 url: 'https://jwe.in?utm_source=emojistudio',
                 source: 'dashboard_overlay'
@@ -353,7 +409,7 @@ export function DashboardOverlay() {
             className="hover:text-primary transition-colors inline-flex items-center"
             onClick={() => {
               // Track GitHub link click
-              op.track('external_link_click', {
+              opTrack('external_link_click', {
                 destination: 'github_repo',
                 url: 'https://github.com/jasonWEH/emoji-dashboard',
                 source: 'dashboard_overlay'

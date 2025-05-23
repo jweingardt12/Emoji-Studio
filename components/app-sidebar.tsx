@@ -326,7 +326,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "GitHub",
-      url: "https://github.com/jasonWEH/emoji-dashboard",
+      url: "https://github.com/jweingardt12/Emoji-Studio",
       icon: GithubIcon,
       external: true,
     },

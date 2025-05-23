@@ -1,4 +1,5 @@
 # 🥳🤠 Emoji Studio: Sometimes the most important OKRs are LOLs 📊📈
+[View on GitHub](https://github.com/jweingardt12/Emoji-Studio)
 
 ## What is this?
 
@@ -37,4 +38,4 @@ Here's a glimpse of what Emoji Studio can do:
 
 ## Contributing
 
-Pull requests welcome! Bonus points for adding new charts, fixing bugs, or sneaking in more puns.
+[Pull requests](https://github.com/jweingardt12/Emoji-Studio) welcome! Bonus points for adding new charts, fixing bugs, or sneaking in more puns.
