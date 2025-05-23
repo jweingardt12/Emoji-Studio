@@ -2,19 +2,21 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { RequireData } from "@/components/require-data"
 import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { Emoji } from "@/lib/services/emoji-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Rss } from "lucide-react"
+import { Search, Filter, Rss, Download, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
 import UserOverlay from "@/components/user-overlay"
 import { getUserLeaderboard } from "@/lib/services/emoji-service"
 import { format } from "date-fns"
 import { useAnalytics } from "@/lib/analytics"
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import DownloadProgressOverlay from '@/components/download-progress-overlay';
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -29,8 +31,14 @@ function ExplorerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name">("newest");
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithEmojiCount | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [processedFileCount, setProcessedFileCount] = useState(0);
+  const [totalFilesToDownload, setTotalFilesToDownload] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null); // For cancelling fetch
 
   // Pagination state
   const PAGE_SIZE = 50;
@@ -56,7 +64,7 @@ function ExplorerPage() {
   }, []);
 
   // Fetch leaderboard for user overlay
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<UserWithEmojiCount[]>([]);
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
@@ -150,6 +158,159 @@ function ExplorerPage() {
     return `https://via.placeholder.com/64x64/EAEAEA/999999?text=${name.slice(0, 2)}`;
   };
 
+  const handleCancelDownload = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsDownloading(false);
+    setDownloadError('Download cancelled by user.');
+    analytics.trackDownloadAllCancelled(totalFilesToDownload, searchQuery, processedFileCount);
+    // Reset progress states immediately on cancel
+    setDownloadProgress(0);
+    setProcessedFileCount(0);
+    setTotalFilesToDownload(0);
+    console.log('Download cancelled by user.');
+  };
+
+  const handleDownloadAll = async () => {
+    if (!sortedEmojis.length || isDownloading) return;
+
+    abortControllerRef.current = new AbortController(); // Initialize AbortController
+    const signal = abortControllerRef.current.signal;
+
+    setIsDownloading(true);
+    setDownloadError(null);
+    setImageErrors({});
+    analytics.trackDownloadAllClicked(sortedEmojis.length, searchQuery);
+
+    // Initialize progress states
+    const filesToProcess = sortedEmojis.filter(emoji => !emoji.is_alias && !emoji.url.startsWith('alias:')).length;
+    setTotalFilesToDownload(filesToProcess);
+    setProcessedFileCount(0);
+    setDownloadProgress(0);
+
+    const zip = new JSZip();
+    let currentFileNumber = 0; // To update progress
+
+    try {
+      for (const emoji of sortedEmojis) {
+        if (signal.aborted) {
+          console.log('Download aborted, breaking loop.');
+          // No need to set error here, handleCancelDownload does it.
+          break; // Exit loop if download was cancelled
+        }
+        
+        if (emoji.is_alias || emoji.url.startsWith('alias:')) {
+          console.log(`Skipping alias: ${emoji.name}`);
+          // Even if skipped, consider it processed for overall progress if it was in the initial count
+          // However, totalFilesToDownload already filters these out, so no need to increment processedFileCount here.
+          continue;
+        }
+        
+        currentFileNumber++;
+        setProcessedFileCount(currentFileNumber);
+        if (filesToProcess > 0) {
+          setDownloadProgress(Math.round((currentFileNumber / filesToProcess) * 100));
+        }
+
+        try {
+          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
+          console.log(`Attempting to fetch emoji via proxy: ${emoji.name}, Proxy URL: ${proxyUrl}`); 
+          const response = await fetch(proxyUrl, { signal }); // Pass signal to fetch
+          if (!response.ok) {
+            if (signal.aborted) break; // Check again if aborted during fetch response handling
+            console.error(`Failed to fetch ${emoji.name} (via Proxy URL: ${proxyUrl}): HTTP ${response.status} ${response.statusText}`); 
+            handleImageError(emoji.name); 
+            continue;
+          }
+          const blob = await response.blob();
+          let extension = '.png'; // Default extension
+          const contentType = response.headers.get('content-type');
+          if (contentType) {
+            if (contentType.includes('gif')) extension = '.gif';
+            else if (contentType.includes('jpeg')) extension = '.jpg';
+            else if (contentType.includes('png')) extension = '.png';
+          }
+          // Sanitize emoji name for filename
+          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`;
+          zip.file(fileName, blob);
+        } catch (error: any) { 
+          if (error.name === 'AbortError') {
+            console.log('Fetch aborted for emoji:', emoji.name);
+            // Error state is handled by handleCancelDownload
+            break; // Exit loop
+          }
+          console.error(`Error processing emoji ${emoji.name} (Original URL: ${emoji.url}):`, error.message, error.stack); 
+          handleImageError(emoji.name);
+        }
+      }
+
+      if (signal.aborted) {
+        // If aborted, handleCancelDownload has already managed state.
+        return;
+      }
+
+      if (Object.keys(imageErrors).length > 0 && processedFileCount < totalFilesToDownload) {
+        setDownloadError(`Download completed with ${Object.keys(imageErrors).length} errors. Some images may be missing.`);
+        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'partial_completion_with_errors');
+      } else if (processedFileCount === 0 && totalFilesToDownload > 0) {
+        setDownloadError('No emojis were processed. Please check the console for errors.');
+        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'no_emojis_processed');
+      } else if (totalFilesToDownload === 0) {
+        setDownloadError('No emojis found to download (after filtering aliases).');
+        analytics.trackDownloadAllFailed(0, searchQuery, 'no_emojis_to_download');
+      } else {
+        setDownloadError(null); // Clear previous errors if successful
+      }
+
+      // Only generate zip if not aborted and there are files
+      if (zip.files && Object.keys(zip.files).length > 0) {
+        zip.generateAsync({ type: 'blob' })
+          .then((content) => {
+            if (signal.aborted) return; // Check again before saving
+            saveAs(content, `emojis-${searchQuery || 'all'}-${sortBy}.zip`);
+            analytics.trackDownloadAllSuccess(totalFilesToDownload, searchQuery);
+          })
+          .catch((err) => {
+            if (err.name === 'AbortError') {
+              console.log('Zip generation aborted.');
+              return;
+            }
+            console.error('Error generating zip file:', err);
+            setDownloadError('Failed to generate zip file. Please try again.');
+            analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'zip_generation_failed');
+          });
+      } else if (!signal.aborted) {
+        console.log('No files to zip.');
+        if (totalFilesToDownload > 0) { // If there were files expected but none were added to zip (e.g. all errored)
+          setDownloadError('No images could be added to the zip. Check for errors.');
+          analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'empty_zip_due_to_errors');
+        }
+      }
+
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Download operation aborted.');
+        // State handled by handleCancelDownload
+      } else {
+        console.error('An unexpected error occurred during download:', error);
+        setDownloadError('An unexpected error occurred. Please try again.');
+        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'unexpected_error');
+      }
+    } finally {
+      // Only set timeout if not aborted, as handleCancelDownload hides modal immediately
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => {
+          setIsDownloading(false);
+          setDownloadProgress(0);
+          setProcessedFileCount(0);
+          setTotalFilesToDownload(0);
+        }, 2000); // Keep overlay for 2 seconds after completion/error
+      }
+      abortControllerRef.current = null; // Clean up controller ref
+    }
+  };
+
   if (!isClient) return null;
 
   return (
@@ -165,28 +326,51 @@ function ExplorerPage() {
               <p className="text-muted-foreground">Browse and search all emojis in your Slack workspace.</p>
             </div>
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+              <div className="relative lg:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by emoji name, creator, or user ID (e.g., U01E982T26T)..."
+                  type="search"
+                  placeholder="Search by name, creator, or user ID..."
+                  className="w-full rounded-lg bg-background pl-10 pr-4 py-2 text-sm shadow-sm"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 h-10"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length > 2 || e.target.value.length === 0) {
+                      analytics.trackEmojiFilter('search', e.target.value);
+                    }
+                  }}
                 />
               </div>
-              <div className="flex-shrink-0 w-full sm:w-48">
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
-                  <SelectTrigger className="h-10">
-                    <Filter className="mr-2 h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "name") => setSortBy(value)}>
+                  <SelectTrigger className="w-full md:w-auto">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                    <SelectItem value="oldest">Oldest</SelectItem>
                     <SelectItem value="name">Name (A-Z)</SelectItem>
                   </SelectContent>
                 </Select>
+                <Button 
+                  onClick={handleDownloadAll}
+                  disabled={isDownloading || !sortedEmojis.length}
+                  variant="outline"
+                  className="w-full md:w-auto"
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download All ({sortedEmojis.length})
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
             {/* Emoji Grid */}
@@ -271,66 +455,61 @@ function ExplorerPage() {
           onEmojiClick={(emoji) => {
             setSelectedEmoji(emoji);
           }}
-          onUserClick={(userId, userName) => {
-            setSelectedEmoji(null);
-            const userEmojis = emojiData.filter((e) => e.user_id === userId);
-            if (userEmojis.length > 0) {
-              // Filter out aliases for accurate counts
-              const filteredUserEmojis = userEmojis.filter((e) => !e.is_alias);
-              const emojiCount = filteredUserEmojis.length;
-              const timestamps = filteredUserEmojis.map((e) => e.created);
-              const mostRecentTimestamp = Math.max(...timestamps);
-              const oldestTimestamp = Math.min(...timestamps);
-              const userRank = leaderboard.findIndex(u => u.user_id === userId) + 1;
-              
-              // Calculate L4WEPW (Last 4 Weeks Emojis Per Week)
-              const now = Math.floor(Date.now() / 1000);
-              const fourWeeksAgo = now - (28 * 24 * 60 * 60); // 4 weeks in seconds
-              const eightWeeksAgo = now - (56 * 24 * 60 * 60); // 8 weeks in seconds
-              
-              const last4WeeksEmojis = filteredUserEmojis.filter((emoji) => emoji.created >= fourWeeksAgo);
-              const l4wepw = last4WeeksEmojis.length / 4;
-              
-              // Calculate previous 4 weeks for comparison
-              const previous4WeeksEmojis = filteredUserEmojis.filter(
-                (emoji) => emoji.created >= eightWeeksAgo && emoji.created < fourWeeksAgo
-              );
-              const previous4wepw = previous4WeeksEmojis.length / 4;
-              
-              // Calculate percentage change
-              const l4wepwChange = previous4wepw > 0 ? ((l4wepw - previous4wepw) / previous4wepw) * 100 : 0;
-              
+          onUserClick={(userId: string, userName: string) => {
+            const userFromLeaderboard = leaderboard.find(u => u.user_id === userId);
+            if (userFromLeaderboard) {
+              setSelectedUser(userFromLeaderboard);
+            } else {
               setSelectedUser({
                 user_id: userId,
-                user_display_name: userName,
-                emoji_count: emojiCount,
-                most_recent_emoji_timestamp: mostRecentTimestamp,
-                oldest_emoji_timestamp: oldestTimestamp,
-                l4wepw,
-                l4wepwChange,
-                rank: userRank > 0 ? userRank : undefined
-              });
+                user_display_name: userName || 'Unknown User',
+                emoji_count: 0, 
+                l4wepw: 0,
+                l4wepwChange: 0,
+                most_recent_emoji_timestamp: 0,
+                oldest_emoji_timestamp: 0
+              } as UserWithEmojiCount);
             }
+            analytics.trackUserProfileView(userName);
           }}
         />
       )}
       {/* User Overlay */}
       {selectedUser && (
-        <UserOverlay
-          user={selectedUser}
-          onClose={() => setSelectedUser(null)}
+        <UserOverlay 
+          user={selectedUser} 
+          onClose={() => setSelectedUser(null)} 
         />
       )}
       {/* Dashboard Overlay - shows when no emoji data is loaded */}
       <DashboardOverlay />
+      {/* Download Progress Overlay */}
+      <DownloadProgressOverlay 
+        isOpen={isDownloading}
+        progress={downloadProgress}
+        processedFiles={processedFileCount}
+        totalFiles={totalFilesToDownload}
+        onCancel={handleCancelDownload} // Pass the cancel handler
+      />
     </div>
   );
 }
 
-export default function ExplorerPageWrapper() {
-  return (
-    <RequireData>
-      <ExplorerPage />
-    </RequireData>
-  );
+export default ExplorerPage;
+
+// Define base User interface locally
+interface User {
+  user_id: string;
+  user_display_name: string;
+}
+
+// Define UserWithEmojiCount type if not already globally available
+// This is based on the structure returned by getUserLeaderboard
+interface UserWithEmojiCount extends User {
+  emoji_count: number;
+  most_recent_emoji_timestamp: number;
+  oldest_emoji_timestamp: number;
+  l4wepw: number;
+  l4wepwChange: number;
+  // rank?: number; // Optional rank if you plan to use it
 }

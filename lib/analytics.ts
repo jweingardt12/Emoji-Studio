@@ -2,14 +2,18 @@ import { useOpenPanel } from '@/lib/safe-openpanel';
 
 // Event types for better type safety
 export enum AnalyticsEvent {
-  VIEW_EMOJI = 'view_emoji',
-  COPY_EMOJI = 'copy_emoji',
-  DOWNLOAD_EMOJI = 'download_emoji',
-  VIEW_USER_PROFILE = 'view_user_profile',
-  SEARCH_EMOJI = 'search_emoji',
-  FILTER_EMOJI = 'filter_emoji',
-  SORT_EMOJI = 'sort_emoji',
-  PAGE_NAVIGATION = 'page_navigation'
+  VIEW_EMOJI = 'View Emoji',
+  COPY_EMOJI = 'Copy Emoji',
+  DOWNLOAD_EMOJI = 'Download Emoji',
+  VIEW_USER_PROFILE = 'View User Profile',
+  SEARCH_EMOJI = 'Search Emoji',
+  FILTER_EMOJI = 'Filter Emoji',
+  SORT_EMOJI = 'Sort Emoji',
+  PAGE_NAVIGATION = 'Page Navigation',
+  DOWNLOAD_ALL_CLICKED = 'Download All Emojis Clicked',
+  DOWNLOAD_ALL_SUCCESS = 'Download All Emojis Success',
+  DOWNLOAD_ALL_FAILED = 'Download All Emojis Failed',
+  DOWNLOAD_ALL_CANCELLED = 'Download All Emojis Cancelled',
 }
 
 // Analytics utility hook to track events in the emoji dashboard
@@ -75,6 +79,40 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.PAGE_NAVIGATION, {
         page: pageName,
         url: url,
+      });
+    },
+
+    // Track when a user clicks the 'Download All' button
+    trackDownloadAllClicked: (count: number, query: string) => {
+      op.track(AnalyticsEvent.DOWNLOAD_ALL_CLICKED, {
+        emoji_count: count,
+        search_query: query,
+      });
+    },
+
+    // Track when 'Download All' succeeds
+    trackDownloadAllSuccess: (count: number, query: string) => {
+      op.track(AnalyticsEvent.DOWNLOAD_ALL_SUCCESS, {
+        downloaded_emoji_count: count,
+        search_query: query,
+      });
+    },
+
+    // Track when 'Download All' fails
+    trackDownloadAllFailed: (count: number, query: string, reason: string) => {
+      op.track(AnalyticsEvent.DOWNLOAD_ALL_FAILED, {
+        emoji_count_at_failure: count,
+        search_query_at_failure: query,
+        failure_reason: reason,
+      });
+    },
+
+    // Track when 'Download All' is cancelled
+    trackDownloadAllCancelled: (count: number, query: string, processedCount: number) => {
+      op.track(AnalyticsEvent.DOWNLOAD_ALL_CANCELLED, {
+        emoji_count_at_cancel: count,
+        search_query_at_cancel: query,
+        emojis_processed_before_cancel: processedCount,
       });
     },
 
