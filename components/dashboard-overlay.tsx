@@ -421,7 +421,7 @@ export function DashboardOverlay() {
               // Track GitHub link click
               opTrack('external_link_click', {
                 destination: 'github_repo',
-                url: 'https://github.com/jasonWEH/emoji-dashboard',
+                url: 'https://github.com/jweingardt12/Emoji-Studio',
                 source: 'dashboard_overlay'
               });
             }}
