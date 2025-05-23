@@ -13,7 +13,17 @@ Every company I've worked at has had one thing in common: an extremely robust li
 
 ## Screenshots
 
-> _Insert screenshots here of the dashboard in full, a modal popup, and a chart with a ridiculous amount of data._
+Here's a glimpse of what Emoji Studio can do:
+
+![Emoji Explorer View](/assets/screenshots/explorer-view.png "Emoji Explorer - Browse and search all emojis")
+
+![Visualizations Page](/assets/screenshots/visualizations-view.png "Visualizations - Various charts showing emoji trends and data")
+
+![Emoji Details Overlay](/assets/screenshots/emoji-details-overlay.png "Emoji Details - Modal showing details for a specific emoji")
+
+![User Dashboard View](/assets/screenshots/user-dashboard-view.png "User Dashboard - Stats and activity for a specific user")
+
+![Main Dashboard View](/assets/screenshots/main-dashboard-view.png "Main Dashboard - Overview of emoji trends and leaderboard")
 
 ## How do I use this?
 
