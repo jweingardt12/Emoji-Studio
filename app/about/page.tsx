@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { GradientText } from "@/components/ui/gradient-text";
 
 export default function AboutPage() {
   return (
@@ -10,7 +11,9 @@ export default function AboutPage() {
           <div className="relative w-16 h-16 mb-3">
             <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
           </div>
-          <h1 className="text-3xl font-bold text-center">Emoji Studio</h1>
+          <GradientText as="h1" className="text-3xl font-bold text-center">
+            Emoji Studio
+          </GradientText>
           <p className="text-muted-foreground text-sm mt-1">Sometimes the most important OKRs are LOLs.</p>
         </div>
         <p className="mb-6 text-base sm:text-sm">

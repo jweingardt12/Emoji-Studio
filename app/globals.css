@@ -33,6 +33,13 @@ body {
 
 @layer base {
   :root {
+    --color-1: 330 100% 40%; /* Dark Neon Pink */
+    --color-2: 140 100% 55%; /* Bright Electric Green */
+    --color-3: 210 100% 30%; /* Deep Neon Blue */
+    --color-4: 60 100% 70%; /* Light Neon Yellow */
+    --color-5: 295 100% 45%; /* Dark Neon Purple */
+    --brand: 50 100% 50%; /* Bright, punchy yellow */
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -68,6 +75,12 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
+    --color-1: 330 100% 40%; /* Dark Neon Pink */
+    --color-2: 140 100% 55%; /* Bright Electric Green */
+    --color-3: 210 100% 30%; /* Deep Neon Blue */
+    --color-4: 60 100% 70%; /* Light Neon Yellow */
+    --color-5: 295 100% 45%; /* Dark Neon Purple */
+    --brand: 50 100% 50%; /* Bright, punchy yellow */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
@@ -123,8 +136,7 @@ body {
 }
 
 @keyframes pulse {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
   50% {
@@ -134,17 +146,18 @@ body {
 
 .glow-border {
   --border-size: 3px;
-  --border-radius: 50%;
+  --border-radius: 50%; /* This was 50%, if it's for a general glow, maybe it should be more flexible or removed if not used for circular items */
   --glow-color: rgba(255, 255, 255, 0.4);
   --glow-spread: 10px;
 
-  width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2);
-  height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2);
-  border-radius: var(--border-radius);
-  position: absolute;
-  top: calc(-1 * var(--border-size) - var(--glow-spread));
-  left: calc(-1 * var(--border-size) - var(--glow-spread));
-  z-index: 0;
+  /* These width/height calculations might be problematic if the parent isn't positioned correctly or if box-sizing is different */
+  /* width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
+  /* height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
+  /* border-radius: var(--border-radius); */ /* Duplicates the one above, or is intended to be different? */
+  position: absolute; /* Ensure this is intended for all uses of .glow-border */
+  /* top: calc(-1 * var(--border-size) - var(--glow-spread)); */
+  /* left: calc(-1 * var(--border-size) - var(--glow-spread)); */
+  z-index: 0; /* Ensure this doesn't conflict with other z-indexed elements */
 
   background: conic-gradient(
     from 0deg,
@@ -170,24 +183,6 @@ body {
   max-width: 100%;
   height: auto;
   object-fit: contain;
-}
-
-/* Add a glowing border animation for the logo */
-@keyframes glow {
-  0% {
-    box-shadow: 0 0 5px 2px rgba(62, 152, 199, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 20px 5px rgba(62, 152, 199, 0.7);
-  }
-  100% {
-    box-shadow: 0 0 5px 2px rgba(62, 152, 199, 0.3);
-  }
-}
-
-.glow-border {
-  border-radius: 50%;
-  animation: glow 2s infinite;
 }
 
 /* Emoji waterfall animation */

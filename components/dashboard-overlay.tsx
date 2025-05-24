@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useAnalytics } from "@/lib/analytics"
 import { useOpenPanel } from '@/lib/safe-openpanel'
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import { GradientText } from '@/components/ui/gradient-text';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -247,13 +248,10 @@ export function DashboardOverlay() {
           </div>
 
           {/* Site name */}
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">
+          <GradientText as="h1" className="text-2xl sm:text-3xl font-bold text-center">
             Emoji Studio
-          </h1>
-          {/* Tagline */}
-          <p className="text-xs sm:text-sm text-muted-foreground italic mb-3 sm:mb-4">
-            Sometimes the most important OKRs are LOLs.
-          </p>
+          </GradientText>
+          <p className="text-muted-foreground text-sm mt-1 mb-3 text-center">Sometimes the most important OKRs are LOLs.</p>
           {/* Text changed to H2 and positioned above bullet points */}
           <h2 className="text-lg sm:text-xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
             The Slack Custom Emoji dashboard you've been looking for.
