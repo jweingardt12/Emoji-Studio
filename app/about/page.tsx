@@ -4,8 +4,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export default function AboutPage() {
   return (
-    <div className="py-8 px-4 lg:px-6 flex justify-center">
-      <div className="rounded-xl bg-card border border-border shadow p-6 sm:p-8 max-w-4xl w-full animate-fade-up">
+    <div className="py-8 px-2 sm:px-4 lg:px-6 flex justify-center">
+      <div className="rounded-xl bg-card border border-border shadow p-4 sm:p-8 max-w-4xl w-full animate-fade-up">
         <div className="flex flex-col items-center mb-6">
           <div className="relative w-16 h-16 mb-3">
             <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
@@ -13,7 +13,7 @@ export default function AboutPage() {
           <h1 className="text-3xl font-bold text-center">Emoji Studio</h1>
           <p className="text-muted-foreground text-sm mt-1">Sometimes the most important OKRs are LOLs.</p>
         </div>
-        <p className="mb-4">
+        <p className="mb-6 text-base sm:text-sm">
           Emoji Studio is a Slack emoji dashboard that lets you visualize, explore, and analyze your workspace's custom emoji collection. This product exists because Slack provides no good way to showcase your co-workers emoji contributions. Custom emojis are an expression of company culture, and while Slack makes it simple to create them, it doesn't provide a good way to explore them.
           <br />
           <br />
@@ -22,9 +22,9 @@ export default function AboutPage() {
           </a>
         </p>
         <div className="border-t border-border my-10"></div>
-        <h1 className="text-2xl font-bold mb-6">FAQs</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">FAQs</h1>
         <div>
-          <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+          <Accordion type="single" collapsible defaultValue="item-1" className="w-full text-left">
             <AccordionItem value="item-1">
               <AccordionTrigger>What is Emoji Studio?</AccordionTrigger>
               <AccordionContent>

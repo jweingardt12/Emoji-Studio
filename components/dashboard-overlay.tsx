@@ -62,8 +62,8 @@ export function DashboardOverlay() {
   const [showChatBubble, setShowChatBubble] = useState(false) // For chat bubble animation
   const { track: opTrack } = useOpenPanel();
 
-  // Check localStorage on mount and manage demo data
-  useEffect(() => {
+  // Function to check local storage for emoji data
+  const checkLocalStorage = () => {
     let hasData = false;
     try {
       const storedData = localStorage.getItem("emojiData");
@@ -72,36 +72,66 @@ export function DashboardOverlay() {
         if (Array.isArray(parsedData) && parsedData.length > 0) {
           hasData = true;
         } else {
+          console.log("DashboardOverlay: emojiData in localStorage is invalid or empty, removing.");
           localStorage.removeItem("emojiData"); 
         }
       }
     } catch (error) {
+      console.error("DashboardOverlay: Error parsing emojiData from localStorage", error);
       localStorage.removeItem("emojiData");
       hasData = false;
     }
+    console.log(`DashboardOverlay: checkLocalStorage - hasData: ${hasData}`);
     setHasLocalStorageData(hasData);
-    setIsInitialCheckDone(true);
-
     if (!hasData && !useDemoData) {
-      setUseDemoData(true);
+      console.log("DashboardOverlay: No real data and demo not active, setting useDemoData to true.");
+      setUseDemoData(true); // Default to demo if no real data and demo not already active
     }
-  }, [useDemoData, setUseDemoData]);
+    return hasData;
+  };
+
+  // Check localStorage on mount and manage demo data
+  useEffect(() => {
+    console.log("DashboardOverlay: Initial mount useEffect running.");
+    checkLocalStorage();
+    setIsInitialCheckDone(true);
+    console.log("DashboardOverlay: Initial check done.");
+
+    // Add event listener for emojiDataUpdated
+    const handleEmojiDataUpdated = () => {
+      console.log("DashboardOverlay: emojiDataUpdated event received. Re-checking localStorage.");
+      checkLocalStorage();
+    };
+
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+
+    // Cleanup
+    return () => {
+      console.log("DashboardOverlay: Cleaning up emojiDataUpdated event listener.");
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    };
+  }, [useDemoData, setUseDemoData]); // Dependencies for initial demo data logic
 
   // Effect for entry animation, depends on initial check and data presence
   useEffect(() => {
+    console.log(`DashboardOverlay: Animation useEffect. isInitialCheckDone: ${isInitialCheckDone}, hasLocalStorageData: ${hasLocalStorageData}`);
     if (isInitialCheckDone && !hasLocalStorageData) {
+      console.log("DashboardOverlay: Conditions met to show overlay. Setting isMounted and isAnimatedIn.");
       setIsMounted(true);
       const animationTimer = setTimeout(() => {
         setIsAnimatedIn(true);
+        console.log("DashboardOverlay: Overlay animation complete (isAnimatedIn: true).");
       }, 50);
       
       document.body.style.overflow = 'hidden';
       
       return () => {
+        console.log("DashboardOverlay: Cleaning up animation effect (hiding overlay).");
         clearTimeout(animationTimer);
         document.body.style.overflow = '';
       };
     } else {
+      console.log("DashboardOverlay: Conditions NOT met to show overlay. Setting isMounted and isAnimatedIn to false.");
       setIsMounted(false);
       setIsAnimatedIn(false);
       document.body.style.overflow = '';
@@ -113,9 +143,11 @@ export function DashboardOverlay() {
     if (isAnimatedIn) {
       const bubbleTimer = setTimeout(() => {
         setShowChatBubble(true)
+        console.log("DashboardOverlay: Chat bubble animation complete (showChatBubble: true).");
       }, 1500) // 1.5 second delay
 
       return () => {
+        console.log("DashboardOverlay: Cleaning up chat bubble effect.");
         clearTimeout(bubbleTimer)
       }
     }
@@ -192,156 +224,162 @@ export function DashboardOverlay() {
   
   const overlayContent = (
     <div
-      className={`fixed inset-0 z-50 transition-opacity duration-500 ease-in-out \
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300 ease-out \
         ${isAnimatedIn ? "opacity-100" : "opacity-0"}`}
       onClick={handleOverlayClick} // Close overlay when clicking outside the content
     >
-      <div className="relative z-50 flex flex-col items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm p-2 sm:p-4">
-        {/* Main Content Box */}
-        <div 
-          className={`relative bg-background border border-border rounded-xl shadow-2xl p-3 sm:p-4 w-full sm:max-w-6xl transition-all duration-500 ease-in-out transform \
-            ${isAnimatedIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          onClick={(e) => e.stopPropagation()} // Prevent clicks inside content from closing overlay
-        >
-          <div className="text-center">
-            {/* Logo section */}
-            <div className={`relative mx-auto ${isMobile ? 'mb-3 mt-4' : 'mb-4'} w-20 h-20 sm:w-24 sm:h-24`}>
-              {/* Blurred colorful background - positioned to be directly behind the image */}
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-yellow-400 to-blue-500 opacity-100 blur-lg rounded-full" />
-              {/* Image container - centered on top of the background */}
-              <div className="relative z-10 flex items-center justify-center w-full h-full">
-                <div className="relative w-12 h-12 sm:w-16 sm:h-16">
-                  <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
-                </div>
+      <div
+        className={`relative bg-background pt-6 px-2 pb-6 rounded-lg shadow-2xl border border-border w-full max-w-2xl mx-auto my-8 transform transition-all duration-500 ease-in-out \
+          ${isAnimatedIn ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
+        onClick={(e) => e.stopPropagation()} // Prevent clicks inside content from closing overlay
+      >
+        <div className="text-center">
+          {/* Logo section */}
+          <div className={`relative mx-auto ${isMobile ? 'mb-3' : 'mb-4'} w-20 h-20 sm:w-24 sm:h-24`}>
+            {/* Blurred colorful background - positioned to be directly behind the image */}
+            <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500 via-yellow-300 to-cyan-400 opacity-100 blur-lg rounded-full" />
+            {/* Image container - centered on top of the background */}
+            <div className="relative z-10 flex items-center justify-center w-full h-full">
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16">
+                <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
               </div>
             </div>
-
-            {/* Site name */}
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-1 sm:mb-2">
-              Emoji Studio
-            </h1>
-            {/* Tagline */}
-            <p className="text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4">
-              Sometimes the most important OKRs are LOLs.
-            </p>
-            {/* Text changed to H2 and positioned above bullet points */}
-            <h2 className="text-xl sm:text-2xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
-              Emoji Studio is the Slack Custom Emoji dashboard you've been looking for.
-            </h2>
-
-            {/* Feature list */}
-            <ul className="space-y-4 text-left max-w-md sm:max-w-3xl mx-auto mb-6 sm:mb-8">
-              <li className="flex items-start space-x-3">
-                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
-                  <BarChartBig className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="text-sm sm:text-base">
-                  <p className="font-medium">Visualize emoji creation trends and usage patterns over time.</p>
-                </div>
-              </li>
-              <li className="flex items-start space-x-3">
-                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="text-sm sm:text-base">
-                  <p className="font-medium">Understand company culture by seeing top emoji creators in your workspace.</p>
-                </div>
-              </li>
-              <li className="flex items-start space-x-3">
-                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
-                  <Download className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="text-sm sm:text-base">
-                  <p className="font-medium">Download one–or all–emojis for backup and portability.</p>
-                </div>
-              </li>
-              <li className="flex items-start space-x-3">
-                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
-                  <Lock className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="text-sm sm:text-base">
-                  <p className="font-medium">Securely import your Slack data locally – nothing leaves your browser.</p>
-                </div>
-              </li>
-            </ul>
-
-            {/* Call to Action */}
-            <div className="flex flex-col items-center gap-3 pt-3">
-              <div className="flex flex-row items-center justify-center gap-3 w-full">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="sm:w-auto"
-                  onClick={() => {
-                    // Track about page navigation
-                    opTrack('navigate', {
-                      destination: 'about',
-                      source: 'dashboard_overlay'
-                    });
-                    // Re-enable scrolling before navigation
-                    document.body.style.overflow = '';
-                    // Navigate immediately for better UX
-                    router.push("/about");
-                  }}
-                >
-                  About this project
-                </Button>
-                <Button
-                  size="sm"
-                  className="sm:w-auto"
-                  onClick={handleImportClick} 
-                >
-                  Import your emojis →
-                </Button>
-              </div>
-              <button
-                onClick={handleImport}
-                disabled={isImporting}
-                className="text-sm text-primary hover:text-primary/80 hover:underline mt-3 transition-colors"
-              >
-                {isImporting ? (
-                  <TextShimmer
-                    duration={1.5}
-                    className="text-sm"
-                  >
-                    Importing...
-                  </TextShimmer>
-                ) : (
-                  "Try with demo data →"
-                )}
-              </button>
-              {importError && <p className="text-sm text-red-500 text-center mt-2">Error: {importError}</p>}
-            </div>
-
-            {/* Security Explanation AlertDialog */}
-            <div className="w-full mt-6 mb-2 text-center">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="link" className="text-sm text-muted-foreground hover:text-primary">
-                    <Lock className="w-4 h-4 mr-2 flex-shrink-0" />
-                    Hang on - how is this secure?
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="z-[60]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>How is this secure?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-sm text-muted-foreground pt-2">
-                      Emoji Studio requires you to dig a bit into Chrome Developer Tools and get a specific network request while on the "Add new emoji" page. This request contains a specific token and cookie, both of which are only scoped to fetching and displaying Slack emojis. All information is stored in your browser, and the requests this app makes are indistinguishable from that of the Slack app. No, you can't be caught or found out.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogAction asChild>
-                      <Link href="/settings">Let's go</Link>
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-
           </div>
 
-          {/* Footer */}
-          <div className="mt-6 text-center text-xs text-muted-foreground">
+          {/* Site name */}
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">
+            Emoji Studio
+          </h1>
+          {/* Tagline */}
+          <p className="text-xs sm:text-sm text-muted-foreground italic mb-3 sm:mb-4">
+            Sometimes the most important OKRs are LOLs.
+          </p>
+          {/* Text changed to H2 and positioned above bullet points */}
+          <h2 className="text-lg sm:text-xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
+            The Slack Custom Emoji dashboard you've been looking for.
+          </h2>
+
+          {/* Feature list */}
+          <ul className="space-y-3 text-left max-w-sm sm:max-w-lg mx-auto mb-6 sm:mb-8">
+            <li className="flex items-center space-x-3">
+              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+                <BarChartBig className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Visualize emoji creation trends and usage patterns over time.</p>
+              </div>
+            </li>
+            <li className="flex items-center space-x-3">
+              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Understand company culture by seeing top emoji creators in your workspace.</p>
+              </div>
+            </li>
+            <li className="flex items-center space-x-3">
+              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Download one–or all–emojis for backup and portability.</p>
+              </div>
+            </li>
+            <li className="flex items-center space-x-3">
+              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+                <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Securely import your Slack data locally – nothing leaves your browser.</p>
+              </div>
+            </li>
+          </ul>
+
+          {/* Call to Action */}
+          <div className="flex flex-col items-center gap-2 pt-1 sm:pt-2">
+            <div className="flex flex-row items-center justify-center gap-3 w-full">
+              <Button
+                variant="outline"
+                className="text-sm sm:w-auto"
+                onClick={() => {
+                  // Track about page navigation
+                  opTrack('navigate', {
+                    destination: 'about',
+                    source: 'dashboard_overlay'
+                  });
+                  // Re-enable scrolling before navigation
+                  document.body.style.overflow = '';
+                  // Navigate immediately for better UX
+                  router.push("/about");
+                }}
+              >
+                About this project
+              </Button>
+              <Button
+                className="text-sm sm:w-auto"
+                onClick={() => {
+                  opTrack('navigate', {
+                    destination: 'settings',
+                    source: 'dashboard_overlay_import_your_emojis_button'
+                  });
+                  document.body.style.overflow = ''; // Re-enable scrolling
+                  router.push("/settings");
+                }} 
+              >
+                Import your emojis →
+              </Button>
+            </div>
+            <button
+              onClick={handleImport}
+              disabled={isImporting}
+              className="text-xs text-primary hover:text-primary/80 hover:underline mt-2 sm:mt-3 transition-colors"
+            >
+              {isImporting ? (
+                <TextShimmer
+                  duration={1.5}
+                  className="text-xs"
+                >
+                  Importing...
+                </TextShimmer>
+              ) : (
+                "Try with demo data →"
+              )}
+            </button>
+            {importError && <p className="text-xs text-red-500 text-center mt-2">Error: {importError}</p>}
+          </div>
+
+          {/* Security Explanation AlertDialog */}
+          <div className="w-full mt-4 sm:mt-6 mb-1 sm:mb-2 text-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="link" className="text-xs text-muted-foreground hover:text-primary">
+                  <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  Hang on - how is this secure?
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="z-[60]">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>How is this secure?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs text-muted-foreground pt-2">
+                    Emoji Studio requires you to dig a bit into Chrome Developer Tools and get a specific network request while on the "Add new emoji" page. This request contains a specific token and cookie, both of which are only scoped to fetching and displaying Slack emojis. All information is stored in your browser, and the requests this app makes are indistinguishable from that of the Slack app. No, you can't be caught out or found out.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogAction asChild>
+                    <Link href="/settings">Let's go</Link>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-xs text-muted-foreground">
+          {/* Separator */}
+          <div className="border-t border-border w-full max-w-xs mx-auto mb-3 sm:mb-4" />
+          <div className="flex items-center justify-center mt-3 sm:mt-4">
             <a
               href="https://jwe.in?utm_source=emojistudio"
               target="_blank"

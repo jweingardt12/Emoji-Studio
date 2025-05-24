@@ -25,7 +25,7 @@ export function EmojiDetailsModal({
 }: EmojiDetailsModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] sm:max-h-[80vh] flex flex-col p-4 sm:p-6">
+      <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col p-3 sm:p-4">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg sm:text-xl">
             {isToday(date) ? 
@@ -42,19 +42,19 @@ export function EmojiDetailsModal({
 
         <div className="flex-1 overflow-auto -mx-4 sm:mx-0 px-4 sm:px-0">
           {emojis.length > 0 ? (
-            <Table className="w-full">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[60px] sm:w-[100px] py-2 px-2 sm:px-4">Emoji</TableHead>
-                  <TableHead className="py-2 px-2 sm:px-4">Name</TableHead>
-                  <TableHead className="py-2 px-2 sm:px-4 hidden sm:table-cell">Added By</TableHead>
-                  <TableHead className="text-right py-2 px-2 sm:px-4">{isMonthView ? 'Date' : 'Time'}</TableHead>
+                  <TableHead className="w-[40px] sm:w-[60px] py-1 px-1 sm:px-2">Emoji</TableHead>
+                  <TableHead className="py-1 px-1 sm:px-2 max-w-[150px]">Name</TableHead>
+                  <TableHead className="py-1 px-1 sm:px-2 hidden sm:table-cell max-w-[80px]">Added By</TableHead>
+                  <TableHead className="text-right py-1 px-1 sm:px-2 max-w-[80px]">{isMonthView ? 'Date' : 'Time'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {emojis.map((emoji) => (
                   <TableRow key={`${emoji.name}-${emoji.created}`}>
-                    <TableCell className="font-medium py-2 px-2 sm:px-4">
+                    <TableCell className="font-medium py-1 px-1 sm:px-2">
                       <div 
                         className={`${onEmojiClick ? 'cursor-pointer hover:opacity-80' : ''}`}
                         onClick={() => onEmojiClick && onEmojiClick(emoji)}
@@ -72,18 +72,20 @@ export function EmojiDetailsModal({
                       </div>
                     </TableCell>
                     <TableCell 
-                      className={`py-2 px-2 sm:px-4 text-sm ${onEmojiClick ? 'cursor-pointer hover:text-primary' : ''}`}
+                      className={`py-1 px-1 sm:px-2 text-sm ${onEmojiClick ? 'cursor-pointer hover:text-primary' : ''}`}
                       onClick={() => onEmojiClick && onEmojiClick(emoji)}
                     >
                       <div className="flex flex-col">
-                        <span className="truncate block">:{emoji.name}:</span>
+                        <span className="truncate block">
+                          :{emoji.name.length > 20 ? emoji.name.substring(0, 20) + "..." : emoji.name}:
+                        </span>
                         <span className="text-xs text-muted-foreground block sm:hidden">
                           {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : "Unknown"}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell 
-                      className={`py-2 px-2 sm:px-4 hidden sm:table-cell ${onUserClick ? 'cursor-pointer hover:text-primary' : ''}`}
+                      className={`py-1 px-1 sm:px-2 hidden sm:table-cell ${onUserClick ? 'cursor-pointer hover:text-primary' : ''}`}
                       onClick={() => {
                         if (onUserClick && emoji.user_id && emoji.user_display_name) {
                           // Create a minimal user object for the overlay
@@ -101,7 +103,7 @@ export function EmojiDetailsModal({
                     >
                       {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : "Unknown"}
                     </TableCell>
-                    <TableCell className="text-right text-muted-foreground whitespace-nowrap py-2 px-2 sm:px-4 text-xs sm:text-sm">
+                    <TableCell className="text-right text-muted-foreground whitespace-nowrap py-1 px-1 sm:px-2 text-xs sm:text-sm">
                       {isMonthView 
                         ? format(new Date(emoji.created * 1000), "MMM d") 
                         : format(new Date(emoji.created * 1000), "h:mm a")}
