@@ -9,10 +9,20 @@ import { createPortal } from "react-dom"
 import { generateDemoData } from "@/lib/demo-data"
 import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download } from "lucide-react"
 import Link from "next/link"
-import { EmojiWaterfall } from "./emoji-waterfall"
 import { useAnalytics } from "@/lib/analytics"
 import { useOpenPanel } from '@/lib/safe-openpanel'
 import { TextShimmer } from '@/components/ui/text-shimmer';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // Simple mobile detection with SSR compatibility
 function useIsMobile() {
@@ -50,79 +60,74 @@ export function DashboardOverlay() {
   const [isAnimatedIn, setIsAnimatedIn] = useState(false)
   const [isInitialCheckDone, setIsInitialCheckDone] = useState(false) // New state
   const [showChatBubble, setShowChatBubble] = useState(false) // For chat bubble animation
-  const [showEmojiWaterfall, setShowEmojiWaterfall] = useState(false) // For emoji waterfall animation
   const { track: opTrack } = useOpenPanel();
 
   // Check localStorage on mount and manage demo data
   useEffect(() => {
-    const storedData = localStorage.getItem("emojiData")
-    const hasData = !!(storedData && JSON.parse(storedData).length > 0)
-    setHasLocalStorageData(hasData)
-    setIsInitialCheckDone(true) // Mark initial check as done
-
-    // If no data in localStorage, enable demo data (original logic)
-    if (!hasData && !useDemoData) {
-      setUseDemoData(true)
+    let hasData = false;
+    try {
+      const storedData = localStorage.getItem("emojiData");
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        if (Array.isArray(parsedData) && parsedData.length > 0) {
+          hasData = true;
+        } else {
+          localStorage.removeItem("emojiData"); 
+        }
+      }
+    } catch (error) {
+      localStorage.removeItem("emojiData");
+      hasData = false;
     }
-  }, [useDemoData, setUseDemoData]) // Keep dependencies for demo data logic
+    setHasLocalStorageData(hasData);
+    setIsInitialCheckDone(true);
+
+    if (!hasData && !useDemoData) {
+      setUseDemoData(true);
+    }
+  }, [useDemoData, setUseDemoData]);
 
   // Effect for entry animation, depends on initial check and data presence
   useEffect(() => {
     if (isInitialCheckDone && !hasLocalStorageData) {
-      // Set mounted immediately to prevent background flash
-      setIsMounted(true)
+      setIsMounted(true);
+      const animationTimer = setTimeout(() => {
+        setIsAnimatedIn(true);
+      }, 50);
       
-      // Small delay for smooth animation entrance
-      const timer = setTimeout(() => {
-        setIsAnimatedIn(true)
-      }, 100) // 100ms delay for smooth entrance
-      
-      // Prevent scrolling when overlay is active
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = 'hidden';
       
       return () => {
-        clearTimeout(timer)
-        document.body.style.overflow = ''
-      }
+        clearTimeout(animationTimer);
+        document.body.style.overflow = '';
+      };
     } else {
-      setIsMounted(false) // Reset if overlay shouldn't be shown or check isn't done
-      setIsAnimatedIn(false)
-      // Re-enable scrolling when overlay is not active
-      document.body.style.overflow = ''
+      setIsMounted(false);
+      setIsAnimatedIn(false);
+      document.body.style.overflow = '';
     }
-
-    // Cleanup function to ensure scrolling is re-enabled when component unmounts
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isInitialCheckDone, hasLocalStorageData])
+  }, [isInitialCheckDone, hasLocalStorageData]);
 
   // Effect for chat bubble animation - delay by 1.5 seconds
   useEffect(() => {
     if (isAnimatedIn) {
-      const timer = setTimeout(() => {
+      const bubbleTimer = setTimeout(() => {
         setShowChatBubble(true)
       }, 1500) // 1.5 second delay
-      return () => clearTimeout(timer)
-    } else {
-      setShowChatBubble(false)
+
+      return () => {
+        clearTimeout(bubbleTimer)
+      }
     }
   }, [isAnimatedIn])
 
-  // Do not render anything until the initial local storage check is complete
-  if (!isInitialCheckDone) {
-    return null
-  }
-
-  // Show overlay only when there's no real data in localStorage
-  if (hasLocalStorageData) {
-    return null
-  }
-
-  // Function to import demo data with 3-second loading animation
-  const importDemoData = async () => {
-    setIsImporting(true)
-    setImportError(null)
+  const handleImport = async () => {
+    opTrack('button_click', { 
+      action: 'use_demo_data',
+      source: 'dashboard_overlay' 
+    });
+    setIsImporting(true);
+    setImportError(null);
     try {
       console.log("Starting demo data import...")
       
@@ -159,17 +164,10 @@ export function DashboardOverlay() {
       // Dispatch event to notify components that emoji data has been updated
       window.dispatchEvent(new Event("emojiDataUpdated"))
       
-      // Show emoji waterfall animation - IMPORTANT: Set this after data is loaded
-      console.log("Starting emoji waterfall animation...")
-      setShowEmojiWaterfall(true)
-      
       // Wait for animation to complete before redirecting (4 seconds)
       // This matches the duration prop we'll pass to EmojiWaterfall
       await new Promise(resolve => setTimeout(resolve, 4000))
       console.log("Emoji animation complete, redirecting...")
-      
-      // Reset the animation state
-      setShowEmojiWaterfall(false)
       
       // Redirect to dashboard
       router.push("/dashboard")
@@ -181,258 +179,204 @@ export function DashboardOverlay() {
     }
   };
 
-  if (!isMounted) return null;
+  const handleImportClick = handleImport;
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // Prevent clicks from going through to elements behind the overlay
+    e.stopPropagation();
+  };
+
+  if (!isMounted) {
+    return null;
+  }
   
   const overlayContent = (
     <div
-      className={`
-        fixed inset-0 bg-black/70 backdrop-blur-sm
-        flex items-center justify-center p-4
-        transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-        z-[99999]
-        ${isAnimatedIn ? "opacity-100" : "opacity-0"}
-      `}
-      style={{ 
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 99999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-      onClick={(e) => {
-        // Prevent clicks from going through to elements behind the overlay
-        e.stopPropagation();
-      }}
+      className={`fixed inset-0 z-50 transition-opacity duration-500 ease-in-out \
+        ${isAnimatedIn ? "opacity-100" : "opacity-0"}`}
+      onClick={handleOverlayClick} // Close overlay when clicking outside the content
     >
-      {/* Emoji Waterfall Animation */}
-      <EmojiWaterfall show={showEmojiWaterfall} duration={4000} />
-      <div
-        className={`
-          bg-card border border-border rounded-xl shadow-lg
-          max-w-2xl w-full p-4 sm:p-6 md:p-8
-          transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-          ${isMounted ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-12 scale-95"}
-        `}
-      >
-        <div className="flex flex-col items-center text-center mb-6">
-          {/* Logo section with responsive positioning */}
-          <div className={`relative ${isMobile ? 'mt-12 mb-12' : 'mb-4'}`}>
-            {/* Glowing border container */}
-            <div className="absolute inset-0 rounded-full glow-border"></div>
-            {/* Logo container */}
-            <div className="relative z-10 bg-primary/10 p-4 rounded-full flex items-center justify-center">
-              <div className="relative w-16 h-16">
-                <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
+      <div className="relative z-50 flex flex-col items-center justify-center min-h-screen bg-background/80 backdrop-blur-sm p-2 sm:p-4">
+        {/* Main Content Box */}
+        <div 
+          className={`relative bg-background border border-border rounded-xl shadow-2xl p-3 sm:p-4 w-full sm:max-w-6xl transition-all duration-500 ease-in-out transform \
+            ${isAnimatedIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          onClick={(e) => e.stopPropagation()} // Prevent clicks inside content from closing overlay
+        >
+          <div className="text-center">
+            {/* Logo section */}
+            <div className={`relative mx-auto ${isMobile ? 'mb-3 mt-4' : 'mb-4'} w-20 h-20 sm:w-24 sm:h-24`}>
+              {/* Blurred colorful background - positioned to be directly behind the image */}
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-yellow-400 to-blue-500 opacity-100 blur-lg rounded-full" />
+              {/* Image container - centered on top of the background */}
+              <div className="relative z-10 flex items-center justify-center w-full h-full">
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16">
+                  <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
+                </div>
               </div>
             </div>
-            {/* Chat Bubble with responsive positioning */}
-            <div className={`
-              absolute ${isMobile ? 'top-[-10px] right-[-10px]' : 'top-1/2 -translate-y-1/3 right-full mr-3'} 
-              bg-black text-white ${isMobile ? 'text-[10px]' : 'text-sm'} ${isMobile ? 'px-2 py-1.5' : 'px-4 py-3'} rounded-md ${isMobile ? 'w-[130px]' : 'w-[220px]'} shadow-lg
-              border border-white/30
-              transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-              ${showChatBubble ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-90 translate-x-4'}
-            `}>
-              <span className="leading-tight text-center block ${isMobile ? '' : 'font-medium'}">
-                Sometimes the most<br/>
-                important OKRs are LOLs
-              </span>
-              {/* Chat bubble tail pointing to logo - repositioned for mobile */}
-              <div className={`absolute 
-                ${isMobile ? 'left-[10px] bottom-[-8px] border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-black' : 
-                'right-[-8px] top-1/3 border-t-[6px] border-t-transparent border-l-[8px] border-l-black border-b-[6px] border-b-transparent'}`}>
-              </div>
-            </div>
-          </div>
-          <h2 className="text-3xl font-bold mb-2">Emoji Studio</h2>
-        </div>
 
-        <div className="space-y-6">
-          <div>
-            <h4 className="text-xl font-semibold mb-2">Emoji Studio is the Slack Custom Emoji dashboard you've been looking for.</h4>
-            <ul className="space-y-2 my-4 text-muted-foreground">
-              <li className="flex items-start">
-                <BarChartBig className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
-                <span>Visualize emoji creation trends and usage patterns over time.</span>
+            {/* Site name */}
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-1 sm:mb-2">
+              Emoji Studio
+            </h1>
+            {/* Tagline */}
+            <p className="text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4">
+              Sometimes the most important OKRs are LOLs.
+            </p>
+            {/* Text changed to H2 and positioned above bullet points */}
+            <h2 className="text-xl sm:text-2xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
+              Emoji Studio is the Slack Custom Emoji dashboard you've been looking for.
+            </h2>
+
+            {/* Feature list */}
+            <ul className="space-y-4 text-left max-w-md sm:max-w-3xl mx-auto mb-6 sm:mb-8">
+              <li className="flex items-start space-x-3">
+                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
+                  <BarChartBig className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-sm sm:text-base">
+                  <p className="font-medium">Visualize emoji creation trends and usage patterns over time.</p>
+                </div>
               </li>
-              <li className="flex items-start">
-                <Users className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
-                <span>Understand company culture by seeing top emoji creators in your workspace.</span>
+              <li className="flex items-start space-x-3">
+                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-sm sm:text-base">
+                  <p className="font-medium">Understand company culture by seeing top emoji creators in your workspace.</p>
+                </div>
               </li>
-              <li className="flex items-start">
-                <Download className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
-                <span>Download one–or all–emojis for backup and portability.</span>
+              <li className="flex items-start space-x-3">
+                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
+                  <Download className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-sm sm:text-base">
+                  <p className="font-medium">Download one–or all–emojis for backup and portability.</p>
+                </div>
               </li>
-              <li className="flex items-start">
-                <Lock className="w-5 h-5 mr-3 mt-1 flex-shrink-0 text-primary" />
-                <span>Securely import your Slack data locally – nothing leaves your browser.</span>
+              <li className="flex items-start space-x-3">
+                <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-2">
+                  <Lock className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div className="text-sm sm:text-base">
+                  <p className="font-medium">Securely import your Slack data locally – nothing leaves your browser.</p>
+                </div>
               </li>
             </ul>
-          </div>
 
-          <div className="flex flex-col items-center gap-3 pt-4">
-            <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => {
-                  // Track about page navigation
-                  opTrack('navigate', {
-                    destination: 'about',
-                    source: 'dashboard_overlay'
-                  });
-                  // Re-enable scrolling before navigation
-                  document.body.style.overflow = '';
-                  // Navigate immediately for better UX
-                  router.push("/about");
-                }}
-                className="w-full sm:flex-1"
-              >
-                About this project
-              </Button>
-              <Button
-                size="lg"
-                onClick={() => {
-                  // Track settings page navigation
-                  opTrack('navigate', {
-                    destination: 'settings',
-                    source: 'dashboard_overlay'
-                  });
-                  // Re-enable scrolling before navigation
-                  document.body.style.overflow = '';
-                  // Navigate immediately for better UX
-                  router.push("/settings");
-                }}
-                className="w-full sm:flex-1"
-              >
-                Import your emojis →
-              </Button>
-            </div>
-            <button
-              onClick={async () => { 
-                opTrack('button_click', { 
-                  action: 'use_demo_data',
-                  source: 'dashboard_overlay' 
-                });
-                setIsImporting(true);
-                setImportError(null);
-                try {
-                  console.log("Starting demo data import...")
-                  
-                  // Track demo data import event
-                  opTrack('demo_data_import_start', {
-                    source: 'dashboard_overlay'
-                  })
-                  
-                  // Get demo data
-                  const demoData = await generateDemoData()
-                  
-                  if (!demoData || demoData.length === 0) {
-                    throw new Error("Failed to generate demo data")
-                  }
-                  
-                  console.log(`Successfully generated ${demoData.length} demo emojis`)
-                  
-                  // Show loading animation for 3 seconds
-                  await new Promise(resolve => setTimeout(resolve, 3000))
-                  
-                  // Store demo data in localStorage
-                  localStorage.setItem("emojiData", JSON.stringify(demoData))
-                  localStorage.setItem("workspace", "Slack Emoji Collection")
-                  
-                  // Track successful demo data import
-                  opTrack('demo_data_import_success', {
-                    emoji_count: demoData.length,
-                    source: 'dashboard_overlay'
-                  })
-                  
-                  // Update state
-                  setHasRealData(true)
-                  
-                  // Dispatch event to notify components that emoji data has been updated
-                  window.dispatchEvent(new Event("emojiDataUpdated"))
-                  
-                  // Show emoji waterfall animation - IMPORTANT: Set this after data is loaded
-                  console.log("Starting emoji waterfall animation...")
-                  setShowEmojiWaterfall(true)
-                  
-                  // Wait for animation to complete before redirecting (4 seconds)
-                  // This matches the duration prop we'll pass to EmojiWaterfall
-                  await new Promise(resolve => setTimeout(resolve, 4000))
-                  console.log("Emoji animation complete, redirecting...")
-                  
-                  // Reset the animation state
-                  setShowEmojiWaterfall(false)
-                  
-                  // Redirect to dashboard
-                  router.push("/dashboard")
-                } catch (error) {
-                  console.error("Error importing demo data:", error)
-                  setImportError(error instanceof Error ? error.message : "Failed to import demo data")
-                } finally {
-                  setIsImporting(false)
-                }
-              }}
-              disabled={isImporting}
-              className="text-sm text-primary hover:text-primary/80 hover:underline mt-3 transition-colors"
-            >
-              {isImporting ? (
-                <TextShimmer
-                  duration={1.5}
-                  className="text-sm"
+            {/* Call to Action */}
+            <div className="flex flex-col items-center gap-3 pt-3">
+              <div className="flex flex-row items-center justify-center gap-3 w-full">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="sm:w-auto"
+                  onClick={() => {
+                    // Track about page navigation
+                    opTrack('navigate', {
+                      destination: 'about',
+                      source: 'dashboard_overlay'
+                    });
+                    // Re-enable scrolling before navigation
+                    document.body.style.overflow = '';
+                    // Navigate immediately for better UX
+                    router.push("/about");
+                  }}
                 >
-                  Importing...
-                </TextShimmer>
-              ) : (
-                "Try with demo data →"
-              )}
-            </button>
-            {importError && <p className="text-sm text-red-500 text-center mt-2">Error: {importError}</p>}
-          </div>
-        </div>
+                  About this project
+                </Button>
+                <Button
+                  size="sm"
+                  className="sm:w-auto"
+                  onClick={handleImportClick} 
+                >
+                  Import your emojis →
+                </Button>
+              </div>
+              <button
+                onClick={handleImport}
+                disabled={isImporting}
+                className="text-sm text-primary hover:text-primary/80 hover:underline mt-3 transition-colors"
+              >
+                {isImporting ? (
+                  <TextShimmer
+                    duration={1.5}
+                    className="text-sm"
+                  >
+                    Importing...
+                  </TextShimmer>
+                ) : (
+                  "Try with demo data →"
+                )}
+              </button>
+              {importError && <p className="text-sm text-red-500 text-center mt-2">Error: {importError}</p>}
+            </div>
 
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground flex justify-center items-center">
-          <a
-            href="https://jwe.in?utm_source=emojistudio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors"
-            onClick={() => {
-              // Track creator link click
-              opTrack('external_link_click', {
-                destination: 'creator_website',
-                url: 'https://jwe.in?utm_source=emojistudio',
-                source: 'dashboard_overlay'
-              });
-            }}
-          >
-            Created by Jason
-          </a>
-          <span className="mx-2">|</span>
-          <a
-            href="https://github.com/jweingardt12/Emoji-Studio"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary transition-colors inline-flex items-center"
-            onClick={() => {
-              // Track GitHub link click
-              opTrack('external_link_click', {
-                destination: 'github_repo',
-                url: 'https://github.com/jweingardt12/Emoji-Studio',
-                source: 'dashboard_overlay'
-              });
-            }}
-          >
-            <GithubIcon className="w-4 h-4 mr-1.5" />
-            GitHub
-          </a>
+            {/* Security Explanation AlertDialog */}
+            <div className="w-full mt-6 mb-2 text-center">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="link" className="text-sm text-muted-foreground hover:text-primary">
+                    <Lock className="w-4 h-4 mr-2 flex-shrink-0" />
+                    Hang on - how is this secure?
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="z-[60]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>How is this secure?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm text-muted-foreground pt-2">
+                      Emoji Studio requires you to dig a bit into Chrome Developer Tools and get a specific network request while on the "Add new emoji" page. This request contains a specific token and cookie, both of which are only scoped to fetching and displaying Slack emojis. All information is stored in your browser, and the requests this app makes are indistinguishable from that of the Slack app. No, you can't be caught or found out.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction asChild>
+                      <Link href="/settings">Let's go</Link>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+          </div>
+
+          {/* Footer */}
+          <div className="mt-6 text-center text-xs text-muted-foreground">
+            <a
+              href="https://jwe.in?utm_source=emojistudio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors"
+              onClick={() => {
+                // Track creator link click
+                opTrack('external_link_click', {
+                  destination: 'creator_website',
+                  url: 'https://jwe.in?utm_source=emojistudio',
+                  source: 'dashboard_overlay'
+                });
+              }}
+            >
+              Created by Jason
+            </a>
+            <span className="mx-2">|</span>
+            <a
+              href="https://github.com/jweingardt12/Emoji-Studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary transition-colors inline-flex items-center"
+              onClick={() => {
+                // Track GitHub link click
+                opTrack('external_link_click', {
+                  destination: 'github_repo',
+                  url: 'https://github.com/jweingardt12/Emoji-Studio',
+                  source: 'dashboard_overlay'
+                });
+              }}
+            >
+              <GithubIcon className="w-4 h-4 mr-1.5" />
+              GitHub
+            </a>
+          </div>
         </div>
       </div>
     </div>
