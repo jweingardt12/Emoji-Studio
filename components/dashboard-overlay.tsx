@@ -25,6 +25,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
+// CSS animation for rainbow shifting effect
+const rainbowAnimation = `
+  @keyframes rainbow-shift {
+    0% { 
+      filter: hue-rotate(0deg) blur(16px);
+    }
+    100% { 
+      filter: hue-rotate(360deg) blur(16px);
+    }
+  }
+`;
+
 // Simple mobile detection with SSR compatibility
 function useIsMobile() {
   // Initialize to false for server-side rendering
@@ -229,6 +241,9 @@ export function DashboardOverlay() {
         ${isAnimatedIn ? "opacity-100" : "opacity-0"}`}
       onClick={handleOverlayClick} // Close overlay when clicking outside the content
     >
+      {/* Inject CSS animation */}
+      <style dangerouslySetInnerHTML={{ __html: rainbowAnimation }} />
+      
       <div
         className={`relative bg-background pt-6 px-2 pb-6 rounded-lg shadow-2xl border border-border w-full max-w-2xl mx-auto my-8 transform transition-all duration-500 ease-in-out \
           ${isAnimatedIn ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
@@ -238,7 +253,10 @@ export function DashboardOverlay() {
           {/* Logo section */}
           <div className={`relative mx-auto ${isMobile ? 'mb-3' : 'mb-4'} w-20 h-20 sm:w-24 sm:h-24`}>
             {/* Blurred colorful background - positioned to be directly behind the image */}
-            <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500 via-yellow-300 to-cyan-400 opacity-100 blur-lg rounded-full" />
+            <div className="absolute inset-0 opacity-100 rounded-full bg-gradient-to-br from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500" 
+                 style={{
+                   animation: 'rainbow-shift 8s linear infinite'
+                 }} />
             {/* Image container - centered on top of the background */}
             <div className="relative z-10 flex items-center justify-center w-full h-full">
               <div className="relative w-12 h-12 sm:w-16 sm:h-16">
