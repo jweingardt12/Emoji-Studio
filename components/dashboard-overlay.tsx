@@ -389,6 +389,19 @@ export function DashboardOverlay() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleImport} 
+                    disabled={isImporting}
+                  >
+                    {isImporting ? (
+                      <TextShimmer duration={1.5} className="text-xs">
+                        Loading Demo...
+                      </TextShimmer>
+                    ) : (
+                      "Use demo data"
+                    )}
+                  </Button>
                   <AlertDialogAction asChild>
                     <Link href="/settings">Let's go</Link>
                   </AlertDialogAction>
