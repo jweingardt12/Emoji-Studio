@@ -32,6 +32,21 @@ export default function AboutPage() {
       content: (
         <>
           <p>Emoji Studio works by asking the user to copy the same request their web browser makes on Slack's website and pasting it into this app. The app parses the URL and makes the same request to Slack, processes the emojis in the response, and stores them in browser storage. The app then visualizes the emojis in the dashboard.</p>
+          <video 
+            src="/assets/emoji-studio-how-to.mp4" 
+            controls 
+            preload="metadata" 
+            className="w-full rounded-md my-4"
+            muted
+            onPlay={() => {
+              opTrack('video_play', {
+                source: 'about_page_faq_video',
+                video_src: '/assets/emoji-studio-how-to.mp4'
+              });
+            }}
+          >
+            Your browser does not support the video tag.
+          </video>
           <br />
           <p> An example payload response from Slack is structured as a JSON array, with an individual emoji object looking like this:</p>
           <pre className="bg-muted p-4 rounded-md text-xs overflow-auto mt-2">

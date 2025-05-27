@@ -394,6 +394,12 @@ export function DashboardOverlay() {
                   preload="metadata" 
                   className="w-full rounded-md my-4"
                   muted
+                  onPlay={() => {
+                    opTrack('video_play', {
+                      source: 'dashboard_overlay_security_video',
+                      video_src: '/assets/emoji-studio-how-to.mp4'
+                    });
+                  }}
                 >
                   Your browser does not support the video tag.
                 </video>
