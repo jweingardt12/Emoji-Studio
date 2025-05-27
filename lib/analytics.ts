@@ -1,4 +1,4 @@
-import { useOpenPanel } from '@/lib/safe-openpanel';
+import { useOpenPanel } from '@openpanel/nextjs';
 
 // Event types for better type safety
 export enum AnalyticsEvent {

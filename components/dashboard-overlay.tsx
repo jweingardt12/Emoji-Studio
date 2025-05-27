@@ -10,7 +10,7 @@ import { generateDemoData } from "@/lib/demo-data"
 import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download } from "lucide-react"
 import Link from "next/link"
 import { useAnalytics } from "@/lib/analytics"
-import { useOpenPanel } from '@/lib/safe-openpanel'
+import { useOpenPanel } from '@openpanel/nextjs';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { GradientText } from '@/components/ui/gradient-text';
 import {
@@ -368,7 +368,15 @@ export function DashboardOverlay() {
           <div className="w-full mt-4 sm:mt-6 mb-1 sm:mb-2 text-center">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="link" className="text-xs text-muted-foreground hover:text-primary">
+                <Button 
+                  variant="link" 
+                  className="text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => {
+                    opTrack('security_info_click', {
+                      source: 'dashboard_overlay'
+                    });
+                  }}
+                >
                   <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
                   Hang on - how is this secure?
                 </Button>
