@@ -1,6 +1,7 @@
 # 🥳🤠 Emoji Studio: the missing dashboard for Slack emojis 📊📈
 
 ![Main Dashboard View](/assets/screenshots/og-image.png "Main Dashboard - Overview of emoji trends and leaderboard")
+<a href="https://www.producthunt.com/posts/emoji-studio-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-emoji&#0045;studio&#0045;2" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=969390&theme=light&t=1748379392664" alt="Emoji&#0032;Studio - The&#0032;missing&#0032;analytics&#0032;platform&#0032;for&#0032;custom&#0032;Slack&#0032;emoji | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## What is this?
 
