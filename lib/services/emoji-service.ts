@@ -21,6 +21,7 @@ export interface UserWithEmojiCount {
   l4wepw: number // Last 4 Weeks Emojis Per Week
   l4wepwChange: number // Percentage change in L4WEPW
   rank?: number // User's position on the leaderboard
+  recent_emojis?: Emoji[] // Added for emoji samples
 }
 
 export interface EmojiStats {
@@ -394,6 +395,10 @@ export function getUserLeaderboard(emojis: Emoji[], now: number): UserWithEmojiC
     const mostRecentTimestamp = Math.max(...timestamps)
     const oldestTimestamp = Math.min(...timestamps)
 
+    // Sort user's emojis by creation date (newest first) for samples
+    const sortedUserEmojis = [...userEmojis].sort((a, b) => b.created - a.created);
+    const recentEmojisSample = sortedUserEmojis.slice(0, 5); // Take top 5 recent emojis
+
     // Calculate L4WEPW (Last 4 Weeks Emojis Per Week)
     const last4WeeksEmojis = userEmojis.filter((emoji) => emoji.created >= fourWeeksAgo)
     const l4wepw = last4WeeksEmojis.length / 4
@@ -415,6 +420,7 @@ export function getUserLeaderboard(emojis: Emoji[], now: number): UserWithEmojiC
       oldest_emoji_timestamp: oldestTimestamp,
       l4wepw,
       l4wepwChange,
+      recent_emojis: recentEmojisSample, // Added recent emojis
     })
   }
 

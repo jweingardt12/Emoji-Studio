@@ -7,6 +7,9 @@ import { getUserLeaderboard } from "@/lib/services/emoji-service"
 import UserOverlay, { UserWithEmojiCount } from "@/components/user-overlay"
 import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { RequireData } from "@/components/require-data"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { openpanel } from "@/lib/safe-openpanel";
 
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
@@ -23,12 +26,21 @@ function LeaderboardPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithEmojiCount | null>(null)
   const [now, setNow] = useState<Date | null>(null)
 
+  const [showInactiveUsers, setShowInactiveUsersState] = useState<boolean>(true)
+  const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(3)
+
   useEffect(() => {
     setNow(new Date());
+    if (typeof window !== 'undefined') {
+      const storedThreshold = localStorage.getItem("inactivityThresholdMonths")
+      if (storedThreshold) {
+        setInactivityThresholdMonths(parseInt(storedThreshold, 10))
+      }
+    }
   }, []);
 
   const filteredLeaderboard = useMemo(() => {
-    if (!now) return [];
+    if (!now || !emojiData) return [];
     let filteredEmojis = emojiData;
     if (dateRange === "7days") {
       const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -39,14 +51,23 @@ function LeaderboardPage() {
     } else if (dateRange === "quarter") {
       const start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       filteredEmojis = filterByDateRange(start, now);
-
     }
-    // Aggregate leaderboard from filtered emojis
-    return getUserLeaderboard(filteredEmojis, Math.floor(now.getTime() / 1000));
-  }, [emojiData, dateRange, filterByDateRange, now]);
+    
+    let leaderboardData = getUserLeaderboard(filteredEmojis, Math.floor(now.getTime() / 1000));
+
+    if (!showInactiveUsers) {
+      const cutoffDate = new Date(now);
+      cutoffDate.setMonth(cutoffDate.getMonth() - inactivityThresholdMonths);
+      const cutoffTimestamp = Math.floor(cutoffDate.getTime() / 1000);
+
+      leaderboardData = leaderboardData.filter(user => {
+        return user.most_recent_emoji_timestamp >= cutoffTimestamp;
+      });
+    }
+    return leaderboardData;
+  }, [emojiData, dateRange, filterByDateRange, now, showInactiveUsers, inactivityThresholdMonths]);
 
   const onViewUser = useCallback((user: UserWithEmojiCount) => {
-    // Find the user's rank in the leaderboard
     const userRank = filteredLeaderboard.findIndex((u: UserWithEmojiCount) => u.user_id === user.user_id) + 1;
     setSelectedUser({
       ...user,
@@ -54,7 +75,11 @@ function LeaderboardPage() {
     });
   }, [filteredLeaderboard]);
 
-  // Only render when client-side to avoid hydration mismatches
+  const setShowInactiveUsers = (value: boolean) => {
+    setShowInactiveUsersState(value);
+    openpanel.track("Leaderboard: Toggle Show Inactive Users", { active: value });
+  };
+
   if (!isClient || !now) return null;
   
   return (
@@ -71,6 +96,8 @@ function LeaderboardPage() {
               dateRange={dateRange}
               setDateRange={setDateRange}
               variant="expanded"
+              showInactiveUsers={showInactiveUsers}
+              setShowInactiveUsers={setShowInactiveUsers}
             />
           </div>
         </div>
@@ -81,7 +108,6 @@ function LeaderboardPage() {
           onClose={() => setSelectedUser(null)}
         />
       )}
-      {/* Dashboard Overlay - shows when no emoji data is loaded */}
       <DashboardOverlay />
     </>
   )
