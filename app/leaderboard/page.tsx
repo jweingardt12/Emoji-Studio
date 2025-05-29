@@ -9,6 +9,7 @@ import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { RequireData } from "@/components/require-data"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Trophy } from "lucide-react"
 import { openpanel } from "@/lib/safe-openpanel";
 
 // Use a client-side only component to avoid hydration mismatches
@@ -88,6 +89,10 @@ function LeaderboardPage() {
 
         <div className="px-4 lg:px-6">
           <div className="rounded-xl bg-card border border-border shadow p-4">
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5" />
+              <span>Leaderboard</span>
+            </h2>
             <Leaderboard
               leaderboard={filteredLeaderboard}
               isLoading={loading}

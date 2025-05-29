@@ -12,6 +12,11 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { getUserLeaderboard, type Emoji } from "@/lib/services/emoji-service"
 import React, { useState, useCallback, useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Trophy, Search } from "lucide-react"
+import Link from "next/link"
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
@@ -32,6 +37,8 @@ function DashboardPage() {
     demoChartData
   } = useEmojiData()
   const [dateRange, setDateRange] = useState<import("@/components/leaderboard").DateRange>("all")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showInactiveUsers, setShowInactiveUsers] = useState(true)
 
   const [error, setError] = useState(null)
   const [selectedUser, setSelectedUser] = useState<UserWithEmojiCount | null>(null)
@@ -153,6 +160,41 @@ function DashboardPage() {
               ref={leaderboardRef}
               className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 h-full flex flex-col"
             >
+              <div className="px-3 pt-3 pb-2 flex flex-col gap-1">
+                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  <Link href="/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
+                    <span className="border-b border-dotted border-muted-foreground">Leaderboard</span>
+                  </Link>
+                </h2>
+                <div className="text-muted-foreground text-sm mt-1">
+                  Top emoji creators ranked by total count. Click a user to see details.
+                </div>
+                <div className="flex items-center justify-between mt-2 mb-2">
+                  <div className="flex items-center space-x-1">
+                    <Label htmlFor="dashboard-inactive-toggle" className="text-xs text-muted-foreground cursor-pointer">
+                      Show inactive
+                    </Label>
+                    <Switch
+                      id="dashboard-inactive-toggle"
+                      checked={showInactiveUsers}
+                      onCheckedChange={setShowInactiveUsers}
+                      className="scale-75 data-[state=checked]:bg-primary/80"
+                      aria-label="Show inactive users toggle"
+                    />
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search by name..."
+                    value={searchQuery}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9"
+                  />
+                </div>
+              </div>
               {loading && !showDemoData ? (
                 <div>
                   {Array.from({ length: 8 }).map((_, i) => (
@@ -176,6 +218,9 @@ function DashboardPage() {
                   setDateRange={setDateRange}
                   variant="compact"
                   showDemoData={showDemoData}
+                  searchQuery={searchQuery}
+                  showInactiveUsers={showInactiveUsers}
+                  setShowInactiveUsers={setShowInactiveUsers}
                 />
               )}
             </div>

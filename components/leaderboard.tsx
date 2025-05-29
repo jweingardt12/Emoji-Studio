@@ -54,6 +54,10 @@ export interface LeaderboardProps {
   showDemoData?: boolean
   showInactiveUsers?: boolean
   setShowInactiveUsers?: (show: boolean) => void
+  /**
+   * Optional search query to filter users by name
+   */
+  searchQuery?: string
 }
 
 const Leaderboard = ({
@@ -68,6 +72,7 @@ const Leaderboard = ({
   showDemoData = false,
   showInactiveUsers = false,
   setShowInactiveUsers,
+  searchQuery: externalSearchQuery,
 }: LeaderboardProps) => {
   // Hydration-safe now/oneYearAgo for client-only date logic
   const [now, setNow] = useState<Date | null>(null)
@@ -84,7 +89,9 @@ const Leaderboard = ({
   const [sortBy, setSortBy] = useState<"emoji_count" | "l4wepw" | "epw">("emoji_count")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [currentPage, setCurrentPage] = useState(1)
-  const [searchQuery, setSearchQuery] = useState("")
+  // Use external searchQuery if provided, otherwise use internal state
+  const [internalSearchQuery, setInternalSearchQuery] = useState("")
+  const searchQuery = externalSearchQuery !== undefined ? externalSearchQuery : internalSearchQuery
   // Show top 10 items in compact mode (dashboard)
   const compactLimit = 10
   const itemsPerPage = variant === "compact" ? compactLimit : 25
@@ -230,7 +237,7 @@ const Leaderboard = ({
               type="search"
               placeholder="Search by name..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setInternalSearchQuery(e.target.value)}
               className="w-full pl-9"
             />
           </div>
