@@ -1,6 +1,6 @@
 "use client"
 
-import { FolderIcon, MoreHorizontalIcon, ShareIcon, type LucideIcon } from "lucide-react"
+import { Folder, MoreHorizontalIcon, Share, type LucideIcon } from "lucide-react"
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
@@ -49,11 +49,11 @@ export function NavDocuments({
                 align={isMobile ? "end" : "start"}
               >
                 <DropdownMenuItem>
-                  <FolderIcon />
+                  <Folder />
                   <span>Open</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <ShareIcon />
+                  <Share />
                   <span>Share</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
