@@ -59,7 +59,8 @@ export default function EmojiGrid() {
 
   // Function to get a placeholder image for an emoji
   const getPlaceholderImage = (emojiName: string) => {
-    return `/placeholder.svg?height=128&width=128&query=${emojiName}%20emoji`
+    // Encode the emoji name so special characters don't break the URL
+    return `/placeholder.svg?height=128&width=128&query=${encodeURIComponent(emojiName)}%20emoji`
   }
 
   // Handle image error
