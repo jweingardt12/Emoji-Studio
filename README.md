@@ -20,7 +20,7 @@ This dashboard takes your Slack emoji data (not usage!) and turns it into a smor
 
 ## Why would you build this?
 
-Every company I've worked at has had one thing in common: an extremely robust library of custom Slack emojis. Slack provides no great way to explore this library, and it's frustrsting to understand the provenance of a given emoji. Emojis are an expression of company culture, and teams deserve the ability to explore, understand, and celebrate the creativity that goes into their creation.
+Every company I've worked at has had one thing in common: an extremely robust library of custom Slack emojis. Slack provides no great way to explore this library, and it's frustrating to understand the provenance of a given emoji. Emojis are an expression of company culture, and teams deserve the ability to explore, understand, and celebrate the creativity that goes into their creation.
 
 ## Screenshots
 
