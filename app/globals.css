@@ -21,6 +21,11 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Ensure main element has rounded corners */
+  main {
+    @apply rounded-xl;
+  }
 }
 
 @keyframes fadeUp {

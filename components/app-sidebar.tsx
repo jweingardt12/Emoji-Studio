@@ -14,6 +14,7 @@ import {
   RefreshCwIcon,
   Images,
   GithubIcon,
+  Sparkles,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -302,6 +303,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Explorer",
       url: "/explorer",
       icon: Images,
+    },
+    {
+      title: "Create",
+      url: "/emoji-creator",
+      icon: Sparkles,
+      badge: "New",
     },
     {
       title: "Settings",

@@ -15,11 +15,12 @@ interface NavMainProps {
     action?: string
     indicator?: "error" | "warning" | "success" | "info"
     external?: boolean
+    badge?: string
   }[]
   onRefresh?: () => void
   refreshing?: boolean
   slackLoaded?: boolean
-  onNavigate?: (navItem?: { title: string; url: string; icon: any; action?: string; indicator?: "error" | "warning" | "success" | "info"; external?: boolean }) => void
+  onNavigate?: (navItem?: { title: string; url: string; icon: any; action?: string; indicator?: "error" | "warning" | "success" | "info"; external?: boolean; badge?: string }) => void
 }
 
 export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate }: NavMainProps) {
@@ -92,6 +93,11 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate 
           >
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="truncate">{item.title}</span>
+            {item.badge && (
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
+                {item.badge}
+              </span>
+            )}
             {item.indicator === "error" && (
               <XCircle className="ml-auto h-4 w-4 shrink-0 text-red-500" aria-hidden="true" />
             )}
