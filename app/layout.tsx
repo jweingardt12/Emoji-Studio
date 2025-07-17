@@ -41,8 +41,8 @@ export default function RootLayout({
             <EmojiDataProvider>
               <SidebarProvider>
                 <AppSidebar variant="inset" />
-                <SidebarInset className="p-0 h-screen flex flex-col">
-                  <SiteHeader className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" />
+                <SidebarInset className="p-0 h-screen flex flex-col overflow-hidden rounded-xl">
+                  <SiteHeader className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-xl" />
                   <div className="flex flex-1 flex-col px-4 pb-4 overflow-y-auto">
                     <div className="@container/main flex flex-1 flex-col gap-2">{children}</div>
                   </div>

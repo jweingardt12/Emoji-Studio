@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { generateDemoData } from "@/lib/demo-data"
-import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download } from "lucide-react"
+import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useAnalytics } from "@/lib/analytics"
 import { useOpenPanel } from '@openpanel/nextjs';
@@ -272,7 +272,7 @@ export function DashboardOverlay() {
           <p className="text-muted-foreground text-sm mt-1 mb-3 text-center">Sometimes the most important OKRs are LOLs.</p>
           {/* Text changed to H2 and positioned above bullet points */}
           <h2 className="text-lg sm:text-xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
-            The Slack Custom Emoji dashboard you've been looking for.
+            The ultimate Slack custom emoji toolkit.
           </h2>
 
           {/* Feature list */}
@@ -303,6 +303,14 @@ export function DashboardOverlay() {
             </li>
             <li className="flex items-center space-x-3">
               <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Create perfectly formatted Slack emojis from images, videos, or GIFs.</p>
+              </div>
+            </li>
+            <li className="flex items-center space-x-3">
+              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -312,56 +320,71 @@ export function DashboardOverlay() {
           </ul>
 
           {/* Call to Action */}
-          <div className="flex flex-col items-center gap-2 pt-1 sm:pt-2">
-            <div className="flex flex-row items-center justify-center gap-3 w-full">
-              <Button
-                variant="outline"
-                className="text-sm sm:w-auto"
+          <div className="flex flex-col items-center gap-4 pt-2 sm:pt-4">
+            {/* Primary CTA */}
+            <Button
+              size="lg"
+              className="w-full sm:w-auto text-base px-8"
+              onClick={() => {
+                opTrack('navigate', {
+                  destination: 'settings',
+                  source: 'dashboard_overlay_get_started_button'
+                });
+                document.body.style.overflow = '';
+                router.push("/settings");
+              }} 
+            >
+              Get Started →
+            </Button>
+            
+            {/* Secondary actions */}
+            <div className="flex items-center gap-4 text-sm">
+              <button
                 onClick={() => {
-                  // Track about page navigation
+                  opTrack('navigate', {
+                    destination: 'emoji_creator',
+                    source: 'dashboard_overlay_create_link'
+                  });
+                  document.body.style.overflow = '';
+                  router.push("/create");
+                }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                Create emojis
+              </button>
+              <span className="text-muted-foreground">•</span>
+              <button
+                onClick={handleImport}
+                disabled={isImporting}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isImporting ? (
+                  <TextShimmer
+                    duration={1.5}
+                    className="text-sm"
+                  >
+                    Loading...
+                  </TextShimmer>
+                ) : (
+                  "Try demo"
+                )}
+              </button>
+              <span className="text-muted-foreground">•</span>
+              <button
+                onClick={() => {
                   opTrack('navigate', {
                     destination: 'about',
-                    source: 'dashboard_overlay'
+                    source: 'dashboard_overlay_about_link'
                   });
-                  // Re-enable scrolling before navigation
                   document.body.style.overflow = '';
-                  // Navigate immediately for better UX
                   router.push("/about");
                 }}
+                className="text-muted-foreground hover:text-primary transition-colors"
               >
-                About this project
-              </Button>
-              <Button
-                className="text-sm sm:w-auto"
-                onClick={() => {
-                  opTrack('navigate', {
-                    destination: 'settings',
-                    source: 'dashboard_overlay_import_your_emojis_button'
-                  });
-                  document.body.style.overflow = ''; // Re-enable scrolling
-                  router.push("/settings");
-                }} 
-              >
-                Import your emojis →
-              </Button>
+                Learn more
+              </button>
             </div>
-            <button
-              onClick={handleImport}
-              disabled={isImporting}
-              className="text-xs text-primary hover:text-primary/80 hover:underline mt-2 sm:mt-3 transition-colors"
-            >
-              {isImporting ? (
-                <TextShimmer
-                  duration={1.5}
-                  className="text-xs"
-                >
-                  Importing...
-                </TextShimmer>
-              ) : (
-                "Try with demo data →"
-              )}
-            </button>
-            {importError && <p className="text-xs text-red-500 text-center mt-2">Error: {importError}</p>}
+            {importError && <p className="text-xs text-red-500 text-center">Error: {importError}</p>}
           </div>
 
           {/* Security Explanation AlertDialog */}
