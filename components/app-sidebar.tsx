@@ -306,7 +306,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Create",
-      url: "/emoji-creator",
+      url: "/create",
       icon: Sparkles,
       badge: "New",
     },

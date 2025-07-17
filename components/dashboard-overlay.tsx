@@ -272,7 +272,7 @@ export function DashboardOverlay() {
           <p className="text-muted-foreground text-sm mt-1 mb-3 text-center">Sometimes the most important OKRs are LOLs.</p>
           {/* Text changed to H2 and positioned above bullet points */}
           <h2 className="text-lg sm:text-xl font-medium text-foreground mb-4 sm:mb-6 max-w-md sm:max-w-3xl mx-auto">
-            The ultimate Slack emoji toolkit – analyze, create, and manage your workspace emojis.
+            The ultimate Slack custom emoji toolkit.
           </h2>
 
           {/* Feature list */}
@@ -346,7 +346,7 @@ export function DashboardOverlay() {
                     source: 'dashboard_overlay_create_link'
                   });
                   document.body.style.overflow = '';
-                  router.push("/emoji-creator");
+                  router.push("/create");
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
