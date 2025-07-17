@@ -4,11 +4,15 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Wand2, Download, Pencil, Check, X } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { formatBytes } from "@/lib/utils"
+import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
+import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
+import { toast } from "sonner"
+import Link from "next/link"
+import { openpanel } from "@/lib/safe-openpanel"
 
 interface ProcessingStep {
   id: string
@@ -48,9 +52,14 @@ export function EmojiProcessingModal({
   const [steps, setSteps] = useState<ProcessingStep[]>([])
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
+  const [uploadingAll, setUploadingAll] = useState(false)
+  const [hasSlack, setHasSlack] = useState(false)
+  const [uploadStatuses, setUploadStatuses] = useState<Record<number, 'success' | 'failed' | 'pending'>>({})
 
   useEffect(() => {
     setMounted(true)
+    setHasSlack(hasSlackConnection())
     return () => setMounted(false)
   }, [])
 
@@ -136,6 +145,110 @@ export function EmojiProcessingModal({
     setEditingName("")
   }
 
+  const handleSlackUpload = async (emoji: ProcessedEmoji, index: number, customName?: string) => {
+    setUploadingIndex(index)
+    
+    openpanel.track("Slack Upload: Started", {
+      emojiName: customName || emoji.name,
+      format: emoji.format,
+      size: emoji.processedSize,
+      wasVideo: emoji.wasVideo || false,
+      isBulkUpload: uploadingAll
+    })
+    
+    try {
+      const result = await uploadEmojiToSlack(emoji, customName)
+      
+      if (result.success) {
+        toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
+        setUploadStatuses(prev => ({ ...prev, [index]: 'success' }))
+        
+        openpanel.track("Slack Upload: Success", {
+          emojiName: result.emojiName,
+          originalName: emoji.name,
+          format: emoji.format,
+          size: emoji.processedSize,
+          wasVideo: emoji.wasVideo || false,
+          isBulkUpload: uploadingAll
+        })
+        
+        // If this is a single emoji upload (not part of bulk upload)
+        if (!uploadingAll) {
+          // If this was the last emoji, close the modal
+          if (processedEmojis.length === 1) {
+            setTimeout(() => {
+              onClose()
+            }, 1000) // Give user time to see the success message
+          } else if (index < processedEmojis.length - 1) {
+            // Find the next emoji that hasn't been uploaded yet
+            let nextIndex = index + 1
+            while (nextIndex < processedEmojis.length && uploadStatuses[nextIndex] === 'success') {
+              nextIndex++
+            }
+            if (nextIndex < processedEmojis.length) {
+              setTimeout(() => {
+                handleSlackUpload(processedEmojis[nextIndex], nextIndex)
+              }, 500)
+            } else {
+              // All emojis uploaded, close modal
+              setTimeout(() => {
+                onClose()
+              }, 1000)
+            }
+          } else {
+            // Check if all emojis have been uploaded
+            const allUploaded = processedEmojis.every((_, i) => uploadStatuses[i] === 'success')
+            if (allUploaded) {
+              setTimeout(() => {
+                onClose()
+              }, 1000)
+            }
+          }
+        }
+      } else {
+        setUploadStatuses(prev => ({ ...prev, [index]: 'failed' }))
+        // Check if it's a name taken error
+        if (result.error?.includes("already taken")) {
+          toast.error(result.error, {
+            action: {
+              label: "Rename",
+              onClick: () => handleStartEdit(index, emoji.name)
+            }
+          })
+          
+          openpanel.track("Slack Upload: Failed - Name Taken", {
+            emojiName: customName || emoji.name,
+            format: emoji.format,
+            isBulkUpload: uploadingAll
+          })
+        } else {
+          toast.error(result.error || "Failed to upload emoji to Slack")
+          
+          openpanel.track("Slack Upload: Failed", {
+            emojiName: customName || emoji.name,
+            format: emoji.format,
+            error: result.error || "Unknown error",
+            isBulkUpload: uploadingAll
+          })
+        }
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred")
+      setUploadStatuses(prev => ({ ...prev, [index]: 'failed' }))
+      
+      openpanel.track("Slack Upload: Error", {
+        emojiName: customName || emoji.name,
+        format: emoji.format,
+        error: error instanceof Error ? error.message : "Unknown error",
+        isBulkUpload: uploadingAll
+      })
+    } finally {
+      if (!uploadingAll || index === processedEmojis.length - 1) {
+        setUploadingIndex(null)
+      }
+    }
+  }
+
   const modalContent = (
     <div 
       className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
@@ -144,11 +257,21 @@ export function EmojiProcessingModal({
       onClick={isProcessingComplete ? onClose : undefined}
     >
       <Card 
-        className={`w-full max-w-md mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
+        className={`relative w-full max-w-md mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-        }`}
+        } ${processedEmojis.length > 3 ? 'max-h-[90vh] overflow-hidden flex flex-col' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
+        {isProcessingComplete && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute right-2 top-2 h-8 w-8 z-10"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
         <CardHeader className="space-y-1 pb-4">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-full">
@@ -169,7 +292,7 @@ export function EmojiProcessingModal({
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className={`space-y-4 ${processedEmojis.length > 3 ? 'overflow-y-auto flex-1' : ''}`}>
           {!isProcessingComplete && (
             <>
               <div className="space-y-2">
@@ -230,15 +353,32 @@ export function EmojiProcessingModal({
 
           {isProcessingComplete && processedEmojis.length > 0 ? (
             <div className="space-y-3">
-              <div className="max-h-64 overflow-y-auto space-y-2 pr-2">
+              <div className="space-y-2">
                 {processedEmojis.map((emoji, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                  <div key={index} className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                    uploadingAll && uploadingIndex === index ? 'bg-primary/10 ring-2 ring-primary/20' : 'bg-muted/50'
+                  }`}>
                     <div className="relative w-12 h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
                         src={emoji.preview} 
                         alt={emoji.name}
                         className="absolute inset-0 w-full h-full object-contain"
                       />
+                      {uploadingIndex === index && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        </div>
+                      )}
+                      {uploadStatuses[index] === 'success' && (
+                        <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                          <Check className="h-3 w-3 text-white" />
+                        </div>
+                      )}
+                      {uploadStatuses[index] === 'failed' && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 rounded-full p-1">
+                          <XCircle className="h-3 w-3 text-white" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       {editingIndex === index ? (
@@ -272,51 +412,173 @@ export function EmojiProcessingModal({
                         </div>
                       ) : (
                         <>
-                          <div className="flex items-center gap-1 group">
-                            <p className="text-sm font-medium truncate">{emoji.name}</p>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleStartEdit(index, emoji.name)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          <button
+                            className="text-left flex items-center gap-1 group"
+                            onClick={() => handleStartEdit(index, emoji.name)}
+                          >
+                            <p className="text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
+                            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </button>
                           <p className="text-xs text-muted-foreground">
                             {emoji.format} • {formatBytes(emoji.processedSize)}
+                            {uploadStatuses[index] === 'failed' && (
+                              <span className="text-red-500 ml-2">• Failed to upload</span>
+                            )}
                           </p>
                         </>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onDownload(emoji)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
                   </div>
                 ))}
               </div>
 
-              <div className="flex gap-2 pt-2">
-                {processedEmojis.length > 1 && (
-                  <Button 
-                    className="flex-1" 
-                    onClick={onDownloadAll}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download All ({processedEmojis.length})
-                  </Button>
+              <div className="space-y-3 pt-2">
+                {processedEmojis.length === 1 ? (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1" 
+                        onClick={() => onDownload(processedEmojis[0])}
+                        variant="outline"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                      <Button 
+                        className="flex-1" 
+                        onClick={() => hasSlack ? handleSlackUpload(processedEmojis[0], 0) : undefined}
+                        disabled={!hasSlack || uploadingIndex !== null}
+                      >
+                        {uploadingIndex !== null ? (
+                          <>
+                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="mr-2 h-4 w-4" />
+                            Send to Slack
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={onDownloadAll}
+                      variant="outline"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download All ({processedEmojis.length})
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      onClick={async () => {
+                        if (hasSlack) {
+                          setUploadingAll(true)
+                          let successCount = 0
+                          let failedEmojis: string[] = []
+                          
+                          // Track bulk upload start
+                          const isRetry = Object.values(uploadStatuses).some(status => status === 'failed')
+                          const remainingCount = processedEmojis.filter((_, i) => uploadStatuses[i] !== 'success').length
+                          
+                          openpanel.track("Slack Upload: Bulk Started", {
+                            totalEmojis: processedEmojis.length,
+                            remainingEmojis: remainingCount,
+                            isRetry: isRetry,
+                            totalSize: processedEmojis.reduce((sum, e) => sum + e.processedSize, 0),
+                            formats: [...new Set(processedEmojis.map(e => e.format))]
+                          })
+                          
+                          for (let i = 0; i < processedEmojis.length; i++) {
+                            // Skip emojis that have already been successfully uploaded
+                            if (uploadStatuses[i] === 'success') {
+                              successCount++
+                              continue
+                            }
+                            
+                            setUploadingIndex(i)
+                            try {
+                              const result = await uploadEmojiToSlack(processedEmojis[i])
+                              if (result.success) {
+                                successCount++
+                                setUploadStatuses(prev => ({ ...prev, [i]: 'success' }))
+                              } else {
+                                failedEmojis.push(processedEmojis[i].name)
+                                setUploadStatuses(prev => ({ ...prev, [i]: 'failed' }))
+                              }
+                            } catch (error) {
+                              failedEmojis.push(processedEmojis[i].name)
+                              setUploadStatuses(prev => ({ ...prev, [i]: 'failed' }))
+                            }
+                          }
+                          
+                          setUploadingIndex(null)
+                          setUploadingAll(false)
+                          
+                          if (successCount === processedEmojis.length) {
+                            toast.success(`Successfully uploaded ${successCount} emojis to Slack`)
+                            
+                            openpanel.track("Slack Upload: Bulk Complete - Success", {
+                              totalEmojis: processedEmojis.length,
+                              successCount: successCount,
+                              totalSize: processedEmojis.reduce((sum, e) => sum + e.processedSize, 0),
+                              formats: [...new Set(processedEmojis.map(e => e.format))]
+                            })
+                            
+                            // Close modal after successful bulk upload
+                            setTimeout(() => {
+                              onClose()
+                            }, 1500)
+                          } else if (successCount > 0) {
+                            toast.warning(`Uploaded ${successCount} of ${processedEmojis.length} emojis. Failed: ${failedEmojis.join(", ")}`)
+                            
+                            openpanel.track("Slack Upload: Bulk Complete - Partial", {
+                              totalEmojis: processedEmojis.length,
+                              successCount: successCount,
+                              failedCount: failedEmojis.length,
+                              failedEmojis: failedEmojis
+                            })
+                          } else {
+                            toast.error("Failed to upload emojis to Slack")
+                            
+                            openpanel.track("Slack Upload: Bulk Complete - Failed", {
+                              totalEmojis: processedEmojis.length,
+                              failedEmojis: failedEmojis
+                            })
+                          }
+                        }
+                      }}
+                      disabled={!hasSlack || uploadingAll}
+                    >
+                      {uploadingAll ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          {uploadingIndex !== null ? `Uploading ${uploadingIndex + 1}/${processedEmojis.length}...` : 'Uploading...'}
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          {Object.values(uploadStatuses).some(status => status === 'failed') ? 'Retry Failed Uploads' : 
+                           Object.values(uploadStatuses).some(status => status === 'success') ? 'Send Remaining to Slack' : 
+                           'Send All to Slack'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
-                <Button 
-                  variant={processedEmojis.length > 1 ? "outline" : "default"}
-                  className={processedEmojis.length === 1 ? "flex-1" : ""}
-                  onClick={onClose}
-                >
-                  Done
-                </Button>
+                {!hasSlack && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Want to send this directly to Slack? Head to{" "}
+                    <Link href="/settings" className="underline hover:text-foreground">
+                      Settings
+                    </Link>{" "}
+                    and enter your Workspace details.
+                  </p>
+                )}
               </div>
             </div>
           ) : isProcessingComplete && processedEmojis.length === 0 ? (

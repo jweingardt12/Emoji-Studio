@@ -10,6 +10,7 @@ export interface ProcessedEmoji {
   dimensions: { width: number; height: number }
   format: string
   preview: string
+  blob: string // Data URL for the processed blob
   wasVideo?: boolean
   processingNote?: string
 }
@@ -19,9 +20,24 @@ export class EmojiProcessor {
   static readonly MAX_FILE_SIZE = 128 * 1024 // 128KB
   static readonly MAX_GIF_FRAMES = 50
 
+  private static async blobToDataURL(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  }
+
   static async processFile(file: File): Promise<ProcessedEmoji> {
     const fileType = file.type
-    const fileName = file.name.replace(/\.[^/.]+$/, '') // Remove extension
+    // Remove extension and clean up the filename
+    const fileName = file.name
+      .replace(/\.[^/.]+$/, '') // Remove extension
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-_]/g, '') // Remove special characters
+      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
 
     if (fileType.startsWith('image/')) {
       if (fileType === 'image/gif') {
@@ -82,6 +98,7 @@ export class EmojiProcessor {
         }
 
         const preview = canvas.toDataURL(format, quality)
+        const blobUrl = await this.blobToDataURL(blob)
 
         resolve({
           name,
@@ -91,7 +108,8 @@ export class EmojiProcessor {
           processedSize: blob.size,
           dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
           format: format.split('/')[1].toUpperCase(),
-          preview
+          preview,
+          blob: blobUrl
         })
       }
 
@@ -103,7 +121,21 @@ export class EmojiProcessor {
   private static async processGif(file: File, name: string): Promise<ProcessedEmoji> {
     try {
       const processedBlob = await GifProcessor.processGif(file, this.TARGET_SIZE, this.MAX_FILE_SIZE)
+      console.log(`Processed GIF blob type: ${processedBlob.type}, size: ${processedBlob.size}`)
       const preview = URL.createObjectURL(processedBlob)
+      const blobUrl = await this.blobToDataURL(processedBlob)
+      
+      // Check if format changed from GIF to PNG
+      const wasConverted = file.type === 'image/gif' && processedBlob.type === 'image/png'
+      
+      // Determine processing note
+      let processingNote: string | undefined
+      if (wasConverted) {
+        processingNote = 'Animated GIF converted to static PNG to meet size limits'
+      } else if (processedBlob.type === 'image/gif' && processedBlob.size < file.size) {
+        const compressionRatio = Math.round((1 - processedBlob.size / file.size) * 100)
+        processingNote = `Animated GIF optimized (${compressionRatio}% size reduction)`
+      }
       
       return {
         name,
@@ -113,7 +145,9 @@ export class EmojiProcessor {
         processedSize: processedBlob.size,
         dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
         format: processedBlob.type === 'image/gif' ? 'GIF' : 'PNG',
-        preview
+        preview,
+        blob: blobUrl,
+        processingNote
       }
     } catch (error) {
       console.error('GIF processing failed:', error)
@@ -146,6 +180,8 @@ export class EmojiProcessor {
       processingNote += ' (full quality)'
     }
     
+    const blobUrl = await this.blobToDataURL(gifBlob)
+    
     return {
       name,
       originalFile: file,
@@ -155,6 +191,7 @@ export class EmojiProcessor {
       dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
       format: 'GIF',
       preview,
+      blob: blobUrl,
       wasVideo: true,
       processingNote
     }
