@@ -60,6 +60,7 @@
     "framer-motion": "^12.12.1",
     "geist": "latest",
     "gif.js": "^0.2.0",
+    "gifuct-js": "^2.1.2",
     "html2canvas": "^1.4.1",
     "input-otp": "1.4.1",
     "jszip": "^3.10.1",

@@ -35,3 +35,23 @@ export function formatBytes(bytes: number, decimals = 2): string {
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
+
+/**
+ * Format emoji name for Slack compatibility
+ * Converts to lowercase, replaces spaces with hyphens, removes special characters
+ */
+export function formatEmojiName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-_]/g, '')
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+
+/**
+ * Format emoji name for display in Slack format
+ * Returns the name wrapped in colons like :emoji-name:
+ */
+export function formatSlackEmojiDisplay(name: string): string {
+  return `:${formatEmojiName(name)}:`
+}
