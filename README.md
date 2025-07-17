@@ -15,6 +15,8 @@ This dashboard takes your Slack emoji data (not usage!) and turns it into a smor
 - View, search, and inspect all emojis in a Slack workspace
 - See a leaderboard of top emoji uploaders
 - Bulk download a selection–or all–emojis for maximum portability
+- Process and convert any image, video, or GIF into a fully-working custom emoji that fits within Slack's restrictions.
+- Send processed emojis directly to Slack - no download/upload required.
 - Gain a deep understanding (or possibly more confusion) with beautiful charts and visualizations
 
 
