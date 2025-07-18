@@ -109,10 +109,13 @@ export async function POST(request: NextRequest) {
       )
       console.log("[Proxy] Token in form data:", !!hasToken)
       
-      // Set content type after preserving important headers
-      delete headers["content-type"]
-      delete headers["Content-Type"]
-      headers["Content-Type"] = "application/x-www-form-urlencoded"
+      // Only set default content type if not already multipart
+      const existingContentType = headers["Content-Type"] || headers["content-type"] || ""
+      if (!existingContentType.includes("multipart/form-data")) {
+        delete headers["content-type"]
+        delete headers["Content-Type"]
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+      }
     }
 
     // Handle form data - use URLSearchParams for simplicity and reliability
@@ -230,6 +233,7 @@ export async function POST(request: NextRequest) {
           name,
           url,
           is_alias: 0,
+          alias_for: "",
           user_id: "",
           created: 0,
           team_id: "",
@@ -248,6 +252,7 @@ export async function POST(request: NextRequest) {
           name,
           url: info.url || info.image_url || "",
           is_alias: info.is_alias || 0,
+          alias_for: info.alias_for || "",
           user_id: info.user_id || "",
           created: info.created || 0,
           team_id: info.team_id || "",
@@ -270,6 +275,7 @@ export async function POST(request: NextRequest) {
             name,
             url: info.url || info.image_url || "",
             is_alias: info.is_alias || 0,
+            alias_for: info.alias_for || "",
             user_id: info.user_id || "",
             created: info.created || 0,
             team_id: info.team_id || "",
@@ -294,15 +300,22 @@ export async function POST(request: NextRequest) {
       if (emojiArray && Array.isArray(emojiArray) && emojiArray.length > 0) {
         return NextResponse.json({ emoji: emojiArray })
       } else {
-        // If we couldn't find or process emoji data, return the raw response for debugging
-        console.log("No emoji data found in response. Returning full response for debugging.")
-        return NextResponse.json(
-          {
-            error: "No emoji data found in Slack response",
-            slackResponse: data,
-          },
-          { status: 200 },
-        )
+        // Check if this is a successful operation that doesn't return emoji data
+        if (data.ok === true) {
+          // This is a successful operation (like emoji.remove) that doesn't return emoji data
+          console.log("Successful operation without emoji data. Returning success response.")
+          return NextResponse.json(data)
+        } else {
+          // If we couldn't find or process emoji data, return the raw response for debugging
+          console.log("No emoji data found in response. Returning full response for debugging.")
+          return NextResponse.json(
+            {
+              error: "No emoji data found in Slack response",
+              slackResponse: data,
+            },
+            { status: 200 },
+          )
+        }
       }
     } catch (fetchError) {
       console.error("Fetch error:", fetchError)
