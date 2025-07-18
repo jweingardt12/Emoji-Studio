@@ -408,7 +408,7 @@ export function DashboardOverlay() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>How is this secure?</AlertDialogTitle>
                   <AlertDialogDescription className="text-xs text-muted-foreground pt-2">
-                    Emoji Studio requires you to dig a bit into Chrome Developer Tools and get a specific network request while on the "Add new emoji" page. This request contains a specific token and cookie, both of which are only scoped to fetching and displaying Slack emojis. All information is stored in your browser, and the requests this app makes are indistinguishable from that of the Slack app. No, you can't be caught out or found out.
+                    Emoji Studio requires you to dig a bit into Chrome Developer Tools and get a specific network request while on the "Add new emoji" page. This request contains a specific token and cookie, both of which are only scoped to fetching and modifying your own custom Slack emojis. All information is stored in your browser, and the requests this app makes are indistinguishable from that of the Slack app. No, you can't be caught out or found out.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <video 

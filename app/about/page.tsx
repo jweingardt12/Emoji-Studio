@@ -13,7 +13,7 @@ export default function AboutPage() {
     {
       value: "item-1",
       trigger: "What is Emoji Studio?",
-      content: "Emoji Studio is a dashboard for visualizing and exploring your Slack workspace's custom emoji collection. It shows emoji creation trends, creator leaderboards, and detailed information about each emoji in the style of a SaaS product dashboard. Yes, it's a bit silly."
+      content: "Emoji Studio is a comprehensive toolkit for managing Slack custom emojis. It not only visualizes and explores your workspace's emoji collection with trends and leaderboards, but also lets you create perfectly formatted emojis from images, videos, or GIFs. Plus, you can manage your personal emoji contributions with rename, delete, and alias features. Yes, it's a bit silly, but also surprisingly useful."
     },
     {
       value: "item-2",
@@ -80,7 +80,7 @@ export default function AboutPage() {
       trigger: "Is Emoji Studio secure?",
       content: (
         <>
-          Yes, Emoji Studio is completely secure. The application requires a user to fetch a specific curl command from their Slack workspace, which is then used to fetch emoji data from Slack. All data is processed locally in your browser - nothing is sent to any servers. Check out the <a href="https://github.com/jweingardt12/Emoji-Studio" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">GitHub repo</a> for confirmation. Analytics are collected, but no tokens/company info is sent. You can view the public dashboard <a href="https://dashboard.openpanel.dev/share/overview/QNDjFZ" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">here</a>.
+          Yes, Emoji Studio is completely secure. The application requires a user to fetch a specific curl command from their Slack workspace, which is then used to fetch emoji data from Slack. All data is processed locally in your browser - nothing is sent to any servers. Check out the <a href="https://github.com/jweingardt12/Emoji-Studio" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">GitHub repo</a> for confirmation. Analytics are collected, but no tokens/company info is sent.
         </>
       )
     },
@@ -95,6 +95,32 @@ export default function AboutPage() {
     },
     {
       value: "item-7",
+      trigger: "What can I do with the Create and My Emojis features?",
+      content: (
+        <>
+          <p><strong>Create Emojis:</strong> Upload any image, video, or GIF and we'll automatically process it to meet Slack's requirements:</p>
+          <ul className="list-disc pl-5 mt-2 space-y-1">
+            <li>Resize to 128x128 pixels while maintaining aspect ratio</li>
+            <li>Optimize file size (under 128KB for images, 64KB for GIFs)</li>
+            <li>Convert videos to animated GIFs</li>
+            <li>Process multiple files at once</li>
+            <li>Preview before downloading</li>
+          </ul>
+          <p className="mt-3"><strong>My Emojis:</strong> Manage all the emojis you've created in your workspace:</p>
+          <ul className="list-disc pl-5 mt-2 space-y-1">
+            <li>View all your emoji contributions</li>
+            <li>Rename emojis (downloads, deletes old, uploads with new name)</li>
+            <li>Replace emoji images while keeping the name</li>
+            <li>Create aliases for existing emojis</li>
+            <li>Delete emojis you no longer need</li>
+            <li>Sort by name or creation date</li>
+            <li>Switch between table and grid views</li>
+          </ul>
+        </>
+      )
+    },
+    {
+      value: "item-8",
       trigger: "How do you plan to incorporate AI into this tool?",
       content: ":you-have-to-be-kidding-me:"
     }
@@ -113,7 +139,7 @@ export default function AboutPage() {
           <p className="text-muted-foreground text-sm mt-1">Sometimes the most important OKRs are LOLs.</p>
         </div>
         <p className="mb-6 text-base sm:text-sm">
-          Emoji Studio is a Slack emoji dashboard that lets you visualize, explore, and analyze your workspace's custom emoji collection. This product exists because Slack provides no good way to showcase your co-workers emoji contributions. Custom emojis are an expression of company culture, and while Slack makes it simple to create them, it doesn't provide a good way to explore them.
+          Emoji Studio is your all-in-one Slack emoji toolkit. Beyond visualizing and analyzing your workspace's custom emoji collection, it empowers you to create new emojis with automatic formatting for Slack's requirements. Upload images, videos, or GIFs and watch them transform into perfectly sized emojis. Manage your personal emoji contributions with the My Emojis page - rename, delete, add aliases, and even replace emoji images without losing their history. This product exists because while Slack makes it simple to create emojis, it doesn't provide good tools to explore, manage, or optimize them.
           <br />
           <br />
           <a href="https://jwe.in?utm_source=emojistudio&utm_medium=aboutpage" target="_blank" rel="noopener noreferrer" 
