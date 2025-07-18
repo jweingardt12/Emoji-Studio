@@ -1,4 +1,5 @@
 import GIF from 'gif.js'
+import { ResourceManager, withResourceCleanup } from './resource-manager'
 
 export class AnimatedGifProcessor {
   static async processAnimatedGif(
@@ -6,52 +7,60 @@ export class AnimatedGifProcessor {
     targetSize: number = 128,
     maxFileSize: number = 128 * 1024
   ): Promise<Blob> {
-    // First, check if the GIF is already optimized
-    const img = await this.loadImage(file)
-    if (file.size <= maxFileSize && img.width <= targetSize && img.height <= targetSize) {
-      return file
-    }
+    return withResourceCleanup(async (resources) => {
+      // First, check if the GIF is already optimized
+      const img = await this.loadImage(file, resources)
+      if (file.size <= maxFileSize && img.width <= targetSize && img.height <= targetSize) {
+        return file
+      }
 
-    // Try to maintain animation by creating a new optimized GIF
-    const qualitySettings = [
-      { quality: 10, dither: false, workers: 2, repeat: 0 },
-      { quality: 15, dither: false, workers: 2, repeat: 0 },
-      { quality: 20, dither: true, workers: 2, repeat: 0 },
-      { quality: 30, dither: true, workers: 1, repeat: 0 },
-    ]
+      // Try to maintain animation by creating a new optimized GIF
+      const qualitySettings = [
+        { quality: 10, dither: false, workers: 2, repeat: 0 },
+        { quality: 15, dither: false, workers: 2, repeat: 0 },
+        { quality: 20, dither: true, workers: 2, repeat: 0 },
+        { quality: 30, dither: true, workers: 1, repeat: 0 },
+      ]
 
-    for (const settings of qualitySettings) {
+      for (const settings of qualitySettings) {
+        try {
+          const result = await this.createOptimizedGif(file, targetSize, settings)
+          if (result.size <= maxFileSize) {
+            console.log(`Created optimized GIF: ${result.size} bytes with quality ${settings.quality}`)
+            return result
+          }
+        } catch (error) {
+          console.error(`Failed with quality ${settings.quality}:`, error)
+        }
+      }
+
+      // If we still can't get under the size limit, create a highly compressed version
       try {
-        const result = await this.createOptimizedGif(file, targetSize, settings)
-        if (result.size <= maxFileSize) {
-          console.log(`Created optimized GIF: ${result.size} bytes with quality ${settings.quality}`)
-          return result
+        const lastResort = await this.createHighlyCompressedGif(file, targetSize)
+        if (lastResort.size <= maxFileSize) {
+          return lastResort
         }
       } catch (error) {
-        console.error(`Failed with quality ${settings.quality}:`, error)
+        console.error('Failed to create highly compressed GIF:', error)
       }
-    }
 
-    // If we still can't get under the size limit, create a highly compressed version
-    try {
-      const lastResort = await this.createHighlyCompressedGif(file, targetSize)
-      if (lastResort.size <= maxFileSize) {
-        return lastResort
-      }
-    } catch (error) {
-      console.error('Failed to create highly compressed GIF:', error)
-    }
-
-    // As a final fallback, just resize the original without re-encoding
-    return this.resizeGifDirectly(file, targetSize, maxFileSize)
+      // As a final fallback, just resize the original without re-encoding
+      return this.resizeGifDirectly(file, targetSize, maxFileSize)
+    })
   }
 
-  private static loadImage(file: File): Promise<HTMLImageElement> {
+  private static loadImage(file: File, resources?: ResourceManager): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = reject
-      img.src = URL.createObjectURL(file)
+      
+      if (resources) {
+        img.src = resources.createObjectURL(file)
+        resources.trackElement(img)
+      } else {
+        img.src = URL.createObjectURL(file)
+      }
     })
   }
 
@@ -78,7 +87,7 @@ export class AnimatedGifProcessor {
         workerScript: '/gif.worker.js',
         dither: settings.dither,
         repeat: settings.repeat, // 0 = infinite loop
-        transparent: 0xFFFFFF // white transparent
+        transparent: '#FFFFFF' // white transparent
       })
 
       // Create canvas for drawing frames
@@ -174,10 +183,7 @@ export class AnimatedGifProcessor {
         }
       })
 
-      gif.on('error', (error) => {
-        URL.revokeObjectURL(img.src)
-        reject(error)
-      })
+      // Note: gif.js doesn't have error event in types, errors will be thrown synchronously
 
       gif.render()
     })
@@ -237,10 +243,7 @@ export class AnimatedGifProcessor {
         }
       })
 
-      gif.on('error', (error) => {
-        URL.revokeObjectURL(img.src)
-        reject(error)
-      })
+      // Note: gif.js doesn't have error event in types, errors will be thrown synchronously
 
       gif.render()
     })

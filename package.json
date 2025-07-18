@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "emoji-studio",
   "version": "0.1.0",
   "private": false,
   "license": "MIT",
@@ -48,6 +48,7 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@tailwindcss/container-queries": "latest",
     "@tanstack/react-table": "latest",
+    "@tanstack/react-virtual": "^3.13.12",
     "@types/gif.js": "^0.2.5",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
@@ -82,6 +83,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

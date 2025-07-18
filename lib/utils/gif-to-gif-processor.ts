@@ -141,7 +141,7 @@ export class GifToGifProcessor {
         resolve(blob)
       })
       
-      gif.on('error', reject)
+      // Note: gif.js doesn't have error event in types
       
       gif.render()
     })

@@ -149,12 +149,11 @@ export class GifFrameExtractor {
       
       for (const settings of qualitySettings) {
         try {
-          // Apply additional scaling if specified in settings
-          const settingsScale = settings.scale || 1.0
-          const adjustedScaledWidth = Math.round(scaledWidth * settingsScale)
-          const adjustedScaledHeight = Math.round(scaledHeight * settingsScale)
-          const adjustedOffsetX = Math.round((targetSize - adjustedScaledWidth) / 2)
-          const adjustedOffsetY = Math.round((targetSize - adjustedScaledHeight) / 2)
+          // Use the calculated scale directly
+          const adjustedScaledWidth = scaledWidth
+          const adjustedScaledHeight = scaledHeight
+          const adjustedOffsetX = offsetX
+          const adjustedOffsetY = offsetY
           
           const result = await this.createOptimizedGif(
             frames,
@@ -204,7 +203,6 @@ export class GifFrameExtractor {
       dither: boolean
       workers: number
       reduceFrames?: number
-      scale?: number
     }
   ): Promise<Blob> {
     return new Promise((resolve, reject) => {
@@ -278,9 +276,7 @@ export class GifFrameExtractor {
         }
       })
       
-      gif.on('error', (error) => {
-        reject(error)
-      })
+      // Note: gif.js doesn't have error event in types, errors will be thrown synchronously
       
       gif.render()
     })
@@ -400,7 +396,7 @@ export class GifFrameExtractor {
         }
       })
       
-      gif.on('error', reject)
+      // Note: gif.js doesn't have error event in types
       
       gif.render()
     })
@@ -450,7 +446,7 @@ export class GifFrameExtractor {
         }
       })
       
-      gif.on('error', reject)
+      // Note: gif.js doesn't have error event in types
       
       gif.render()
     })

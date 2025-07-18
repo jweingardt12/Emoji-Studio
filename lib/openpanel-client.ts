@@ -3,27 +3,16 @@
  * This file provides a wrapper around the OpenPanel script tag implementation
  */
 
-// Define the OpenPanel window object type
-interface OpenPanelClient {
-  track: (eventName: string, properties?: Record<string, any>) => void;
-  identify: (user: { profileId: string; [key: string]: any }) => void;
-  screenView: (name: string, properties?: Record<string, any>) => void;
-  [key: string]: any;
-}
-
-declare global {
-  interface Window {
-    op?: OpenPanelClient;
-  }
-}
+// The OpenPanel types are already declared in @openpanel/web
+// We'll use those instead of declaring our own
 
 /**
  * Get the OpenPanel client instance
  * This safely accesses the global OpenPanel instance added via script tag
  */
 export function getOpenPanel() {
-  if (typeof window !== 'undefined' && window.op) {
-    return window.op;
+  if (typeof window !== 'undefined' && window.openpanel) {
+    return window.openpanel;
   }
   
   // Return a dummy implementation if OpenPanel is not available
@@ -80,5 +69,7 @@ export function trackPageView(pageName: string, properties?: Record<string, any>
  */
 export function identifyUser(userId: string, traits?: Record<string, any>) {
   const op = getOpenPanel();
-  op.identify({ profileId: userId, ...traits });
+  if ('identify' in op && typeof op.identify === 'function') {
+    op.identify({ profileId: userId, ...traits });
+  }
 }

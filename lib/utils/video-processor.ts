@@ -44,10 +44,12 @@ export class VideoProcessor {
     if (!this.ffmpeg) throw new Error('FFmpeg not loaded')
 
     // Set up progress handling
-    if (onProgress) {
-      this.ffmpeg.on('progress', ({ progress }) => {
-        onProgress(progress)
-      })
+    const progressHandler = onProgress ? ({ progress }: { progress: number }) => {
+      onProgress(progress)
+    } : null
+    
+    if (progressHandler) {
+      this.ffmpeg.on('progress', progressHandler)
     }
 
     const inputName = 'input' + file.name.substring(file.name.lastIndexOf('.'))
@@ -118,8 +120,8 @@ export class VideoProcessor {
     }
     
     // Remove progress listener
-    if (onProgress) {
-      this.ffmpeg.off('progress')
+    if (progressHandler) {
+      this.ffmpeg.off('progress', progressHandler)
     }
 
     if (!resultBlob) {

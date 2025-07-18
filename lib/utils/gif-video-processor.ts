@@ -185,9 +185,7 @@ export class GifVideoProcessor {
         resolve(blob)
       })
 
-      gif.on('error', () => {
-        resolve(null)
-      })
+      // Note: gif.js doesn't have error event in types, errors will be thrown synchronously
 
       // Start capturing frames
       captureFrame(0)

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, Suspense } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { RequireData } from "@/components/require-data"
 import { DashboardOverlay } from "@/components/dashboard-overlay"
@@ -9,11 +9,77 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Image from "next/image"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ScatterChart, Scatter, ZAxis, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, LabelList } from "recharts"
-import { format, subDays, differenceInDays, startOfMonth, endOfMonth, eachDayOfInterval, isWithinInterval, parseISO } from "date-fns"
-import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp } from "lucide-react"
+// Import Recharts components normally - Next.js will handle code splitting
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip as RechartsTooltip, Legend as RechartsLegend, 
+  ResponsiveContainer, PieChart, Pie, Cell, 
+  LineChart, Line, AreaChart, Area, 
+  ScatterChart, Scatter, ZAxis, 
+  Radar, RadarChart, PolarGrid, 
+  PolarAngleAxis, PolarRadiusAxis, LabelList 
+} from "recharts"
+// Replace heavy date-fns imports with native Date methods and lightweight helpers
+const format = (date: Date | number, formatStr: string) => {
+  const d = typeof date === 'number' ? new Date(date * 1000) : date
+  if (formatStr === 'MMM d') {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+  if (formatStr === 'MMM yyyy') {
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  }
+  if (formatStr === 'yyyy') {
+    return d.getFullYear().toString()
+  }
+  if (formatStr === 'MMM dd, yyyy') {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+  if (formatStr === 'yyyy-MM-dd') {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  return d.toISOString()
+}
+
+const subDays = (date: Date, days: number) => {
+  const d = new Date(date)
+  d.setDate(d.getDate() - days)
+  return d
+}
+
+const differenceInDays = (date1: Date, date2: Date) => {
+  return Math.floor((date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+const startOfMonth = (date: Date) => {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+const endOfMonth = (date: Date) => {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+}
+
+const eachDayOfInterval = ({ start, end }: { start: Date; end: Date }) => {
+  const days = []
+  const current = new Date(start)
+  while (current <= end) {
+    days.push(new Date(current))
+    current.setDate(current.getDate() + 1)
+  }
+  return days
+}
+
+const isWithinInterval = (date: Date, { start, end }: { start: Date; end: Date }) => {
+  return date >= start && date <= end
+}
+
+const parseISO = (dateStr: string) => new Date(dateStr)
+import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp, Calendar } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import EmojiOverlay from "@/components/emoji-overlay"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Metadata moved to page.metadata.ts
 
@@ -40,6 +106,18 @@ const EmojiName = ({ name }: { name: string }) => {
   );
 };
 
+// Time range options
+type TimeRange = "all" | "7days" | "30days" | "90days" | "6months" | "1year"
+
+const timeRangeOptions: { value: TimeRange; label: string }[] = [
+  { value: "all", label: "All Time" },
+  { value: "7days", label: "Last 7 Days" },
+  { value: "30days", label: "Last 30 Days" },
+  { value: "90days", label: "Last 90 Days" },
+  { value: "6months", label: "Last 6 Months" },
+  { value: "1year", label: "Last Year" },
+]
+
 function VisualizationsPage() {
   // Add client-side only rendering to avoid hydration mismatches
   const [isClient, setIsClient] = useState(false)
@@ -54,6 +132,7 @@ function VisualizationsPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [emojisOnDate, setEmojisOnDate] = useState<any[]>([])
   const [showDateEmojiDialog, setShowDateEmojiDialog] = useState(false)
+  const [timeRange, setTimeRange] = useState<TimeRange>("all")
   
   useEffect(() => {
     setIsClient(true)
@@ -61,12 +140,42 @@ function VisualizationsPage() {
 
   const { emojiData, loading } = useEmojiData()
   
+  // Filter emojis based on selected time range
+  const filteredEmojiData = useMemo(() => {
+    if (!emojiData || timeRange === "all") return emojiData
+    
+    const now = Date.now() / 1000 // Current time in seconds
+    let cutoffTime: number
+    
+    switch (timeRange) {
+      case "7days":
+        cutoffTime = now - (7 * 24 * 60 * 60)
+        break
+      case "30days":
+        cutoffTime = now - (30 * 24 * 60 * 60)
+        break
+      case "90days":
+        cutoffTime = now - (90 * 24 * 60 * 60)
+        break
+      case "6months":
+        cutoffTime = now - (180 * 24 * 60 * 60)
+        break
+      case "1year":
+        cutoffTime = now - (365 * 24 * 60 * 60)
+        break
+      default:
+        return emojiData
+    }
+    
+    return emojiData.filter(emoji => emoji.created && emoji.created >= cutoffTime)
+  }, [emojiData, timeRange])
+  
   // Function to handle click on name length bar
   const handleNameLengthClick = (data: { length: number }) => {
-    if (!emojiData) return
+    if (!filteredEmojiData) return
     
     const length = data.length
-    const matchingEmojis = emojiData.filter(emoji => 
+    const matchingEmojis = filteredEmojiData.filter(emoji => 
       !emoji.is_alias && emoji.name && emoji.name.length === length
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
     
@@ -93,10 +202,10 @@ function VisualizationsPage() {
   
   // Function to handle click on word bar
   const handleWordClick = (data: { word: string }) => {
-    if (!emojiData) return
+    if (!filteredEmojiData) return
     
     const word = data.word
-    const matchingEmojis = emojiData.filter(emoji => 
+    const matchingEmojis = filteredEmojiData.filter(emoji => 
       !emoji.is_alias && emoji.name && emoji.name.toLowerCase().includes(word.toLowerCase())
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
     
@@ -107,7 +216,7 @@ function VisualizationsPage() {
   
   // Function to handle click on date bar
   const handleDateClick = (data: { date: string }) => {
-    if (!emojiData) return
+    if (!filteredEmojiData) return
     
     const dateStr = data.date
     const date = new Date(dateStr)
@@ -123,7 +232,7 @@ function VisualizationsPage() {
     const endTimestamp = endOfDay.getTime() / 1000
     
     // Find emojis created on this date
-    const matchingEmojis = emojiData.filter(emoji => 
+    const matchingEmojis = filteredEmojiData.filter(emoji => 
       !emoji.is_alias && emoji.created && 
       emoji.created >= startTimestamp && emoji.created <= endTimestamp
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
@@ -140,13 +249,13 @@ function VisualizationsPage() {
   
   // Function to generate word frequencies dynamically based on search
   const getWordFrequenciesForSearch = (searchTerm: string) => {
-    if (!emojiData || !searchTerm.trim()) return []
+    if (!filteredEmojiData || !searchTerm.trim()) return []
     
     const wordCounts: Record<string, number> = {}
     const stopWords = ['the', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are']
     const searchLower = searchTerm.toLowerCase()
     
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias && emoji.name) {
         // Split emoji name by non-alphanumeric characters and underscores
         const words = emoji.name.toLowerCase().split(/[^a-z0-9]+/)
@@ -172,7 +281,7 @@ function VisualizationsPage() {
   
   // Prepare data for charts
   const chartData = useMemo(() => {
-    if (!emojiData || emojiData.length === 0) return {
+    if (!filteredEmojiData || filteredEmojiData.length === 0) return {
       topCreators: [],
       emojisByMonth: [],
       topCategories: [],
@@ -188,7 +297,7 @@ function VisualizationsPage() {
 
     // Top emoji creators
     const creators: Record<string, number> = {}
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (emoji.user_display_name && !emoji.is_alias) {
         creators[emoji.user_display_name] = (creators[emoji.user_display_name] || 0) + 1
       }
@@ -199,28 +308,67 @@ function VisualizationsPage() {
       .sort((a, b) => (b.count as number) - (a.count as number))
       .slice(0, 10)
 
-    // Emojis by month
-    const monthlyData: Record<string, number> = {}
-    emojiData.forEach(emoji => {
+    // Emojis by time period (month or day based on timeframe)
+    const useDaily = timeRange === "7days" || timeRange === "30days"
+    
+    // Use a Map for efficient grouping
+    const timeDataMap = new Map<string, { count: number; timestamp: number }>()
+    
+    filteredEmojiData.forEach(emoji => {
       if (emoji.created && !emoji.is_alias) {
         const date = new Date(emoji.created * 1000)
-        const monthYear = format(date, 'MMM yyyy')
-        monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1
+        const timeKey = useDaily 
+          ? format(date, 'MMM d')  // Daily format for short timeframes
+          : format(date, 'MMM yyyy') // Monthly format for longer timeframes
+        
+        const existing = timeDataMap.get(timeKey)
+        if (existing) {
+          existing.count++
+        } else {
+          timeDataMap.set(timeKey, {
+            count: 1,
+            timestamp: emoji.created
+          })
+        }
       }
     })
     
-    const emojisByMonth = Object.entries(monthlyData)
-      .map(([month, count]) => ({ month, count }))
-      .sort((a, b) => {
-        const dateA = new Date(a.month)
-        const dateB = new Date(b.month)
-        return dateA.getTime() - dateB.getTime()
-      })
-      // Show all months instead of just the last 12
+    // Convert map to array for sorting
+    const timeDataWithDates = Array.from(timeDataMap.entries()).map(([key, value]) => ({
+      key,
+      count: value.count,
+      timestamp: value.timestamp
+    }))
+    
+    // Fill in missing days/months with zero values for continuous chart
+    let emojisByMonth: Array<{ month: string; count: number }> = []
+    
+    if (useDaily && filteredEmojiData.length > 0) {
+      // For daily view, create an entry for each day in the range
+      const now = new Date()
+      const daysToShow = timeRange === "7days" ? 7 : 30
+      
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(now)
+        date.setDate(date.getDate() - i)
+        const dateKey = format(date, 'MMM d')
+        
+        const existing = timeDataWithDates.find(item => item.key === dateKey)
+        emojisByMonth.push({
+          month: dateKey,
+          count: existing ? existing.count : 0
+        })
+      }
+    } else {
+      // For monthly view, use the data as is (sorted by timestamp)
+      emojisByMonth = timeDataWithDates
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .map(item => ({ month: item.key, count: item.count }))
+    }
 
     // Emoji categories (based on first character for demo purposes)
     const categories: Record<string, number> = {}
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias) {
         const firstChar = emoji.name.charAt(0).toLowerCase()
         categories[firstChar] = (categories[firstChar] || 0) + 1
@@ -237,7 +385,7 @@ function VisualizationsPage() {
     const dateCountMap: Record<string, number> = {}
     
     // Process all emojis to count by date
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (emoji.created && !emoji.is_alias) {
         const date = new Date(emoji.created * 1000)
         const dateStr = format(date, 'MMM dd, yyyy')
@@ -277,7 +425,7 @@ function VisualizationsPage() {
     }
     
     const userActivity: Record<string, UserActivityData> = {}
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (emoji.user_display_name && emoji.created && !emoji.is_alias) {
         if (!userActivity[emoji.user_display_name]) {
           userActivity[emoji.user_display_name] = {
@@ -311,7 +459,7 @@ function VisualizationsPage() {
 
     // Emoji name length distribution
     const nameLengths: Record<number, number> = {}
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias && emoji.name) {
         const length = emoji.name.length
         nameLengths[length] = (nameLengths[length] || 0) + 1
@@ -323,8 +471,8 @@ function VisualizationsPage() {
       .sort((a, b) => a.length - b.length)
 
     // Original vs Alias ratio
-    const originalCount = emojiData.filter(emoji => !emoji.is_alias).length
-    const aliasCount = emojiData.filter(emoji => emoji.is_alias).length
+    const originalCount = filteredEmojiData.filter(emoji => !emoji.is_alias).length
+    const aliasCount = filteredEmojiData.filter(emoji => emoji.is_alias).length
     
     const aliasRatio = {
       original: originalCount,
@@ -335,7 +483,7 @@ function VisualizationsPage() {
     const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     const weekdayCounts = Array(7).fill(0)
     
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (emoji.created && !emoji.is_alias) {
         const date = new Date(emoji.created * 1000)
         const weekday = date.getDay() // 0 = Sunday, 6 = Saturday
@@ -351,8 +499,27 @@ function VisualizationsPage() {
     // Emoji types (image vs GIF)
     const emojiTypes = [];
     const now = new Date();
-    // Generate data for the last 90 days
-    for (let i = 89; i >= 0; i--) {
+    
+    // Determine the number of days to show based on time range
+    let daysToShow = 90; // default
+    if (timeRange === "7days") daysToShow = 7;
+    else if (timeRange === "30days") daysToShow = 30;
+    else if (timeRange === "90days") daysToShow = 90;
+    else if (timeRange === "6months") daysToShow = 180;
+    else if (timeRange === "1year") daysToShow = 365;
+    else if (timeRange === "all" && filteredEmojiData.length > 0) {
+      // For "all time", show data from the oldest emoji to now
+      const oldestEmoji = filteredEmojiData
+        .filter(e => e.created)
+        .sort((a, b) => (a.created || 0) - (b.created || 0))[0];
+      if (oldestEmoji && oldestEmoji.created) {
+        const oldestDate = new Date(oldestEmoji.created * 1000);
+        daysToShow = Math.min(365, differenceInDays(now, oldestDate)); // Cap at 1 year for performance
+      }
+    }
+    
+    // Generate data for the calculated period
+    for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
       const dateString = format(date, 'yyyy-MM-dd');
@@ -367,7 +534,7 @@ function VisualizationsPage() {
       const dayEndTimestamp = dayEnd.getTime() / 1000;
       
       // Filter emojis created on this day
-      const dayEmojis = emojiData.filter(emoji => 
+      const dayEmojis = filteredEmojiData.filter(emoji => 
         emoji.created && 
         emoji.created >= dayStartTimestamp && 
         emoji.created <= dayEndTimestamp &&
@@ -394,7 +561,7 @@ function VisualizationsPage() {
     const wordCounts: Record<string, number> = {};
     const stopWords = ['the', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are'];
     
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias && emoji.name) {
         // Split emoji name by non-alphanumeric characters and underscores
         const words = emoji.name.toLowerCase().split(/[^a-z0-9]+/)
@@ -428,7 +595,7 @@ function VisualizationsPage() {
     // Initialize counts for each time bucket
     const timeBucketCounts = Array(8).fill(0);
     
-    emojiData.forEach(emoji => {
+    filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias && emoji.created) {
         const date = new Date(emoji.created * 1000);
         const hour = date.getHours();
@@ -462,7 +629,7 @@ function VisualizationsPage() {
       emojisByHour,
       peakTimePeriod
     }
-  }, [emojiData, currentTime])
+  }, [filteredEmojiData, currentTime, timeRange])
 
   // Colors for charts - using vibrant colors that match the screenshot
   const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4']
@@ -611,11 +778,30 @@ function VisualizationsPage() {
       <div className="px-2 sm:px-4 lg:px-6">
         <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
           <div className="mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              <span>Emoji Visualizations</span>
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base">Deep insights into your workspace emoji usage and trends.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  <span>Emoji Visualizations</span>
+                </h1>
+                <p className="text-muted-foreground text-sm sm:text-base">Deep insights into your workspace emoji usage and trends.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select time range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeRangeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           {/* Responsive grid of charts */}
@@ -719,11 +905,11 @@ function VisualizationsPage() {
               </CardFooter>
             </Card>
 
-            {/* Monthly Trend - Half width */}
+            {/* Monthly/Daily Trend - Half width */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Monthly Emoji Creation</CardTitle>
-                <CardDescription>All-time trend of emoji creation by month</CardDescription>
+                <CardTitle>{timeRange === "7days" || timeRange === "30days" ? "Daily" : "Monthly"} Emoji Creation</CardTitle>
+                <CardDescription>{timeRange === "all" ? "All-time" : timeRangeOptions.find(o => o.value === timeRange)?.label || ""} trend of emoji creation</CardDescription>
               </CardHeader>
               <CardContent className="p-2 sm:p-4">
                 <ChartContainer
@@ -946,7 +1132,7 @@ function VisualizationsPage() {
                 <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
                   <CardTitle>Image vs GIF Emojis</CardTitle>
                   <CardDescription>
-                    Breakdown of emoji types over the last 90 days
+                    Breakdown of emoji types {timeRange === "all" ? "over all time" : `over the ${timeRangeOptions.find(o => o.value === timeRange)?.label.toLowerCase() || ""}`}
                   </CardDescription>
                 </div>
                 <div className="flex">
@@ -1184,7 +1370,7 @@ function VisualizationsPage() {
                         const value = e.target.value;
                         setSelectedWord(value || null);
                         if (value) {
-                          const matchingEmojis = emojiData.filter(emoji => 
+                          const matchingEmojis = filteredEmojiData.filter(emoji => 
                             !emoji.is_alias && emoji.name && emoji.name.toLowerCase().includes(value.toLowerCase())
                           ).sort((a, b) => (b.created || 0) - (a.created || 0));
                           setEmojisWithWord(matchingEmojis);
@@ -1222,7 +1408,7 @@ function VisualizationsPage() {
                         : chartData.commonWords
                       ).map((item, index) => {
                         // Calculate percentage of total emojis
-                        const totalEmojiCount = emojiData.length;
+                        const totalEmojiCount = filteredEmojiData.length;
                         const percentage = totalEmojiCount > 0 ? (((item.count as number) / totalEmojiCount) * 100).toFixed(1) : '0.0';
                         
                         return (

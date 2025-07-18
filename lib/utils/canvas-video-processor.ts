@@ -76,7 +76,8 @@ export class CanvasVideoProcessor {
   static async extractOptimalFrame(
     file: File,
     targetSize: number = 128,
-    timestamp?: number
+    timestamp?: number,
+    maxFileSize: number = 128 * 1024
   ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video')
