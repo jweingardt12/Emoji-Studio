@@ -29,9 +29,9 @@ export async function POST(request: Request) {
       }
     }
 
-    // Add the image file
-    const file = new File([blobData], fileName, { type: mimeType })
-    form.append("image", file)
+    // Add the image file as a Blob
+    // In Node.js, we need to use Blob instead of File
+    form.append("image", blobData, fileName)
 
     // Make the request to Slack
     const response = await fetch(url, {

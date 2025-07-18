@@ -14,7 +14,8 @@ import {
   RefreshCwIcon,
   Images,
   GithubIcon,
-  Sparkles,
+  CirclePlus,
+  UserCircle,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -220,6 +221,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         user_id: emoji.user_id || "",
         created: emoji.created || Math.floor(Date.now() / 1000),
         is_alias: emoji.is_alias || 0,
+        alias_for: emoji.alias_for || "",
         is_bad: emoji.is_bad || false,
         user_display_name: emoji.user_display_name || "",
         can_delete: emoji.can_delete || false,
@@ -305,9 +307,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Images,
     },
     {
+      title: "My Emojis",
+      url: "/my-emojis",
+      icon: UserCircle,
+    },
+    {
       title: "Create",
       url: "/create",
-      icon: Sparkles,
+      icon: CirclePlus,
       badge: "New",
     },
     {
