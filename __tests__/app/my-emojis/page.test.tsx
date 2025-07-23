@@ -12,7 +12,7 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import MyEmojisPage from '@/app/my-emojis/page'
+import MyEmojisPage from '@/app/dashboard/my-emojis/page'
 import { useEmojiData } from '@/lib/hooks/use-emoji-data'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -107,7 +107,7 @@ describe('My Emojis Page', () => {
       
       render(<MyEmojisPage />)
       
-      expect(mockPush).toHaveBeenCalledWith('/settings')
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/settings')
     })
 
     it('should show emojis if authenticated', () => {

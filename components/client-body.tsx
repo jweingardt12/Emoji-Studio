@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import type { ReactNode } from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-export default function ClientBody({ children }: { children: ReactNode }) {
+export default function ClientBody({ children, className }: { children: ReactNode; className?: string }) {
   // Use state to track client-side rendering
   const [isMounted, setIsMounted] = useState(false)
   
@@ -22,5 +22,9 @@ export default function ClientBody({ children }: { children: ReactNode }) {
   }
 
   // Only render the actual content after client-side hydration is complete
-  return <TooltipProvider>{children}</TooltipProvider>
+  return (
+    <div className={className}>
+      <TooltipProvider>{children}</TooltipProvider>
+    </div>
+  )
 }

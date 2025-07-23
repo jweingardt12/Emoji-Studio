@@ -230,10 +230,23 @@ export function SectionCards() {
                 </CardHeader>
                 <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-[10px] xs:text-xs md:text-sm">
                   <div className="flex gap-0.5 xs:gap-1 font-medium text-[10px] xs:text-xs">
-                    {aeuChange >= 0 ? "Active community" : "Stagnant participation"} {aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />}
+                    {aeu === 0 
+                      ? "No active uploaders" 
+                      : aeuChange >= 0 
+                        ? "Active community" 
+                        : "Stagnant participation"} 
+                    {aeu > 0 && (aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />)}
                   </div>
                   <div className="text-muted-foreground text-[10px] xs:text-xs">
-                    {(stats?.totalCreators || 0) > 50 ? "Growing steadily" : "Needs more engagement"}
+                    {aeu === 0 
+                      ? "No uploads this week" 
+                      : aeuChange > 10
+                        ? "Strong growth"
+                        : aeuChange > 0
+                          ? "Growing steadily"
+                          : aeuChange < -10
+                            ? "Significant decline"
+                            : "Needs more engagement"}
                   </div>
                 </CardFooter>
               </Card>
@@ -275,23 +288,36 @@ export function SectionCards() {
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-1 rounded-lg text-xs ${emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-1 rounded-lg text-xs ${activeUsersCount === 0 ? "text-muted-foreground" : emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
-                      {emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-                      {emojisPerUser > 10 ? "+7.2% W/W" : "-3.5% W/W"}
+                      {activeUsersCount === 0 ? (
+                        "N/A"
+                      ) : (
+                        <>
+                          {emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+                          {emojisPerUser > 10 ? "+7.2% W/W" : "-3.5% W/W"}
+                        </>
+                      )}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
                   <div className="flex gap-1 font-medium text-xs">
-                    {emojisPerUser > 10 ? "Healthy engagement" : "Low engagement"} {emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+                    {activeUsersCount === 0 
+                      ? "No active users"
+                      : emojisPerUser > 10 
+                        ? "Healthy engagement" 
+                        : "Low engagement"} 
+                    {activeUsersCount > 0 && (emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
                   <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs">
-                    {emojisPerUser > 15
-                      ? "Above workspace average"
-                      : emojisPerUser > 10
-                        ? "Average engagement"
-                        : "Below workspace average"}
+                    {activeUsersCount === 0
+                      ? "No activity this week"
+                      : emojisPerUser > 15
+                        ? "Above workspace average"
+                        : emojisPerUser > 10
+                          ? "Average engagement"
+                          : "Below workspace average"}
                   </div>
                 </CardFooter>
               </Card>
@@ -340,10 +366,19 @@ export function SectionCards() {
                 </CardHeader>
                 <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
                   <div className="flex gap-1 font-medium text-xs">
-                    {epwChange >= 0 ? "Growing steadily" : "Declining"} {epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
+                    {epw === 0 
+                      ? "No weekly activity"
+                      : epwChange >= 0 
+                        ? "Growing steadily" 
+                        : "Declining"} 
+                    {epw > 0 && (epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
                   <div className="text-muted-foreground text-xs">
-                    {epwChange >= 0 ? "Above workspace average" : "Below workspace average"}
+                    {epw === 0
+                      ? "No emojis created"
+                      : epwChange >= 0 
+                        ? "Above workspace average" 
+                        : "Below workspace average"}
                   </div>
                 </CardFooter>
               </Card>

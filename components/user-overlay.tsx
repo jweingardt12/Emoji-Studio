@@ -210,7 +210,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                 className="h-8 px-2 text-xs"
                 onClick={() => {
                   analytics.trackEmojiFilter("user_id", user.user_id);
-                  window.location.href = `/explorer?search=${encodeURIComponent(user.user_id)}`;
+                  window.location.href = `/dashboard/explorer?search=${encodeURIComponent(user.user_id)}`;
                 }}
               >
                 <ImageUp className="h-3.5 w-3.5 mr-1" />
