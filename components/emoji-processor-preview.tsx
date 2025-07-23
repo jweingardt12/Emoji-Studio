@@ -263,7 +263,7 @@ export function EmojiProcessorPreview({
           <div className="mt-4 p-3 bg-muted/50 rounded-lg">
             <p className="text-sm text-muted-foreground text-center">
               Want to send emojis directly to Slack? Head to{" "}
-              <Link href="/settings" className="underline hover:text-foreground">
+              <Link href="/dashboard/settings" className="underline hover:text-foreground">
                 Settings
               </Link>{" "}
               and enter your Workspace details.

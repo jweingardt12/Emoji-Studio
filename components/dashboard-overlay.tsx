@@ -331,7 +331,7 @@ export function DashboardOverlay() {
                   source: 'dashboard_overlay_get_started_button'
                 });
                 document.body.style.overflow = '';
-                router.push("/settings");
+                router.push("/dashboard/settings");
               }} 
             >
               Get Started →
@@ -346,7 +346,7 @@ export function DashboardOverlay() {
                     source: 'dashboard_overlay_create_link'
                   });
                   document.body.style.overflow = '';
-                  router.push("/create");
+                  router.push("/dashboard/create");
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
@@ -377,7 +377,7 @@ export function DashboardOverlay() {
                     source: 'dashboard_overlay_about_link'
                   });
                   document.body.style.overflow = '';
-                  router.push("/about");
+                  router.push("/dashboard/about");
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
@@ -441,7 +441,7 @@ export function DashboardOverlay() {
                     )}
                   </Button>
                   <AlertDialogAction asChild>
-                    <Link href="/settings">Let's go</Link>
+                    <Link href="/dashboard/settings">Let's go</Link>
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

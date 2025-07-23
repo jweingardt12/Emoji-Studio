@@ -293,33 +293,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Leaderboard",
-      url: "/leaderboard",
+      url: "/dashboard/leaderboard",
       icon: TrophyIcon,
     },
     {
       title: "Visualizations",
-      url: "/visualizations",
+      url: "/dashboard/visualizations",
       icon: BarChartIcon,
     },
     {
       title: "Explorer",
-      url: "/explorer",
+      url: "/dashboard/explorer",
       icon: Images,
     },
     {
       title: "My Emojis",
-      url: "/my-emojis",
+      url: "/dashboard/my-emojis",
       icon: UserCircle,
     },
     {
-      title: "Create",
-      url: "/create",
-      icon: CirclePlus,
-      badge: "New",
-    },
-    {
       title: "Settings",
-      url: "/settings",
+      url: "/dashboard/settings",
       icon: SettingsIcon,
       indicator: !hasRealData ? "error" as const : undefined,
     },
@@ -335,7 +329,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const aboutNavItems = [
     {
       title: "About",
-      url: "/about",
+      url: "/dashboard/about",
       icon: InfoIcon,
     },
     {
@@ -352,7 +346,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const sidebarCtx = typeof window !== "undefined" ? ((window as any).__SIDEBAR_CTX__ || null) : null;
   const { trackEmojiFilter, trackNavigation } = useAnalytics();
   
-  let handleNavigate = () => {};
+  let handleNavigate = (navItem?: { title: string; url: string }) => {};
   try {
     // This will only work in components rendered inside the SidebarProvider
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -398,6 +392,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent className="flex flex-col h-full">
         <div className="flex-grow min-h-0 overflow-y-auto overscroll-contain">
+          <div className="px-2 pb-2">
+            <Link 
+              href="/dashboard/create" 
+              onClick={() => handleNavigate({ title: "Create", url: "/dashboard/create" })}
+              className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
+            >
+              <CirclePlus className="h-4 w-4" />
+              <span>Create Emoji</span>
+            </Link>
+          </div>
           <NavMain items={navItems} onRefresh={handleRefresh} refreshing={refreshing} slackLoaded={slackLoaded} onNavigate={handleNavigate} />
           <hr className="my-3 border-muted" />
           <NavMain items={aboutNavItems} onNavigate={handleNavigate} />

@@ -252,7 +252,7 @@ export function ChartAreaInteractive() {
       <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-3 xs:py-4 sm:py-6">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <LineChart className="h-5 w-5" />
-          <Link href="/visualizations" className="focus:outline-none cursor-pointer hover:opacity-80">
+          <Link href="/dashboard/visualizations" className="focus:outline-none cursor-pointer hover:opacity-80">
             <span className="border-b border-dotted border-muted-foreground">Emoji Trends</span>
           </Link>
         </h2>
