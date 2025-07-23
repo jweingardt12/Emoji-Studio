@@ -215,7 +215,7 @@ export function DashboardOverlay() {
       console.log("Emoji animation complete, redirecting...")
       
       // Redirect to dashboard
-      router.push("/dashboard")
+      router.push("/app")
     } catch (error) {
       console.error("Error importing demo data:", error)
       setImportError(error instanceof Error ? error.message : "Failed to import demo data")
@@ -331,7 +331,7 @@ export function DashboardOverlay() {
                   source: 'dashboard_overlay_get_started_button'
                 });
                 document.body.style.overflow = '';
-                router.push("/dashboard/settings");
+                router.push("/app/settings");
               }} 
             >
               Get Started →
@@ -346,7 +346,7 @@ export function DashboardOverlay() {
                     source: 'dashboard_overlay_create_link'
                   });
                   document.body.style.overflow = '';
-                  router.push("/dashboard/create");
+                  router.push("/app/create");
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
@@ -368,20 +368,6 @@ export function DashboardOverlay() {
                 ) : (
                   "Try demo"
                 )}
-              </button>
-              <span className="text-muted-foreground">•</span>
-              <button
-                onClick={() => {
-                  opTrack('navigate', {
-                    destination: 'about',
-                    source: 'dashboard_overlay_about_link'
-                  });
-                  document.body.style.overflow = '';
-                  router.push("/dashboard/about");
-                }}
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                Learn more
               </button>
             </div>
             {importError && <p className="text-xs text-red-500 text-center">Error: {importError}</p>}
@@ -441,7 +427,7 @@ export function DashboardOverlay() {
                     )}
                   </Button>
                   <AlertDialogAction asChild>
-                    <Link href="/dashboard/settings">Let's go</Link>
+                    <Link href="/app/settings">Let's go</Link>
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

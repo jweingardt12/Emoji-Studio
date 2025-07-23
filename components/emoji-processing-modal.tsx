@@ -573,7 +573,7 @@ export function EmojiProcessingModal({
                 {!hasSlack && (
                   <p className="text-sm text-muted-foreground text-center">
                     Want to send this directly to Slack? Head to{" "}
-                    <Link href="/dashboard/settings" className="underline hover:text-foreground">
+                    <Link href="/app/settings" className="underline hover:text-foreground">
                       Settings
                     </Link>{" "}
                     and enter your Workspace details.

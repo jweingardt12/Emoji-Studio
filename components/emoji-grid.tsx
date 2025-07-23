@@ -74,7 +74,7 @@ export default function EmojiGrid() {
       <div className="px-6 pt-6 pb-2 flex flex-col gap-1">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Rss className="h-5 w-5" />
-          <Link href="/dashboard/explorer" className="focus:outline-none cursor-pointer hover:opacity-80">
+          <Link href="/app/explorer" className="focus:outline-none cursor-pointer hover:opacity-80">
             <span className="border-b border-dotted border-muted-foreground">Newest Emojis</span>
           </Link>
         </h2>
@@ -136,7 +136,7 @@ export default function EmojiGrid() {
               // Track when user clicks See More
               analytics.trackEmojiFilter("see_more", "explorer")
               // Navigate to explorer page
-              window.location.href = "/dashboard/explorer"
+              window.location.href = "/app/explorer"
             }}
           >
             See More

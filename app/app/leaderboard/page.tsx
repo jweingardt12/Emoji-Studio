@@ -5,7 +5,6 @@ import Leaderboard from "@/components/leaderboard"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { getUserLeaderboard } from "@/lib/services/emoji-service"
 import UserOverlay, { UserWithEmojiCount } from "@/components/user-overlay"
-import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { RequireData } from "@/components/require-data"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -113,7 +112,6 @@ function LeaderboardPage() {
           onClose={() => setSelectedUser(null)}
         />
       )}
-      <DashboardOverlay />
     </>
   )
 }

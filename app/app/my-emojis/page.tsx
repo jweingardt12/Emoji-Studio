@@ -22,7 +22,6 @@ import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
-import { DashboardOverlay } from "@/components/dashboard-overlay"
 
 interface Emoji {
   name: string
@@ -76,7 +75,6 @@ function MyEmojisPage() {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl || !hasRealData) {
         // Don't redirect, just set auth checking to false
-        // The DashboardOverlay will show instead
         setIsAuthChecking(false)
       } else {
         setIsAuthChecking(false)
@@ -920,9 +918,9 @@ function MyEmojisPage() {
 
   if (!isClient) return null
 
-  // Show dashboard overlay if no real data
+  // Return null if no real data
   if (!hasRealData) {
-    return <DashboardOverlay />
+    return null
   }
 
   return (

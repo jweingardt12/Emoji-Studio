@@ -49,7 +49,7 @@ export function SlackCurlInput() {
 
   useEffect(() => {
     if (redirectPending) {
-      router.push('/dashboard');
+      router.push('/app');
       setRedirectPending(false);
     }
   }, [redirectPending, router]);
@@ -141,6 +141,53 @@ export function SlackCurlInput() {
       await navigator.clipboard.writeText(curlCommand);
     } catch (err) {
       console.error("Failed to copy cURL command: ", err);
+    }
+  };
+
+  const loadDemoData = async () => {
+    setIsLoading(true)
+    setError(null)
+    setSuccess(null)
+    setProgress(0)
+
+    try {
+      setLoadingStage("Demo mode activated...")
+      setProgress(10)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      setLoadingStage("Loading sample data...")
+      setProgress(40)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      const { generateDemoData } = await import("@/lib/demo-data")
+      const demoData = await generateDemoData()
+      setProgress(70)
+      setEmojiData(demoData)
+
+      localStorage.setItem("emojiData", JSON.stringify(demoData))
+      localStorage.setItem("workspace", "demo-workspace")
+      setWorkspace("demo-workspace")
+      setHasRealData(true)
+
+      localStorage.setItem("emojiCount", demoData.length.toString())
+      localStorage.setItem("lastFetchTime", new Date().toISOString())
+
+      setLoadingStage(`Demo data loaded! (${demoData.length} emojis)`)
+      setProgress(100)
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      setSuccess(`Successfully loaded ${demoData.length} emojis in demo mode`)
+      setIsLoading(false)
+      setLoadingStage("")
+      setProgress(0)
+
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+      setRedirectPending(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load demo data")
+      setIsLoading(false)
+      setLoadingStage("")
+      setProgress(0)
     }
   };
 
@@ -450,9 +497,18 @@ export function SlackCurlInput() {
               </Alert>
             )}
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col gap-2 pt-2">
               <Button type="submit" disabled={isLoading || isValid === false} className="w-full">
                 Fetch Emojis
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={loadDemoData}
+                disabled={isLoading}
+                className="w-full"
+              >
+                Use Demo Data
               </Button>
             </div>
           </form>

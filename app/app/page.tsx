@@ -4,7 +4,6 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import Leaderboard from "@/components/leaderboard"
 import EmojiGrid from "@/components/emoji-grid"
-import { DashboardOverlay } from "@/components/dashboard-overlay"
 import UserOverlay, { UserWithEmojiCount } from "@/components/user-overlay"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { RequireData } from "@/components/require-data"
@@ -163,7 +162,7 @@ function DashboardPage() {
               <div className="px-3 pt-3 pb-2 flex flex-col gap-1">
                 <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
-                  <Link href="/dashboard/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
+                  <Link href="/app/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
                     <span className="border-b border-dotted border-muted-foreground">Leaderboard</span>
                   </Link>
                 </h2>
@@ -255,8 +254,6 @@ function DashboardPage() {
         emoji={selectedEmojiForOverlay}
         onClose={() => setSelectedEmojiForOverlay(null)}
       />
-      {/* Dashboard Overlay - shows when no emoji data is loaded */}
-      <DashboardOverlay />
     </div>
   )
 }

@@ -28,13 +28,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { InfoIcon } from "lucide-react";
 
 import { useState, useEffect } from "react"
 import { fetchSlackEmojis } from "@/lib/services/emoji-service"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { useToast } from "@/components/ui/use-toast"
+import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 // Simple Modal implementation
 function Modal({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (curl: string) => void }) {
@@ -288,32 +289,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navItems = [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/app",
       icon: LayoutDashboardIcon,
     },
     {
       title: "Leaderboard",
-      url: "/dashboard/leaderboard",
+      url: "/app/leaderboard",
       icon: TrophyIcon,
     },
     {
       title: "Visualizations",
-      url: "/dashboard/visualizations",
+      url: "/app/visualizations",
       icon: BarChartIcon,
     },
     {
       title: "Explorer",
-      url: "/dashboard/explorer",
+      url: "/app/explorer",
       icon: Images,
     },
     {
       title: "My Emojis",
-      url: "/dashboard/my-emojis",
+      url: "/app/my-emojis",
       icon: UserCircle,
     },
     {
       title: "Settings",
-      url: "/dashboard/settings",
+      url: "/app/settings",
       icon: SettingsIcon,
       indicator: !hasRealData ? "error" as const : undefined,
     },
@@ -325,13 +326,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  // About nav item (separated visually)
-  const aboutNavItems = [
-    {
-      title: "About",
-      url: "/dashboard/about",
-      icon: InfoIcon,
-    },
+  // GitHub nav item (separated visually)
+  const githubNavItems = [
     {
       title: "GitHub",
       url: "https://github.com/jweingardt12/Emoji-Studio",
@@ -381,7 +377,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <div className="pl-4 pt-4 pb-2 hidden md:block">
-          <Link href="/dashboard" className="flex items-center gap-2 focus:outline-none">
+          <Link href="/app" className="flex items-center gap-2 focus:outline-none">
             <div className="relative w-10 h-10 flex-shrink-0">
               <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
             </div>
@@ -393,18 +389,38 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="flex flex-col h-full">
         <div className="flex-grow min-h-0 overflow-y-auto overscroll-contain">
           <div className="px-2 pb-2">
-            <Link 
-              href="/dashboard/create" 
-              onClick={() => handleNavigate({ title: "Create", url: "/dashboard/create" })}
-              className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
-            >
-              <CirclePlus className="h-4 w-4" />
-              <span>Create Emoji</span>
-            </Link>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link 
+                    href="/app/create" 
+                    onClick={(e) => {
+                      if (!hasRealData && emojiData.length === 0) {
+                        e.preventDefault();
+                        return;
+                      }
+                      handleNavigate({ title: "Create", url: "/app/create" })
+                    }}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150",
+                      (!hasRealData && emojiData.length === 0) && "pointer-events-none opacity-50"
+                    )}
+                  >
+                    <CirclePlus className="h-4 w-4" />
+                    <span>Create Emoji</span>
+                  </Link>
+                </TooltipTrigger>
+                {(!hasRealData && emojiData.length === 0) && (
+                  <TooltipContent>
+                    <p>Connect to Slack first</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <NavMain items={navItems} onRefresh={handleRefresh} refreshing={refreshing} slackLoaded={slackLoaded} onNavigate={handleNavigate} />
+          <NavMain items={navItems} onRefresh={handleRefresh} refreshing={refreshing} slackLoaded={slackLoaded} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} />
           <hr className="my-3 border-muted" />
-          <NavMain items={aboutNavItems} onNavigate={handleNavigate} />
+          <NavMain items={githubNavItems} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} />
         </div>
         
         <div className="mt-auto pt-4">

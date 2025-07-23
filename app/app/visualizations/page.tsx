@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo, Suspense } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { RequireData } from "@/components/require-data"
-import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -1433,8 +1432,6 @@ function VisualizationsPage() {
           </div>
         </div>
       </div>
-      {/* Dashboard Overlay - shows when no emoji data is loaded */}
-      <DashboardOverlay />
     </div>
   )
 }

@@ -6,7 +6,6 @@ import { EmojiDataProvider } from "@/lib/hooks/use-emoji-data";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { DashboardOverlay } from "@/components/dashboard-overlay";
 import { OpenPanelComponent } from '@openpanel/nextjs';
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeTracker } from "@/components/ThemeTracker";

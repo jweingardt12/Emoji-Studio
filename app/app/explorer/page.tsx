@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { DashboardOverlay } from "@/components/dashboard-overlay"
 import { Emoji } from "@/lib/services/emoji-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
@@ -403,8 +402,6 @@ function ExplorerPage() {
           />
         </Suspense>
       )}
-      {/* Dashboard Overlay - shows when no emoji data is loaded */}
-      <DashboardOverlay />
       {/* Download Progress Overlay */}
       <DownloadProgressOverlay 
         isOpen={isDownloading}

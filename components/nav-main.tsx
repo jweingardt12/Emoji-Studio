@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface NavMainProps {
   items: {
@@ -21,9 +22,10 @@ interface NavMainProps {
   refreshing?: boolean
   slackLoaded?: boolean
   onNavigate?: (navItem?: { title: string; url: string; icon: any; action?: string; indicator?: "error" | "warning" | "success" | "info"; external?: boolean; badge?: string }) => void
+  hasData?: boolean
 }
 
-export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate }: NavMainProps) {
+export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true }: NavMainProps) {
   const pathname = usePathname()
 
   return (
@@ -32,10 +34,15 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate 
         const Icon = item.icon
         const isActive = pathname === item.url
         const isRefresh = item.action === "refresh"
-        const isDisabled = isRefresh && refreshing
+        const isSettings = item.url === "/app/settings"
+        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !item.external)
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {
+          if (isDisabled) {
+            e.preventDefault()
+            return
+          }
           if (isRefresh) {
             e.preventDefault()
             onRefresh?.()
@@ -79,18 +86,8 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate 
           )
         }
         
-        return (
-          <Link
-            key={item.title}
-            href={item.url}
-            onClick={handleClick}
-            className={cn(
-              "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
-              isActive && "bg-accent text-accent-foreground",
-              isDisabled && "pointer-events-none opacity-50",
-            )}
-            aria-current={isActive ? "page" : undefined}
-          >
+        const linkContent = (
+          <>
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <span className="truncate">{item.title}</span>
             {item.badge && (
@@ -116,8 +113,42 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate 
                 ></path>
               </svg>
             )}
+          </>
+        )
+
+        const link = (
+          <Link
+            key={item.title}
+            href={item.url}
+            onClick={handleClick}
+            className={cn(
+              "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              isActive && "bg-accent text-accent-foreground",
+              isDisabled && "pointer-events-none opacity-50",
+            )}
+            aria-current={isActive ? "page" : undefined}
+          >
+            {linkContent}
           </Link>
         )
+
+        // Wrap in tooltip if disabled due to no data
+        if (isDisabled && !hasData && !isSettings) {
+          return (
+            <TooltipProvider key={item.title}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {link}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Connect to Slack first</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )
+        }
+
+        return link
       })}
     </div>
   )
