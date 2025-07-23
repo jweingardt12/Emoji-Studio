@@ -155,22 +155,29 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (Array.isArray(parsedData) && parsedData.length > 0) {
             console.log(`Loaded ${parsedData.length} emojis from localStorage`)
             setEmojiData(parsedData)
-            setHasRealData(true)
-            setUseDemoData(false)
+            
+            // Check if this is demo data by checking the workspace
+            if (storedWorkspace === "demo-workspace") {
+              setHasRealData(false)
+              setUseDemoData(true)
+            } else {
+              setHasRealData(true)
+              setUseDemoData(false)
+            }
           } else {
-            console.log("No emoji data found in localStorage, using demo data")
+            console.log("No emoji data found in localStorage")
             setHasRealData(false)
-            setUseDemoData(true)
+            setUseDemoData(false)
           }
         } else {
-          console.log("No emoji data found in localStorage, using demo data")
+          console.log("No emoji data found in localStorage")
           setHasRealData(false)
-          setUseDemoData(true)
+          setUseDemoData(false)
         }
       } catch (error) {
         console.error("Error loading emoji data from localStorage:", error)
         setHasRealData(false)
-        setUseDemoData(true)
+        setUseDemoData(false)
       } finally {
         setLoading(false)
       }
@@ -183,7 +190,8 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log("Local storage cleared event detected")
       setEmojiData([])
       setHasRealData(false)
-      setUseDemoData(true)
+      setUseDemoData(false)
+      setWorkspace("")
     }
 
     // Listen for emoji data updated event
@@ -240,16 +248,16 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Create the context value
   const contextValue: EmojiDataContextType = {
-    emojiData: useDemoData ? demoData : emojiData,
+    emojiData: useDemoData && demoData.length > 0 ? demoData : emojiData,
     setEmojiData,
     loading: loading || (useDemoData && demoLoading),
     setLoading,
     filterByDateRange,
-    stats: useDemoData ? demoStats : stats,
-    userLeaderboard: useDemoData ? demoLeaderboard : userLeaderboard,
+    stats: useDemoData && demoStats ? demoStats : stats,
+    userLeaderboard: useDemoData && demoLeaderboard.length > 0 ? demoLeaderboard : userLeaderboard,
     useDemoData,
     setUseDemoData,
-    demoChartData,
+    demoChartData: useDemoData ? demoChartData : null,
     setDemoTimeRange,
     hasRealData,
     setHasRealData,
