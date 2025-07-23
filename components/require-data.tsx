@@ -18,7 +18,7 @@ import { useState } from "react"
 
 export function RequireData({ 
   children, 
-  redirectTo = "/app/settings" 
+  redirectTo = "/settings" 
 }: RequireDataProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);

@@ -6,8 +6,8 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 
 // List of allowed routes when no data is set
 const ALLOWED_ROUTES_WITHOUT_DATA = [
-  "/app/settings",
-  "/app", // Allow dashboard access even without data
+  "/settings",
+  "/dashboard", // Allow dashboard access even without data
 ]
 
 /**
@@ -26,7 +26,7 @@ export function RequireDataMiddleware({ children }: { children: React.ReactNode 
   )
   
   // For root path, redirect to settings if no data
-  const isRootPath = pathname === "/"
+  const isRootPath = pathname === "/" || pathname === "/dashboard"
   
   useEffect(() => {
     // Prevent multiple redirects
@@ -42,7 +42,7 @@ export function RequireDataMiddleware({ children }: { children: React.ReactNode 
         // Use a small delay to avoid race conditions with chunk loading
         setTimeout(() => {
           console.log(`Redirecting from ${pathname} to /settings (no data available)`)
-          router.push("/app/settings")
+          router.push("/settings")
         }, 50)
       }
     }

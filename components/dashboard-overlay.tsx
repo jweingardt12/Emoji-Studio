@@ -331,7 +331,7 @@ export function DashboardOverlay() {
                   source: 'dashboard_overlay_get_started_button'
                 });
                 document.body.style.overflow = '';
-                router.push("/app/settings");
+                router.push("/settings");
               }} 
             >
               Get Started →
@@ -346,7 +346,7 @@ export function DashboardOverlay() {
                     source: 'dashboard_overlay_create_link'
                   });
                   document.body.style.overflow = '';
-                  router.push("/app/create");
+                  router.push("/create");
                 }}
                 className="text-muted-foreground hover:text-primary transition-colors"
               >
@@ -427,7 +427,7 @@ export function DashboardOverlay() {
                     )}
                   </Button>
                   <AlertDialogAction asChild>
-                    <Link href="/app/settings">Let's go</Link>
+                    <Link href="/settings">Let's go</Link>
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

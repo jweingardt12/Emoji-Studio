@@ -251,7 +251,7 @@ const Leaderboard = ({
                     </Label>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Users inactive for 3+ months. <a href="/app/settings" className="underline">Configure threshold</a>.</p>
+                    <p>Users inactive for 3+ months. <a href="/settings" className="underline">Configure threshold</a>.</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -484,7 +484,7 @@ const Leaderboard = ({
             variant="default"
             size="default"
           >
-            <a href="/app/leaderboard">See More</a>
+            <a href="/leaderboard">See More</a>
           </Button>
           <div className="text-sm text-muted-foreground">
             Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedLeaderboard.length)} to{" "}
@@ -552,7 +552,7 @@ const Leaderboard = ({
       {variant === "compact" && (
         <div className="w-full flex justify-center mt-4 mb-2">
           <Button asChild variant="default" size="default">
-            <a href="/app/leaderboard">See More</a>
+            <a href="/leaderboard">See More</a>
           </Button>
         </div>
       )}

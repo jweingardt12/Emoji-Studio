@@ -289,32 +289,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navItems = [
     {
       title: "Dashboard",
-      url: "/app",
+      url: "/dashboard",
       icon: LayoutDashboardIcon,
     },
     {
       title: "Leaderboard",
-      url: "/app/leaderboard",
+      url: "/leaderboard",
       icon: TrophyIcon,
     },
     {
       title: "Visualizations",
-      url: "/app/visualizations",
+      url: "/visualizations",
       icon: BarChartIcon,
     },
     {
       title: "Explorer",
-      url: "/app/explorer",
+      url: "/explorer",
       icon: Images,
     },
     {
       title: "My Emojis",
-      url: "/app/my-emojis",
+      url: "/my-emojis",
       icon: UserCircle,
     },
     {
       title: "Settings",
-      url: "/app/settings",
+      url: "/settings",
       icon: SettingsIcon,
       indicator: !hasRealData ? "error" as const : undefined,
     },
@@ -377,7 +377,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <div className="pl-4 pt-4 pb-2 hidden md:block">
-          <Link href="/app" className="flex items-center gap-2 focus:outline-none">
+          <Link href="/dashboard" className="flex items-center gap-2 focus:outline-none">
             <div className="relative w-10 h-10 flex-shrink-0">
               <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
             </div>
@@ -393,13 +393,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link 
-                    href="/app/create" 
+                    href="/create" 
                     onClick={(e) => {
                       if (!hasRealData && emojiData.length === 0) {
                         e.preventDefault();
                         return;
                       }
-                      handleNavigate({ title: "Create", url: "/app/create" })
+                      handleNavigate({ title: "Create", url: "/create" })
                     }}
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150",

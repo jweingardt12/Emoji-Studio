@@ -49,7 +49,7 @@ export function SlackCurlInput() {
 
   useEffect(() => {
     if (redirectPending) {
-      router.push('/app');
+      router.push('/dashboard');
       setRedirectPending(false);
     }
   }, [redirectPending, router]);

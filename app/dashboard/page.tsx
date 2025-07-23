@@ -162,7 +162,7 @@ function DashboardPage() {
               <div className="px-3 pt-3 pb-2 flex flex-col gap-1">
                 <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
                   <Trophy className="h-5 w-5" />
-                  <Link href="/app/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
+                  <Link href="/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
                     <span className="border-b border-dotted border-muted-foreground">Leaderboard</span>
                   </Link>
                 </h2>

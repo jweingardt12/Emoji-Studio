@@ -34,7 +34,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         const Icon = item.icon
         const isActive = pathname === item.url
         const isRefresh = item.action === "refresh"
-        const isSettings = item.url === "/app/settings"
+        const isSettings = item.url === "/settings"
         const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !item.external)
 
         // Handle refresh action

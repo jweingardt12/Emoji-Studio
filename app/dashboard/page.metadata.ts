@@ -4,7 +4,7 @@ export const metadata = {
   openGraph: {
     title: "Dashboard | Emoji Studio",
     description: "Your personal Slack emoji dashboard. See trends, top creators, and explore your emoji collection with rich analytics.",
-    url: "https://emoji.studio/app", // Change to your actual deployed URL if different
+    url: "https://app.emojistudio.xyz", // Change to your actual deployed URL if different
     siteName: "Emoji Studio",
     images: [
       {

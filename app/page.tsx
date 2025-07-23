@@ -1,5 +1,14 @@
-import { redirect } from "next/navigation"
+"use client"
 
-export default function Home() {
-  redirect("/app")
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+
+export default function RootPage() {
+  const router = useRouter()
+  
+  useEffect(() => {
+    router.push("/dashboard")
+  }, [router])
+  
+  return null
 }
