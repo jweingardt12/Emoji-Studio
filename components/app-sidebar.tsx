@@ -346,7 +346,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const sidebarCtx = typeof window !== "undefined" ? ((window as any).__SIDEBAR_CTX__ || null) : null;
   const { trackEmojiFilter, trackNavigation } = useAnalytics();
   
-  let handleNavigate = () => {};
+  let handleNavigate = (navItem?: { title: string; url: string }) => {};
   try {
     // This will only work in components rendered inside the SidebarProvider
     // eslint-disable-next-line react-hooks/rules-of-hooks
