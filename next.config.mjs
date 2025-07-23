@@ -9,6 +9,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || '',
 }
 
 export default nextConfig
