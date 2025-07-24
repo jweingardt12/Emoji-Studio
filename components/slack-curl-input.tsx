@@ -566,7 +566,7 @@ export function SlackCurlInput() {
       <LoadingOverlay
         isOpen={isLoading}
         progress={progress}
-        stage={loadingStage}
+        loadingStage={loadingStage}
       />
     </>
   )
