@@ -122,7 +122,7 @@ export class EmojiProcessor {
 
   private static async processGif(file: File, name: string): Promise<ProcessedEmoji> {
     try {
-      const processedBlob = await GifProcessor.processGif(file, this.TARGET_SIZE, this.MAX_FILE_SIZE)
+      let processedBlob = await GifProcessor.processGif(file, this.TARGET_SIZE, this.MAX_FILE_SIZE)
       console.log(`Processed GIF blob type: ${processedBlob.type}, size: ${processedBlob.size}`)
       const preview = URL.createObjectURL(processedBlob)
       const blobUrl = await this.blobToDataURL(processedBlob)
