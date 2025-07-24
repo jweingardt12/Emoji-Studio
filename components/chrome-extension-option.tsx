@@ -1,0 +1,253 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Chrome as ChromeIcon, AlertCircle as AlertCircleIcon } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension"
+import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { useOpenPanel } from '@openpanel/nextjs'
+
+export function ChromeExtensionOption() {
+  const router = useRouter()
+  const [isExtensionInstalled, setIsExtensionInstalled] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
+  const op = useOpenPanel()
+
+  useEffect(() => {
+    // Check if Chrome extension is installed by trying to communicate with it
+    const checkExtension = () => {
+      if (typeof window !== 'undefined' && window.postMessage) {
+        window.postMessage({ type: 'CHECK_EXTENSION' }, '*')
+        
+        const timeout = setTimeout(() => {
+          setIsExtensionInstalled(false)
+        }, 1000)
+
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data?.type === 'EXTENSION_AVAILABLE') {
+            clearTimeout(timeout)
+            setIsExtensionInstalled(true)
+            window.removeEventListener('message', handleMessage)
+          }
+        }
+
+        window.addEventListener('message', handleMessage)
+        
+        return () => {
+          clearTimeout(timeout)
+          window.removeEventListener('message', handleMessage)
+        }
+      }
+    }
+
+    checkExtension()
+  }, [])
+
+  useEffect(() => {
+    // Initialize Chrome extension listener
+    initializeExtensionListener((data: SlackAuthData) => {
+      console.log('Received data from Chrome extension:', data)
+      
+      setIsConnecting(true)
+      setError(null)
+      
+      // Process the extension data
+      processExtensionData(data)
+    })
+  }, [])
+
+  const processExtensionData = async (data: SlackAuthData) => {
+    try {
+      const workspace = data.workspace || 'slack-workspace'
+      
+      // Store the auth data
+      localStorage.setItem("workspace", workspace)
+      setWorkspace(workspace)
+
+      setSuccess('Data received from Chrome extension! Processing...')
+      
+      // Generate curl command from extension data for API compatibility
+      const curlFromExtension = generateCurlFromExtensionData(data)
+      localStorage.setItem("slackCurlCommand", curlFromExtension)
+
+      // Parse the data for API call
+      const curlRequest = {
+        url: `https://${workspace}.slack.com/api/emoji.adminList?_x_id=${data.xId}&_x_version_ts=noversion&fp=98`,
+        method: "POST",
+        headers: {
+          Cookie: data.cookie || "",
+        },
+        formData: {
+          token: data.token || "",
+        },
+      }
+      
+      const response = await fetch("/api/slack-emojis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ curlRequest }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch emoji data")
+      }
+
+      const responseData = await response.json()
+      
+      if (!responseData.emojis || !Array.isArray(responseData.emojis)) {
+        throw new Error("Invalid emoji data format")
+      }
+
+      setEmojiData(responseData.emojis)
+      setHasRealData(true)
+      localStorage.setItem("emojiData", JSON.stringify(responseData.emojis))
+      localStorage.setItem("emojiCount", responseData.emojis.length.toString())
+      localStorage.setItem("lastFetchTime", new Date().toISOString())
+
+      op.track('chrome_extension_emoji_fetch', {
+        emojiCount: responseData.emojis.length,
+        workspace: workspace,
+      })
+
+      setSuccess(`Successfully fetched ${responseData.emojis.length} emojis from ${workspace}`)
+      setIsConnecting(false)
+
+      // Redirect to dashboard after success
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
+
+    } catch (err) {
+      console.error("Error processing extension data:", err)
+      setError(err instanceof Error ? err.message : "Failed to process extension data")
+      setIsConnecting(false)
+    }
+  }
+
+  const generateCurlFromExtensionData = (data: SlackAuthData): string => {
+    const workspace = data.workspace || 'workspace'
+    const timestamp = Math.floor(Date.now() / 1000)
+    const xId = data.xId || `generated-${timestamp}`
+    
+    const url = `https://${workspace}.slack.com/api/emoji.adminList?_x_id=${xId}&_x_version_ts=noversion&fp=98`
+    
+    let curl = `curl '${url}'`
+    curl += ` -H 'accept: */*'`
+    curl += ` -H 'accept-language: en-US,en;q=0.9'`
+    curl += ` -H 'cache-control: no-cache'`
+    curl += ` -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'`
+    
+    if (data.cookie) {
+      curl += ` -b '${data.cookie}'`
+    }
+    
+    curl += ` -H 'pragma: no-cache'`
+    curl += ` -H 'sec-fetch-dest: empty'`
+    curl += ` -H 'sec-fetch-mode: cors'`
+    curl += ` -H 'sec-fetch-site: same-origin'`
+    curl += ` --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+    
+    return curl
+  }
+
+  const handleConnectWithExtension = () => {
+    if (!isExtensionInstalled) {
+      return
+    }
+
+    setIsConnecting(true)
+    setError(null)
+    setSuccess(null)
+
+    // Send message to extension to start the auth process
+    window.postMessage({ type: 'START_SLACK_AUTH' }, '*')
+
+    op.track('chrome_extension_connect_attempt', {})
+
+    // Set a timeout for the connection attempt
+    setTimeout(() => {
+      if (isConnecting) {
+        setError("Connection timeout. Please make sure you're logged into Slack and try again.")
+        setIsConnecting(false)
+      }
+    }, 30000) // 30 second timeout
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <ChromeIcon className="h-5 w-5 text-blue-500" />
+          Chrome Extension (Recommended)
+        </CardTitle>
+        <CardDescription>
+          The easiest way to connect your Slack workspace. Install our Chrome extension for one-click authentication.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!isExtensionInstalled ? (
+          <div className="space-y-3">
+            <div className="p-3 border rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">
+                Our Chrome extension automatically handles the authentication process, 
+                so you don't need to manually copy curl commands.
+              </p>
+            </div>
+            <Button
+              onClick={() => window.open('CHROME_EXTENSION_LINK_HERE', '_blank')}
+              className="w-full"
+              size="lg"
+            >
+              <DownloadIcon className="h-4 w-4 mr-2" />
+              Install Chrome Extension
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <Alert>
+              <CheckCircleIcon className="h-4 w-4" />
+              <AlertTitle>Extension Detected</AlertTitle>
+              <AlertDescription>
+                Chrome extension is installed and ready to connect to your Slack workspace.
+              </AlertDescription>
+            </Alert>
+            
+            <Button
+              onClick={handleConnectWithExtension}
+              disabled={isConnecting}
+              className="w-full"
+              size="lg"
+            >
+              {isConnecting ? "Connecting..." : "Connect with Extension"}
+            </Button>
+          </div>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircleIcon className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
+            <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertTitle>Success!</AlertTitle>
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

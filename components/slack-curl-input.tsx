@@ -387,15 +387,8 @@ export function SlackCurlInput() {
 
   return (
     <>
-      <Card className="mx-auto max-w-2xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">Slack Workspace Connection</CardTitle>
-          <CardDescription>
-            Enter a curl command from your Slack workspace to fetch emoji data. Your data is processed locally and never sent to any server.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <ClipboardIcon className="h-4 w-4 text-primary" />
@@ -488,7 +481,7 @@ export function SlackCurlInput() {
               )}
             </div>
             
-            <CardFooter className="px-0 pt-6">
+            <div className="pt-4">
               <Button
                 type="submit"
                 disabled={!isValid || isLoading}
@@ -497,29 +490,27 @@ export function SlackCurlInput() {
               >
                 {isLoading ? "Processing..." : "Connect Workspace"}
               </Button>
-            </CardFooter>
+            </div>
           </form>
-        </CardContent>
-      </Card>
 
-      <Card className="mx-auto mt-6 max-w-2xl">
-        <CardHeader className="pb-3">
-          <Button
-            variant="ghost"
-            onClick={handleInstructionsToggle}
-            className="flex w-full items-center justify-between p-0 text-left hover:bg-transparent"
-          >
-            <CardTitle className="text-lg">How to get your Slack curl command</CardTitle>
-            {isInstructionsOpen ? (
-              <ChevronUpIcon className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5 text-muted-foreground" />
-            )}
-          </Button>
-        </CardHeader>
-        <Collapsible open={isInstructionsOpen}>
-          <CollapsibleContent>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
+        <div className="mt-4 border rounded-lg">
+          <div className="p-3">
+            <Button
+              variant="ghost"
+              onClick={handleInstructionsToggle}
+              className="flex w-full items-center justify-between p-0 text-left hover:bg-transparent"
+            >
+              <span className="text-sm font-medium">How to get your Slack curl command</span>
+              {isInstructionsOpen ? (
+                <ChevronUpIcon className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
+          </div>
+          <Collapsible open={isInstructionsOpen}>
+            <CollapsibleContent>
+              <div className="px-3 pb-3 space-y-4 text-sm text-muted-foreground border-t pt-3">
               <ol className="list-decimal space-y-3 pl-5">
                 <li>Open your Slack workspace in a web browser</li>
                 <li>
@@ -558,10 +549,11 @@ export function SlackCurlInput() {
                   We never store or transmit your credentials to our servers.
                 </AlertDescription>
               </Alert>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+      </div>
 
       <LoadingOverlay
         isOpen={isLoading}

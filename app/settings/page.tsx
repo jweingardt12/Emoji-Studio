@@ -1,15 +1,16 @@
 "use client"
 
 import { SlackCurlInput } from "@/components/slack-curl-input"
+import { ChromeExtensionOption } from "@/components/chrome-extension-option"
 import { ClearLocalStorageButton } from "@/components/clear-local-storage-button"
 import { FetchStatsDisplay } from "@/components/fetch-stats-display"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SettingsIcon } from "lucide-react"
+import { SettingsIcon, Zap } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { openpanel } from "@/lib/safe-openpanel";
+import { openpanel } from "@/lib/safe-openpanel"
 
 export default function SettingsPage() {
   const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(() => {
@@ -65,8 +66,43 @@ export default function SettingsPage() {
 
           {/* Main content grid */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
-            {/* Slack Integration */}
-            <SlackCurlInput />
+            {/* Slack Integration Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Connect Your Slack Workspace
+                </CardTitle>
+                <CardDescription>
+                  Choose how you'd like to connect to your Slack workspace to fetch emoji data.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Chrome Extension Option */}
+                <ChromeExtensionOption />
+                
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or</span>
+                  </div>
+                </div>
+                
+                {/* Manual cURL Option */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium">Manual Setup</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Copy a cURL command from your browser's developer tools for manual connection.
+                    </p>
+                  </div>
+                  <SlackCurlInput />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Leaderboard Settings Card */}
             <Card>
