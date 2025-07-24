@@ -155,10 +155,10 @@ function ExplorerPage() {
     setIsDownloading(true);
     setDownloadError(null);
     setImageErrors({});
-    analytics.trackDownloadAllClicked(nonAliasEmojis.length, searchQuery);
-
+    
     // Initialize progress states - filter out aliases
     const nonAliasEmojis = sortedEmojis.filter(emoji => !emoji.is_alias && !emoji.url.startsWith('alias:'));
+    analytics.trackDownloadAllClicked(nonAliasEmojis.length, searchQuery);
     const filesToProcess = nonAliasEmojis.length;
     setTotalFilesToDownload(filesToProcess);
     setProcessedFileCount(0);
