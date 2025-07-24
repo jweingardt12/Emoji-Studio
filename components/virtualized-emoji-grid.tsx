@@ -56,7 +56,7 @@ export function VirtualizedEmojiGrid({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 144, // Approximate height of each row
+    estimateSize: () => 160, // Adjusted height for better spacing
     overscan: 5,
   })
 
@@ -65,9 +65,10 @@ export function VirtualizedEmojiGrid({
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100vh-280px)] overflow-auto"
+      className="overflow-hidden"
       style={{
         contain: 'strict',
+        height: 'auto', // Let content determine height
       }}
     >
       <div
@@ -91,42 +92,49 @@ export function VirtualizedEmojiGrid({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4`}>
+              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 p-2`}>
                 {row.map((emoji) => (
                   <div
                     key={`${emoji.name}-${emoji.url}`}
-                    className="flex flex-col items-center justify-center rounded-lg border bg-card p-4 shadow hover:border-primary/30 cursor-pointer w-full min-h-[112px]"
+                    className="flex flex-col items-center justify-center rounded-lg border bg-card p-2 sm:p-3 shadow hover:border-primary/30 hover:shadow-md transition-all cursor-pointer w-full min-h-[120px] sm:min-h-[130px]"
                     title={emoji.name}
                     onClick={() => onEmojiClick(emoji)}
                   >
-                    {imageErrors[emoji.name] ? (
-                      <div className="flex h-12 w-12 items-center justify-center rounded bg-muted text-xs overflow-hidden">
-                        {emoji.name.slice(0, 2)}
-                      </div>
-                    ) : (
-                      <img
-                        src={emoji.url || getPlaceholderImage(emoji.name)}
-                        alt={`:${emoji.name}:`}
-                        className="h-12 w-12 object-contain rounded"
-                        onError={() => onImageError(emoji.name)}
-                        loading="lazy"
-                      />
-                    )}
+                    {/* Emoji Image */}
+                    <div className="flex-shrink-0 mb-1.5 sm:mb-2">
+                      {imageErrors[emoji.name] ? (
+                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
+                          {emoji.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      ) : (
+                        <img
+                          src={emoji.url || getPlaceholderImage(emoji.name)}
+                          alt={`:${emoji.name}:`}
+                          className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded"
+                          onError={() => onImageError(emoji.name)}
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
+                    
+                    {/* Emoji Name */}
                     <span
-                      className="mt-2 text-xs text-muted-foreground text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
-                      title={":" + emoji.name + ":"}
+                      className="text-xs font-medium text-foreground text-center w-full truncate px-1 mb-0.5"
+                      title={`:${emoji.name}:`}
                     >
-                      :{emoji.name && emoji.name.length > 10 ? emoji.name.slice(0, 10) + "…" : emoji.name}:
+                      :{emoji.name && emoji.name.length > 12 ? emoji.name.slice(0, 12) + "…" : emoji.name}:
                     </span>
+                    
+                    {/* Creator Name */}
                     <span
-                      className="mt-1 text-xs text-slate-400 text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
+                      className="text-xs text-muted-foreground text-center w-full truncate px-1 mb-0.5"
                       title={emoji.user_display_name}
                     >
                       {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : ""}
                     </span>
-                    <span
-                      className="mt-1 text-xs text-slate-400 text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
-                    >
+                    
+                    {/* Creation Date */}
+                    <span className="text-xs text-muted-foreground text-center w-full truncate px-1">
                       {emoji.created ? new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ""}
                     </span>
                   </div>
@@ -146,12 +154,19 @@ export function VirtualizedEmojiGrid({
 
 export function VirtualizedEmojiGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 p-2">
       {Array.from({ length: 24 }).map((_, i) => (
-        <div key={i} className="flex flex-col items-center justify-center p-4 border rounded-lg bg-card">
-          <Skeleton className="h-12 w-12 rounded" />
-          <Skeleton className="h-4 w-16 mt-2" />
-          <Skeleton className="h-3 w-12 mt-1" />
+        <div key={i} className="flex flex-col items-center justify-center p-2 sm:p-3 border rounded-lg bg-card min-h-[120px] sm:min-h-[130px]">
+          {/* Emoji Image Skeleton */}
+          <div className="flex-shrink-0 mb-1.5 sm:mb-2">
+            <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded" />
+          </div>
+          {/* Emoji Name Skeleton */}
+          <Skeleton className="h-3 w-16 mb-0.5" />
+          {/* Creator Name Skeleton */}
+          <Skeleton className="h-3 w-12 mb-0.5" />
+          {/* Date Skeleton */}
+          <Skeleton className="h-3 w-10" />
         </div>
       ))}
     </div>

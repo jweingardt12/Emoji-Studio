@@ -139,34 +139,28 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [demoTimeRange])
 
-  // Load emoji data from localStorage on mount
-  useEffect(() => {
-    const loadEmojiData = () => {
-      try {
-        const storedData = localStorage.getItem("emojiData")
-        const storedWorkspace = localStorage.getItem("workspace")
+  // Function to load emoji data from localStorage (moved outside useEffect so it can be properly updated)
+  const loadEmojiData = useCallback(() => {
+    try {
+      const storedData = localStorage.getItem("emojiData")
+      const storedWorkspace = localStorage.getItem("workspace")
 
-        if (storedWorkspace) {
-          setWorkspace(storedWorkspace)
-        }
+      if (storedWorkspace) {
+        setWorkspace(storedWorkspace)
+      }
 
-        if (storedData) {
-          const parsedData = JSON.parse(storedData)
-          if (Array.isArray(parsedData) && parsedData.length > 0) {
-            console.log(`Loaded ${parsedData.length} emojis from localStorage`)
-            setEmojiData(parsedData)
-            
-            // Check if this is demo data by checking the workspace
-            if (storedWorkspace === "demo-workspace") {
-              setHasRealData(false)
-              setUseDemoData(true)
-            } else {
-              setHasRealData(true)
-              setUseDemoData(false)
-            }
-          } else {
-            console.log("No emoji data found in localStorage")
+      if (storedData) {
+        const parsedData = JSON.parse(storedData)
+        if (Array.isArray(parsedData) && parsedData.length > 0) {
+          console.log(`Loaded ${parsedData.length} emojis from localStorage`)
+          setEmojiData(parsedData)
+          
+          // Check if this is demo data by checking the workspace
+          if (storedWorkspace === "demo-workspace") {
             setHasRealData(false)
+            setUseDemoData(true)
+          } else {
+            setHasRealData(true)
             setUseDemoData(false)
           }
         } else {
@@ -174,15 +168,22 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setHasRealData(false)
           setUseDemoData(false)
         }
-      } catch (error) {
-        console.error("Error loading emoji data from localStorage:", error)
+      } else {
+        console.log("No emoji data found in localStorage")
         setHasRealData(false)
         setUseDemoData(false)
-      } finally {
-        setLoading(false)
       }
+    } catch (error) {
+      console.error("Error loading emoji data from localStorage:", error)
+      setHasRealData(false)
+      setUseDemoData(false)
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
+  // Load emoji data from localStorage on mount
+  useEffect(() => {
     loadEmojiData()
 
     // Listen for storage cleared event
@@ -207,7 +208,7 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       window.removeEventListener("localStorageCleared", handleStorageCleared)
       window.removeEventListener("emojiDataUpdated", handleEmojiDataUpdated)
     }
-  }, [])
+  }, [loadEmojiData])
 
   // Filter emojis by date range
   const filterByDateRange = useCallback(
@@ -222,11 +223,14 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Calculate stats
   const stats = useMemo(() => {
+    console.log(`Recalculating stats: useDemoData=${useDemoData}, emojiData.length=${emojiData.length}`)
     if (useDemoData) {
       return demoStats
     }
     if (emojiData.length === 0) return null
-    return calculateEmojiStats(emojiData, Math.floor(Date.now() / 1000))
+    const calculatedStats = calculateEmojiStats(emojiData, Math.floor(Date.now() / 1000))
+    console.log('Calculated stats:', calculatedStats)
+    return calculatedStats
   }, [emojiData, useDemoData, demoStats])
 
   // Calculate user leaderboard

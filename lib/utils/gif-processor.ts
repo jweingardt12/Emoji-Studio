@@ -4,25 +4,25 @@ import { AnimatedGifProcessor } from './animated-gif-processor'
 
 export class GifProcessor {
   static async processGif(file: File, targetSize: number, maxFileSize: number): Promise<Blob> {
+    // First, verify this is actually a GIF file
+    console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`)
+    
+    // Check if it's actually a GIF by examining the file content
+    const isAnimatedGif = await this.isAnimatedGif(file)
+    console.log(`File is animated GIF: ${isAnimatedGif}`)
+    
     // Check if the original is already within limits
     const img = await this.loadImage(file)
     if (file.size <= maxFileSize && img.width <= targetSize && img.height <= targetSize) {
+      console.log('GIF is already within size limits, returning original')
       return file
     }
 
     // Try to process with proper frame extraction first
     try {
       console.log('Processing animated GIF with frame extraction...')
-      
-      // Quick test to see if this is actually an animated GIF
-      const testImg = new Image()
-      testImg.src = URL.createObjectURL(file)
-      await new Promise(resolve => {
-        testImg.onload = resolve
-        testImg.onerror = resolve
-      })
-      console.log(`Original GIF dimensions: ${testImg.width}x${testImg.height}`)
-      URL.revokeObjectURL(testImg.src)
+      console.log(`Original GIF dimensions: ${img.width}x${img.height}`)
+      URL.revokeObjectURL(img.src)
       
       return await GifFrameExtractor.processAnimatedGif(file, targetSize, maxFileSize)
     } catch (error) {
@@ -206,10 +206,47 @@ export class GifProcessor {
   
   
   static async getGifInfo(file: File): Promise<{ frameCount: number; duration: number }> {
-    // Basic implementation - in a real app, you'd parse the GIF format
-    return {
-      frameCount: 1, // Treat as static for now
-      duration: 0
+    try {
+      const frames = await GifFrameExtractor.extractFrames(file)
+      const duration = frames.reduce((sum, frame) => sum + frame.delay, 0)
+      return {
+        frameCount: frames.length,
+        duration: duration
+      }
+    } catch (error) {
+      console.error('Failed to get GIF info:', error)
+      return {
+        frameCount: 1,
+        duration: 0
+      }
+    }
+  }
+  
+  private static async isAnimatedGif(file: File): Promise<boolean> {
+    try {
+      // Check file header for GIF signature
+      const arrayBuffer = await file.slice(0, 6).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // Check for GIF signature (GIF87a or GIF89a)
+      if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+        console.log('File has GIF signature')
+        
+        // Try to parse and check frame count
+        try {
+          const info = await this.getGifInfo(file)
+          console.log(`GIF has ${info.frameCount} frames`)
+          return info.frameCount > 1
+        } catch (parseError) {
+          console.warn('Could not parse GIF frames, assuming animated:', parseError)
+          return true // Assume it's animated if we can't parse
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking if file is animated GIF:', error)
+      return false
     }
   }
 }

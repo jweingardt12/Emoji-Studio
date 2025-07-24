@@ -18,7 +18,6 @@ const format = (date: Date | number, formatStr: string) => {
 }
 import { useAnalytics } from "@/lib/analytics"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
-import { VirtualizedEmojiGrid, VirtualizedEmojiGridSkeleton } from '@/components/virtualized-emoji-grid';
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -80,16 +79,26 @@ function ExplorerPage() {
     if (!emojiData) return [];
     
     return emojiData.filter((emoji) => {
-      if (!searchQuery) return true;
+      // Apply search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const nameMatch = emoji.name.toLowerCase().includes(query);
+        const creatorMatch = emoji.user_display_name?.toLowerCase().includes(query) || false;
+        const userIdMatch = emoji.user_id?.toLowerCase().includes(query) || false;
+        
+        if (!nameMatch && !creatorMatch && !userIdMatch) {
+          return false;
+        }
+      }
       
-      const query = searchQuery.toLowerCase();
-      const nameMatch = emoji.name.toLowerCase().includes(query);
-      const creatorMatch = emoji.user_display_name?.toLowerCase().includes(query) || false;
-      const userIdMatch = emoji.user_id?.toLowerCase().includes(query) || false;
-      
-      return nameMatch || creatorMatch || userIdMatch;
+      return true;
     });
   }, [emojiData, searchQuery]);
+  
+  // Count non-alias emojis for consistency with dashboard
+  const nonAliasCount = useMemo(() => {
+    return filteredEmojis.filter(emoji => !emoji.is_alias).length;
+  }, [filteredEmojis]);
 
   // Sort emojis
   const sortedEmojis = useMemo(() => {
@@ -132,7 +141,7 @@ function ExplorerPage() {
   };
 
   const handleDownloadAll = async () => {
-    if (!sortedEmojis.length || isDownloading) return;
+    if (!nonAliasCount || isDownloading) return;
 
     // Dynamically import JSZip and file-saver to reduce initial bundle size
     const [JSZip, { saveAs }] = await Promise.all([
@@ -146,10 +155,11 @@ function ExplorerPage() {
     setIsDownloading(true);
     setDownloadError(null);
     setImageErrors({});
-    analytics.trackDownloadAllClicked(sortedEmojis.length, searchQuery);
+    analytics.trackDownloadAllClicked(nonAliasEmojis.length, searchQuery);
 
-    // Initialize progress states
-    const filesToProcess = sortedEmojis.filter(emoji => !emoji.is_alias && !emoji.url.startsWith('alias:')).length;
+    // Initialize progress states - filter out aliases
+    const nonAliasEmojis = sortedEmojis.filter(emoji => !emoji.is_alias && !emoji.url.startsWith('alias:'));
+    const filesToProcess = nonAliasEmojis.length;
     setTotalFilesToDownload(filesToProcess);
     setProcessedFileCount(0);
     setDownloadProgress(0);
@@ -158,17 +168,16 @@ function ExplorerPage() {
     let currentFileNumber = 0; // To update progress
 
     try {
-      for (const emoji of sortedEmojis) {
+      for (const emoji of nonAliasEmojis) {
         if (signal.aborted) {
           console.log('Download aborted, breaking loop.');
           // No need to set error here, handleCancelDownload does it.
           break; // Exit loop if download was cancelled
         }
         
+        // Aliases are already filtered out, but keeping this check for safety
         if (emoji.is_alias || emoji.url.startsWith('alias:')) {
           console.log(`Skipping alias: ${emoji.name}`);
-          // Even if skipped, consider it processed for overall progress if it was in the initial count
-          // However, totalFilesToDownload already filters these out, so no need to increment processedFileCount here.
           continue;
         }
         
@@ -279,25 +288,39 @@ function ExplorerPage() {
   if (!isClient) return null;
 
   return (
-    <div className="relative h-screen">
-      <div ref={contentRef} className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 overflow-auto h-full">
-        <div className="px-4 lg:px-6">
-          <div className="rounded-xl bg-card border border-border shadow p-4">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Rss className="h-5 w-5" />
-                <span>Emoji Explorer</span>
-              </h1>
-              <p className="text-muted-foreground">Browse and search all emojis in your Slack workspace.</p>
+    <div className="relative">
+      <div ref={contentRef} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 md:py-6">
+        <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 md:p-6">
+            <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <Rss className="h-5 w-5" />
+                    <span>Emoji Explorer</span>
+                  </h1>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                    Browse and search all emojis in your Slack workspace.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:items-end gap-1">
+                  <div className="text-lg sm:text-xl font-semibold tabular-nums">
+                    {nonAliasCount.toLocaleString()}
+                  </div>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    {nonAliasCount === 1 ? 'emoji' : 'emojis'}
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Filters */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-              <div className="relative lg:col-span-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search by name, creator, or user ID..."
-                  className="w-full rounded-lg bg-background pl-10 pr-4 py-2 text-sm shadow-sm"
+                  className="w-full rounded-lg bg-background pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm shadow-sm"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchQuery(e.target.value);
@@ -307,22 +330,25 @@ function ExplorerPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center gap-2">
+              
+              {/* Sort and Download Controls */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "name") => setSortBy(value)}>
-                  <SelectTrigger className="w-full md:w-auto">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="newest">Newest</SelectItem>
-                    <SelectItem value="oldest">Oldest</SelectItem>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="oldest">Oldest First</SelectItem>
                     <SelectItem value="name">Name (A-Z)</SelectItem>
                   </SelectContent>
                 </Select>
+                
                 <Button 
                   onClick={handleDownloadAll}
-                  disabled={isDownloading || !sortedEmojis.length}
+                  disabled={isDownloading || !nonAliasCount}
                   variant="outline"
-                  className="w-full md:w-auto"
+                  className="w-full sm:w-auto"
                 >
                   {isDownloading ? (
                     <>
@@ -332,7 +358,7 @@ function ExplorerPage() {
                   ) : (
                     <>
                       <Download className="mr-2 h-4 w-4" />
-                      Download All ({sortedEmojis.length})
+                      Download All ({nonAliasCount})
                     </>
                   )}
                 </Button>
@@ -340,28 +366,103 @@ function ExplorerPage() {
             </div>
             {/* Emoji Grid */}
             {loading ? (
-              <VirtualizedEmojiGridSkeleton />
+              <div className="mt-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <div key={i} className="flex flex-col items-center justify-center p-2 sm:p-3 border rounded-lg bg-card min-h-[120px] sm:min-h-[130px]">
+                      {/* Emoji Image Skeleton */}
+                      <div className="flex-shrink-0 mb-1.5 sm:mb-2">
+                        <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded" />
+                      </div>
+                      {/* Emoji Name Skeleton */}
+                      <Skeleton className="h-3 w-16 mb-0.5" />
+                      {/* Creator Name Skeleton */}
+                      <Skeleton className="h-3 w-12 mb-0.5" />
+                      {/* Date Skeleton */}
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <>
                 {sortedEmojis.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">No emojis found matching your search.</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-4 rounded-full bg-muted flex items-center justify-center">
+                      <Search className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-medium mb-2">No emojis found</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {searchQuery ? `No emojis match "${searchQuery}"` : 'No emojis available'}
+                    </p>
+                    {searchQuery && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-4"
+                        onClick={() => setSearchQuery('')}
+                      >
+                        Clear search
+                      </Button>
+                    )}
                   </div>
                 ) : (
-                  <VirtualizedEmojiGrid
-                    emojis={sortedEmojis}
-                    onEmojiClick={(emoji) => {
-                      setSelectedEmoji(emoji);
-                      analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
-                    }}
-                    imageErrors={imageErrors}
-                    onImageError={handleImageError}
-                    getPlaceholderImage={getPlaceholderImage}
-                  />
+                  <div className="mt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                      {sortedEmojis.map((emoji) => (
+                        <div
+                          key={`${emoji.name}-${emoji.url}`}
+                          className="flex flex-col items-center justify-center rounded-lg border bg-card p-2 sm:p-3 shadow hover:border-primary/30 hover:shadow-md transition-all cursor-pointer w-full min-h-[120px] sm:min-h-[130px]"
+                          title={emoji.name}
+                          onClick={() => {
+                            setSelectedEmoji(emoji);
+                            analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
+                          }}
+                        >
+                          {/* Emoji Image */}
+                          <div className="flex-shrink-0 mb-1.5 sm:mb-2">
+                            {imageErrors[emoji.name] ? (
+                              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
+                                {emoji.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            ) : (
+                              <img
+                                src={emoji.url || getPlaceholderImage(emoji.name)}
+                                alt={`:${emoji.name}:`}
+                                className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded"
+                                onError={() => handleImageError(emoji.name)}
+                                loading="lazy"
+                              />
+                            )}
+                          </div>
+                          
+                          {/* Emoji Name */}
+                          <span
+                            className="text-xs font-medium text-foreground text-center w-full truncate px-1 mb-0.5"
+                            title={`:${emoji.name}:`}
+                          >
+                            :{emoji.name && emoji.name.length > 12 ? emoji.name.slice(0, 12) + "…" : emoji.name}:
+                          </span>
+                          
+                          {/* Creator Name */}
+                          <span
+                            className="text-xs text-muted-foreground text-center w-full truncate px-1 mb-0.5"
+                            title={emoji.user_display_name}
+                          >
+                            {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : ""}
+                          </span>
+                          
+                          {/* Creation Date */}
+                          <span className="text-xs text-muted-foreground text-center w-full truncate px-1">
+                            {emoji.created ? new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ""}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
-          </div>
         </div>
       </div>
       {/* Emoji Overlay */}

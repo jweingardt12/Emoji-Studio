@@ -39,12 +39,14 @@ export class EmojiProcessor {
       .replace(/[^a-z0-9-_]/g, '') // Remove special characters
       .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
 
-    if (fileType.startsWith('image/')) {
-      if (fileType === 'image/gif') {
-        return this.processGif(file, fileName)
-      } else {
-        return this.processImage(file, fileName)
-      }
+    // Check for GIF files by examining the file content, not just MIME type
+    const isGif = await this.isGifFile(file)
+    
+    if (isGif) {
+      console.log(`Processing ${file.name} as GIF (detected by content)`)
+      return this.processGif(file, fileName)
+    } else if (fileType.startsWith('image/')) {
+      return this.processImage(file, fileName)
     } else if (fileType.startsWith('video/')) {
       return this.processVideo(file, fileName)
     } else {
@@ -127,6 +129,13 @@ export class EmojiProcessor {
       
       // Check if format changed from GIF to PNG
       const wasConverted = file.type === 'image/gif' && processedBlob.type === 'image/png'
+      
+      // Ensure the blob has the correct MIME type
+      if (processedBlob.type !== 'image/gif' && file.type === 'image/gif') {
+        console.warn(`Processed blob has type ${processedBlob.type}, expected image/gif`)
+        // Try to correct the MIME type
+        processedBlob = new Blob([processedBlob], { type: 'image/gif' })
+      }
       
       // Determine processing note
       let processingNote: string | undefined
@@ -240,5 +249,30 @@ export class EmojiProcessor {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+  
+  private static async isGifFile(file: File): Promise<boolean> {
+    try {
+      // Check file extension first
+      if (file.name.toLowerCase().endsWith('.gif')) {
+        return true
+      }
+      
+      // Check MIME type
+      if (file.type === 'image/gif') {
+        return true
+      }
+      
+      // Check file content for GIF signature
+      const arrayBuffer = await file.slice(0, 6).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // GIF files start with either GIF87a or GIF89a
+      return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
+             bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
+    } catch (error) {
+      console.error('Error checking if file is GIF:', error)
+      return false
+    }
   }
 }

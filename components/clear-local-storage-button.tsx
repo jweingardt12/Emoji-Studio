@@ -44,6 +44,11 @@ export function ClearLocalStorageButton() {
       
       // Dispatch event for any other components that need to know
       window.dispatchEvent(new CustomEvent("localStorageCleared"))
+      
+      // Notify Chrome extension if it's installed
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'EMOJI_STUDIO_CLEAR_DATA' }, '*')
+      }
 
       // Force reload to ensure clean state
       setTimeout(() => {
@@ -60,7 +65,12 @@ export function ClearLocalStorageButton() {
   }
 
   return (
-    <Button variant="destructive" onClick={handleClear} className="mt-2">
+    <Button 
+      variant="destructive" 
+      onClick={handleClear} 
+      className="mt-2"
+      data-clear-storage-button
+    >
       Clear All App Data
     </Button>
   )
