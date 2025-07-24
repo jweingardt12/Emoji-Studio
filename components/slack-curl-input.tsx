@@ -171,7 +171,7 @@ export function SlackCurlInput() {
 
     const result = parseSlackCurl(value)
     setIsValid(result.isValid && !result.error);
-    setIsMasked(result.isValid && result.token && result.token.length > 10);
+    setIsMasked(result.isValid && !!result.token && result.token.length > 10);
   }
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
