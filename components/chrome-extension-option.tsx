@@ -206,21 +206,26 @@ export function ChromeExtensionOption() {
       </CardHeader>
       <CardContent className="space-y-4">
         {!isExtensionInstalled ? (
-          <div className="space-y-3">
-            <div className="p-3 border rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground">
-                Our Chrome extension automatically handles the authentication process, 
-                so you don't need to manually copy curl commands.
-              </p>
-            </div>
+          <div className="space-y-4">
             <Button
-              onClick={() => window.open('CHROME_EXTENSION_LINK_HERE', '_blank')}
+              onClick={() => window.open('https://github.com/jweingardt12/emoji-studio-chrome-extension/releases/download/v1.0.0/emoji-studio-extension-v1.0.0.zip', '_blank')}
               className="w-full"
               size="lg"
             >
               <DownloadIcon className="h-4 w-4 mr-2" />
-              Install Chrome Extension
+              Download Chrome Extension
             </Button>
+            
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">How to install:</h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                <li>Download and unzip the extension file</li>
+                <li>Open Chrome and go to <code className="text-xs bg-muted px-1 py-0.5 rounded">chrome://extensions</code></li>
+                <li>Enable "Developer mode" in the top right</li>
+                <li>Click "Load unpacked" and select the unzipped folder</li>
+                <li>The extension will appear in your toolbar</li>
+              </ol>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
