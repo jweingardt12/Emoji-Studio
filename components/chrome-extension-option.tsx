@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Chrome as ChromeIcon, AlertCircle as AlertCircleIcon } from "lucide-react"
+import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Monitor as ChromeIcon, AlertCircle as AlertCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -53,6 +53,14 @@ export function ChromeExtensionOption() {
     // Initialize Chrome extension listener
     initializeExtensionListener((data: SlackAuthData) => {
       console.log('Received data from Chrome extension:', data)
+      
+      // Validate the data before processing
+      if (!data || !data.workspace || !data.token || !data.cookie) {
+        console.error('Invalid extension data format:', data)
+        setError('Invalid data received from Chrome extension. Please make sure you are logged into Slack and try again.')
+        setIsConnecting(false)
+        return
+      }
       
       setIsConnecting(true)
       setError(null)
@@ -112,6 +120,9 @@ export function ChromeExtensionOption() {
       localStorage.setItem("emojiData", JSON.stringify(responseData.emojis))
       localStorage.setItem("emojiCount", responseData.emojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
+
+      // Fire event to notify other components that emoji data has been updated
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
       op.track('chrome_extension_emoji_fetch', {
         emojiCount: responseData.emojis.length,

@@ -6,6 +6,19 @@ export interface SlackAuthData {
   xId?: string;
 }
 
+function validateSlackAuthData(data: any): data is SlackAuthData {
+  return (
+    data &&
+    typeof data === 'object' &&
+    typeof data.workspace === 'string' &&
+    data.workspace.length > 0 &&
+    typeof data.token === 'string' &&
+    data.token.length > 0 &&
+    typeof data.cookie === 'string' &&
+    data.cookie.length > 0
+  );
+}
+
 export function initializeExtensionListener(
   onDataReceived: (data: SlackAuthData) => void,
   onClearData?: () => void
@@ -20,8 +33,16 @@ export function initializeExtensionListener(
     if (event.data.type === 'EMOJI_STUDIO_DATA') {
       console.log('[Emoji Studio] Received EMOJI_STUDIO_DATA message');
       if (event.data.data) {
-        console.log('[Emoji Studio] Processing extension data:', event.data.data);
-        onDataReceived(event.data.data);
+        console.log('[Emoji Studio] Raw extension data:', event.data.data);
+        
+        // Validate the data before processing
+        if (validateSlackAuthData(event.data.data)) {
+          console.log('[Emoji Studio] Valid extension data, processing:', event.data.data);
+          onDataReceived(event.data.data);
+        } else {
+          console.error('[Emoji Studio] Invalid data format received from extension:', event.data.data);
+          console.error('[Emoji Studio] Expected format: { workspace: string, token: string, cookie: string }');
+        }
       } else {
         console.log('[Emoji Studio] No data in message');
       }

@@ -217,6 +217,9 @@ export function SlackCurlInput() {
       localStorage.setItem("emojiCount", demoData.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
 
+      // Fire event to notify other components that emoji data has been updated
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+
       setLoadingStage(`Demo data loaded! (${demoData.length} emojis)`)
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 800))
@@ -352,6 +355,9 @@ export function SlackCurlInput() {
       localStorage.setItem("emojiData", JSON.stringify(typedEmojis))
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
+
+      // Fire event to notify other components that emoji data has been updated
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
       setLoadingStage(`Success! Loaded ${typedEmojis.length} emojis`)
       setProgress(100)
