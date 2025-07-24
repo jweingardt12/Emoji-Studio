@@ -16,13 +16,36 @@ import {
 import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
 export function SectionCards() {
-  const { stats, loading, emojiData, userLeaderboard, useDemoData } = useEmojiData();
+  const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
+  
+  console.log('SectionCards render:', { 
+    hasStats: !!stats, 
+    emojiDataLength: emojiData.length, 
+    useDemoData, 
+    hasRealData,
+    loading 
+  });
 
   // Calculate time boundaries (hydration-safe)
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Math.floor(Date.now() / 1000));
   }, []);
+  
+  // Force re-render when emoji data is updated
+  useEffect(() => {
+    const handleEmojiDataUpdated = () => {
+      console.log('SectionCards: emojiDataUpdated event received, forcing re-render');
+      setNow(Math.floor(Date.now() / 1000)); // Update the timestamp to force recalculation
+    };
+    
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    
+    return () => {
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    };
+  }, []);
+  
   if (now === null) {
     return null;
   }

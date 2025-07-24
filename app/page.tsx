@@ -7,7 +7,14 @@ export default function RootPage() {
   const router = useRouter()
   
   useEffect(() => {
-    router.push("/dashboard")
+    // Check if opened from extension
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('extension') === 'true') {
+      // Redirect to settings page with extension parameter
+      router.push("/settings?extension=true")
+    } else {
+      router.push("/dashboard")
+    }
   }, [router])
   
   return null

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import Leaderboard from "@/components/leaderboard"
@@ -9,13 +10,14 @@ import EmojiOverlay from "@/components/emoji-overlay"
 import { RequireData } from "@/components/require-data"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { getUserLeaderboard, type Emoji } from "@/lib/services/emoji-service"
-import React, { useState, useCallback, useEffect } from "react"
+import React, { useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Trophy, Search } from "lucide-react"
 import Link from "next/link"
+import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
@@ -23,9 +25,22 @@ import Link from "next/link"
 function DashboardPage() {
   // Add client-side only rendering
   const [isClient, setIsClient] = useState(false)
+  const [dataRefreshKey, setDataRefreshKey] = useState(0)
   
   useEffect(() => {
     setIsClient(true)
+    
+    // Listen for emoji data updates to force re-render
+    const handleEmojiDataUpdated = () => {
+      console.log('Dashboard: emojiDataUpdated event received, forcing re-render');
+      setDataRefreshKey(prev => prev + 1);
+    };
+    
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    
+    return () => {
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    };
   }, [])
   const { 
     emojiData, 
@@ -105,6 +120,7 @@ function DashboardPage() {
   
   return (
     <div className="flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
+      <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6"></div>
       {/* SectionCards with skeleton */}
       {loading && !showDemoData ? (
@@ -259,6 +275,19 @@ function DashboardPage() {
 }
 
 export default function DashboardPageWrapper() {
+  // Check if we're coming from the extension
+  const [isFromExtension, setIsFromExtension] = useState(false);
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setIsFromExtension(urlParams.get('extension') === 'true');
+  }, []);
+  
+  // If coming from extension, render without RequireData wrapper to allow data processing
+  if (isFromExtension) {
+    return <DashboardPage />;
+  }
+  
   return (
     <RequireData>
       <DashboardPage />

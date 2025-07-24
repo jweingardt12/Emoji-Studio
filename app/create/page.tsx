@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, Download, X, FileVideo, FileImage, File } from "lucide-react"
+import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon } from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
@@ -29,6 +29,115 @@ function EmojiCreatorPage() {
 
   useEffect(() => {
     setIsClient(true)
+    
+    console.log('[Create Page] Component mounted, URL:', window.location.href)
+    console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
+    
+    // Listen for Chrome extension messages
+    const handleExtensionMessage = async (event: MessageEvent) => {
+      if (event.data.type === 'EMOJI_STUDIO_CREATE_EMOJI') {
+        console.log('[Create Page] Received extension message:', event.data)
+        
+        // Handle both new format (imageUrl directly) and old format (data object)
+        const imageUrl = event.data.imageUrl || event.data.data?.imageUrl
+        const originalUrl = event.data.originalUrl || event.data.data?.originalUrl
+        
+        if (!imageUrl) {
+          console.error('[Create Page] No image URL found in extension message')
+          return
+        }
+        
+        console.log('[Create Page] Processing image URL:', imageUrl)
+        
+        // Track the event
+        openpanel.track("Emoji Creator: Extension Image Received", { 
+          imageUrl: imageUrl,
+          source: 'chrome-extension'
+        })
+        
+        try {
+          // Show loading toast
+          toast({
+            title: "Loading image from extension...",
+            description: "Please wait while we process the image.",
+          })
+          
+          let file: File;
+          
+          if (imageUrl.startsWith('data:')) {
+            // Handle data URL
+            const response = await fetch(imageUrl)
+            const blob = await response.blob()
+            const fileName = originalUrl ? 
+              originalUrl.split('/').pop() || 'extension-image' : 
+              'extension-image'
+            file = new File([blob], fileName, { type: blob.type })
+          } else {
+            // Try to fetch regular URL
+            const response = await fetch(imageUrl)
+            if (!response.ok) throw new Error('Failed to fetch image')
+            
+            const blob = await response.blob()
+            const fileName = imageUrl.split('/').pop() || 'extension-image'
+            
+            // Determine the correct MIME type
+            let mimeType = blob.type
+            
+            // If no MIME type or generic type, try to infer from filename or content
+            if (!mimeType || mimeType === 'application/octet-stream') {
+              if (fileName.toLowerCase().endsWith('.gif')) {
+                mimeType = 'image/gif'
+              } else if (fileName.toLowerCase().endsWith('.png')) {
+                mimeType = 'image/png'
+              } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+                mimeType = 'image/jpeg'
+              } else if (fileName.toLowerCase().endsWith('.webp')) {
+                mimeType = 'image/webp'
+              } else {
+                // Try to detect GIF by checking magic bytes
+                const arrayBuffer = await blob.slice(0, 6).arrayBuffer()
+                const bytes = new Uint8Array(arrayBuffer)
+                if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) { // GIF
+                  mimeType = 'image/gif'
+                  console.log('Detected GIF format from magic bytes')
+                } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) { // PNG
+                  mimeType = 'image/png'
+                } else if (bytes[0] === 0xFF && bytes[1] === 0xD8) { // JPEG
+                  mimeType = 'image/jpeg'
+                }
+              }
+            }
+            
+            console.log(`File: ${fileName}, detected MIME type: ${mimeType}`)
+            file = new File([blob], fileName, { type: mimeType })
+          }
+          
+          // Add to selected files and process
+          setSelectedFiles([file])
+          
+          // Auto-process after a short delay
+          setTimeout(() => {
+            processFiles([file])
+          }, 500)
+          
+        } catch (error) {
+          console.error('Failed to load image from extension:', error)
+          toast({
+            title: "Failed to load image",
+            description: error instanceof Error ? error.message : "Unknown error occurred",
+            variant: "destructive",
+          })
+          
+          openpanel.track("Emoji Creator: Extension Image Load Failed", { 
+            imageUrl: imageUrl,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          })
+        }
+      }
+    }
+    
+    window.addEventListener('message', handleExtensionMessage)
+    return () => window.removeEventListener('message', handleExtensionMessage)
   }, [])
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -216,7 +325,7 @@ function EmojiCreatorPage() {
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('video/')) return FileVideo
     if (file.type.startsWith('image/')) return FileImage
-    return File
+    return FileIcon
   }
 
   // Only render when client-side to avoid hydration mismatches

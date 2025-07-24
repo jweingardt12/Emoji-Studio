@@ -16,12 +16,27 @@ import { format } from "date-fns"
 export default function EmojiGrid() {
   const { emojiData, loading, useDemoData } = useEmojiData()
   const analytics = useAnalytics()
+  const [dataRefreshKey, setDataRefreshKey] = React.useState(0)
+  
+  // Listen for emoji data updates to force re-render
+  React.useEffect(() => {
+    const handleEmojiDataUpdated = () => {
+      console.log('EmojiGrid: emojiDataUpdated event received, forcing re-render')
+      setDataRefreshKey(prev => prev + 1)
+    }
+    
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated)
+    
+    return () => {
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated)
+    }
+  }, [])
   
   // Get the leaderboard to determine user ranks
   const leaderboard = useMemo(() => {
     if (!emojiData) return []
     return getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000))
-  }, [emojiData])
+  }, [emojiData, dataRefreshKey])
   // No longer need expanded state since we're linking directly to explorer
   const [selectedEmoji, setSelectedEmoji] = React.useState<Emoji | null>(null)
   const [selectedUser, setSelectedUser] = React.useState<UserWithEmojiCount | null>(null)
@@ -41,7 +56,7 @@ export default function EmojiGrid() {
     return [...emojiData]
       .filter((emoji) => !emoji.is_alias) // Filter out aliases
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
-  }, [emojiData])
+  }, [emojiData, dataRefreshKey])
 
   // Always show just 20 emojis, and show the See More button if there are more
   const displayCount = 20

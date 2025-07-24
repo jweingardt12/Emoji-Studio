@@ -1,15 +1,18 @@
 "use client"
 
 import { SlackCurlInput } from "@/components/slack-curl-input"
+import { ChromeExtensionOption } from "@/components/chrome-extension-option"
 import { ClearLocalStorageButton } from "@/components/clear-local-storage-button"
 import { FetchStatsDisplay } from "@/components/fetch-stats-display"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SettingsIcon } from "lucide-react"
+import { SettingsIcon, Zap, ChevronDown, ChevronUp, Terminal } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { openpanel } from "@/lib/safe-openpanel";
+import { openpanel } from "@/lib/safe-openpanel"
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 
 export default function SettingsPage() {
   const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(() => {
@@ -19,6 +22,8 @@ export default function SettingsPage() {
     }
     return 3 // Default for SSR
   })
+  
+  const [isManualSetupOpen, setIsManualSetupOpen] = useState(false)
 
   const hasMountedRef = useRef(false);
   const previousThresholdRef = useRef(inactivityThresholdMonths);
@@ -65,8 +70,53 @@ export default function SettingsPage() {
 
           {/* Main content grid */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
-            {/* Slack Integration */}
-            <SlackCurlInput />
+            {/* Chrome Extension - Primary Method */}
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  Connect Your Slack Workspace
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Connect to your Slack workspace to fetch and manage your custom emojis.
+                </p>
+              </div>
+              
+              <ChromeExtensionOption />
+            </div>
+
+            {/* Manual Setup - Collapsible Alternative */}
+            <Card>
+              <CardHeader className="pb-3">
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
+                  className="flex w-full items-center justify-between p-0 text-left hover:bg-transparent"
+                >
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <CardTitle className="text-sm font-medium">Manual Setup (Advanced)</CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        Use browser developer tools to manually copy authentication data
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {isManualSetupOpen ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </CardHeader>
+              <Collapsible open={isManualSetupOpen}>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    <SlackCurlInput />
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </Card>
 
             {/* Leaderboard Settings Card */}
             <Card>
@@ -93,6 +143,13 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+            
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+            </div>
             
             {/* Data Management Grid */}
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">

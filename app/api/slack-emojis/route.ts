@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (emojiArray && Array.isArray(emojiArray) && emojiArray.length > 0) {
-        return NextResponse.json({ emoji: emojiArray })
+        return NextResponse.json({ emojis: emojiArray })
       } else {
         // Check if this is a successful operation that doesn't return emoji data
         if (data.ok === true) {
