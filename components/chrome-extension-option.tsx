@@ -76,7 +76,7 @@ export function ChromeExtensionOption() {
     }
     
     // Initialize Chrome extension listener
-    const cleanup = initializeExtensionListener(
+    initializeExtensionListener(
       (data: SlackAuthData) => {
         console.log('Received data from Chrome extension:', data)
         
@@ -107,12 +107,6 @@ export function ChromeExtensionOption() {
         window.location.href = "/settings"
       }
     )
-    
-    return () => {
-      if (cleanup && typeof cleanup === 'function') {
-        cleanup();
-      }
-    };
   }, [])
 
   const processExtensionData = async (data: SlackAuthData) => {
