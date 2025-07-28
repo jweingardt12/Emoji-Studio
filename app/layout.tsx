@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/site-header";
 import { OpenPanelComponent } from '@openpanel/nextjs';
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeTracker } from "@/components/ThemeTracker";
+import { GlobalExtensionListener } from "@/components/global-extension-listener";
 
 export default function RootLayout({
   children,
@@ -59,6 +60,7 @@ export default function RootLayout({
                   </div>
                 </SidebarInset>
               </SidebarProvider>
+              <GlobalExtensionListener />
             </EmojiDataProvider>
             <Toaster />
             <ThemeTracker />

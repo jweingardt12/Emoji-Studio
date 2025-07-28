@@ -26,9 +26,13 @@ export function initializeExtensionListener(
   if (typeof window === 'undefined') return;
   
   console.log('[Emoji Studio] Initializing extension listener');
+  console.log('[Emoji Studio] Window location:', window.location.href);
   
+  // Log all messages for debugging
   window.addEventListener('message', (event) => {
     console.log('[Emoji Studio] Received window message:', event.data);
+    console.log('[Emoji Studio] Message origin:', event.origin);
+    console.log('[Emoji Studio] Message type:', event.data?.type);
     
     if (event.data.type === 'EMOJI_STUDIO_DATA') {
       console.log('[Emoji Studio] Received EMOJI_STUDIO_DATA message');
@@ -51,11 +55,8 @@ export function initializeExtensionListener(
       if (onClearData) {
         onClearData();
       } else {
-        // Fallback: trigger the clear button click
-        const clearButton = document.querySelector('[data-clear-storage-button]') as HTMLButtonElement;
-        if (clearButton) {
-          clearButton.click();
-        }
+        // Let other listeners handle it (like ExtensionClearDataListener)
+        console.log('[Emoji Studio] No onClearData callback provided, letting other listeners handle it');
       }
     }
   });

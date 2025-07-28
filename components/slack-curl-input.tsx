@@ -299,6 +299,7 @@ export function SlackCurlInput() {
         },
         formData: {
           token: parsedData.token || "",
+          count: "20000", // Ensure we get all emojis, not just first 1000
         },
       }
       

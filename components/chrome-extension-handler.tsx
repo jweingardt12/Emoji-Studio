@@ -65,7 +65,7 @@ export function ChromeExtensionHandler() {
         curl += ` -H 'sec-fetch-dest: empty'`
         curl += ` -H 'sec-fetch-mode: cors'`
         curl += ` -H 'sec-fetch-site: same-origin'`
-        curl += ` --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+        curl += ` --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
         
         return curl
       }
@@ -109,6 +109,7 @@ export function ChromeExtensionHandler() {
         },
         formData: {
           token: parsedData.token || "",
+          count: "20000", // Ensure we get all emojis, not just first 1000
         },
       }
       
@@ -326,10 +327,28 @@ export function ChromeExtensionHandler() {
     if (fromExtension && !hasProcessed.current) {
       console.log('[ChromeExtensionHandler] Setting up extension listener')
       
+      // Show loading overlay immediately
+      setIsLoading(true)
+      setLoadingStage("Waiting for Chrome extension data...")
+      setProgress(10)
+      
+      // Set a timeout in case extension doesn't respond
+      const timeoutId = setTimeout(() => {
+        if (!hasProcessed.current) {
+          console.log('[ChromeExtensionHandler] Timeout waiting for extension data')
+          setError("Connection timeout. Please make sure the Chrome extension is installed and try again.")
+          setIsLoading(false)
+          setLoadingStage("")
+          setProgress(0)
+        }
+      }, 10000) // 10 second timeout
+      
       // Initialize Chrome extension listener
       initializeExtensionListener(
         (data: SlackAuthData) => {
           console.log('[ChromeExtensionHandler] Received data from extension:', data)
+          // Clear the timeout
+          clearTimeout(timeoutId)
           // Process immediately if we haven't already
           if (!hasProcessed.current) {
             processExtensionData(data)
@@ -351,11 +370,31 @@ export function ChromeExtensionHandler() {
   }, [searchParams])
 
   return (
-    <LoadingOverlay
-      isOpen={isLoading}
-      progress={progress}
-      loadingStage={loadingStage}
-      isSuccess={showSuccess}
-    />
+    <>
+      <LoadingOverlay
+        isOpen={isLoading}
+        progress={progress}
+        loadingStage={loadingStage}
+        isSuccess={showSuccess}
+      />
+      {error && !isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="mx-auto max-w-md rounded-lg border bg-card p-6 shadow-lg">
+            <h3 className="mb-2 text-lg font-semibold text-destructive">Error</h3>
+            <p className="mb-4 text-sm text-muted-foreground">{error}</p>
+            <button
+              onClick={() => {
+                setError(null)
+                // Remove the extension parameter and redirect to settings
+                window.location.href = "/settings"
+              }}
+              className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Go to Settings
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

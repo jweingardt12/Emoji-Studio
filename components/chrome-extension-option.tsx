@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Monitor as ChromeIcon, AlertCircle as AlertCircleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,6 +18,7 @@ export function ChromeExtensionOption() {
   const [success, setSuccess] = useState<string | null>(null)
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const op = useOpenPanel()
+  const isConnectingRef = useRef(false)
 
   useEffect(() => {
     // Check if Chrome extension is installed by trying to communicate with it
@@ -55,28 +56,63 @@ export function ChromeExtensionOption() {
     if (urlParams.get('extension') === 'true') {
       console.log('Extension parameter detected, waiting for data...');
       setIsConnecting(true);
+      isConnectingRef.current = true;
       setError(null);
       setSuccess('Waiting for data from Chrome extension...');
+      
+      // Set a timeout in case data doesn't arrive
+      const timeoutId = setTimeout(() => {
+        if (isConnectingRef.current) {
+          console.log('Timeout waiting for extension data');
+          setError('No data received from extension. Please try clicking "Sync to Emoji Studio" again.');
+          setIsConnecting(false);
+          isConnectingRef.current = false;
+          setSuccess(null);
+        }
+      }, 10000); // 10 second timeout
+      
+      // Store timeout ID for cleanup
+      return () => clearTimeout(timeoutId);
     }
     
     // Initialize Chrome extension listener
-    initializeExtensionListener((data: SlackAuthData) => {
-      console.log('Received data from Chrome extension:', data)
-      
-      // Validate the data before processing
-      if (!data || !data.workspace || !data.token || !data.cookie) {
-        console.error('Invalid extension data format:', data)
-        setError('Invalid data received from Chrome extension. Please make sure you are logged into Slack and try again.')
-        setIsConnecting(false)
-        return
+    const cleanup = initializeExtensionListener(
+      (data: SlackAuthData) => {
+        console.log('Received data from Chrome extension:', data)
+        
+        // Validate the data before processing
+        if (!data || !data.workspace || !data.token || !data.cookie) {
+          console.error('Invalid extension data format:', data)
+          setError('Invalid data received from Chrome extension. Please make sure you are logged into Slack and try again.')
+          setIsConnecting(false)
+          return
+        }
+        
+        setIsConnecting(true)
+        isConnectingRef.current = true
+        setError(null)
+        
+        // Process the extension data
+        processExtensionData(data)
+      },
+      () => {
+        console.log('Clear data request received from extension')
+        // Clear all data when requested by extension
+        localStorage.clear()
+        sessionStorage.clear()
+        setEmojiData([])
+        setHasRealData(false)
+        setWorkspace("")
+        // Redirect to settings
+        window.location.href = "/settings"
       }
-      
-      setIsConnecting(true)
-      setError(null)
-      
-      // Process the extension data
-      processExtensionData(data)
-    })
+    )
+    
+    return () => {
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
   }, [])
 
   const processExtensionData = async (data: SlackAuthData) => {
@@ -102,6 +138,7 @@ export function ChromeExtensionOption() {
         },
         formData: {
           token: data.token || "",
+          count: "20000", // Ensure we get all emojis, not just first 1000
         },
       }
       
@@ -140,6 +177,7 @@ export function ChromeExtensionOption() {
 
       setSuccess(`Successfully fetched ${responseData.emojis.length} emojis from ${workspace}`)
       setIsConnecting(false)
+      isConnectingRef.current = false
 
       // Redirect to dashboard after success
       setTimeout(() => {
@@ -150,6 +188,7 @@ export function ChromeExtensionOption() {
       console.error("Error processing extension data:", err)
       setError(err instanceof Error ? err.message : "Failed to process extension data")
       setIsConnecting(false)
+      isConnectingRef.current = false
     }
   }
 
@@ -174,7 +213,7 @@ export function ChromeExtensionOption() {
     curl += ` -H 'sec-fetch-dest: empty'`
     curl += ` -H 'sec-fetch-mode: cors'`
     curl += ` -H 'sec-fetch-site: same-origin'`
-    curl += ` --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+    curl += ` --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
     
     return curl
   }
