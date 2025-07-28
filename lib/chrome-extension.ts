@@ -6,7 +6,7 @@ export interface SlackAuthData {
   xId?: string;
 }
 
-function validateSlackAuthData(data: any): data is SlackAuthData {
+export function validateSlackAuthData(data: any): data is SlackAuthData {
   return (
     data &&
     typeof data === 'object' &&
@@ -66,6 +66,9 @@ export function initializeExtensionListener(
     console.log('[Emoji Studio] Extension parameter detected, signaling ready');
     // Signal readiness to extension
     window.postMessage({ type: 'EMOJI_STUDIO_READY' }, '*');
+    
+    // Request data from extension
+    window.postMessage({ type: 'REQUEST_EXTENSION_DATA' }, '*');
   }
 }
 

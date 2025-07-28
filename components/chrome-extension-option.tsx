@@ -6,7 +6,7 @@ import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Monitor as Ch
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension"
+import { initializeExtensionListener, type SlackAuthData, validateSlackAuthData } from "@/lib/chrome-extension"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useOpenPanel } from '@openpanel/nextjs'
 
@@ -50,6 +50,15 @@ export function ChromeExtensionOption() {
   }, [])
 
   useEffect(() => {
+    // Check URL params to see if we came from extension
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('extension') === 'true') {
+      console.log('Extension parameter detected, waiting for data...');
+      setIsConnecting(true);
+      setError(null);
+      setSuccess('Waiting for data from Chrome extension...');
+    }
+    
     // Initialize Chrome extension listener
     initializeExtensionListener((data: SlackAuthData) => {
       console.log('Received data from Chrome extension:', data)
