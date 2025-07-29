@@ -94,6 +94,22 @@ export function ChartAreaInteractive() {
   }, []);
 
   /* -------------------------------------------------------------------- */
+  /*  Listen for emoji data updates to force re-render                   */
+  /* -------------------------------------------------------------------- */
+  React.useEffect(() => {
+    const handleEmojiDataUpdated = () => {
+      console.log('ChartAreaInteractive: emojiDataUpdated event received, forcing re-render');
+      setNow(new Date()); // Update the timestamp to force recalculation
+    };
+    
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    
+    return () => {
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    };
+  }, []);
+
+  /* -------------------------------------------------------------------- */
   /*  Keep demo range in sync                                             */
   /* -------------------------------------------------------------------- */
   React.useEffect(() => {

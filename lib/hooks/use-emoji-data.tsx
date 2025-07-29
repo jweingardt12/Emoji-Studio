@@ -198,7 +198,10 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Listen for emoji data updated event
     const handleEmojiDataUpdated = () => {
       console.log("Emoji data updated event detected")
-      loadEmojiData() // Reload data when the emojiDataUpdated event is fired
+      // Add a small delay to ensure localStorage is written before reading
+      setTimeout(() => {
+        loadEmojiData() // Reload data when the emojiDataUpdated event is fired
+      }, 100)
     }
 
     window.addEventListener("localStorageCleared", handleStorageCleared)

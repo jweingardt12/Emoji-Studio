@@ -17,12 +17,34 @@ export default function EmojiGrid() {
   const { emojiData, loading, useDemoData } = useEmojiData()
   const analytics = useAnalytics()
   const [dataRefreshKey, setDataRefreshKey] = React.useState(0)
+  const [localEmojiData, setLocalEmojiData] = React.useState<Emoji[]>([])
+  
+  // Update local emoji data when context data changes
+  React.useEffect(() => {
+    setLocalEmojiData(emojiData)
+  }, [emojiData])
   
   // Listen for emoji data updates to force re-render
   React.useEffect(() => {
     const handleEmojiDataUpdated = () => {
       console.log('EmojiGrid: emojiDataUpdated event received, forcing re-render')
       setDataRefreshKey(prev => prev + 1)
+      
+      // Also reload data from localStorage directly as a fallback
+      setTimeout(() => {
+        try {
+          const storedData = localStorage.getItem("emojiData")
+          if (storedData) {
+            const parsedData = JSON.parse(storedData)
+            if (Array.isArray(parsedData) && parsedData.length > 0) {
+              console.log(`EmojiGrid: Loaded ${parsedData.length} emojis from localStorage directly`)
+              setLocalEmojiData(parsedData)
+            }
+          }
+        } catch (error) {
+          console.error("EmojiGrid: Error loading emoji data from localStorage:", error)
+        }
+      }, 150) // Slightly longer delay than the context update
     }
     
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated)
@@ -34,9 +56,9 @@ export default function EmojiGrid() {
   
   // Get the leaderboard to determine user ranks
   const leaderboard = useMemo(() => {
-    if (!emojiData) return []
-    return getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000))
-  }, [emojiData, dataRefreshKey])
+    if (!localEmojiData || localEmojiData.length === 0) return []
+    return getUserLeaderboard(localEmojiData, Math.floor(Date.now() / 1000))
+  }, [localEmojiData, dataRefreshKey])
   // No longer need expanded state since we're linking directly to explorer
   const [selectedEmoji, setSelectedEmoji] = React.useState<Emoji | null>(null)
   const [selectedUser, setSelectedUser] = React.useState<UserWithEmojiCount | null>(null)
@@ -44,19 +66,19 @@ export default function EmojiGrid() {
 
   // Log emoji data for debugging
   React.useEffect(() => {
-    if (emojiData && emojiData.length > 0) {
-      console.log(`EmojiGrid: Displaying ${emojiData.length} emojis`)
-      console.log("First few emojis:", emojiData.slice(0, 3))
+    if (localEmojiData && localEmojiData.length > 0) {
+      console.log(`EmojiGrid: Displaying ${localEmojiData.length} emojis`)
+      console.log("First few emojis:", localEmojiData.slice(0, 3))
     }
-  }, [emojiData])
+  }, [localEmojiData])
 
   // Sort emojis by created descending (newest first) and filter out aliases
   const sorted = React.useMemo(() => {
-    if (!emojiData) return []
-    return [...emojiData]
+    if (!localEmojiData || localEmojiData.length === 0) return []
+    return [...localEmojiData]
       .filter((emoji) => !emoji.is_alias) // Filter out aliases
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
-  }, [emojiData, dataRefreshKey])
+  }, [localEmojiData, dataRefreshKey])
 
   // Always show just 20 emojis, and show the See More button if there are more
   const displayCount = 20
@@ -172,7 +194,7 @@ export default function EmojiGrid() {
             setSelectedEmoji(null)
 
             // Find user data from emoji data if available
-            const userEmojis = emojiData.filter((e) => e.user_id === userId)
+            const userEmojis = localEmojiData.filter((e) => e.user_id === userId)
 
             if (userEmojis.length > 0) {
               // Calculate basic stats for this user
