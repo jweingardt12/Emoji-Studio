@@ -1,5 +1,4 @@
-import { encode, EncodingResult } from '@monogrid/gainmap-js/encode'
-import { WebGLRenderer, LinearToneMapping, ACESFilmicToneMapping, ReinhardToneMapping } from 'three'
+// Note: We're using P3 color space instead of gainmap for better compatibility
 
 export interface HDRProcessingOptions {
   intensity: number // 0-100
@@ -8,19 +7,6 @@ export interface HDRProcessingOptions {
 }
 
 export class HDRProcessor {
-  private static renderer: WebGLRenderer | null = null
-
-  private static getRenderer(): WebGLRenderer {
-    if (!this.renderer) {
-      this.renderer = new WebGLRenderer({ 
-        antialias: false,
-        alpha: true,
-        preserveDrawingBuffer: true
-      })
-      this.renderer.setSize(512, 512) // Working size
-    }
-    return this.renderer
-  }
 
   /**
    * Creates an Apple-compatible HDR image with gain map
@@ -354,21 +340,6 @@ export class HDRProcessor {
         data[i + 2] = Math.round(b)
       }
     }
-  }
-
-  /**
-   * Convert encoding result to blob
-   */
-  private static async encodingResultToBlob(result: EncodingResult): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      result.sdr.toBlob((blob) => {
-        if (blob) {
-          resolve(blob)
-        } else {
-          reject(new Error('Failed to create blob from encoding result'))
-        }
-      }, 'image/jpeg', 0.95)
-    })
   }
 
   /**

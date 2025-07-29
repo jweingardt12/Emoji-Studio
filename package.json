@@ -21,7 +21,6 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@hookform/resolvers": "^3.9.1",
-    "@monogrid/gainmap-js": "^3.1.0",
     "@openpanel/nextjs": "^1.0.8",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -86,7 +85,6 @@
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "three": "^0.178.0",
     "vaul": "^0.9.6",
     "zod": "^3.24.1"
   },
