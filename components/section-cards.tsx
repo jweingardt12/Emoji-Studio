@@ -34,8 +34,12 @@ export function SectionCards() {
   
   // Force re-render when emoji data is updated
   useEffect(() => {
-    const handleEmojiDataUpdated = () => {
+    const handleEmojiDataUpdated = (event: Event) => {
       console.log('SectionCards: emojiDataUpdated event received, forcing re-render');
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.emojiData) {
+        console.log(`SectionCards: Event contains ${customEvent.detail.emojiData.length} emojis`);
+      }
       setNow(Math.floor(Date.now() / 1000)); // Update the timestamp to force recalculation
     };
     

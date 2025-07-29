@@ -21,36 +21,43 @@ export default function EmojiGrid() {
   
   // Update local emoji data when context data changes
   React.useEffect(() => {
+    console.log('[EmojiGrid] Context emojiData changed:', emojiData.length, 'emojis');
     setLocalEmojiData(emojiData)
   }, [emojiData])
   
   // Listen for emoji data updates to force re-render
   React.useEffect(() => {
-    const handleEmojiDataUpdated = () => {
+    const handleEmojiDataUpdated = (event: CustomEvent) => {
       console.log('EmojiGrid: emojiDataUpdated event received, forcing re-render')
       setDataRefreshKey(prev => prev + 1)
       
-      // Also reload data from localStorage directly as a fallback
-      setTimeout(() => {
-        try {
-          const storedData = localStorage.getItem("emojiData")
-          if (storedData) {
-            const parsedData = JSON.parse(storedData)
-            if (Array.isArray(parsedData) && parsedData.length > 0) {
-              console.log(`EmojiGrid: Loaded ${parsedData.length} emojis from localStorage directly`)
-              setLocalEmojiData(parsedData)
+      // Use data from event if available
+      if (event.detail && event.detail.emojiData) {
+        console.log(`EmojiGrid: Using data from event, ${event.detail.emojiData.length} emojis`);
+        setLocalEmojiData(event.detail.emojiData);
+      } else {
+        // Fallback to localStorage
+        setTimeout(() => {
+          try {
+            const storedData = localStorage.getItem("emojiData")
+            if (storedData) {
+              const parsedData = JSON.parse(storedData)
+              if (Array.isArray(parsedData) && parsedData.length > 0) {
+                console.log(`EmojiGrid: Loaded ${parsedData.length} emojis from localStorage directly`)
+                setLocalEmojiData(parsedData)
+              }
             }
+          } catch (error) {
+            console.error("EmojiGrid: Error loading emoji data from localStorage:", error)
           }
-        } catch (error) {
-          console.error("EmojiGrid: Error loading emoji data from localStorage:", error)
-        }
-      }, 150) // Slightly longer delay than the context update
+        }, 150) // Slightly longer delay than the context update
+      }
     }
     
-    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated)
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated as EventListener)
     
     return () => {
-      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated)
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated as EventListener)
     }
   }, [])
   
@@ -74,10 +81,16 @@ export default function EmojiGrid() {
 
   // Sort emojis by created descending (newest first) and filter out aliases
   const sorted = React.useMemo(() => {
+    console.log('[EmojiGrid] Computing sorted array with localEmojiData:', localEmojiData.length, 'emojis');
     if (!localEmojiData || localEmojiData.length === 0) return []
-    return [...localEmojiData]
+    const result = [...localEmojiData]
       .filter((emoji) => !emoji.is_alias) // Filter out aliases
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
+    console.log('[EmojiGrid] Sorted array has', result.length, 'non-alias emojis');
+    if (result.length > 0) {
+      console.log('[EmojiGrid] Newest emoji:', result[0]);
+    }
+    return result;
   }, [localEmojiData, dataRefreshKey])
 
   // Always show just 20 emojis, and show the See More button if there are more
@@ -85,6 +98,7 @@ export default function EmojiGrid() {
   const showSeeMore = sorted.length > 20
 
   if (loading) {
+    console.log('[EmojiGrid] Showing loading state');
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
         {Array.from({ length: 12 }).map((_, i) => (

@@ -97,8 +97,12 @@ export function ChartAreaInteractive() {
   /*  Listen for emoji data updates to force re-render                   */
   /* -------------------------------------------------------------------- */
   React.useEffect(() => {
-    const handleEmojiDataUpdated = () => {
+    const handleEmojiDataUpdated = (event: Event) => {
       console.log('ChartAreaInteractive: emojiDataUpdated event received, forcing re-render');
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail && customEvent.detail.emojiData) {
+        console.log(`ChartAreaInteractive: Event contains ${customEvent.detail.emojiData.length} emojis`);
+      }
       setNow(new Date()); // Update the timestamp to force recalculation
     };
     
