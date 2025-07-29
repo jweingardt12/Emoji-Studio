@@ -243,7 +243,7 @@ export function ChromeExtensionOption() {
           Chrome Extension (Recommended)
         </CardTitle>
         <CardDescription>
-          The easiest way to connect your Slack workspace. Install our Chrome extension for one-click authentication.
+          The easiest way to connect your Slack workspace. Install the Chrome extension for one-click authentication.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

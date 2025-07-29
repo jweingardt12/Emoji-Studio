@@ -36,10 +36,44 @@ function DashboardPage() {
       setDataRefreshKey(prev => prev + 1);
     };
     
+    // Listen for Chrome extension messages to add emojis from Slackmojis
+    const handleExtensionMessage = async (event: MessageEvent) => {
+      if (event.data.type === 'EMOJI_STUDIO_ADD_EMOJI') {
+        console.log('[Dashboard] Received add emoji request from extension:', event.data);
+        
+        const emojiData = event.data.data;
+        if (!emojiData || !emojiData.url || !emojiData.name) {
+          console.error('[Dashboard] Invalid emoji data received:', emojiData);
+          return;
+        }
+        
+        try {
+          // Navigate to create page with the emoji data
+          const createUrl = new URL('/create', window.location.origin);
+          createUrl.searchParams.set('from', 'extension');
+          
+          // Store the emoji data temporarily so the create page can pick it up
+          window.sessionStorage.setItem('pendingEmojiFromSlackmojis', JSON.stringify({
+            imageUrl: emojiData.url,
+            originalUrl: emojiData.url,
+            name: emojiData.name,
+            source: 'slackmojis'
+          }));
+          
+          // Navigate to create page
+          window.location.href = createUrl.toString();
+        } catch (error) {
+          console.error('[Dashboard] Failed to process emoji from extension:', error);
+        }
+      }
+    };
+    
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    window.addEventListener('message', handleExtensionMessage);
     
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+      window.removeEventListener('message', handleExtensionMessage);
     };
   }, [])
   const { 

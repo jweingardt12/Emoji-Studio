@@ -33,6 +33,35 @@ function EmojiCreatorPage() {
     console.log('[Create Page] Component mounted, URL:', window.location.href)
     console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
     
+    // Check if we have pending emoji data from Slackmojis
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'extension') {
+      const pendingData = window.sessionStorage.getItem('pendingEmojiFromSlackmojis');
+      if (pendingData) {
+        try {
+          const emojiData = JSON.parse(pendingData);
+          console.log('[Create Page] Found pending emoji from Slackmojis:', emojiData);
+          
+          // Clear the session storage
+          window.sessionStorage.removeItem('pendingEmojiFromSlackmojis');
+          
+          // Process the emoji data
+          setTimeout(() => {
+            handleExtensionMessage({
+              data: {
+                type: 'EMOJI_STUDIO_CREATE_EMOJI',
+                imageUrl: emojiData.imageUrl,
+                originalUrl: emojiData.originalUrl,
+                emojiName: emojiData.name
+              }
+            } as MessageEvent);
+          }, 500);
+        } catch (error) {
+          console.error('[Create Page] Failed to parse pending emoji data:', error);
+        }
+      }
+    }
+    
     // Listen for Chrome extension messages
     const handleExtensionMessage = async (event: MessageEvent) => {
       if (event.data.type === 'EMOJI_STUDIO_CREATE_EMOJI') {
@@ -41,6 +70,7 @@ function EmojiCreatorPage() {
         // Handle both new format (imageUrl directly) and old format (data object)
         const imageUrl = event.data.imageUrl || event.data.data?.imageUrl
         const originalUrl = event.data.originalUrl || event.data.data?.originalUrl
+        const emojiName = event.data.emojiName || event.data.data?.name
         
         if (!imageUrl) {
           console.error('[Create Page] No image URL found in extension message')
@@ -48,6 +78,7 @@ function EmojiCreatorPage() {
         }
         
         console.log('[Create Page] Processing image URL:', imageUrl)
+        console.log('[Create Page] Emoji name:', emojiName)
         
         // Track the event
         openpanel.track("Emoji Creator: Extension Image Received", { 
@@ -66,32 +97,44 @@ function EmojiCreatorPage() {
           
           if (imageUrl.startsWith('data:')) {
             // Handle data URL
+            console.log('[Create Page] Processing data URL, length:', imageUrl.length)
             const response = await fetch(imageUrl)
             const blob = await response.blob()
-            const fileName = originalUrl ? 
-              originalUrl.split('/').pop() || 'extension-image' : 
-              'extension-image'
+            // Use emoji name if provided, otherwise extract from URL
+            let extension = 'png'
+            if (blob.type.includes('gif')) extension = 'gif'
+            else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) extension = 'jpg'
+            else if (blob.type.includes('webp')) extension = 'webp'
+            
+            const fileName = emojiName ? 
+              `${emojiName}.${extension}` : 
+              (originalUrl ? originalUrl.split('/').pop() || 'extension-image' : 'extension-image')
             file = new File([blob], fileName, { type: blob.type })
           } else {
             // Try to fetch regular URL
+            console.log('[Create Page] Attempting to fetch URL:', imageUrl)
             const response = await fetch(imageUrl)
-            if (!response.ok) throw new Error('Failed to fetch image')
+            if (!response.ok) {
+              console.error('[Create Page] Fetch failed with status:', response.status)
+              throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+            }
             
             const blob = await response.blob()
-            const fileName = imageUrl.split('/').pop() || 'extension-image'
+            // Use emoji name if provided, otherwise extract from URL
+            const defaultName = imageUrl.split('/').pop() || 'extension-image'
             
             // Determine the correct MIME type
             let mimeType = blob.type
             
             // If no MIME type or generic type, try to infer from filename or content
             if (!mimeType || mimeType === 'application/octet-stream') {
-              if (fileName.toLowerCase().endsWith('.gif')) {
+              if (defaultName.toLowerCase().endsWith('.gif')) {
                 mimeType = 'image/gif'
-              } else if (fileName.toLowerCase().endsWith('.png')) {
+              } else if (defaultName.toLowerCase().endsWith('.png')) {
                 mimeType = 'image/png'
-              } else if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+              } else if (defaultName.toLowerCase().endsWith('.jpg') || defaultName.toLowerCase().endsWith('.jpeg')) {
                 mimeType = 'image/jpeg'
-              } else if (fileName.toLowerCase().endsWith('.webp')) {
+              } else if (defaultName.toLowerCase().endsWith('.webp')) {
                 mimeType = 'image/webp'
               } else {
                 // Try to detect GIF by checking magic bytes
@@ -107,6 +150,16 @@ function EmojiCreatorPage() {
                 }
               }
             }
+            
+            // Determine extension from MIME type or filename
+            let extension = 'png'
+            if (mimeType.includes('gif') || defaultName.toLowerCase().endsWith('.gif')) extension = 'gif'
+            else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = 'jpg'
+            else if (mimeType.includes('webp')) extension = 'webp'
+            
+            const fileName = emojiName ? 
+              `${emojiName}.${extension}` : 
+              defaultName
             
             console.log(`File: ${fileName}, detected MIME type: ${mimeType}`)
             file = new File([blob], fileName, { type: mimeType })
