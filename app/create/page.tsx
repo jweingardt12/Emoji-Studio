@@ -10,9 +10,53 @@ import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiCelebration } from "@/components/emoji-celebration"
 import { EmojiEditor } from "@/components/emoji-editor"
+import { ChromeExtensionModal } from "@/components/chrome-extension-modal"
+import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { openpanel } from "@/lib/safe-openpanel"
+import { hasSlackConnection } from "@/lib/utils/slack-upload"
+import Marquee from "@/components/ui/marquee"
+import { cn } from "@/lib/utils"
+import Image from "next/image"
+
+// Sample emoji tiles for the background
+const emojiTiles = [
+  { name: "party", src: "🎉" },
+  { name: "fire", src: "🔥" },
+  { name: "rocket", src: "🚀" },
+  { name: "heart", src: "❤️" },
+  { name: "star", src: "⭐" },
+  { name: "smile", src: "😊" },
+  { name: "laugh", src: "😂" },
+  { name: "cool", src: "😎" },
+  { name: "thinking", src: "🤔" },
+  { name: "celebrate", src: "🎊" },
+  { name: "rainbow", src: "🌈" },
+  { name: "pizza", src: "🍕" },
+  { name: "coffee", src: "☕" },
+  { name: "thumbsup", src: "👍" },
+  { name: "clap", src: "👏" },
+  { name: "muscle", src: "💪" },
+  { name: "sparkles", src: "✨" },
+  { name: "money", src: "💰" },
+  { name: "gift", src: "🎁" },
+  { name: "trophy", src: "🏆" },
+];
+
+const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
+  return (
+    <div
+      className={cn(
+        "relative size-16 cursor-pointer overflow-hidden rounded-xl border p-3",
+        "bg-white/40 backdrop-blur-[1px] [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+        "transform-gpu dark:bg-white/10 dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]"
+      )}
+    >
+      <span className="text-2xl">{emoji.src}</span>
+    </div>
+  );
+};
 
 function EmojiCreatorPage() {
   const { hasRealData, loading } = useEmojiData()
@@ -24,14 +68,18 @@ function EmojiCreatorPage() {
   const [currentStep, setCurrentStep] = useState<string>("")
   const [processingError, setProcessingError] = useState<string>("")
   const [isDragging, setIsDragging] = useState(false)
+  const [dragCounter, setDragCounter] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
   const [isClient, setIsClient] = useState(false)
   const [editingEmoji, setEditingEmoji] = useState<ProcessedEmoji | null>(null)
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number>(-1)
+  const [hasSlack, setHasSlack] = useState(false)
+  const [showChromeExtensionModal, setShowChromeExtensionModal] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
     setIsClient(true)
+    setHasSlack(hasSlackConnection())
     
     console.log('[Create Page] Component mounted, URL:', window.location.href)
     console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
@@ -223,13 +271,30 @@ function EmojiCreatorPage() {
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsDragging(true)
+    
+    // Check if the drag contains files
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setDragCounter(prev => {
+        const newCounter = prev + 1
+        if (newCounter === 1) {
+          setIsDragging(true)
+        }
+        return newCounter
+      })
+    }
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsDragging(false)
+    
+    setDragCounter(prev => {
+      const newCounter = prev - 1
+      if (newCounter === 0) {
+        setIsDragging(false)
+      }
+      return newCounter
+    })
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -240,6 +305,9 @@ function EmojiCreatorPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    
+    // Reset drag state
+    setDragCounter(0)
     setIsDragging(false)
 
     const files = Array.from(e.dataTransfer.files).filter(file => 
@@ -453,12 +521,7 @@ function EmojiCreatorPage() {
       <div 
         className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6 min-h-screen"
         onDragEnter={handleDragEnter}
-        onDragLeave={(e) => {
-          // Only handle drag leave if we're leaving the entire container
-          if (e.currentTarget === e.target) {
-            handleDragLeave(e)
-          }
-        }}
+        onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -507,10 +570,6 @@ function EmojiCreatorPage() {
                           ? 'border-primary bg-primary/10' 
                           : 'border-border hover:border-primary/50'
                       }`}
-                      onDragEnter={handleDragEnter}
-                      onDragLeave={handleDragLeave}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
                     >
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                       <p className="text-sm text-muted-foreground mb-2">
@@ -599,6 +658,73 @@ function EmojiCreatorPage() {
                 </Card>
               )}
 
+              {/* Chrome Extension Hero Section */}
+              {!hasSlack && !loading && (
+                <div className="relative overflow-hidden rounded-xl">
+                  {/* Scrolling emoji background */}
+                  <div className="absolute inset-0 flex w-full flex-col items-center justify-center overflow-hidden">
+                    <Marquee
+                      pauseOnHover
+                      className="[--duration:20s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <Marquee
+                      reverse
+                      pauseOnHover
+                      className="[--duration:30s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(10, 20).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <Marquee
+                      pauseOnHover
+                      className="[--duration:25s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="relative px-6 py-16 sm:px-10 sm:py-24 lg:py-32 backdrop-blur-[2px]">
+                    <div className="mx-auto max-w-2xl text-center">
+                      <div className="mb-6 inline-flex items-center rounded-full bg-blue-500/10 backdrop-blur-sm px-3 py-1 text-sm">
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                        <span className="font-medium text-blue-600 dark:text-blue-400">New!</span>
+                      </div>
+                      
+                      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        Import Emojis from Any Website
+                      </h2>
+                      
+                      <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-8">
+                        Connect to your Slack in one click. Add any image, GIF, or video as a perfectly formatted emoji. 
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <Button
+                          size="lg"
+                          className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
+                          onClick={() => setShowChromeExtensionModal(true)}
+                        >
+                          <ChromeIcon className="h-5 w-5 text-blue-500" />
+                          Get Chrome Extension
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Processed Emojis */}
               {processedEmojis.length > 0 && (
                 <EmojiProcessorPreview
@@ -608,6 +734,7 @@ function EmojiCreatorPage() {
                   onDownloadAll={handleDownloadAll}
                   onUpdateName={handleUpdateEmojiName}
                   onEdit={handleEditEmoji}
+                  onShowChromeExtension={() => setShowChromeExtensionModal(true)}
                 />
               )}
 
@@ -680,7 +807,7 @@ function EmojiCreatorPage() {
                         </div>
                         <h3 className="font-medium">3. Add to Slack</h3>
                         <p className="text-sm text-muted-foreground">
-                          Download your emojis or send them directly to Slack! Connect your workspace in Settings to upload emojis with one click. Your emojis are ready to use in any Slack message!
+                          Download your emojis or send them directly to Slack! Install our Chrome extension to easily import emojis from any website. Your emojis are ready to use in any Slack message!
                         </p>
                       </div>
                     </div>
@@ -704,22 +831,10 @@ function EmojiCreatorPage() {
         onDownloadAll={handleDownloadAll}
         onUpdateName={handleUpdateEmojiName}
         onEdit={handleEditEmoji}
+        onShowChromeExtension={() => setShowChromeExtensionModal(true)}
       />
       
       {isClient && showCelebration && <EmojiCelebration isActive={showCelebration} />}
-      
-      {/* Full page drag overlay */}
-      {isDragging && (
-        <div className="fixed inset-0 z-50 pointer-events-none">
-          <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm" />
-          <div className="flex items-center justify-center h-full">
-            <div className="bg-card border-2 border-primary border-dashed rounded-lg p-8 shadow-lg">
-              <Upload className="mx-auto h-12 w-12 text-primary mb-4" />
-              <p className="text-lg font-medium text-center">Drop files here to create emojis</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Emoji Editor Modal */}
       <EmojiEditor
@@ -728,10 +843,27 @@ function EmojiCreatorPage() {
         onClose={handleCloseEditor}
         onSave={handleSaveEditedEmoji}
       />
+
+      {/* Chrome Extension Installation Modal */}
+      <ChromeExtensionModal
+        isOpen={showChromeExtensionModal}
+        onClose={() => setShowChromeExtensionModal(false)}
+      />
     </>
   )
 }
 
 export default function EmojiCreatorPageWrapper() {
   return <EmojiCreatorPage />;
+}
+
+// Add CSS for grid pattern
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style')
+  style.textContent = `
+    .bg-grid-white\\/5 {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+    }
+  `
+  document.head.appendChild(style)
 }

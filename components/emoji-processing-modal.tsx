@@ -13,6 +13,7 @@ import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload
 import { toast } from "sonner"
 import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
+import { ChromeIcon } from "@/components/icons/chrome-icon"
 
 interface ProcessingStep {
   id: string
@@ -34,6 +35,7 @@ interface EmojiProcessingModalProps {
   onDownloadAll: () => void
   onUpdateName?: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
+  onShowChromeExtension?: () => void
 }
 
 export function EmojiProcessingModal({
@@ -47,7 +49,8 @@ export function EmojiProcessingModal({
   onDownload,
   onDownloadAll,
   onUpdateName,
-  onEdit
+  onEdit,
+  onShowChromeExtension
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -598,14 +601,21 @@ export function EmojiProcessingModal({
                     </Button>
                   </div>
                 )}
-                {!hasSlack && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Want to send this directly to Slack? Head to{" "}
-                    <Link href="/settings" className="underline hover:text-foreground">
-                      Settings
-                    </Link>{" "}
-                    and enter your Workspace details.
-                  </p>
+                {!hasSlack && onShowChromeExtension && (
+                  <div className="space-y-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Want to send emojis directly to Slack? Install our Chrome extension to easily import emojis from any website!
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onShowChromeExtension}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <ChromeIcon className="h-4 w-4 text-blue-500" />
+                      Get Chrome Extension
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
