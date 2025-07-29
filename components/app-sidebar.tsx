@@ -248,7 +248,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       // Log the first processed emoji to see its structure
       if (recentData.length > 0) {
         console.log('First processed emoji:', recentData[0]);
-        console.log('Newest emoji (by created timestamp):', recentData.reduce((newest, emoji) => 
+        console.log('Newest emoji (by created timestamp):', recentData.reduce((newest: any, emoji: any) => 
           emoji.created > newest.created ? emoji : newest
         ));
       }
