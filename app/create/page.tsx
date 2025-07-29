@@ -9,6 +9,7 @@ import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiCelebration } from "@/components/emoji-celebration"
+import { EmojiEditor } from "@/components/emoji-editor"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { openpanel } from "@/lib/safe-openpanel"
@@ -25,6 +26,8 @@ function EmojiCreatorPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [editingEmoji, setEditingEmoji] = useState<ProcessedEmoji | null>(null)
+  const [editingEmojiIndex, setEditingEmojiIndex] = useState<number>(-1)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -383,6 +386,38 @@ function EmojiCreatorPage() {
     }
   }
 
+  const handleEditEmoji = (emoji: ProcessedEmoji, index: number) => {
+    setEditingEmoji(emoji)
+    setEditingEmojiIndex(index)
+    openpanel.track("Emoji Creator: Edit Started", { 
+      emojiName: emoji.name,
+      format: emoji.format,
+      isGif: emoji.format === "GIF",
+      wasVideo: emoji.wasVideo || false
+    })
+  }
+
+  const handleSaveEditedEmoji = (editedEmoji: ProcessedEmoji) => {
+    if (editingEmojiIndex >= 0) {
+      setProcessedEmojis(prev => prev.map((emoji, i) => 
+        i === editingEmojiIndex ? editedEmoji : emoji
+      ))
+      openpanel.track("Emoji Creator: Edit Saved", { 
+        emojiName: editedEmoji.name,
+        format: editedEmoji.format,
+        originalSize: editedEmoji.originalSize,
+        processedSize: editedEmoji.processedSize
+      })
+    }
+    setEditingEmoji(null)
+    setEditingEmojiIndex(-1)
+  }
+
+  const handleCloseEditor = () => {
+    setEditingEmoji(null)
+    setEditingEmojiIndex(-1)
+  }
+
   const handleModalClose = () => {
     setIsProcessing(false)
     setCurrentStep('')
@@ -572,6 +607,7 @@ function EmojiCreatorPage() {
                   onDownload={handleDownloadEmoji}
                   onDownloadAll={handleDownloadAll}
                   onUpdateName={handleUpdateEmojiName}
+                  onEdit={handleEditEmoji}
                 />
               )}
 
@@ -683,6 +719,14 @@ function EmojiCreatorPage() {
           </div>
         </div>
       )}
+
+      {/* Emoji Editor Modal */}
+      <EmojiEditor
+        emoji={editingEmoji}
+        isOpen={editingEmoji !== null}
+        onClose={handleCloseEditor}
+        onSave={handleSaveEditedEmoji}
+      />
     </>
   )
 }

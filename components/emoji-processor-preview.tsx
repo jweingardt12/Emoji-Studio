@@ -5,7 +5,7 @@ import { ProcessedEmoji, EmojiProcessor } from "@/lib/utils/emoji-processor"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil } from "lucide-react"
+import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil, Edit3 } from "lucide-react"
 import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 import { toast } from "sonner"
@@ -18,6 +18,7 @@ interface EmojiProcessorPreviewProps {
   onDownload: (emoji: ProcessedEmoji) => void
   onDownloadAll: () => void
   onUpdateName: (index: number, newName: string) => void
+  onEdit?: (emoji: ProcessedEmoji, index: number) => void
 }
 
 export function EmojiProcessorPreview({ 
@@ -25,7 +26,8 @@ export function EmojiProcessorPreview({
   onRemove, 
   onDownload,
   onDownloadAll,
-  onUpdateName
+  onUpdateName,
+  onEdit
 }: EmojiProcessorPreviewProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
@@ -244,6 +246,17 @@ export function EmojiProcessorPreview({
 
               <div className="space-y-2 mt-3">
                 <div className="flex gap-2">
+                  {onEdit && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 min-w-[100px]"
+                      onClick={() => onEdit(emoji, index)}
+                    >
+                      <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Edit</span>
+                    </Button>
+                  )}
                   {hasSlack ? (
                     <>
                       <Button
@@ -281,15 +294,28 @@ export function EmojiProcessorPreview({
                       </Button>
                     </>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => onDownload(emoji)}
-                    >
-                      <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                      <span className="truncate">Download</span>
-                    </Button>
+                    <>
+                      {onEdit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => onEdit(emoji, index)}
+                        >
+                          <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                          <span className="truncate">Edit</span>
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={onEdit ? "flex-1" : "w-full"}
+                        onClick={() => onDownload(emoji)}
+                      >
+                        <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">Download</span>
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
