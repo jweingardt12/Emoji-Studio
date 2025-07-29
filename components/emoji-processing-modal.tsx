@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,6 +33,7 @@ interface EmojiProcessingModalProps {
   onDownload: (emoji: ProcessedEmoji) => void
   onDownloadAll: () => void
   onUpdateName?: (index: number, newName: string) => void
+  onEdit?: (emoji: ProcessedEmoji, index: number) => void
 }
 
 export function EmojiProcessingModal({
@@ -45,7 +46,8 @@ export function EmojiProcessingModal({
   onClose,
   onDownload,
   onDownloadAll,
-  onUpdateName
+  onUpdateName,
+  onEdit
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -428,6 +430,17 @@ export function EmojiProcessingModal({
                         </>
                       )}
                     </div>
+                    {onEdit && emoji.format !== 'GIF' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => onEdit(emoji, index)}
+                        title="Edit emoji"
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -436,7 +449,19 @@ export function EmojiProcessingModal({
                 {processedEmojis.length === 1 ? (
                   <div className="space-y-3">
                     <div className="flex gap-2">
+                      {onEdit && processedEmojis[0].format !== 'GIF' && (
+                        <Button 
+                          size="sm"
+                          className="flex-1" 
+                          onClick={() => onEdit(processedEmojis[0], 0)}
+                          variant="outline"
+                        >
+                          <Sliders className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      )}
                       <Button 
+                        size="sm"
                         className="flex-1" 
                         onClick={() => onDownload(processedEmojis[0])}
                         variant="outline"
@@ -445,6 +470,7 @@ export function EmojiProcessingModal({
                         Download
                       </Button>
                       <Button 
+                        size="sm"
                         className="flex-1" 
                         onClick={() => hasSlack ? handleSlackUpload(processedEmojis[0], 0) : undefined}
                         disabled={!hasSlack || uploadingIndex !== null}
@@ -466,6 +492,7 @@ export function EmojiProcessingModal({
                 ) : (
                   <div className="flex gap-2">
                     <Button 
+                      size="sm"
                       className="flex-1" 
                       onClick={onDownloadAll}
                       variant="outline"
@@ -474,7 +501,8 @@ export function EmojiProcessingModal({
                       Download All ({processedEmojis.length})
                     </Button>
                     <Button 
-                      className="flex-1" 
+                      size="sm"
+                      className="flex-1"
                       onClick={async () => {
                         if (hasSlack) {
                           setUploadingAll(true)

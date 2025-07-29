@@ -26,6 +26,7 @@ import {
   Check
 } from "lucide-react"
 import { toast } from "sonner"
+import { HDRProcessor } from "@/lib/utils/hdr-processor"
 
 interface EmojiEditorProps {
   emoji: ProcessedEmoji | null
@@ -126,15 +127,20 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     img.src = URL.createObjectURL(blobToUse)
   }
 
-  // Advanced HDR-like enhancement function
+  // Modern HDR enhancement based on Greg Benz's natural HDR approach
   const applyHDREnhancement = (data: Uint8ClampedArray, intensity: number) => {
     const factor = intensity / 100
+    const width = originalImageData?.width || 128
+    const height = originalImageData?.height || 128
     
-    // First pass: analyze the image
+    // First pass: analyze image statistics
+    let minLum = 255, maxLum = 0
     let totalLuminance = 0
     let pixelCount = 0
     const histogram = new Array(256).fill(0)
+    const luminanceMap = new Float32Array(width * height)
     
+    // Build luminance map and find highlight/shadow regions
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i]
       const g = data[i + 1]
@@ -142,21 +148,41 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       const a = data[i + 3]
       
       if (a > 0) {
-        const luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        // Accurate luminance calculation (Rec. 709)
+        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        const pixelIndex = Math.floor(i / 4)
+        luminanceMap[pixelIndex] = luminance
+        
         totalLuminance += luminance
         pixelCount++
         histogram[Math.floor(luminance)]++
+        
+        minLum = Math.min(minLum, luminance)
+        maxLum = Math.max(maxLum, luminance)
       }
     }
     
     const avgLuminance = totalLuminance / pixelCount
+    const dynamicRange = maxLum - minLum
     
-    // Calculate dynamic range expansion parameters
-    const shadowBoost = factor * 0.3
-    const highlightBoost = factor * 0.2
-    const midtoneEnhance = factor * 0.5
+    // Find the 1% and 99% percentile for better highlight/shadow detection
+    let cumulative = 0
+    let lowPercentile = 0, highPercentile = 255
+    const onePercent = pixelCount * 0.01
+    const ninetyNinePercent = pixelCount * 0.99
     
-    // Second pass: apply HDR-like enhancement
+    for (let i = 0; i < 256; i++) {
+      cumulative += histogram[i]
+      if (cumulative >= onePercent && lowPercentile === 0) {
+        lowPercentile = i
+      }
+      if (cumulative >= ninetyNinePercent) {
+        highPercentile = i
+        break
+      }
+    }
+    
+    // Second pass: apply natural HDR enhancement
     for (let i = 0; i < data.length; i += 4) {
       let r = data[i]
       let g = data[i + 1]
@@ -164,50 +190,129 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       const a = data[i + 3]
       
       if (a > 0) {
-        // Calculate luminance
-        const luminance = 0.299 * r + 0.587 * g + 0.114 * b
-        const normalizedLum = luminance / 255
+        const pixelIndex = Math.floor(i / 4)
+        const luminance = luminanceMap[pixelIndex]
         
-        // Apply tone mapping curve (S-curve for contrast)
-        const toneMapped = Math.pow(normalizedLum, 1 - factor * 0.3) * 
-                          (1 + factor * Math.sin(normalizedLum * Math.PI))
+        // Determine if pixel is in shadow, midtone, or highlight region
+        const isDeepShadow = luminance < lowPercentile
+        const isShadow = luminance < avgLuminance * 0.5
+        const isHighlight = luminance > avgLuminance * 1.8
+        const isBrightHighlight = luminance > highPercentile
         
-        // Calculate adjustment factor based on luminance zone
-        let adjustmentFactor = 1
+        // Natural tone curve - lift shadows, protect highlights
+        let adjustment = 1.0
         
-        if (normalizedLum < 0.3) {
-          // Shadows - lift them up
-          adjustmentFactor = 1 + shadowBoost * (1 - normalizedLum / 0.3)
-        } else if (normalizedLum > 0.7) {
-          // Highlights - enhance detail
-          adjustmentFactor = 1 + highlightBoost * ((normalizedLum - 0.7) / 0.3)
+        if (isDeepShadow) {
+          // Darken deep shadows for more contrast
+          const shadowDarken = 1 - (factor * 0.3 * (1 - luminance / lowPercentile))
+          adjustment = shadowDarken
+        } else if (isShadow) {
+          // Moderate shadow darkening with some detail preservation
+          const shadowFactor = (avgLuminance * 0.5 - luminance) / (avgLuminance * 0.5)
+          // Balance between darkening and detail preservation
+          adjustment = 1 - (factor * 0.1 * shadowFactor) + (factor * 0.2 * shadowFactor * (luminance / (avgLuminance * 0.5)))
+        } else if (isBrightHighlight) {
+          // Extremely boost bright highlights to near white
+          const highlightFactor = (luminance - highPercentile) / (255 - highPercentile)
+          adjustment = 1 + (factor * 1.0 * highlightFactor)
+        } else if (isHighlight) {
+          // Very strong highlight enhancement
+          const highlightFactor = (luminance - avgLuminance * 1.8) / (maxLum - avgLuminance * 1.8)
+          adjustment = 1 + (factor * 0.7 * highlightFactor)
+        } else if (luminance > avgLuminance * 1.2) {
+          // Strong boost for upper midtones
+          const upperMidFactor = (luminance - avgLuminance * 1.2) / (avgLuminance * 0.6)
+          adjustment = 1 + (factor * 0.4 * upperMidFactor)
+        } else if (luminance < avgLuminance * 0.8) {
+          // Darken lower midtones for more contrast
+          const lowerMidFactor = (avgLuminance * 0.8 - luminance) / (avgLuminance * 0.8)
+          adjustment = 1 - (factor * 0.15 * lowerMidFactor)
         } else {
-          // Midtones - enhance vibrance
-          adjustmentFactor = 1 + midtoneEnhance * Math.sin((normalizedLum - 0.3) * Math.PI / 0.4)
+          // Regular midtones - slight enhancement
+          adjustment = 1 + (factor * 0.05)
         }
         
-        // Apply vibrance-like enhancement (preserves skin tones)
-        const maxColor = Math.max(r, g, b)
-        const avgColor = (r + g + b) / 3
-        const colorfulness = (maxColor - avgColor) / 255
-        const vibranceFactor = 1 + factor * 0.5 * (1 - colorfulness)
+        // Apply adjustment while preserving color relationships
+        r = Math.min(255, Math.max(0, r * adjustment))
+        g = Math.min(255, Math.max(0, g * adjustment))
+        b = Math.min(255, Math.max(0, b * adjustment))
         
-        // Apply adjustments
-        r = Math.min(255, r * adjustmentFactor * vibranceFactor)
-        g = Math.min(255, g * adjustmentFactor * vibranceFactor)
-        b = Math.min(255, b * adjustmentFactor * vibranceFactor)
+        // Natural vibrance enhancement (protect skin tones)
+        const maxChannel = Math.max(r, g, b)
+        const minChannel = Math.min(r, g, b)
+        const saturation = maxChannel > 0 ? (maxChannel - minChannel) / maxChannel : 0
         
-        // Local contrast enhancement
-        const localContrast = 1 + factor * 0.2
-        const mid = 128
-        r = Math.min(255, Math.max(0, mid + (r - mid) * localContrast))
-        g = Math.min(255, Math.max(0, mid + (g - mid) * localContrast))
-        b = Math.min(255, Math.max(0, mid + (b - mid) * localContrast))
+        // Check for skin tone range (avoid oversaturating skin)
+        const hue = Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b) * 180 / Math.PI
+        const isSkinTone = (hue > 15 && hue < 45) && saturation < 0.6
+        
+        if (!isSkinTone && saturation < 0.8) {
+          // Stronger color enhancement
+          const vibranceAmount = factor * 0.35 * (1 - saturation)
+          const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b
+          
+          r = Math.min(255, Math.max(0, gray + (r - gray) * (1 + vibranceAmount)))
+          g = Math.min(255, Math.max(0, gray + (g - gray) * (1 + vibranceAmount)))
+          b = Math.min(255, Math.max(0, gray + (b - gray) * (1 + vibranceAmount)))
+        }
+        
+        // More aggressive local contrast enhancement (clarity)
+        if (factor > 0.2) {
+          const clarityAmount = factor * 0.15
+          const localAvg = 128 // Simplified for performance
+          
+          r = Math.min(255, Math.max(0, r + (r - localAvg) * clarityAmount))
+          g = Math.min(255, Math.max(0, g + (g - localAvg) * clarityAmount))
+          b = Math.min(255, Math.max(0, b + (b - localAvg) * clarityAmount))
+        }
+        
+        // Add intense glow to highlights
+        if (isHighlight && factor > 0.2) {
+          const glowAmount = factor * 0.4 * ((luminance - avgLuminance * 1.5) / (maxLum - avgLuminance * 1.5))
+          r = Math.min(255, r * (1 + glowAmount))
+          g = Math.min(255, g * (1 + glowAmount))
+          b = Math.min(255, b * (1 + glowAmount))
+        }
+        
+        // Strong bloom effect for bright areas
+        if (isBrightHighlight && factor > 0.3) {
+          const bloomAmount = factor * 0.3
+          r = Math.min(255, r + (255 - r) * bloomAmount)
+          g = Math.min(255, g + (255 - g) * bloomAmount)
+          b = Math.min(255, b + (255 - b) * bloomAmount)
+        }
+        
+        // Aggressively push bright pixels to pure white
+        if (luminance > highPercentile && factor > 0.3) {
+          const whitePush = factor * 0.8 * ((luminance - highPercentile) / (255 - highPercentile))
+          r = Math.min(255, r + (255 - r) * whitePush)
+          g = Math.min(255, g + (255 - g) * whitePush)
+          b = Math.min(255, b + (255 - b) * whitePush)
+        }
+        
+        // Crush blacks for more contrast
+        if (luminance < lowPercentile && factor > 0.3) {
+          const blackCrush = factor * 0.5 * (1 - luminance / lowPercentile)
+          r = Math.max(0, r * (1 - blackCrush))
+          g = Math.max(0, g * (1 - blackCrush))
+          b = Math.max(0, b * (1 - blackCrush))
+        }
+        
+        // Smart highlight clipping - allow some areas to go pure white for brilliance
+        if (r > 245 || g > 245 || b > 245) {
+          const maxValue = Math.max(r, g, b)
+          if (maxValue > 255) {
+            // Instead of scaling down, clip to 255 for maximum brightness
+            r = Math.min(255, r)
+            g = Math.min(255, g)
+            b = Math.min(255, b)
+          }
+        }
         
         // Update pixel data
-        data[i] = r
-        data[i + 1] = g
-        data[i + 2] = b
+        data[i] = Math.round(r)
+        data[i + 1] = Math.round(g)
+        data[i + 2] = Math.round(b)
       }
     }
   }
@@ -335,10 +440,10 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       if (blob) {
         setEditedBlob(blob)
         // Update preview URL from canvas data
-        const dataUrl = canvas.toDataURL(makeHDR ? "image/png" : "image/png", makeHDR ? 1.0 : 0.95)
+        const dataUrl = canvas.toDataURL("image/png")
         setPreviewUrl(dataUrl)
       }
-    }, makeHDR ? "image/png" : "image/png", makeHDR ? 1.0 : 0.95)
+    }, "image/png")
   }
 
   useEffect(() => {
@@ -359,31 +464,86 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
     setIsProcessing(true)
     try {
-      // Create a new File from the edited blob
-      const editedFile = new File([editedBlob], emoji.originalFile.name, {
-        type: makeHDR ? "image/png" : editedBlob.type,
+      console.log('Starting save process...')
+      let finalBlob = editedBlob
+      let isAppleHDR = false
+
+      // If HDR is enabled, create Apple HDR format
+      // Note: The preview already shows the HDR enhancement, but we need to create
+      // the proper Apple HDR format with P3 color space for saving
+      if (makeHDR && hdrIntensity > 0) {
+        console.log('HDR enabled, creating Apple HDR format...')
+        
+        toast("Saving with HDR enhancement...", {
+          description: "Creating Apple-compatible HDR image"
+        })
+        
+        try {
+          // Since we already applied HDR in the preview, we'll use a lighter touch
+          // for the final Apple HDR to avoid over-processing
+          const hdrBlob = await HDRProcessor.createAppleHDR(editedBlob, {
+            intensity: hdrIntensity * 0.7, // Reduce intensity since preview already has HDR
+            toneMapping: 'aces',
+            maxContentBoost: 1 + (hdrIntensity / 150)
+          })
+
+          if (hdrBlob) {
+            finalBlob = hdrBlob
+            isAppleHDR = true
+            console.log('Successfully created Apple HDR image')
+          } else {
+            toast("HDR format conversion failed", {
+              description: "Using enhanced standard format",
+              action: {
+                label: "OK",
+                onClick: () => {}
+              }
+            })
+          }
+        } catch (hdrError) {
+          console.error('HDR processing error:', hdrError)
+          toast("HDR processing error", {
+            description: "Using enhanced standard format"
+          })
+        }
+      }
+
+      // Create a new File from the final blob
+      const editedFile = new File([finalBlob], emoji.originalFile.name, {
+        type: isAppleHDR ? "image/jpeg" : editedBlob.type,
       })
 
-      // Mark as HDR if makeHDR is enabled
-      if (makeHDR) {
-        (editedFile as any).isHDR = true
+      // Mark as HDR if it's Apple HDR
+      if (isAppleHDR) {
+        const fileWithMeta = editedFile as any
+        fileWithMeta.isHDR = true
+        fileWithMeta.isAppleHDR = true
       }
 
       // Import and use EmojiProcessor to process the edited file
       const { EmojiProcessor } = await import("@/lib/utils/emoji-processor")
       const processedEmoji = await EmojiProcessor.processFile(editedFile, {
-        preserveHDR: makeHDR
+        preserveHDR: isAppleHDR
       })
 
       // Update the name to match the original
       processedEmoji.name = emoji.name
+      
+      // Add note about HDR
+      if (isAppleHDR) {
+        processedEmoji.processingNote = `HDR Enhanced (${hdrIntensity}% intensity)`
+      }
 
       onSave(processedEmoji)
-      toast.success("Emoji edited successfully!")
+      toast(isAppleHDR ? "Emoji saved with HDR enhancement!" : "Emoji edited successfully!", {
+        description: isAppleHDR ? `${hdrIntensity}% HDR intensity applied` : undefined
+      })
       onClose()
     } catch (error) {
       console.error("Failed to save edited emoji:", error)
-      toast.error("Failed to save edited emoji")
+      toast("Failed to save edited emoji", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -423,6 +583,11 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                     className="w-full h-full"
                     style={{ imageRendering: 'crisp-edges' }}
                   />
+                )}
+                {makeHDR && hdrIntensity > 0 && (
+                  <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                    HDR: {hdrIntensity}%
+                  </div>
                 )}
                 {isProcessing && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -590,7 +755,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                         HDR Enhancement
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Make your image pop with HDR-like effects
+                        Enhanced dynamic range & vibrant colors
                       </p>
                     </div>
                     <Switch
@@ -614,7 +779,10 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                         disabled={isGif || isProcessing}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {hdrIntensity}% - {hdrIntensity < 30 ? 'Subtle' : hdrIntensity < 70 ? 'Moderate' : 'Intense'}
+                        {hdrIntensity}% - {hdrIntensity < 30 ? 'Subtle' : hdrIntensity < 70 ? 'Vibrant' : 'Dramatic'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Live preview • P3 color space on save
                       </p>
                     </div>
                   )}

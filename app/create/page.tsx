@@ -703,6 +703,7 @@ function EmojiCreatorPage() {
         onDownload={handleDownloadEmoji}
         onDownloadAll={handleDownloadAll}
         onUpdateName={handleUpdateEmojiName}
+        onEdit={handleEditEmoji}
       />
       
       {isClient && showCelebration && <EmojiCelebration isActive={showCelebration} />}

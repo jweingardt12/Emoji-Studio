@@ -152,22 +152,6 @@ export function EmojiProcessorPreview({
                       alt={emoji.name}
                       className="absolute inset-0 w-full h-full object-contain"
                     />
-                    {(emoji.processingNote?.toLowerCase().includes('hdr') || 
-                      emoji.processingNote?.toLowerCase().includes('quality preserved') ||
-                      emoji.format === 'HEIC' || 
-                      emoji.format === 'HEIF' ||
-                      emoji.originalFile.name.toLowerCase().includes('hdr')) && (
-                      <span 
-                        className="absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider shadow-lg"
-                        style={{
-                          background: 'linear-gradient(135deg, #FF006E, #8338EC, #3A86FF)',
-                          color: 'white',
-                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
-                        }}
-                      >
-                        HDR
-                      </span>
-                    )}
                   </div>
                 </div>
 
@@ -249,7 +233,7 @@ export function EmojiProcessorPreview({
                   <>
                     {/* First row: Edit and Download */}
                     <div className="flex gap-2">
-                      {onEdit && (
+                      {onEdit && emoji.format !== 'GIF' && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -263,7 +247,7 @@ export function EmojiProcessorPreview({
                       <Button
                         size="sm"
                         variant="outline"
-                        className={onEdit ? "flex-1" : "w-full"}
+                        className={onEdit && emoji.format !== 'GIF' ? "flex-1" : "w-full"}
                         onClick={() => onDownload(emoji)}
                       >
                         <Download className="w-4 h-4 mr-1.5" />
@@ -299,7 +283,7 @@ export function EmojiProcessorPreview({
                 ) : (
                   /* No Slack: single row */
                   <div className="flex gap-2">
-                    {onEdit && (
+                    {onEdit && emoji.format !== 'GIF' && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -313,7 +297,7 @@ export function EmojiProcessorPreview({
                     <Button
                       size="sm"
                       variant="outline"
-                      className={onEdit ? "flex-1" : "w-full"}
+                      className={onEdit && emoji.format !== 'GIF' ? "flex-1" : "w-full"}
                       onClick={() => onDownload(emoji)}
                     >
                       <Download className="w-4 h-4 mr-1.5" />
