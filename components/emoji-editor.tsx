@@ -56,10 +56,12 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
   const [adjustments, setAdjustments] = useState<ImageAdjustments>(defaultAdjustments)
   const [removeBackground, setRemoveBackground] = useState(false)
   const [makeHDR, setMakeHDR] = useState(false)
+  const [hdrIntensity, setHdrIntensity] = useState(50)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [editedBlob, setEditedBlob] = useState<Blob | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
   
   const isGif = emoji?.format === "GIF" || emoji?.originalFile.type === "image/gif"
@@ -71,27 +73,143 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       setAdjustments(defaultAdjustments)
       setRemoveBackground(false)
       setMakeHDR(false)
-      loadOriginalImage()
+      // Small delay to ensure canvas elements are mounted
+      setTimeout(() => {
+        loadOriginalImage()
+      }, 100)
     }
   }, [emoji, isOpen])
 
   const loadOriginalImage = async () => {
-    if (!emoji || !canvasRef.current) return
+    if (!emoji || !canvasRef.current || !previewCanvasRef.current) return
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext("2d", { willReadFrequently: true })
     if (!ctx) return
 
+    const previewCanvas = previewCanvasRef.current
+    const previewCtx = previewCanvas.getContext("2d")
+    if (!previewCtx) return
+
     const img = new Image()
     img.onload = () => {
+      console.log('Image loaded:', img.width, 'x', img.height)
+      
+      // Set up main canvas
       canvas.width = img.width
       canvas.height = img.height
       ctx.drawImage(img, 0, 0)
+      
+      // Set up preview canvas immediately
+      previewCanvas.width = 128
+      previewCanvas.height = 128
+      const scale = Math.min(128 / img.width, 128 / img.height)
+      const scaledWidth = img.width * scale
+      const scaledHeight = img.height * scale
+      const offsetX = (128 - scaledWidth) / 2
+      const offsetY = (128 - scaledHeight) / 2
+      
+      previewCtx.clearRect(0, 0, 128, 128)
+      previewCtx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
+      
+      // Store original image data
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       setOriginalImageData(imageData)
-      applyAdjustments()
     }
-    img.src = URL.createObjectURL(emoji.originalFile)
+    
+    img.onerror = (error) => {
+      console.error('Failed to load image:', error)
+    }
+    
+    // Try to use processedBlob first, fall back to originalFile
+    const blobToUse = emoji.processedBlob || emoji.originalFile
+    img.src = URL.createObjectURL(blobToUse)
+  }
+
+  // Advanced HDR-like enhancement function
+  const applyHDREnhancement = (data: Uint8ClampedArray, intensity: number) => {
+    const factor = intensity / 100
+    
+    // First pass: analyze the image
+    let totalLuminance = 0
+    let pixelCount = 0
+    const histogram = new Array(256).fill(0)
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      const a = data[i + 3]
+      
+      if (a > 0) {
+        const luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        totalLuminance += luminance
+        pixelCount++
+        histogram[Math.floor(luminance)]++
+      }
+    }
+    
+    const avgLuminance = totalLuminance / pixelCount
+    
+    // Calculate dynamic range expansion parameters
+    const shadowBoost = factor * 0.3
+    const highlightBoost = factor * 0.2
+    const midtoneEnhance = factor * 0.5
+    
+    // Second pass: apply HDR-like enhancement
+    for (let i = 0; i < data.length; i += 4) {
+      let r = data[i]
+      let g = data[i + 1]
+      let b = data[i + 2]
+      const a = data[i + 3]
+      
+      if (a > 0) {
+        // Calculate luminance
+        const luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        const normalizedLum = luminance / 255
+        
+        // Apply tone mapping curve (S-curve for contrast)
+        const toneMapped = Math.pow(normalizedLum, 1 - factor * 0.3) * 
+                          (1 + factor * Math.sin(normalizedLum * Math.PI))
+        
+        // Calculate adjustment factor based on luminance zone
+        let adjustmentFactor = 1
+        
+        if (normalizedLum < 0.3) {
+          // Shadows - lift them up
+          adjustmentFactor = 1 + shadowBoost * (1 - normalizedLum / 0.3)
+        } else if (normalizedLum > 0.7) {
+          // Highlights - enhance detail
+          adjustmentFactor = 1 + highlightBoost * ((normalizedLum - 0.7) / 0.3)
+        } else {
+          // Midtones - enhance vibrance
+          adjustmentFactor = 1 + midtoneEnhance * Math.sin((normalizedLum - 0.3) * Math.PI / 0.4)
+        }
+        
+        // Apply vibrance-like enhancement (preserves skin tones)
+        const maxColor = Math.max(r, g, b)
+        const avgColor = (r + g + b) / 3
+        const colorfulness = (maxColor - avgColor) / 255
+        const vibranceFactor = 1 + factor * 0.5 * (1 - colorfulness)
+        
+        // Apply adjustments
+        r = Math.min(255, r * adjustmentFactor * vibranceFactor)
+        g = Math.min(255, g * adjustmentFactor * vibranceFactor)
+        b = Math.min(255, b * adjustmentFactor * vibranceFactor)
+        
+        // Local contrast enhancement
+        const localContrast = 1 + factor * 0.2
+        const mid = 128
+        r = Math.min(255, Math.max(0, mid + (r - mid) * localContrast))
+        g = Math.min(255, Math.max(0, mid + (g - mid) * localContrast))
+        b = Math.min(255, Math.max(0, mid + (b - mid) * localContrast))
+        
+        // Update pixel data
+        data[i] = r
+        data[i + 1] = g
+        data[i + 2] = b
+      }
+    }
   }
 
   const applyAdjustments = async () => {
@@ -109,6 +227,11 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     )
 
     const data = imageData.data
+
+    // Apply HDR enhancement first if enabled
+    if (makeHDR && hdrIntensity > 0) {
+      applyHDREnhancement(data, hdrIntensity)
+    }
 
     // Apply adjustments pixel by pixel
     for (let i = 0; i < data.length; i += 4) {
@@ -173,24 +296,47 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
     ctx.putImageData(imageData, 0, 0)
 
-    // Apply blur if needed
+    // Apply filters if needed
+    const filters = []
     if (adjustments.blur > 0) {
-      ctx.filter = `blur(${adjustments.blur}px)`
+      filters.push(`blur(${adjustments.blur}px)`)
+    }
+    if (adjustments.sharpen > 0) {
+      filters.push(`contrast(${100 + adjustments.sharpen}%)`)
+    }
+    
+    if (filters.length > 0) {
+      ctx.filter = filters.join(' ')
       ctx.drawImage(canvas, 0, 0)
+      ctx.filter = 'none' // Reset filter
     }
 
-    // Apply sharpen if needed
-    if (adjustments.sharpen > 0) {
-      // Simple sharpening using CSS filter
-      ctx.filter = `contrast(${100 + adjustments.sharpen}%)`
-      ctx.drawImage(canvas, 0, 0)
+    // Update preview canvas to show at 128x128
+    if (previewCanvasRef.current) {
+      const previewCtx = previewCanvasRef.current.getContext("2d")
+      if (previewCtx) {
+        previewCanvasRef.current.width = 128
+        previewCanvasRef.current.height = 128
+        
+        // Calculate scaling to fit within 128x128 while maintaining aspect ratio
+        const scale = Math.min(128 / canvas.width, 128 / canvas.height)
+        const scaledWidth = canvas.width * scale
+        const scaledHeight = canvas.height * scale
+        const offsetX = (128 - scaledWidth) / 2
+        const offsetY = (128 - scaledHeight) / 2
+        
+        previewCtx.clearRect(0, 0, 128, 128)
+        previewCtx.drawImage(canvas, offsetX, offsetY, scaledWidth, scaledHeight)
+      }
     }
 
     // Convert to blob and update preview
     canvas.toBlob((blob) => {
       if (blob) {
         setEditedBlob(blob)
-        setPreviewUrl(URL.createObjectURL(blob))
+        // Update preview URL from canvas data
+        const dataUrl = canvas.toDataURL(makeHDR ? "image/png" : "image/png", makeHDR ? 1.0 : 0.95)
+        setPreviewUrl(dataUrl)
       }
     }, makeHDR ? "image/png" : "image/png", makeHDR ? 1.0 : 0.95)
   }
@@ -199,12 +345,13 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     if (originalImageData) {
       applyAdjustments()
     }
-  }, [adjustments, removeBackground, makeHDR])
+  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData])
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments)
     setRemoveBackground(false)
     setMakeHDR(false)
+    setHdrIntensity(50)
   }
 
   const handleSave = async () => {
@@ -261,12 +408,22 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
           <div className="space-y-4">
             <div className="border rounded-lg p-4 bg-muted/50">
               <h3 className="text-sm font-semibold mb-2">Preview</h3>
-              <div className="relative aspect-square bg-checkered rounded overflow-hidden">
-                <img
-                  src={previewUrl}
-                  alt="Emoji preview"
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
+              <div className="relative aspect-square bg-checkered rounded overflow-hidden flex items-center justify-center">
+                {isGif ? (
+                  <img
+                    src={previewUrl}
+                    alt="Emoji preview"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <canvas
+                    ref={previewCanvasRef}
+                    width={128}
+                    height={128}
+                    className="w-full h-full"
+                    style={{ imageRendering: 'crisp-edges' }}
+                  />
+                )}
                 {isProcessing && (
                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin" />
@@ -276,8 +433,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
               <canvas
                 ref={canvasRef}
                 className="hidden"
-                width={128}
-                height={128}
               />
             </div>
 
@@ -432,10 +587,10 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="make-hdr" className="text-sm">
-                        Make HDR
+                        HDR Enhancement
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Save with HDR color profile
+                        Make your image pop with HDR-like effects
                       </p>
                     </div>
                     <Switch
@@ -445,6 +600,24 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                       disabled={isGif || isProcessing}
                     />
                   </div>
+
+                  {makeHDR && (
+                    <div>
+                      <Label className="text-sm">HDR Intensity</Label>
+                      <Slider
+                        value={[hdrIntensity]}
+                        onValueChange={([value]) => setHdrIntensity(value)}
+                        min={0}
+                        max={100}
+                        step={5}
+                        className="mt-2"
+                        disabled={isGif || isProcessing}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {hdrIntensity}% - {hdrIntensity < 30 ? 'Subtle' : hdrIntensity < 70 ? 'Moderate' : 'Intense'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>

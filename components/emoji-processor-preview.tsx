@@ -5,7 +5,7 @@ import { ProcessedEmoji, EmojiProcessor } from "@/lib/utils/emoji-processor"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil, Edit3 } from "lucide-react"
+import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil, Sliders } from "lucide-react"
 import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 import { toast } from "sonner"
@@ -245,56 +245,10 @@ export function EmojiProcessorPreview({
               </div>
 
               <div className="space-y-2 mt-3">
-                <div className="flex gap-2">
-                  {onEdit && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 min-w-[100px]"
-                      onClick={() => onEdit(emoji, index)}
-                    >
-                      <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                      <span className="truncate">Edit</span>
-                    </Button>
-                  )}
-                  {hasSlack ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 min-w-[100px]"
-                        onClick={() => onDownload(emoji)}
-                      >
-                        <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                        <span className="truncate">Download</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant={uploadedEmojis.has(index) ? "secondary" : "default"}
-                        className="flex-1 min-w-[100px]"
-                        onClick={() => handleSlackUpload(emoji, index)}
-                        disabled={uploadingIndex === index || uploadedEmojis.has(index)}
-                      >
-                        {uploadingIndex === index ? (
-                          <>
-                            <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent flex-shrink-0" />
-                            <span className="truncate">Uploading...</span>
-                          </>
-                        ) : uploadedEmojis.has(index) ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                            <span className="truncate">Sent</span>
-                          </>
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                            <span className="truncate">To Slack</span>
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
+                {hasSlack ? (
+                  <>
+                    {/* First row: Edit and Download */}
+                    <div className="flex gap-2">
                       {onEdit && (
                         <Button
                           size="sm"
@@ -302,8 +256,8 @@ export function EmojiProcessorPreview({
                           className="flex-1"
                           onClick={() => onEdit(emoji, index)}
                         >
-                          <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                          <span className="truncate">Edit</span>
+                          <Sliders className="w-4 h-4 mr-1.5" />
+                          <span>Edit</span>
                         </Button>
                       )}
                       <Button
@@ -312,12 +266,61 @@ export function EmojiProcessorPreview({
                         className={onEdit ? "flex-1" : "w-full"}
                         onClick={() => onDownload(emoji)}
                       >
-                        <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                        <span className="truncate">Download</span>
+                        <Download className="w-4 h-4 mr-1.5" />
+                        <span>Download</span>
                       </Button>
-                    </>
-                  )}
-                </div>
+                    </div>
+                    {/* Second row: Send to Slack (primary CTA) */}
+                    <Button
+                      size="sm"
+                      variant={uploadedEmojis.has(index) ? "secondary" : "default"}
+                      className="w-full"
+                      onClick={() => handleSlackUpload(emoji, index)}
+                      disabled={uploadingIndex === index || uploadedEmojis.has(index)}
+                    >
+                      {uploadingIndex === index ? (
+                        <>
+                          <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : uploadedEmojis.has(index) ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-1.5" />
+                          <span>Sent to Slack</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-1.5" />
+                          <span>Send to Slack</span>
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  /* No Slack: single row */
+                  <div className="flex gap-2">
+                    {onEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => onEdit(emoji, index)}
+                      >
+                        <Sliders className="w-4 h-4 mr-1.5" />
+                        <span>Edit</span>
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={onEdit ? "flex-1" : "w-full"}
+                      onClick={() => onDownload(emoji)}
+                    >
+                      <Download className="w-4 h-4 mr-1.5" />
+                      <span>Download</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

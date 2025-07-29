@@ -69,6 +69,7 @@
     "gifuct-js": "^2.1.2",
     "html2canvas": "^1.4.1",
     "input-otp": "1.4.1",
+    "jimp": "^1.6.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.454.0",
     "motion": "^12.12.2",
