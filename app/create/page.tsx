@@ -110,6 +110,29 @@ function EmojiCreatorPage() {
               `${emojiName}.${extension}` : 
               (originalUrl ? originalUrl.split('/').pop() || 'extension-image' : 'extension-image')
             file = new File([blob], fileName, { type: blob.type })
+          } else if (extensionData?.isHDR) {
+            // HDR image - special handling to preserve quality
+            console.log('[Create Page] Processing HDR image, preserving original:', imageUrl)
+            const response = await fetch(imageUrl)
+            const blob = await response.blob()
+            
+            // Preserve original file extension and type for HDR
+            const urlParts = imageUrl.split('/')
+            const urlFileName = urlParts[urlParts.length - 1] || 'hdr-emoji'
+            const fileName = emojiName ? 
+              `${emojiName}.${urlFileName.split('.').pop() || 'heic'}` : 
+              urlFileName
+            
+            // Create file with HDR metadata preserved
+            file = new File([blob], fileName, { 
+              type: blob.type || 'image/heic' 
+            })
+            
+            // Mark as HDR for any special processing downstream
+            ;(file as any).isHDR = true
+            ;(file as any).originalUrl = imageUrl
+            
+            console.log('[Create Page] Created HDR file:', file.name, file.type, file.size)
           } else {
             // Try to fetch regular URL
             console.log('[Create Page] Attempting to fetch URL:', imageUrl)
@@ -268,7 +291,12 @@ function EmojiCreatorPage() {
         await new Promise(resolve => setTimeout(resolve, 500))
         
         setCurrentStep('processing')
-        const processed = await EmojiProcessor.processFile(file)
+        // Check if we should preserve HDR (based on filename or file properties)
+        const preserveHDR = file.name.toLowerCase().includes('hdr') || 
+                           (file as any).isHDR ||
+                           file.name.toLowerCase().includes('emoji')
+        
+        const processed = await EmojiProcessor.processFile(file, { preserveHDR })
         
         setCurrentStep('finalizing')
         await new Promise(resolve => setTimeout(resolve, 300))

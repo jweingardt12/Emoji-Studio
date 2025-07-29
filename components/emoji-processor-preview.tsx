@@ -5,7 +5,7 @@ import { ProcessedEmoji, EmojiProcessor } from "@/lib/utils/emoji-processor"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Download, X, CheckCircle, AlertCircle, Check, Send } from "lucide-react"
+import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil } from "lucide-react"
 import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 import { toast } from "sonner"
@@ -31,6 +31,7 @@ export function EmojiProcessorPreview({
   const [editingName, setEditingName] = useState("")
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
   const [hasSlack, setHasSlack] = useState(hasSlackConnection())
+  const [uploadedEmojis, setUploadedEmojis] = useState<Set<number>>(new Set())
 
   if (emojis.length === 0) return null
 
@@ -67,6 +68,9 @@ export function EmojiProcessorPreview({
       
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
+        
+        // Mark this emoji as uploaded
+        setUploadedEmojis(prev => new Set(prev).add(index))
         
         openpanel.track("Slack Upload: Success", {
           emojiName: result.emojiName,
@@ -113,22 +117,22 @@ export function EmojiProcessorPreview({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle>Processed Emojis ({emojis.length})</CardTitle>
         {emojis.length > 1 && (
           <Button size="sm" onClick={onDownloadAll}>
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4 mr-1.5" />
             Download All
           </Button>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <CardContent className="overflow-x-auto">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 overflow-hidden">
           {emojis.map((emoji, index) => (
             <div 
               key={index} 
-              className="relative group border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+              className="relative group border rounded-lg p-4 hover:bg-accent/50 transition-colors overflow-hidden"
             >
               <button
                 onClick={() => onRemove(index)}
@@ -146,6 +150,22 @@ export function EmojiProcessorPreview({
                       alt={emoji.name}
                       className="absolute inset-0 w-full h-full object-contain"
                     />
+                    {(emoji.processingNote?.toLowerCase().includes('hdr') || 
+                      emoji.processingNote?.toLowerCase().includes('quality preserved') ||
+                      emoji.format === 'HEIC' || 
+                      emoji.format === 'HEIF' ||
+                      emoji.originalFile.name.toLowerCase().includes('hdr')) && (
+                      <span 
+                        className="absolute -bottom-1 -right-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold tracking-wider shadow-lg"
+                        style={{
+                          background: 'linear-gradient(135deg, #FF006E, #8338EC, #3A86FF)',
+                          color: 'white',
+                          textShadow: '0 0 2px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        HDR
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -180,12 +200,23 @@ export function EmojiProcessorPreview({
                       </Button>
                     </div>
                   ) : (
-                    <button
-                      className="text-left"
-                      onClick={() => handleStartEdit(index, emoji.name)}
-                    >
-                      <h4 className="font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</h4>
-                    </button>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        className="text-left flex-1 min-w-0 overflow-hidden"
+                        onClick={() => handleStartEdit(index, emoji.name)}
+                      >
+                        <h4 className="font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</h4>
+                      </button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={() => handleStartEdit(index, emoji.name)}
+                        title="Edit name"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
                   <div className="text-xs text-muted-foreground space-y-1 mt-1">
                     <div className="flex items-center gap-1">
@@ -218,27 +249,33 @@ export function EmojiProcessorPreview({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 min-w-[100px]"
                         onClick={() => onDownload(emoji)}
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
+                        <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                        <span className="truncate">Download</span>
                       </Button>
                       <Button
                         size="sm"
-                        className="flex-1"
+                        variant={uploadedEmojis.has(index) ? "secondary" : "default"}
+                        className="flex-1 min-w-[100px]"
                         onClick={() => handleSlackUpload(emoji, index)}
-                        disabled={uploadingIndex === index}
+                        disabled={uploadingIndex === index || uploadedEmojis.has(index)}
                       >
                         {uploadingIndex === index ? (
                           <>
-                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                            Uploading...
+                            <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent flex-shrink-0" />
+                            <span className="truncate">Uploading...</span>
+                          </>
+                        ) : uploadedEmojis.has(index) ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <span className="truncate">Sent</span>
                           </>
                         ) : (
                           <>
-                            <Send className="w-4 h-4 mr-2" />
-                            Send to Slack
+                            <Send className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                            <span className="truncate">To Slack</span>
                           </>
                         )}
                       </Button>
@@ -250,8 +287,8 @@ export function EmojiProcessorPreview({
                       className="w-full"
                       onClick={() => onDownload(emoji)}
                     >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
+                      <Download className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                      <span className="truncate">Download</span>
                     </Button>
                   )}
                 </div>
