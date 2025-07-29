@@ -71,6 +71,7 @@ function EmojiCreatorPage() {
         const imageUrl = event.data.imageUrl || event.data.data?.imageUrl
         const originalUrl = event.data.originalUrl || event.data.data?.originalUrl
         const emojiName = event.data.emojiName || event.data.data?.name
+        const isHDR = event.data.isHDR || event.data.data?.isHDR
         
         if (!imageUrl) {
           console.error('[Create Page] No image URL found in extension message')
@@ -110,7 +111,7 @@ function EmojiCreatorPage() {
               `${emojiName}.${extension}` : 
               (originalUrl ? originalUrl.split('/').pop() || 'extension-image' : 'extension-image')
             file = new File([blob], fileName, { type: blob.type })
-          } else if (extensionData?.isHDR) {
+          } else if (isHDR) {
             // HDR image - special handling to preserve quality
             console.log('[Create Page] Processing HDR image, preserving original:', imageUrl)
             const response = await fetch(imageUrl)
