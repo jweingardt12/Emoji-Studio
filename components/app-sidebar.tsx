@@ -436,27 +436,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <TooltipTrigger asChild>
                   <Link 
                     href="/create" 
-                    onClick={(e) => {
-                      if (!hasRealData && emojiData.length === 0) {
-                        e.preventDefault();
-                        return;
-                      }
+                    onClick={() => {
                       handleNavigate({ title: "Create", url: "/create" })
                     }}
-                    className={cn(
-                      "flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150",
-                      (!hasRealData && emojiData.length === 0) && "pointer-events-none opacity-50"
-                    )}
+                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
                   >
                     <CirclePlus className="h-4 w-4" />
                     <span>Create Emoji</span>
                   </Link>
                 </TooltipTrigger>
-                {(!hasRealData && emojiData.length === 0) && (
-                  <TooltipContent>
-                    <p>Connect to Slack first</p>
-                  </TooltipContent>
-                )}
               </Tooltip>
             </TooltipProvider>
           </div>
