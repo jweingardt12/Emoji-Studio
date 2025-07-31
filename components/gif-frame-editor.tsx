@@ -126,7 +126,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
         selections = extractedFrames.map((frame, index) => ({
           index,
           selected: true,
-          delay: frame.delay
+          delay: 'delay' in frame ? frame.delay : 100 // VideoFrames use 100ms
         }))
       } else {
         // For more than 50 frames, use intelligent selection
@@ -150,7 +150,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
         selections = extractedFrames.map((frame, index) => ({
           index,
           selected: selectedIndices.has(index),
-          delay: frame.delay
+          delay: 'delay' in frame ? frame.delay : 100 // VideoFrames use 100ms
         }))
       }
       
@@ -199,7 +199,9 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
   const getFrameAtTime = (time: number): number => {
     let accumulatedTime = 0
     for (let i = 0; i < frames.length; i++) {
-      accumulatedTime += frames[i].delay
+      const frame = frames[i]
+      const frameDelay = isVideo ? 100 : ('delay' in frame ? (frame as ExtractedFrame).delay : 100)
+      accumulatedTime += frameDelay
       if (accumulatedTime > time) {
         return i
       }
@@ -402,7 +404,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
     try {
       const selectedFrames = frameSelections
         .map((sel, idx) => sel.selected ? frames[idx] : null)
-        .filter(Boolean) as ExtractedFrame[]
+        .filter(Boolean) as FrameData[]
       
       const gif = new GIF({
         workers: 2,
