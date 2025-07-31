@@ -397,7 +397,7 @@ function EmojiCreatorPage() {
         // Check if GIF already meets Slack requirements (128x128 and under 128KB)
         if (isGif) {
           try {
-            const img = new Image()
+            const img = document.createElement('img') as HTMLImageElement
             await new Promise((resolve, reject) => {
               img.onload = resolve
               img.onerror = reject
