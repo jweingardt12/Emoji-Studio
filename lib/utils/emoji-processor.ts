@@ -197,9 +197,10 @@ export class EmojiProcessor {
     
     // Check for GIF files by examining the file content, not just MIME type
     const isGif = await this.isGifFile(file)
+    const isAnimWebP = await this.isAnimatedWebP(file)
     
-    if (isGif) {
-      console.log(`Processing ${file.name} as GIF (detected by content)`)
+    if (isGif || isAnimWebP) {
+      console.log(`Processing ${file.name} as animated image (GIF: ${isGif}, Animated WebP: ${isAnimWebP})`)
       return this.processGif(file, fileName)
     } else if (fileType.startsWith('image/')) {
       // Use different processing for HDR images or when quality preservation is requested
@@ -433,6 +434,41 @@ export class EmojiProcessor {
              bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
     } catch (error) {
       console.error('Error checking if file is GIF:', error)
+      return false
+    }
+  }
+
+  private static async isAnimatedWebP(file: File): Promise<boolean> {
+    try {
+      // Check file extension
+      if (!file.name.toLowerCase().endsWith('.webp') && file.type !== 'image/webp') {
+        return false
+      }
+      
+      // Read WebP header to check for animation
+      const arrayBuffer = await file.slice(0, 100).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // Check for RIFF header
+      if (bytes[0] !== 0x52 || bytes[1] !== 0x49 || bytes[2] !== 0x46 || bytes[3] !== 0x46) {
+        return false
+      }
+      
+      // Check for WEBP signature
+      if (bytes[8] !== 0x57 || bytes[9] !== 0x45 || bytes[10] !== 0x42 || bytes[11] !== 0x50) {
+        return false
+      }
+      
+      // Look for ANIM chunk which indicates animation
+      for (let i = 12; i < bytes.length - 4; i++) {
+        if (bytes[i] === 0x41 && bytes[i+1] === 0x4E && bytes[i+2] === 0x49 && bytes[i+3] === 0x4D) {
+          return true
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking if WebP is animated:', error)
       return false
     }
   }

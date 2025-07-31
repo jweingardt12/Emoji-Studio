@@ -10,7 +10,7 @@ import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiCelebration } from "@/components/emoji-celebration"
 import { EmojiEditor } from "@/components/emoji-editor"
-import { GifFrameEditor } from "@/components/gif-frame-editor"
+import { GifFrameEditorV2 } from "@/components/gif-frame-editor-v2"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeExtensionModal } from "@/components/chrome-extension-modal"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
@@ -79,6 +79,7 @@ function EmojiCreatorPage() {
   const [showChromeExtensionModal, setShowChromeExtensionModal] = useState(false)
   const [gifToEdit, setGifToEdit] = useState<File | null>(null)
   const [showGifEditor, setShowGifEditor] = useState(false)
+  const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -88,7 +89,7 @@ function EmojiCreatorPage() {
     console.log('[Create Page] Component mounted, URL:', window.location.href)
     console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
     
-    // Check if we have pending emoji data from Slackmojis
+    // Check if we have pending emoji data from Slackmojis or cart
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('from') === 'extension') {
       const pendingData = window.sessionStorage.getItem('pendingEmojiFromSlackmojis');
@@ -115,6 +116,82 @@ function EmojiCreatorPage() {
           console.error('[Create Page] Failed to parse pending emoji data:', error);
         }
       }
+    } else if (urlParams.get('from') === 'extension-cart') {
+      // Handle cart data from extension
+      const getCartData = async () => {
+        try {
+          // Try to get cart data from Chrome storage
+          if (typeof window !== 'undefined' && typeof (window as any).chrome !== 'undefined' && (window as any).chrome.storage && (window as any).chrome.storage.local) {
+            (window as any).chrome.storage.local.get(['pendingEmojiStudioCart'], (result: any) => {
+              if (result.pendingEmojiStudioCart) {
+                console.log('[Create Page] Found cart data from extension:', result.pendingEmojiStudioCart);
+                
+                const cartData = result.pendingEmojiStudioCart;
+                const emojis = cartData.emojis || [];
+                
+                // Clear the data after retrieving
+                (window as any).chrome.storage.local.remove(['pendingEmojiStudioCart']);
+                
+                // Process each emoji in the cart
+                if (emojis.length > 0) {
+                  toast({
+                    title: `Processing ${emojis.length} emojis from cart`,
+                    description: "Please wait while we load your emojis...",
+                  });
+                  
+                  // Convert emojis to files
+                  const processEmojis = async () => {
+                    const files: File[] = [];
+                    
+                    for (const emoji of emojis) {
+                      try {
+                        const response = await fetch(emoji.url);
+                        const blob = await response.blob();
+                        
+                        // Determine file extension
+                        let extension = 'png';
+                        if (blob.type.includes('gif') || emoji.url.toLowerCase().includes('.gif')) extension = 'gif';
+                        else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) extension = 'jpg';
+                        else if (blob.type.includes('webp')) extension = 'webp';
+                        
+                        const fileName = `${emoji.name}.${extension}`;
+                        const file = new File([blob], fileName, { type: blob.type });
+                        
+                        // Add HDR metadata if applicable
+                        if (emoji.isHDR) {
+                          (file as any).isHDR = true;
+                          (file as any).originalUrl = emoji.originalUrl || emoji.url;
+                        }
+                        
+                        files.push(file);
+                      } catch (error) {
+                        console.error(`[Create Page] Failed to process emoji ${emoji.name}:`, error);
+                      }
+                    }
+                    
+                    if (files.length > 0) {
+                      console.log(`[Create Page] Successfully loaded ${files.length} emojis from cart`);
+                      setSelectedFiles(files);
+                      setProcessingFiles(files);
+                      
+                      // Auto-start processing
+                      setTimeout(() => {
+                        processFiles(files);
+                      }, 500);
+                    }
+                  };
+                  
+                  processEmojis();
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('[Create Page] Failed to get cart data:', error);
+        }
+      };
+      
+      getCartData();
     }
     
     // Listen for Chrome extension messages
@@ -391,11 +468,13 @@ function EmojiCreatorPage() {
           }
         }
         
-        // Check if this is a GIF file that needs frame selection
+        // Check if this is a GIF or animated WebP file that needs frame selection
         const isGif = await isGifFile(file)
+        const isAnimWebP = await isAnimatedWebP(file)
+        const isAnimated = isGif || isAnimWebP
         
-        // Check if GIF already meets Slack requirements (128x128 and under 128KB)
-        if (isGif) {
+        // Check if animated image already meets Slack requirements (128x128 and under 128KB)
+        if (isAnimated) {
           try {
             const img = document.createElement('img') as HTMLImageElement
             await new Promise((resolve, reject) => {
@@ -416,7 +495,7 @@ function EmojiCreatorPage() {
             
             // Only show editor for GIFs that don't meet requirements and are reasonable size
             if (!frameEditorDisabled && !meetsRequirements && file.size > 50 * 1024 && file.size < 100 * 1024 * 1024) { // Between 50KB and 100MB
-              console.log(`GIF needs optimization: ${img.width}x${img.height}, ${file.size} bytes`)
+              console.log(`${isGif ? 'GIF' : 'Animated WebP'} needs optimization: ${img.width}x${img.height}, ${file.size} bytes`)
               
               // Additional check for extremely large dimensions
               if (img.width > 10000 || img.height > 10000) {
@@ -432,9 +511,9 @@ function EmojiCreatorPage() {
                 return
               }
             } else if (file.size >= 100 * 1024 * 1024) {
-              console.log(`GIF too large for frame editor (${(file.size / 1024 / 1024).toFixed(2)}MB), processing normally`)
+              console.log(`${isGif ? 'GIF' : 'Animated WebP'} too large for frame editor (${(file.size / 1024 / 1024).toFixed(2)}MB), processing normally`)
             } else {
-              console.log(`GIF already optimized or too small for frame editor: ${img.width}x${img.height}, ${file.size} bytes`)
+              console.log(`${isGif ? 'GIF' : 'Animated WebP'} already optimized or too small for frame editor: ${img.width}x${img.height}, ${file.size} bytes`)
             }
           } catch (error) {
             console.error('Error checking GIF dimensions:', error)
@@ -548,6 +627,7 @@ function EmojiCreatorPage() {
     // Set the original file for frame editing
     setGifToEdit(emoji.originalFile)
     setShowGifEditor(true)
+    setIsReEditingFromModal(true)
     
     // Close the processing modal temporarily
     setIsProcessing(false)
@@ -589,6 +669,35 @@ function EmojiCreatorPage() {
     setSelectedFiles([])
     setProcessedEmojis([]) // Clear processed emojis when closing
     setShowCelebration(false) // Stop celebration when modal closes
+    setIsReEditingFromModal(false) // Reset re-editing flag
+  }
+
+  // Helper function to check if a file is an animated WebP
+  const isAnimatedWebP = async (file: File): Promise<boolean> => {
+    try {
+      if (!file.name.toLowerCase().endsWith('.webp') && file.type !== 'image/webp') {
+        return false
+      }
+      
+      const arrayBuffer = await file.slice(0, 100).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // Check for RIFF header and WEBP signature
+      if (bytes[0] !== 0x52 || bytes[1] !== 0x49 || bytes[2] !== 0x46 || bytes[3] !== 0x46) return false
+      if (bytes[8] !== 0x57 || bytes[9] !== 0x45 || bytes[10] !== 0x42 || bytes[11] !== 0x50) return false
+      
+      // Look for ANIM chunk
+      for (let i = 12; i < bytes.length - 4; i++) {
+        if (bytes[i] === 0x41 && bytes[i+1] === 0x4E && bytes[i+2] === 0x49 && bytes[i+3] === 0x4D) {
+          return true
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking if WebP is animated:', error)
+      return false
+    }
   }
 
   // Helper function to check if a file is a GIF
@@ -636,15 +745,35 @@ function EmojiCreatorPage() {
       wasVideo: gifToEdit.type.startsWith('video/')
     }
     
-    // Set up state to show the processing modal with results
-    setProcessedEmojis([processedEmoji])
-    setProcessingFiles([gifToEdit])
-    setCurrentFileIndex(0)
-    setCurrentStep('completed')
-    setIsProcessing(true) // This shows the processing modal
-    
     // Close the frame editor
     setShowGifEditor(false)
+    
+    if (isReEditingFromModal) {
+      // If we're re-editing from the modal, update the existing processed emoji
+      setProcessedEmojis(prev => {
+        // Replace the existing emoji with the new one
+        const newEmojis = [...prev]
+        const existingIndex = newEmojis.findIndex(e => e.originalFile === gifToEdit)
+        if (existingIndex >= 0) {
+          newEmojis[existingIndex] = processedEmoji
+        } else {
+          newEmojis.push(processedEmoji)
+        }
+        return newEmojis
+      })
+      
+      // Show the processing modal again
+      setIsProcessing(true)
+      setIsReEditingFromModal(false)
+    } else {
+      // Normal flow - new file being processed
+      setProcessedEmojis([processedEmoji])
+      setProcessingFiles([gifToEdit])
+      setCurrentFileIndex(0)
+      setCurrentStep('completed')
+      setIsProcessing(true) // This shows the processing modal
+    }
+    
     setGifToEdit(null)
     setSelectedFiles([])
     
@@ -754,7 +883,7 @@ function EmojiCreatorPage() {
                         id="file-upload"
                         className="hidden"
                         multiple
-                        accept="image/*,video/*,.gif"
+                        accept="image/*,video/*,.gif,.webp"
                         onChange={handleFileSelect}
                       />
                       <Button asChild variant="outline">
@@ -763,7 +892,7 @@ function EmojiCreatorPage() {
                         </label>
                       </Button>
                       <p className="text-xs text-muted-foreground mt-4">
-                        Supports: JPG, PNG, GIF, MP4, MOV, WebM
+                        Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM
                       </p>
                     </div>
 
@@ -1027,24 +1156,26 @@ function EmojiCreatorPage() {
 
       {/* GIF Frame Editor Modal */}
       {gifToEdit && (
-        <GifFrameEditor
+        <GifFrameEditorV2
           file={gifToEdit}
           isOpen={showGifEditor}
           onClose={() => {
             setShowGifEditor(false)
-            const fileToProcess = gifToEdit
+            const wasReEditing = isReEditingFromModal
             const hadProcessedEmojis = processedEmojis.length > 0
             setGifToEdit(null)
             
-            // If the editor closed without export and we don't have processed emojis, process normally
-            if (!hadProcessedEmojis && fileToProcess) {
-              console.log('GIF frame editor closed, processing file normally')
-              processFiles([fileToProcess])
-            } else if (hadProcessedEmojis) {
-              // If we had processed emojis, show the processing modal again
+            // If we were re-editing, show the processing modal again
+            if (wasReEditing && hadProcessedEmojis) {
               setIsProcessing(true)
+              setIsReEditingFromModal(false)
             } else {
+              // User canceled - clear everything and exit the flow
               setSelectedFiles([])
+              setIsProcessing(false)
+              setProcessedEmojis([])
+              setIsReEditingFromModal(false)
+              console.log('Frame editor canceled - exiting emoji creation flow')
             }
           }}
           onExport={handleGifExport}

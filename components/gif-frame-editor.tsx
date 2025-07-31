@@ -64,6 +64,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
   const [dragStart, setDragStart] = useState<number | null>(null)
   const [dragEnd, setDragEnd] = useState<number | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [speedMultiplier, setSpeedMultiplier] = useState(1)
   
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -92,12 +93,26 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
     const count = frameSelections.filter(f => f.selected).length
     setSelectedCount(count)
     estimateFileSize(count)
+    
+    // Safety check: if more than 50 frames are selected, fix it
+    if (count > 50) {
+      console.error(`WARNING: ${count} frames selected, exceeding limit of 50! Auto-fixing...`)
+      let fixedCount = 0
+      setFrameSelections(prev => prev.map(frame => {
+        if (frame.selected && fixedCount >= 50) {
+          return { ...frame, selected: false }
+        }
+        if (frame.selected) fixedCount++
+        return frame
+      }))
+    }
   }, [frameSelections, quality, targetSize])
 
   const loadFrames = async () => {
     setIsLoading(true)
     setLoadError(null)
     setIsVideo(file.type.startsWith('video/'))
+    console.log(`Loading file: ${file.name}, type: ${file.type}, size: ${file.size}, isVideo: ${file.type.startsWith('video/')}`)
     
     try {
       let extractedFrames: FrameData[]
@@ -152,6 +167,11 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
           selected: selectedIndices.has(index),
           delay: 'delay' in frame ? frame.delay : 100 // VideoFrames use 100ms
         }))
+        
+        // Debug: count selected frames
+        const selectedCount = selections.filter(s => s.selected).length
+        console.log(`Initial selection: ${selectedCount} frames selected out of ${totalFrames} (target: ${targetFrames})`)
+        console.log(`Selected indices size: ${selectedIndices.size}`)
       }
       
       setFrameSelections(selections)
@@ -312,25 +332,53 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
 
   const selectEveryNth = (n: number) => {
     let selectedSoFar = 0
-    setFrameSelections(prev => 
-      prev.map((frame, index) => ({
-        ...frame,
-        selected: index % n === 0 && selectedSoFar++ < 50
-      }))
-    )
+    setFrameSelections(prev => {
+      const newSelections = prev.map((frame, index) => {
+        const shouldSelect = index % n === 0 && selectedSoFar < 50
+        if (shouldSelect) selectedSoFar++
+        return {
+          ...frame,
+          selected: shouldSelect
+        }
+      })
+      console.log(`selectEveryNth(${n}): Selected ${selectedSoFar} frames out of ${prev.length}`)
+      return newSelections
+    })
   }
 
   const selectKeyframes = async () => {
     const total = frames.length
     const maxFrames = Math.min(50, total)
-    const step = total / (maxFrames - 2)
+    
+    // Create a set of indices to select
+    const selectedIndices = new Set<number>()
+    
+    if (total <= 50) {
+      // Select all if 50 or fewer
+      for (let i = 0; i < total; i++) {
+        selectedIndices.add(i)
+      }
+    } else {
+      // Always include first and last frames
+      selectedIndices.add(0)
+      selectedIndices.add(total - 1)
+      
+      // Distribute remaining frames evenly
+      const step = (total - 1) / (maxFrames - 1)
+      for (let i = 1; i < maxFrames - 1; i++) {
+        const index = Math.round(i * step)
+        selectedIndices.add(index)
+      }
+    }
+    
+    // Verify we have exactly the right number of frames
+    console.log(`Smart selection: selected ${selectedIndices.size} frames out of ${total}`)
     
     // Update selections
-    const newSelections = frameSelections.map((frame, index) => {
-      if (index === 0 || index === total - 1) return { ...frame, selected: true }
-      const shouldSelect = Math.floor((index - 1) / step) !== Math.floor((index - 2) / step)
-      return { ...frame, selected: shouldSelect }
-    })
+    const newSelections = frameSelections.map((frame, index) => ({
+      ...frame,
+      selected: selectedIndices.has(index)
+    }))
     setFrameSelections(newSelections)
     
     // If we have more than 50 frames, auto-export after smart selection
@@ -437,9 +485,12 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
         
         ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
         
+        const baseDelay = isVideo ? 100 : (frame as ExtractedFrame).delay
+        const adjustedDelay = Math.max(20, Math.round(baseDelay / speedMultiplier))
+        
         gif.addFrame(ctx, {
           copy: true,
-          delay: isVideo ? 100 : (frame as ExtractedFrame).delay,
+          delay: adjustedDelay,
           dispose: 2
         })
       }
@@ -842,6 +893,50 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
                     />
                     <div className="text-sm text-muted-foreground">
                       {targetSize}x{targetSize} pixels
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Speed</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={speedMultiplier === 0.5 ? "default" : "outline"}
+                        onClick={() => setSpeedMultiplier(0.5)}
+                      >
+                        0.5x
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={speedMultiplier === 1 ? "default" : "outline"}
+                        onClick={() => setSpeedMultiplier(1)}
+                      >
+                        1x
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={speedMultiplier === 1.5 ? "default" : "outline"}
+                        onClick={() => setSpeedMultiplier(1.5)}
+                      >
+                        1.5x
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={speedMultiplier === 2 ? "default" : "outline"}
+                        onClick={() => setSpeedMultiplier(2)}
+                      >
+                        2x
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={speedMultiplier === 3 ? "default" : "outline"}
+                        onClick={() => setSpeedMultiplier(3)}
+                      >
+                        3x
+                      </Button>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Speed up for smoother animations
                     </div>
                   </div>
 
