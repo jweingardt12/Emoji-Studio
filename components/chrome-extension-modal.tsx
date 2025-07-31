@@ -86,7 +86,7 @@ export function ChromeExtensionModal({ isOpen, onClose }: ChromeExtensionModalPr
             asChild
           >
             <a 
-              href="https://github.com/jweingardt12/emoji-studio-chrome-extension/releases/download/latest/emoji-studio-extension.zip" 
+              href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa?utm_source=item-share-cb" 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2"

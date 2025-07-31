@@ -10,6 +10,8 @@ import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiCelebration } from "@/components/emoji-celebration"
 import { EmojiEditor } from "@/components/emoji-editor"
+import { GifFrameEditor } from "@/components/gif-frame-editor"
+import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeExtensionModal } from "@/components/chrome-extension-modal"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -75,6 +77,8 @@ function EmojiCreatorPage() {
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number>(-1)
   const [hasSlack, setHasSlack] = useState(false)
   const [showChromeExtensionModal, setShowChromeExtensionModal] = useState(false)
+  const [gifToEdit, setGifToEdit] = useState<File | null>(null)
+  const [showGifEditor, setShowGifEditor] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -363,6 +367,81 @@ function EmojiCreatorPage() {
         await new Promise(resolve => setTimeout(resolve, 500))
         
         setCurrentStep('processing')
+        
+        // Check if this is a video file that needs frame selection
+        const isVideo = file.type.startsWith('video/')
+        if (isVideo) {
+          try {
+            const videoInfo = await VideoFrameExtractor.getVideoInfo(file)
+            console.log(`Video info: ${videoInfo.duration}ms, ${videoInfo.frameCount} frames at 10fps`)
+            
+            // If video would produce more than 50 frames, show frame editor
+            if (videoInfo.frameCount > 50) {
+              console.log('Video has more than 50 frames, showing frame editor')
+              setGifToEdit(file)
+              setShowGifEditor(true)
+              setIsProcessing(false)
+              
+              // Wait for user to complete frame selection
+              return
+            }
+          } catch (error) {
+            console.error('Error checking video info:', error)
+            // Continue with normal processing if we can't check
+          }
+        }
+        
+        // Check if this is a GIF file that needs frame selection
+        const isGif = await isGifFile(file)
+        
+        // Check if GIF already meets Slack requirements (128x128 and under 128KB)
+        if (isGif) {
+          try {
+            const img = new Image()
+            await new Promise((resolve, reject) => {
+              img.onload = resolve
+              img.onerror = reject
+              img.src = URL.createObjectURL(file)
+            })
+            
+            const meetsRequirements = file.size <= 128 * 1024 && 
+                                     img.width <= 128 && 
+                                     img.height <= 128
+            
+            URL.revokeObjectURL(img.src)
+            
+            // Check if frame editor is disabled (can be set via localStorage)
+            const frameEditorDisabled = typeof window !== 'undefined' && 
+                                       localStorage.getItem('disableGifFrameEditor') === 'true'
+            
+            // Only show editor for GIFs that don't meet requirements and are reasonable size
+            if (!frameEditorDisabled && !meetsRequirements && file.size > 50 * 1024 && file.size < 100 * 1024 * 1024) { // Between 50KB and 100MB
+              console.log(`GIF needs optimization: ${img.width}x${img.height}, ${file.size} bytes`)
+              
+              // Additional check for extremely large dimensions
+              if (img.width > 10000 || img.height > 10000) {
+                console.warn(`GIF dimensions too large for frame editor: ${img.width}x${img.height}`)
+                // Process normally without frame editor
+              } else {
+                // Show GIF frame editor
+                setGifToEdit(file)
+                setShowGifEditor(true)
+                setIsProcessing(false)
+                
+                // Wait for user to complete frame selection
+                return
+              }
+            } else if (file.size >= 100 * 1024 * 1024) {
+              console.log(`GIF too large for frame editor (${(file.size / 1024 / 1024).toFixed(2)}MB), processing normally`)
+            } else {
+              console.log(`GIF already optimized or too small for frame editor: ${img.width}x${img.height}, ${file.size} bytes`)
+            }
+          } catch (error) {
+            console.error('Error checking GIF dimensions:', error)
+            // Continue with normal processing if we can't check dimensions
+          }
+        }
+        
         // Check if we should preserve HDR (based on filename or file properties)
         const preserveHDR = file.name.toLowerCase().includes('hdr') || 
                            (file as any).isHDR ||
@@ -464,6 +543,22 @@ function EmojiCreatorPage() {
       wasVideo: emoji.wasVideo || false
     })
   }
+  
+  const handleEditGifFrames = (emoji: ProcessedEmoji, index: number) => {
+    // Set the original file for frame editing
+    setGifToEdit(emoji.originalFile)
+    setShowGifEditor(true)
+    
+    // Close the processing modal temporarily
+    setIsProcessing(false)
+    
+    openpanel.track("Emoji Creator: GIF Frame Edit Started", { 
+      emojiName: emoji.name,
+      originalSize: emoji.originalSize,
+      processedSize: emoji.processedSize,
+      isVideo: emoji.wasVideo || false
+    })
+  }
 
   const handleSaveEditedEmoji = (editedEmoji: ProcessedEmoji) => {
     if (editingEmojiIndex >= 0) {
@@ -492,7 +587,86 @@ function EmojiCreatorPage() {
     setProcessingError('')
     setProcessingFiles([])
     setSelectedFiles([])
+    setProcessedEmojis([]) // Clear processed emojis when closing
     setShowCelebration(false) // Stop celebration when modal closes
+  }
+
+  // Helper function to check if a file is a GIF
+  const isGifFile = async (file: File): Promise<boolean> => {
+    try {
+      // Check file extension first
+      if (file.name.toLowerCase().endsWith('.gif')) {
+        return true
+      }
+      
+      // Check MIME type
+      if (file.type === 'image/gif') {
+        return true
+      }
+      
+      // Check file content for GIF signature
+      const arrayBuffer = await file.slice(0, 6).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // GIF files start with either GIF87a or GIF89a
+      return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
+             bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
+    } catch (error) {
+      console.error('Error checking if file is GIF:', error)
+      return false
+    }
+  }
+  
+  const handleGifExport = async (blob: Blob, selectedFrames: number[]) => {
+    if (!gifToEdit) return
+    
+    // Create a processed emoji from the exported GIF
+    const fileName = gifToEdit.name.replace(/\.[^/.]+$/, '').toLowerCase().replace(/\s+/g, '-')
+    const processedEmoji: ProcessedEmoji = {
+      name: fileName,
+      originalFile: gifToEdit,
+      processedBlob: blob,
+      originalSize: gifToEdit.size,
+      processedSize: blob.size,
+      dimensions: { width: 128, height: 128 },
+      format: 'GIF',
+      preview: URL.createObjectURL(blob),
+      blob: await blobToDataURL(blob),
+      processingNote: `Selected ${selectedFrames.length} frames`,
+      wasVideo: gifToEdit.type.startsWith('video/')
+    }
+    
+    // Set up state to show the processing modal with results
+    setProcessedEmojis([processedEmoji])
+    setProcessingFiles([gifToEdit])
+    setCurrentFileIndex(0)
+    setCurrentStep('completed')
+    setIsProcessing(true) // This shows the processing modal
+    
+    // Close the frame editor
+    setShowGifEditor(false)
+    setGifToEdit(null)
+    setSelectedFiles([])
+    
+    // Show celebration
+    setShowCelebration(true)
+    
+    openpanel.track("Emoji Creator: GIF Frame Editor Export", {
+      originalSize: gifToEdit.size,
+      processedSize: blob.size,
+      selectedFrames: selectedFrames.length,
+      fileName: fileName,
+      isVideo: gifToEdit.type.startsWith('video/')
+    })
+  }
+  
+  const blobToDataURL = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
   }
 
   const handleRemoveFile = (index: number) => {
@@ -831,6 +1005,7 @@ function EmojiCreatorPage() {
         onDownloadAll={handleDownloadAll}
         onUpdateName={handleUpdateEmojiName}
         onEdit={handleEditEmoji}
+        onEditGifFrames={handleEditGifFrames}
         onShowChromeExtension={() => setShowChromeExtensionModal(true)}
       />
       
@@ -849,6 +1024,32 @@ function EmojiCreatorPage() {
         isOpen={showChromeExtensionModal}
         onClose={() => setShowChromeExtensionModal(false)}
       />
+
+      {/* GIF Frame Editor Modal */}
+      {gifToEdit && (
+        <GifFrameEditor
+          file={gifToEdit}
+          isOpen={showGifEditor}
+          onClose={() => {
+            setShowGifEditor(false)
+            const fileToProcess = gifToEdit
+            const hadProcessedEmojis = processedEmojis.length > 0
+            setGifToEdit(null)
+            
+            // If the editor closed without export and we don't have processed emojis, process normally
+            if (!hadProcessedEmojis && fileToProcess) {
+              console.log('GIF frame editor closed, processing file normally')
+              processFiles([fileToProcess])
+            } else if (hadProcessedEmojis) {
+              // If we had processed emojis, show the processing modal again
+              setIsProcessing(true)
+            } else {
+              setSelectedFiles([])
+            }
+          }}
+          onExport={handleGifExport}
+        />
+      )}
     </>
   )
 }

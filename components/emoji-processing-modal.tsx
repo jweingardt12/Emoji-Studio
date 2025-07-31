@@ -35,6 +35,7 @@ interface EmojiProcessingModalProps {
   onDownloadAll: () => void
   onUpdateName?: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
+  onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
   onShowChromeExtension?: () => void
 }
 
@@ -50,6 +51,7 @@ export function EmojiProcessingModal({
   onDownloadAll,
   onUpdateName,
   onEdit,
+  onEditGifFrames,
   onShowChromeExtension
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
@@ -444,6 +446,17 @@ export function EmojiProcessingModal({
                         <Sliders className="h-3.5 w-3.5" />
                       </Button>
                     )}
+                    {onEditGifFrames && emoji.format === 'GIF' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => onEditGifFrames(emoji, index)}
+                        title="Edit GIF frames"
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -461,6 +474,17 @@ export function EmojiProcessingModal({
                         >
                           <Sliders className="mr-2 h-4 w-4" />
                           Edit
+                        </Button>
+                      )}
+                      {onEditGifFrames && processedEmojis[0].format === 'GIF' && (
+                        <Button 
+                          size="sm"
+                          className="flex-1" 
+                          onClick={() => onEditGifFrames(processedEmojis[0], 0)}
+                          variant="outline"
+                        >
+                          <Sliders className="mr-2 h-4 w-4" />
+                          Edit Frames
                         </Button>
                       )}
                       <Button 

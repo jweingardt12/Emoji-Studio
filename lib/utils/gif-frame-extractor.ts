@@ -10,6 +10,14 @@ export class GifFrameExtractor {
   static async extractFrames(file: File): Promise<ExtractedFrame[]> {
     const arrayBuffer = await file.arrayBuffer()
     
+    // Log file details for debugging
+    console.log(`Extracting frames from GIF: ${file.name}, size: ${file.size} bytes`)
+    
+    // Log file size for monitoring
+    if (file.size > 50 * 1024 * 1024) {
+      console.warn(`Processing large GIF file: ${(file.size / 1024 / 1024).toFixed(2)}MB`)
+    }
+    
     let gif: any
     let frames: any[]
     
@@ -17,14 +25,49 @@ export class GifFrameExtractor {
       gif = parseGIF(arrayBuffer)
       frames = decompressFrames(gif, true)
     } catch (parseError) {
-      console.error('Failed to parse GIF:', parseError)
-      throw new Error('Failed to parse GIF file')
+      console.error('Failed to parse GIF with gifuct-js:', parseError)
+      const header = new Uint8Array(arrayBuffer.slice(0, 10))
+      console.log('GIF file header:', Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' '))
+      
+      // Check if it's actually a GIF
+      const isGif = header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46
+      if (!isGif) {
+        throw new Error('SKIP_FRAME_EDITOR: Not a valid GIF file')
+      }
+      
+      // Try to provide more context about the error
+      if (parseError instanceof Error && parseError.message.includes('Unknown block')) {
+        throw new Error('SKIP_FRAME_EDITOR: GIF contains unsupported extensions')
+      }
+      
+      throw new Error(`SKIP_FRAME_EDITOR: ${parseError instanceof Error ? parseError.message : 'Unknown parse error'}`)
     }
     
-    console.log(`Parsed GIF: ${gif.lsd.width}x${gif.lsd.height}, ${frames.length} frames`)
+    console.log(`Parsed GIF: dimensions=${gif.lsd?.width}x${gif.lsd?.height}, frames=${frames?.length || 0}`)
     
-    if (frames.length === 0) {
-      throw new Error('No frames found in GIF')
+    // Check if we got valid data
+    if (!gif || !gif.lsd) {
+      throw new Error('Invalid GIF structure - missing logical screen descriptor')
+    }
+    
+    // Log dimensions for monitoring
+    const width = gif.lsd.width
+    const height = gif.lsd.height
+    const totalPixels = width * height
+    console.log(`GIF dimensions: ${width}x${height} (${(totalPixels / 1000000).toFixed(2)}M pixels)`)
+    
+    // For extremely large GIFs, warn but continue
+    if (width > 5000 || height > 5000 || totalPixels > 25000000) {
+      console.warn(`Processing very large GIF: ${width}x${height}. This may take a while or require significant memory.`)
+    }
+    
+    if (!frames || frames.length === 0) {
+      console.warn('No frames found in GIF')
+      console.log(`GIF dimensions: ${gif.lsd?.width}x${gif.lsd?.height}`)
+      
+      // Some GIFs might be static images or have format issues
+      // Instead of throwing an error, return an indication that this GIF can't be edited
+      throw new Error('SKIP_FRAME_EDITOR: No frames found in GIF')
     }
     
     const extractedFrames: ExtractedFrame[] = []
@@ -33,7 +76,20 @@ export class GifFrameExtractor {
     const canvas = document.createElement('canvas')
     canvas.width = gif.lsd.width
     canvas.height = gif.lsd.height
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })!
+    
+    // Try to get context with error handling
+    let ctx: CanvasRenderingContext2D | null
+    try {
+      ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) {
+        throw new Error('Failed to get canvas context')
+      }
+    } catch (canvasError) {
+      console.error('Failed to create canvas for GIF dimensions:', canvasError)
+      // For very large GIFs, we might not be able to create a canvas
+      // Return empty array to indicate we can't extract frames
+      throw new Error(`Cannot create canvas for ${width}x${height} GIF. The image is too large for frame extraction.`)
+    }
     
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i]
@@ -61,6 +117,11 @@ export class GifFrameExtractor {
       
       // Create ImageData from the patch
       try {
+        // Check if we have enough memory for this operation
+        if (frame.patch.length > 100 * 1024 * 1024) { // 100MB patch
+          console.warn(`Frame ${i} has very large patch data: ${(frame.patch.length / 1024 / 1024).toFixed(2)}MB`)
+        }
+        
         const patchData = new ImageData(
           new Uint8ClampedArray(frame.patch),
           frame.dims.width,
@@ -71,11 +132,25 @@ export class GifFrameExtractor {
         ctx.putImageData(patchData, frame.dims.left, frame.dims.top)
       } catch (dataError) {
         console.error(`Failed to create ImageData for frame ${i}:`, dataError)
+        if (dataError instanceof Error && dataError.message.includes('memory')) {
+          throw new Error('Out of memory while processing GIF frames. The GIF is too large for frame-by-frame editing.')
+        }
         continue
       }
       
       // Get the full composited frame
-      const fullFrameData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      let fullFrameData: ImageData
+      try {
+        fullFrameData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      } catch (getDataError) {
+        console.error(`Failed to get image data for frame ${i}:`, getDataError)
+        if (i === 0) {
+          // If we can't even get the first frame, we need to fail
+          throw new Error('Cannot extract frames from this GIF. It may be too large for processing.')
+        }
+        // Skip this frame and continue
+        continue
+      }
       
       extractedFrames.push({
         data: fullFrameData,

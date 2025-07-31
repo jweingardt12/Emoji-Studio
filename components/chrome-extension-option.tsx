@@ -250,7 +250,7 @@ export function ChromeExtensionOption() {
         {!isExtensionInstalled ? (
           <div className="space-y-4">
             <Button
-              onClick={() => window.open('https://github.com/jweingardt12/emoji-studio-chrome-extension/releases/download/latest/emoji-studio-extension.zip', '_blank')}
+              onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa?utm_source=item-share-cb', '_blank')}
               className="w-full"
               size="lg"
             >
