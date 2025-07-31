@@ -174,6 +174,13 @@ function EmojiCreatorPage() {
                       setSelectedFiles(files);
                       setProcessingFiles(files);
                       
+                      // Track the cart sync event
+                      openpanel.track('chrome_extension_cart_synced', {
+                        emojiCount: files.length,
+                        workspace: cartData.workspace || 'unknown',
+                        source: 'extension-cart'
+                      });
+                      
                       // Auto-start processing
                       setTimeout(() => {
                         processFiles(files);
@@ -214,9 +221,10 @@ function EmojiCreatorPage() {
         console.log('[Create Page] Emoji name:', emojiName)
         
         // Track the event
-        openpanel.track("Emoji Creator: Extension Image Received", { 
-          imageUrl: imageUrl,
-          source: 'chrome-extension'
+        openpanel.track("chrome_extension_emoji_received", { 
+          emojiName: emojiName || 'unnamed',
+          isHDR: isHDR || false,
+          source: 'chrome-extension-direct'
         })
         
         try {
