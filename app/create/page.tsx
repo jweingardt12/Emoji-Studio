@@ -142,7 +142,9 @@ function EmojiCreatorPage() {
             
             for (const emoji of emojis) {
               try {
-                const response = await fetch(emoji.url);
+                // Use image proxy to avoid CORS issues
+                const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
+                const response = await fetch(proxyUrl);
                 const blob = await response.blob();
                 
                 // Determine file extension
@@ -238,7 +240,11 @@ function EmojiCreatorPage() {
           } else if (isHDR) {
             // HDR image - special handling to preserve quality
             console.log('[Create Page] Processing HDR image, preserving original:', imageUrl)
-            const response = await fetch(imageUrl)
+            // Use proxy for external URLs to avoid CORS
+            const fetchUrl = imageUrl.startsWith('http') && !imageUrl.includes(window.location.hostname) 
+              ? `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`
+              : imageUrl;
+            const response = await fetch(fetchUrl)
             const blob = await response.blob()
             
             // Preserve original file extension and type for HDR
@@ -261,7 +267,11 @@ function EmojiCreatorPage() {
           } else {
             // Try to fetch regular URL
             console.log('[Create Page] Attempting to fetch URL:', imageUrl)
-            const response = await fetch(imageUrl)
+            // Use proxy for external URLs to avoid CORS
+            const fetchUrl = imageUrl.startsWith('http') && !imageUrl.includes(window.location.hostname) 
+              ? `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`
+              : imageUrl;
+            const response = await fetch(fetchUrl)
             if (!response.ok) {
               console.error('[Create Page] Fetch failed with status:', response.status)
               throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
