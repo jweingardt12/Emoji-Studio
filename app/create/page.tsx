@@ -118,92 +118,76 @@ function EmojiCreatorPage() {
       }
     } else if (urlParams.get('from') === 'extension-cart') {
       // Handle cart data from extension
-      const getCartData = async () => {
-        try {
-          // Try to get cart data from Chrome storage
-          if (typeof window !== 'undefined' && typeof (window as any).chrome !== 'undefined' && (window as any).chrome.storage && (window as any).chrome.storage.local) {
-            (window as any).chrome.storage.local.get(['pendingEmojiStudioCart'], (result: any) => {
-              if (result.pendingEmojiStudioCart) {
-                console.log('[Create Page] Found cart data from extension:', result.pendingEmojiStudioCart);
-                
-                const cartData = result.pendingEmojiStudioCart;
-                const emojis = cartData.emojis || [];
-                
-                // Clear the data after retrieving
-                (window as any).chrome.storage.local.remove(['pendingEmojiStudioCart']);
-                
-                // Process each emoji in the cart
-                if (emojis.length > 0) {
-                  toast({
-                    title: `Processing ${emojis.length} emojis from cart`,
-                    description: "Please wait while we load your emojis...",
-                  });
-                  
-                  // Convert emojis to files
-                  const processEmojis = async () => {
-                    const files: File[] = [];
-                    
-                    for (const emoji of emojis) {
-                      try {
-                        const response = await fetch(emoji.url);
-                        const blob = await response.blob();
-                        
-                        // Determine file extension
-                        let extension = 'png';
-                        if (blob.type.includes('gif') || emoji.url.toLowerCase().includes('.gif')) extension = 'gif';
-                        else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) extension = 'jpg';
-                        else if (blob.type.includes('webp')) extension = 'webp';
-                        
-                        const fileName = `${emoji.name}.${extension}`;
-                        const file = new File([blob], fileName, { type: blob.type });
-                        
-                        // Add HDR metadata if applicable
-                        if (emoji.isHDR) {
-                          (file as any).isHDR = true;
-                          (file as any).originalUrl = emoji.originalUrl || emoji.url;
-                        }
-                        
-                        files.push(file);
-                      } catch (error) {
-                        console.error(`[Create Page] Failed to process emoji ${emoji.name}:`, error);
-                      }
-                    }
-                    
-                    if (files.length > 0) {
-                      console.log(`[Create Page] Successfully loaded ${files.length} emojis from cart`);
-                      setSelectedFiles(files);
-                      setProcessingFiles(files);
-                      
-                      // Track the cart sync event
-                      openpanel.track('chrome_extension_cart_synced', {
-                        emojiCount: files.length,
-                        workspace: cartData.workspace || 'unknown',
-                        source: 'extension-cart'
-                      });
-                      
-                      // Auto-start processing
-                      setTimeout(() => {
-                        processFiles(files);
-                      }, 500);
-                    }
-                  };
-                  
-                  processEmojis();
-                }
-              }
-            });
-          }
-        } catch (error) {
-          console.error('[Create Page] Failed to get cart data:', error);
-        }
-      };
-      
-      getCartData();
+      console.log('[Create Page] Waiting for cart data from extension...');
+      // Cart data will be sent via postMessage from the extension's inject.js script
     }
     
     // Listen for Chrome extension messages
     const handleExtensionMessage = async (event: MessageEvent) => {
-      if (event.data.type === 'EMOJI_STUDIO_CREATE_EMOJI') {
+      if (event.data.type === 'EMOJI_STUDIO_CART_DATA') {
+        console.log('[Create Page] Received cart data from extension:', event.data)
+        
+        const cartData = event.data.data;
+        const emojis = cartData?.emojis || [];
+        
+        if (emojis.length > 0) {
+          toast({
+            title: `Processing ${emojis.length} emojis from cart`,
+            description: "Please wait while we load your emojis...",
+          });
+          
+          // Convert emojis to files
+          const processEmojis = async () => {
+            const files: File[] = [];
+            
+            for (const emoji of emojis) {
+              try {
+                const response = await fetch(emoji.url);
+                const blob = await response.blob();
+                
+                // Determine file extension
+                let extension = 'png';
+                if (blob.type.includes('gif') || emoji.url.toLowerCase().includes('.gif')) extension = 'gif';
+                else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) extension = 'jpg';
+                else if (blob.type.includes('webp')) extension = 'webp';
+                
+                const fileName = `${emoji.name}.${extension}`;
+                const file = new File([blob], fileName, { type: blob.type });
+                
+                // Add HDR metadata if applicable
+                if (emoji.isHDR) {
+                  (file as any).isHDR = true;
+                  (file as any).originalUrl = emoji.originalUrl || emoji.url;
+                }
+                
+                files.push(file);
+              } catch (error) {
+                console.error(`[Create Page] Failed to process emoji ${emoji.name}:`, error);
+              }
+            }
+            
+            if (files.length > 0) {
+              console.log(`[Create Page] Successfully loaded ${files.length} emojis from cart`);
+              setSelectedFiles(files);
+              setProcessingFiles(files);
+              
+              // Track the cart sync event
+              openpanel.track('chrome_extension_cart_synced', {
+                emojiCount: files.length,
+                workspace: cartData.workspace || 'unknown',
+                source: 'extension-cart'
+              });
+              
+              // Auto-start processing
+              setTimeout(() => {
+                processFiles(files);
+              }, 500);
+            }
+          };
+          
+          processEmojis();
+        }
+      } else if (event.data.type === 'EMOJI_STUDIO_CREATE_EMOJI') {
         console.log('[Create Page] Received extension message:', event.data)
         
         // Handle both new format (imageUrl directly) and old format (data object)
