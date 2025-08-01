@@ -23,9 +23,10 @@ interface NavMainProps {
   slackLoaded?: boolean
   onNavigate?: (navItem?: { title: string; url: string; icon: any; action?: string; indicator?: "error" | "warning" | "success" | "info"; external?: boolean; badge?: string }) => void
   hasData?: boolean
+  onFeedback?: () => void
 }
 
-export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true }: NavMainProps) {
+export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true, onFeedback }: NavMainProps) {
   const pathname = usePathname()
 
   return (
@@ -34,8 +35,9 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         const Icon = item.icon
         const isActive = pathname === item.url
         const isRefresh = item.action === "refresh"
+        const isFeedback = item.action === "feedback"
         const isSettings = item.url === "/settings"
-        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !item.external)
+        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !item.external && !isFeedback)
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {
@@ -46,6 +48,13 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
           if (isRefresh) {
             e.preventDefault()
             onRefresh?.()
+            return
+          }
+          if (isFeedback) {
+            e.preventDefault()
+            onFeedback?.()
+            // Track navigation for feedback
+            onNavigate?.(item)
             return
           }
           // Pass the navigation item to track the event

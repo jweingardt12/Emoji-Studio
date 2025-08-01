@@ -26,7 +26,7 @@ body {
   main {
     @apply rounded-xl;
   }
-  
+
   /* Animation delays for loading overlay */
   .animation-delay-2000 {
     animation-delay: 2s;
@@ -34,7 +34,7 @@ body {
   .animation-delay-4000 {
     animation-delay: 4s;
   }
-  
+
   /* Grid pattern background */
   .bg-grid-pattern {
     background-image: 
@@ -42,7 +42,7 @@ body {
       linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
     background-size: 50px 50px;
   }
-  
+
   /* Support for container queries if needed */
   @supports (container-type: size) {
     .supports-container-queries {
@@ -143,6 +143,7 @@ body {
   }
   .theme {
     --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+    --animate-shine: shine var(--duration) infinite linear;
   }
 }
 
@@ -305,4 +306,18 @@ body {
 .animate-ripple {
   animation: ripple 3s ease-in-out infinite;
   animation-delay: calc(var(--i, 0) * 0.3s);
+}
+
+@theme inline {
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;
+    }
+  50% {
+    background-position: 100% 100%;
+    }
+  to {
+    background-position: 0% 0%;
+    }
+  }
 }

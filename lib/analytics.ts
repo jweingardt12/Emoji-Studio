@@ -14,6 +14,11 @@ export enum AnalyticsEvent {
   DOWNLOAD_ALL_SUCCESS = 'Download All Emojis Success',
   DOWNLOAD_ALL_FAILED = 'Download All Emojis Failed',
   DOWNLOAD_ALL_CANCELLED = 'Download All Emojis Cancelled',
+  FEEDBACK_CLICKED = 'Feedback Link Clicked',
+  FEEDBACK_MODAL_OPENED = 'Feedback Modal Opened',
+  FEEDBACK_MODAL_CLOSED = 'Feedback Modal Closed',
+  FEEDBACK_SUBMITTED = 'Feedback Submitted',
+  FEEDBACK_SUBMISSION_FAILED = 'Feedback Submission Failed',
 }
 
 // Analytics utility hook to track events in the emoji dashboard
@@ -113,6 +118,39 @@ export function useAnalytics() {
         emoji_count_at_cancel: count,
         search_query_at_cancel: query,
         emojis_processed_before_cancel: processedCount,
+      });
+    },
+
+    // Track when feedback link is clicked
+    trackFeedbackClicked: () => {
+      op.track(AnalyticsEvent.FEEDBACK_CLICKED);
+    },
+
+    // Track when feedback modal is opened
+    trackFeedbackModalOpened: () => {
+      op.track(AnalyticsEvent.FEEDBACK_MODAL_OPENED);
+    },
+
+    // Track when feedback modal is closed
+    trackFeedbackModalClosed: (submitted: boolean) => {
+      op.track(AnalyticsEvent.FEEDBACK_MODAL_CLOSED, {
+        feedback_submitted: submitted,
+      });
+    },
+
+    // Track when feedback is submitted
+    trackFeedbackSubmitted: (feedbackType: 'bug' | 'feature', hasWorkspace: boolean, currentPage: string) => {
+      op.track(AnalyticsEvent.FEEDBACK_SUBMITTED, {
+        feedback_type: feedbackType,
+        has_workspace_connected: hasWorkspace,
+        submitted_from_page: currentPage,
+      });
+    },
+
+    // Track when feedback submission fails
+    trackFeedbackSubmissionFailed: (error: string) => {
+      op.track(AnalyticsEvent.FEEDBACK_SUBMISSION_FAILED, {
+        error_message: error,
       });
     },
 
