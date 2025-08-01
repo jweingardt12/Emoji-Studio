@@ -20,7 +20,6 @@ interface EmojiProcessorPreviewProps {
   onDownloadAll: () => void
   onUpdateName: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
-  onShowChromeExtension?: () => void
 }
 
 export function EmojiProcessorPreview({ 
@@ -29,8 +28,7 @@ export function EmojiProcessorPreview({
   onDownload,
   onDownloadAll,
   onUpdateName,
-  onEdit,
-  onShowChromeExtension
+  onEdit
 }: EmojiProcessorPreviewProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
@@ -312,7 +310,7 @@ export function EmojiProcessorPreview({
             </div>
           ))}
         </div>
-        {!hasSlack && onShowChromeExtension && (
+        {!hasSlack && (
           <div className="mt-4 p-4 bg-muted/50 rounded-lg text-center space-y-3">
             <p className="text-sm text-muted-foreground">
               Want to send emojis directly to Slack? Install our Chrome extension to easily import emojis from any website!
@@ -320,7 +318,7 @@ export function EmojiProcessorPreview({
             <Button
               size="sm"
               variant="outline"
-              onClick={onShowChromeExtension}
+              onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa', '_blank')}
               className="inline-flex items-center gap-2"
             >
               <ChromeIcon className="h-4 w-4 text-blue-500" />

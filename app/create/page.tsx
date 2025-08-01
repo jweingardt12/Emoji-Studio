@@ -8,11 +8,9 @@ import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon }
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
-import { EmojiCelebration } from "@/components/emoji-celebration"
 import { EmojiEditor } from "@/components/emoji-editor"
-import { GifFrameEditorV2 } from "@/components/gif-frame-editor-v2"
+import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
-import { ChromeExtensionModal } from "@/components/chrome-extension-modal"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
@@ -71,19 +69,15 @@ function EmojiCreatorPage() {
   const [processingError, setProcessingError] = useState<string>("")
   const [isDragging, setIsDragging] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [isClient, setIsClient] = useState(false)
   const [editingEmoji, setEditingEmoji] = useState<ProcessedEmoji | null>(null)
   const [editingEmojiIndex, setEditingEmojiIndex] = useState<number>(-1)
   const [hasSlack, setHasSlack] = useState(false)
-  const [showChromeExtensionModal, setShowChromeExtensionModal] = useState(false)
   const [gifToEdit, setGifToEdit] = useState<File | null>(null)
   const [showGifEditor, setShowGifEditor] = useState(false)
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
-    setIsClient(true)
     setHasSlack(hasSlackConnection())
     
     console.log('[Create Page] Component mounted, URL:', window.location.href)
@@ -566,9 +560,8 @@ function EmojiCreatorPage() {
     // Mark as complete but keep modal open
     setCurrentStep('completed')
     
-    // Trigger celebration if emojis were processed successfully
+    // Track completion if emojis were processed successfully
     if (newProcessedEmojis.length > 0) {
-      setShowCelebration(true)
       openpanel.track("Emoji Creator: Batch Processing Completed", { 
         totalFiles: files.length,
         successfulFiles: newProcessedEmojis.length,
@@ -670,7 +663,6 @@ function EmojiCreatorPage() {
     setProcessingFiles([])
     setSelectedFiles([])
     setProcessedEmojis([]) // Clear processed emojis when closing
-    setShowCelebration(false) // Stop celebration when modal closes
     setIsReEditingFromModal(false) // Reset re-editing flag
   }
 
@@ -779,8 +771,6 @@ function EmojiCreatorPage() {
     setGifToEdit(null)
     setSelectedFiles([])
     
-    // Show celebration
-    setShowCelebration(true)
     
     openpanel.track("Emoji Creator: GIF Frame Editor Export", {
       originalSize: gifToEdit.size,
@@ -819,7 +809,6 @@ function EmojiCreatorPage() {
   }
 
   // Only render when client-side to avoid hydration mismatches
-  if (!isClient) return null;
 
   return (
     <>
@@ -1019,10 +1008,17 @@ function EmojiCreatorPage() {
                         <Button
                           size="lg"
                           className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
-                          onClick={() => setShowChromeExtensionModal(true)}
+                          asChild
                         >
-                          <ChromeIcon className="h-5 w-5 text-blue-500" />
-                          Get Chrome Extension
+                          <a 
+                            href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2"
+                          >
+                            <ChromeIcon className="h-5 w-5 text-blue-500" />
+                            Get Chrome Extension
+                          </a>
                         </Button>
                       </div>
                     </div>
@@ -1039,7 +1035,6 @@ function EmojiCreatorPage() {
                   onDownloadAll={handleDownloadAll}
                   onUpdateName={handleUpdateEmojiName}
                   onEdit={handleEditEmoji}
-                  onShowChromeExtension={() => setShowChromeExtensionModal(true)}
                 />
               )}
 
@@ -1137,10 +1132,8 @@ function EmojiCreatorPage() {
         onUpdateName={handleUpdateEmojiName}
         onEdit={handleEditEmoji}
         onEditGifFrames={handleEditGifFrames}
-        onShowChromeExtension={() => setShowChromeExtensionModal(true)}
       />
       
-      {isClient && showCelebration && <EmojiCelebration isActive={showCelebration} />}
 
       {/* Emoji Editor Modal */}
       <EmojiEditor
@@ -1150,15 +1143,10 @@ function EmojiCreatorPage() {
         onSave={handleSaveEditedEmoji}
       />
 
-      {/* Chrome Extension Installation Modal */}
-      <ChromeExtensionModal
-        isOpen={showChromeExtensionModal}
-        onClose={() => setShowChromeExtensionModal(false)}
-      />
 
       {/* GIF Frame Editor Modal */}
       {gifToEdit && (
-        <GifFrameEditorV2
+        <GifFrameEditorCSS
           file={gifToEdit}
           isOpen={showGifEditor}
           onClose={() => {

@@ -4,8 +4,10 @@ export interface VideoFrame {
   index: number
 }
 
+export type ProgressCallback = (progress: number, message?: string) => void
+
 export class VideoFrameExtractor {
-  static async extractFrames(file: File, targetFps: number = 10): Promise<VideoFrame[]> {
+  static async extractFrames(file: File, targetFps: number = 10, onProgress?: ProgressCallback): Promise<VideoFrame[]> {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video')
       const canvas = document.createElement('canvas')
@@ -24,6 +26,7 @@ export class VideoFrameExtractor {
           const totalFrames = Math.ceil(duration * targetFps)
           
           console.log(`Video duration: ${duration}s, extracting ${totalFrames} frames at ${targetFps}fps`)
+          onProgress?.(10, `Processing ${duration.toFixed(1)}s video...`)
           
           canvas.width = video.videoWidth
           canvas.height = video.videoHeight
@@ -46,10 +49,16 @@ export class VideoFrameExtractor {
                   index: i
                 })
                 
+                // Report progress
+                const progress = 10 + Math.round((i / totalFrames) * 80)
+                onProgress?.(progress, `Extracting frame ${i + 1} of ${totalFrames}...`)
+                
                 resolve()
               }
             })
           }
+          
+          onProgress?.(100, 'Video processing complete!')
           
           URL.revokeObjectURL(video.src)
           resolve(frames)

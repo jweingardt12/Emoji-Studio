@@ -36,7 +36,6 @@ interface EmojiProcessingModalProps {
   onUpdateName?: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
   onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
-  onShowChromeExtension?: () => void
 }
 
 export function EmojiProcessingModal({
@@ -51,8 +50,7 @@ export function EmojiProcessingModal({
   onDownloadAll,
   onUpdateName,
   onEdit,
-  onEditGifFrames,
-  onShowChromeExtension
+  onEditGifFrames
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -625,7 +623,7 @@ export function EmojiProcessingModal({
                     </Button>
                   </div>
                 )}
-                {!hasSlack && onShowChromeExtension && (
+                {!hasSlack && (
                   <div className="space-y-3 text-center">
                     <p className="text-sm text-muted-foreground">
                       Want to send emojis directly to Slack? Install our Chrome extension to easily import emojis from any website!
@@ -633,7 +631,7 @@ export function EmojiProcessingModal({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={onShowChromeExtension}
+                      onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa', '_blank')}
                       className="inline-flex items-center gap-2"
                     >
                       <ChromeIcon className="h-4 w-4 text-blue-500" />

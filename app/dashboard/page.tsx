@@ -26,9 +26,15 @@ function DashboardPage() {
   // Add client-side only rendering
   const [isClient, setIsClient] = useState(false)
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
+  const [pageVisible, setPageVisible] = useState(false)
   
   useEffect(() => {
     setIsClient(true)
+    // Trigger fade in animation after a short delay
+    const timer = setTimeout(() => {
+      setPageVisible(true)
+    }, 100)
+    return () => clearTimeout(timer)
     
     // Listen for emoji data updates to force re-render
     const handleEmojiDataUpdated = () => {
@@ -153,7 +159,9 @@ function DashboardPage() {
   if (!isClient) return null;
   
   return (
-    <div className="flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
+    <div className={`flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6 transition-all duration-700 ${
+      pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+    }`}>
       <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6"></div>
       {/* SectionCards with skeleton */}

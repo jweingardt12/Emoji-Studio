@@ -22,12 +22,12 @@ import {
 } from "lucide-react"
 import { GifFrameExtractor, ExtractedFrame } from "@/lib/utils/gif-frame-extractor"
 import { VideoFrameExtractor, VideoFrame } from "@/lib/utils/video-frame-extractor"
-import GIF from 'gif.js'
 import { cn } from "@/lib/utils"
 import { FrameThumbnail, clearThumbnailCache } from "./frame-thumbnail"
 import { useDebounce } from "@/hooks/use-debounce"
 import { VirtualFrameGrid } from "./virtual-frame-grid"
 import { globalCanvasPool } from "@/lib/utils/canvas-pool"
+import { ImprovedGIFEncoder, getOptimalGIFSettings } from "@/lib/utils/improved-gif-encoder"
 
 interface GifFrameEditorProps {
   file: File
@@ -46,33 +46,49 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
   const [isExporting, setIsExporting] = useState(false)
   const [previewPlaying, setPreviewPlaying] = useState(false)
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0)
-  const [quality, setQuality] = useState(10)
+  const [quality, setQuality] = useState(1)
   const [targetSize, setTargetSize] = useState(128)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [frameSize, setFrameSize] = useState(120)
   const [exportProgress, setExportProgress] = useState(0)
   const [showPreview, setShowPreview] = useState(false)
-  const [currentPreviewDataUrl, setCurrentPreviewDataUrl] = useState<string>("")
-  const [speedMultiplier, setSpeedMultiplier] = useState(1)
+  const [speedMultiplier, setSpeedMultiplier] = useState(5) // Default to 5x speed
   const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 })
+  const [allFramesLoaded, setAllFramesLoaded] = useState(false)
+  const [extractionProgress, setExtractionProgress] = useState(0)
+  const [extractionMessage, setExtractionMessage] = useState('')
+  const [frameSelectionMode, setFrameSelectionMode] = useState<'magic' | 'everyN'>('magic')
+  const [everyNthFrame, setEveryNthFrame] = useState(2)
+  
+  // Scaling mode: 'fit' maintains aspect ratio with padding, 'fill' crops to fill, 'stretch' distorts to fill
+  const [scaleMode, setScaleMode] = useState<'fit' | 'fill' | 'stretch'>('fill')
   
   // Debounce frame size for performance
   const debouncedFrameSize = useDebounce(frameSize, 300)
   
-  const previewIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
+  const desktopPreviewCanvasRef = useRef<HTMLCanvasElement>(null)
+  const mobilePreviewCanvasRef = useRef<HTMLCanvasElement>(null)
   const frameGridContainerRef = useRef<HTMLDivElement>(null)
+  const previewPlayingRef = useRef(false)
+  const lastFrameTimeRef = useRef(0)
+  const currentFrameIndexRef = useRef(0)
 
   useEffect(() => {
     if (isOpen && file) {
+      // Reset state when opening
+      setAllFramesLoaded(false)
+      setFrames([])
+      setSelectedIndices(new Set())
+      setLoadError(null)
+      setCurrentPreviewIndex(0)
+      setPreviewPlaying(false)
       loadFrames()
     }
     return () => {
-      if (previewIntervalRef.current) {
-        clearInterval(previewIntervalRef.current)
-      }
+      stopPreview()
       // Clear thumbnail cache when component unmounts
       clearThumbnailCache()
     }
@@ -96,6 +112,20 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
     }
   }, [isOpen])
 
+  // Render first frame when preview opens
+  useEffect(() => {
+    if (showPreview && selectedIndices.size > 0 && frames.length > 0) {
+      const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b)
+      if (sortedIndices.length > 0) {
+        // Small delay to ensure canvas is mounted
+        const timer = setTimeout(() => {
+          renderFrameToCanvas(sortedIndices[0])
+        }, 100)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [showPreview, selectedIndices, frames.length])
+
   // Keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return
@@ -103,7 +133,7 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ' && !isExporting) {
         e.preventDefault()
-        if (previewPlaying) {
+        if (previewPlayingRef.current) {
           stopPreview()
         } else {
           startPreview()
@@ -116,66 +146,54 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
     
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, previewPlaying, isExporting, selectedIndices.size])
+  }, [isOpen, isExporting, selectedIndices.size])
 
   const loadFrames = async () => {
     setIsLoading(true)
     setLoadError(null)
     setIsVideo(file.type.startsWith('video/'))
+    setExtractionProgress(0)
+    setExtractionMessage('')
     
     try {
       let extractedFrames: FrameData[]
       
       if (file.type.startsWith('video/')) {
         console.log('Extracting frames from video...')
-        extractedFrames = await VideoFrameExtractor.extractFrames(file, 10) // 10 fps
+        extractedFrames = await VideoFrameExtractor.extractFrames(file, 10, (progress, message) => {
+          setExtractionProgress(progress)
+          setExtractionMessage(message || '')
+        })
       } else {
-        extractedFrames = await GifFrameExtractor.extractFrames(file)
+        extractedFrames = await GifFrameExtractor.extractFrames(file, (progress, message) => {
+          setExtractionProgress(progress)
+          setExtractionMessage(message || '')
+        })
       }
       
-      // Process frames in chunks to avoid blocking
-      const CHUNK_SIZE = 50
-      const chunks: FrameData[][] = []
-      for (let i = 0; i < extractedFrames.length; i += CHUNK_SIZE) {
-        chunks.push(extractedFrames.slice(i, i + CHUNK_SIZE))
-      }
+      // Set all frames at once
+      setFrames(extractedFrames)
+      setAllFramesLoaded(true)
       
-      // Load first chunk immediately
-      if (chunks.length > 0) {
-        setFrames(chunks[0])
-        
-        // Load remaining chunks progressively
-        for (let i = 1; i < chunks.length; i++) {
-          await new Promise(resolve => setTimeout(resolve, 10)) // Small delay between chunks
-          setFrames(prev => [...prev, ...chunks[i]])
-        }
-      } else {
-        setFrames(extractedFrames)
-      }
-      
-      // Smart initial selection
-      if (extractedFrames.length > 50) {
-        // Auto-select evenly distributed frames
-        const selectedSet = new Set<number>()
-        const step = extractedFrames.length / 50
-        for (let i = 0; i < 50; i++) {
-          selectedSet.add(Math.floor(i * step))
-        }
-        setSelectedIndices(selectedSet)
-        
-        // Auto-export for files over 50 frames
-        setTimeout(() => {
-          exportGif(selectedSet)
-        }, 500)
-      } else {
+      // Apply frame selection
+      if (extractedFrames.length <= 50) {
         // Select all if 50 or fewer
         setSelectedIndices(new Set(Array.from({ length: extractedFrames.length }, (_, i) => i)))
+      } else {
+        // Use magic selection by default for large GIFs
+        const selectedSet = new Set<number>()
+        const step = (extractedFrames.length - 1) / 49
+        for (let i = 0; i < 50; i++) {
+          selectedSet.add(Math.round(i * step))
+        }
+        setSelectedIndices(selectedSet)
       }
     } catch (error) {
       console.error("Failed to extract frames:", error)
       const errorMessage = error instanceof Error ? error.message : 
         (isVideo ? 'Failed to extract frames from video' : 'Failed to extract frames from GIF')
       setLoadError(errorMessage)
+      setAllFramesLoaded(false)
       
       // Close quickly for skip errors
       if (errorMessage.includes('SKIP_FRAME_EDITOR') || 
@@ -197,214 +215,399 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
       } else if (newSelected.size < 50) {
         newSelected.add(index)
       }
+      
+      // If preview is open, render first frame of new selection
+      if (showPreview && newSelected.size > 0) {
+        const firstFrame = Array.from(newSelected).sort((a, b) => a - b)[0]
+        renderFrameToCanvas(firstFrame)
+      }
+      
       return newSelected
     })
   }
 
-  const selectRange = (start: number, end: number) => {
-    const newSelected = new Set(selectedIndices)
-    for (let i = start; i <= end && newSelected.size < 50; i++) {
-      newSelected.add(i)
-    }
-    setSelectedIndices(newSelected)
-  }
-
   const smartSelection = () => {
-    const targetCount = Math.min(50, frames.length)
     const newSelected = new Set<number>()
     
-    if (frames.length <= 50) {
-      // Select all
-      for (let i = 0; i < frames.length; i++) {
-        newSelected.add(i)
-      }
-    } else {
-      // Evenly distribute selection
-      const step = (frames.length - 1) / (targetCount - 1)
-      for (let i = 0; i < targetCount; i++) {
+    if (frameSelectionMode === 'magic') {
+      // Evenly distribute 50 frames across the entire animation
+      const step = (frames.length - 1) / 49
+      for (let i = 0; i < 50; i++) {
         newSelected.add(Math.round(i * step))
       }
+    } else {
+      // Every Nth frame
+      for (let i = 0; i < frames.length && newSelected.size < 50; i += everyNthFrame) {
+        newSelected.add(i)
+      }
     }
     
     setSelectedIndices(newSelected)
-  }
-
-  const randomSelection = () => {
-    const targetCount = Math.min(50, frames.length)
-    const newSelected = new Set<number>()
     
-    // Always include first and last
-    newSelected.add(0)
-    newSelected.add(frames.length - 1)
-    
-    // Randomly select the rest
-    while (newSelected.size < targetCount) {
-      const randomIndex = Math.floor(Math.random() * frames.length)
-      newSelected.add(randomIndex)
+    // If preview is open, render first frame
+    if (showPreview && newSelected.size > 0) {
+      const firstFrame = Array.from(newSelected).sort((a, b) => a - b)[0]
+      renderFrameToCanvas(firstFrame)
     }
-    
-    setSelectedIndices(newSelected)
   }
 
-  const selectEveryNth = (n: number) => {
-    const newSelected = new Set<number>()
-    for (let i = 0; i < frames.length && newSelected.size < 50; i += n) {
-      newSelected.add(i)
+
+  const renderFrameToCanvas = (frameIndex: number) => {
+    if (!frames[frameIndex]) {
+      return
     }
-    setSelectedIndices(newSelected)
-  }
-
-  const drawPreviewFrame = (frameIndex: number) => {
-    if (!previewCanvasRef.current || !frames[frameIndex]) return
-    
-    const ctx = previewCanvasRef.current.getContext('2d')
-    if (!ctx) return
     
     const frame = frames[frameIndex]
-    const canvas = previewCanvasRef.current
     
-    // Clear canvas with white background
-    ctx.fillStyle = 'white'
-    ctx.fillRect(0, 0, targetSize, targetSize)
+    // Get available canvases
+    const desktopCanvas = desktopPreviewCanvasRef.current
+    const mobileCanvas = mobilePreviewCanvasRef.current
     
-    // Get temp canvas from pool
-    const tempCanvas = globalCanvasPool.acquire(frame.data.width, frame.data.height)
-    const tempCtx = tempCanvas.getContext('2d')!
-    tempCtx.putImageData(frame.data, 0, 0)
+    // Function to render to a single canvas
+    const renderToCanvas = (canvas: HTMLCanvasElement) => {
+      const ctx = canvas.getContext('2d', { alpha: true })
+      if (!ctx) return
+      
+      // Clear canvas with white background
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, targetSize, targetSize)
+      
+      // Create temp canvas for frame data
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = frame.data.width
+      tempCanvas.height = frame.data.height
+      const tempCtx = tempCanvas.getContext('2d')
+      if (!tempCtx) return
+      
+      // Put frame data
+      tempCtx.putImageData(frame.data, 0, 0)
+      
+      // Apply scaling based on mode
+      if (scaleMode === 'stretch') {
+        // Stretch to fill entire target size (may distort)
+        ctx.drawImage(tempCanvas, 0, 0, targetSize, targetSize)
+      } else if (scaleMode === 'fill') {
+        // Scale to fill (crop to fit) - no white bars
+        const scale = Math.max(targetSize / tempCanvas.width, targetSize / tempCanvas.height)
+        const scaledWidth = Math.round(tempCanvas.width * scale)
+        const scaledHeight = Math.round(tempCanvas.height * scale)
+        const offsetX = Math.round((targetSize - scaledWidth) / 2)
+        const offsetY = Math.round((targetSize - scaledHeight) / 2)
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+      } else {
+        // Scale to fit while maintaining aspect ratio (may have white bars)
+        const scale = Math.min(targetSize / tempCanvas.width, targetSize / tempCanvas.height)
+        const scaledWidth = Math.round(tempCanvas.width * scale)
+        const scaledHeight = Math.round(tempCanvas.height * scale)
+        const offsetX = Math.round((targetSize - scaledWidth) / 2)
+        const offsetY = Math.round((targetSize - scaledHeight) / 2)
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+      }
+      
+      // Clean up
+      tempCanvas.width = 0
+      tempCanvas.height = 0
+    }
     
-    // Scale and center the frame
-    const scale = Math.min(targetSize / tempCanvas.width, targetSize / tempCanvas.height)
-    const scaledWidth = tempCanvas.width * scale
-    const scaledHeight = tempCanvas.height * scale
-    const offsetX = (targetSize - scaledWidth) / 2
-    const offsetY = (targetSize - scaledHeight) / 2
+    // Render to both canvases
+    if (desktopCanvas) renderToCanvas(desktopCanvas)
+    if (mobileCanvas) renderToCanvas(mobileCanvas)
     
-    ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+    // Also update Slack preview canvases
+    const messageCanvas = document.getElementById('v2-message-preview') as HTMLCanvasElement
+    const reactionCanvas = document.getElementById('v2-reaction-preview') as HTMLCanvasElement
     
-    // Release temp canvas back to pool
-    globalCanvasPool.release(tempCanvas)
-    
-    // Update the data URL for the small preview
-    setCurrentPreviewDataUrl(canvas.toDataURL())
+    if (messageCanvas || reactionCanvas) {
+      // Create temp canvas for Slack previews
+      const slackCanvas = document.createElement('canvas')
+      slackCanvas.width = frame.data.width
+      slackCanvas.height = frame.data.height
+      const slackCtx = slackCanvas.getContext('2d')
+      if (slackCtx) {
+        slackCtx.putImageData(frame.data, 0, 0)
+        
+        if (messageCanvas) {
+          const msgCtx = messageCanvas.getContext('2d')
+          if (msgCtx) {
+            msgCtx.imageSmoothingEnabled = false
+            msgCtx.fillStyle = 'white'
+            msgCtx.fillRect(0, 0, 64, 64)
+            
+            // Apply same scale mode as main preview
+            if (scaleMode === 'stretch') {
+              msgCtx.drawImage(slackCanvas, 0, 0, 64, 64)
+            } else if (scaleMode === 'fill') {
+              const scale = Math.max(64 / slackCanvas.width, 64 / slackCanvas.height)
+              const scaledWidth = Math.round(slackCanvas.width * scale)
+              const scaledHeight = Math.round(slackCanvas.height * scale)
+              const offsetX = Math.round((64 - scaledWidth) / 2)
+              const offsetY = Math.round((64 - scaledHeight) / 2)
+              msgCtx.drawImage(slackCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            } else {
+              const scale = Math.min(64 / slackCanvas.width, 64 / slackCanvas.height)
+              const scaledWidth = Math.round(slackCanvas.width * scale)
+              const scaledHeight = Math.round(slackCanvas.height * scale)
+              const offsetX = Math.round((64 - scaledWidth) / 2)
+              const offsetY = Math.round((64 - scaledHeight) / 2)
+              msgCtx.drawImage(slackCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            }
+          }
+        }
+        
+        if (reactionCanvas) {
+          const reactCtx = reactionCanvas.getContext('2d')
+          if (reactCtx) {
+            reactCtx.imageSmoothingEnabled = false
+            reactCtx.fillStyle = 'white'
+            reactCtx.fillRect(0, 0, 16, 16)
+            
+            // Apply same scale mode as main preview
+            if (scaleMode === 'stretch') {
+              reactCtx.drawImage(slackCanvas, 0, 0, 16, 16)
+            } else if (scaleMode === 'fill') {
+              const scale = Math.max(16 / slackCanvas.width, 16 / slackCanvas.height)
+              const scaledWidth = Math.round(slackCanvas.width * scale)
+              const scaledHeight = Math.round(slackCanvas.height * scale)
+              const offsetX = Math.round((16 - scaledWidth) / 2)
+              const offsetY = Math.round((16 - scaledHeight) / 2)
+              reactCtx.drawImage(slackCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            } else {
+              const scale = Math.min(16 / slackCanvas.width, 16 / slackCanvas.height)
+              const scaledWidth = Math.round(slackCanvas.width * scale)
+              const scaledHeight = Math.round(slackCanvas.height * scale)
+              const offsetX = Math.round((16 - scaledWidth) / 2)
+              const offsetY = Math.round((16 - scaledHeight) / 2)
+              reactCtx.drawImage(slackCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            }
+          }
+        }
+      }
+    }
   }
 
   const startPreview = () => {
-    if (selectedIndices.size === 0) return
+    if (selectedIndices.size === 0 || !allFramesLoaded) return
+    
+    // Show preview if not already shown
+    if (!showPreview) {
+      setShowPreview(true)
+    }
     
     setPreviewPlaying(true)
-    setShowPreview(true)
+    previewPlayingRef.current = true
+    
     const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b)
-    let currentIndex = 0
+    currentFrameIndexRef.current = 0
+    lastFrameTimeRef.current = performance.now()
     
-    const animate = () => {
-      const frameIndex = sortedIndices[currentIndex]
-      setCurrentPreviewIndex(frameIndex)
-      drawPreviewFrame(frameIndex)
-      currentIndex = (currentIndex + 1) % sortedIndices.length
-    }
-    
-    animate() // Show first frame immediately
-    
-    // Use frame delays for accurate timing with speed multiplier
-    const getNextDelay = () => {
-      const frameIndex = sortedIndices[currentIndex]
+    const animate = (currentTime: number) => {
+      if (!previewPlayingRef.current) return
+      
+      const frameIndex = sortedIndices[currentFrameIndexRef.current]
       const frame = frames[frameIndex]
+      if (!frame) return
+      
       const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
-      return Math.max(20, baseDelay / speedMultiplier) // Minimum 20ms to prevent too fast
+      const targetDelay = Math.max(20, baseDelay / speedMultiplier)
+      
+      if (currentTime - lastFrameTimeRef.current >= targetDelay) {
+        setCurrentPreviewIndex(frameIndex)
+        renderFrameToCanvas(frameIndex)
+        
+        currentFrameIndexRef.current = (currentFrameIndexRef.current + 1) % sortedIndices.length
+        lastFrameTimeRef.current = currentTime
+      }
+      
+      animationFrameRef.current = requestAnimationFrame(animate)
     }
     
-    const scheduleNext = () => {
-      previewIntervalRef.current = setTimeout(() => {
-        animate()
-        scheduleNext()
-      }, getNextDelay())
+    // Render first frame immediately
+    if (sortedIndices.length > 0) {
+      renderFrameToCanvas(sortedIndices[0])
+      setCurrentPreviewIndex(sortedIndices[0])
     }
     
-    scheduleNext()
+    // Start animation
+    animationFrameRef.current = requestAnimationFrame(animate)
   }
 
   const stopPreview = () => {
     setPreviewPlaying(false)
-    if (previewIntervalRef.current) {
-      clearTimeout(previewIntervalRef.current)
-      previewIntervalRef.current = null
+    previewPlayingRef.current = false
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
     }
   }
+  
+  // Restart preview when settings change
+  useEffect(() => {
+    if (previewPlaying && frames.length > 0) {
+      stopPreview()
+      startPreview()
+    }
+  }, [speedMultiplier, selectedIndices])
+  
+  // Apply selection when mode or everyNthFrame changes
+  useEffect(() => {
+    if (frames.length > 50) {
+      smartSelection()
+    }
+  }, [frameSelectionMode, everyNthFrame])
 
   const exportGif = async (indices?: Set<number>) => {
     const selectedToExport = indices || selectedIndices
     if (selectedToExport.size === 0) return
     
+    // Ensure frames are loaded
+    if (!allFramesLoaded || !frames || frames.length === 0) {
+      console.error('Frames not ready yet. allFramesLoaded:', allFramesLoaded, 'frames.length:', frames.length)
+      setLoadError('Please wait for frames to finish loading.')
+      return
+    }
+    
     setIsExporting(true)
     try {
       const sortedIndices = Array.from(selectedToExport).sort((a, b) => a - b)
-      const selectedFrames = sortedIndices
+      let selectedFrames = sortedIndices
         .filter(i => i >= 0 && i < frames.length && frames[i])
         .map(i => frames[i])
       
       if (selectedFrames.length === 0) {
-        console.error('No valid frames selected')
+        console.error('No valid frames selected. Indices:', sortedIndices, 'Frames length:', frames.length)
+        // Show error to user
+        setLoadError('No frames available. Please try reloading the file.')
         setIsExporting(false)
         return
       }
       
-      const gif = new GIF({
-        workers: 2,
-        quality: quality,
-        width: targetSize,
-        height: targetSize,
-        workerScript: '/gif.worker.js'
-      })
+      // Ensure we meet Slack requirements
+      const MAX_FILE_SIZE = 128 * 1024 // 128KB
+      const MAX_DIMENSION = 128 // 128x128 pixels
       
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')!
-      canvas.width = targetSize
-      canvas.height = targetSize
+      let currentQuality = quality || 10
+      let framesToUse = selectedFrames
+      let outputBlob: Blob | null = null
       
-      for (let i = 0; i < selectedFrames.length; i++) {
-        const frame = selectedFrames[i]
-        if (!frame || !frame.data) {
-          console.error(`Invalid frame at index ${i}`)
-          continue
+      // Try different optimization strategies until we meet requirements
+      const strategies = [
+        { quality: currentQuality, frameSkip: 1 },     // All frames, user quality
+        { quality: 10, frameSkip: 1 },                 // All frames, best quality
+        { quality: 20, frameSkip: 1 },                 // All frames, good quality
+        { quality: 30, frameSkip: 2 },                 // Every other frame
+        { quality: 40, frameSkip: 3 },                 // Every third frame
+        { quality: 50, frameSkip: 4 },                 // Every fourth frame
+        { quality: 60, frameSkip: 5 },                 // Every fifth frame
+        { quality: 80, frameSkip: 8 },                 // Every 8th frame
+        { quality: 100, frameSkip: 10 },               // Every 10th frame
+        { quality: 100, frameSkip: 15 },               // Every 15th frame
+        { quality: 100, frameSkip: 20 },               // Every 20th frame
+        { quality: 100, frameSkip: 25 },               // Last resort - very few frames
+      ]
+      
+      for (const strategy of strategies) {
+        console.log(`Trying strategy: quality=${strategy.quality}, frameSkip=${strategy.frameSkip}`)
+        
+        // Apply frame skipping
+        if (strategy.frameSkip > 1) {
+          framesToUse = selectedFrames.filter((_, idx) => idx % strategy.frameSkip === 0)
+        } else {
+          framesToUse = selectedFrames
         }
         
-        setExportProgress(Math.round((i / selectedFrames.length) * 100))
-        ctx.fillStyle = 'white'
-        ctx.fillRect(0, 0, targetSize, targetSize)
+        // Ensure we have at least 2 frames for animation
+        if (framesToUse.length < 2 && selectedFrames.length >= 2) {
+          framesToUse = [selectedFrames[0], selectedFrames[selectedFrames.length - 1]]
+        }
         
-        const tempCanvas = globalCanvasPool.acquire(frame.data.width, frame.data.height)
-        const tempCtx = tempCanvas.getContext('2d')!
-        tempCtx.putImageData(frame.data, 0, 0)
-        
-        const scale = Math.min(targetSize / tempCanvas.width, targetSize / tempCanvas.height)
-        const scaledWidth = tempCanvas.width * scale
-        const scaledHeight = tempCanvas.height * scale
-        const offsetX = (targetSize - scaledWidth) / 2
-        const offsetY = (targetSize - scaledHeight) / 2
-        
-        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
-        
-        const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
-        const adjustedDelay = Math.max(20, Math.round(baseDelay / speedMultiplier))
-        
-        gif.addFrame(ctx, {
-          copy: true,
-          delay: adjustedDelay,
-          dispose: 2
+        const gif = new ImprovedGIFEncoder({
+          width: MAX_DIMENSION,
+          height: MAX_DIMENSION,
+          quality: strategy.quality,
+          workers: 2,
+          dither: strategy.quality <= 20
         })
         
-        // Release temp canvas
-        globalCanvasPool.release(tempCanvas)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')!
+        canvas.width = MAX_DIMENSION
+        canvas.height = MAX_DIMENSION
+        
+        for (let i = 0; i < framesToUse.length; i++) {
+          const frame = framesToUse[i]
+          if (!frame || !frame.data) continue
+          
+          setExportProgress(Math.round((i / framesToUse.length) * 50))
+          
+          // Clear with white background
+          ctx.fillStyle = 'white'
+          ctx.fillRect(0, 0, MAX_DIMENSION, MAX_DIMENSION)
+          
+          const tempCanvas = globalCanvasPool.acquire(frame.data.width, frame.data.height)
+          const tempCtx = tempCanvas.getContext('2d')!
+          tempCtx.putImageData(frame.data, 0, 0)
+          
+          // Apply scaling based on mode
+          if (scaleMode === 'stretch') {
+            // Stretch to fill entire MAX_DIMENSION (may distort)
+            ctx.drawImage(tempCanvas, 0, 0, MAX_DIMENSION, MAX_DIMENSION)
+          } else if (scaleMode === 'fill') {
+            // Scale to fill (crop to fit) - no white bars
+            const scale = Math.max(MAX_DIMENSION / tempCanvas.width, MAX_DIMENSION / tempCanvas.height)
+            const scaledWidth = tempCanvas.width * scale
+            const scaledHeight = tempCanvas.height * scale
+            const offsetX = (MAX_DIMENSION - scaledWidth) / 2
+            const offsetY = (MAX_DIMENSION - scaledHeight) / 2
+            ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+          } else {
+            // Scale to fit while maintaining aspect ratio (may have white bars)
+            const scale = Math.min(MAX_DIMENSION / tempCanvas.width, MAX_DIMENSION / tempCanvas.height)
+            const scaledWidth = tempCanvas.width * scale
+            const scaledHeight = tempCanvas.height * scale
+            const offsetX = (MAX_DIMENSION - scaledWidth) / 2
+            const offsetY = (MAX_DIMENSION - scaledHeight) / 2
+            ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+          }
+          
+          const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+          const adjustedDelay = Math.max(20, Math.round(baseDelay / speedMultiplier))
+          
+          gif.addFrame(ctx, {
+            delay: adjustedDelay,
+            dispose: 1
+          })
+          
+          globalCanvasPool.release(tempCanvas)
+        }
+        
+        gif.onProgress((progress: number) => {
+          setExportProgress(50 + Math.round(progress * 50))
+        })
+        
+        outputBlob = await gif.render()
+        
+        console.log(`Generated GIF: ${outputBlob.size} bytes (limit: ${MAX_FILE_SIZE}), frames: ${framesToUse.length}`)
+        
+        if (outputBlob.size <= MAX_FILE_SIZE) {
+          break // Success!
+        }
       }
       
-      gif.on('finished', (blob: Blob) => {
-        // Pass only the valid indices that were actually used
-        const validIndices = sortedIndices.filter(i => i >= 0 && i < frames.length && frames[i])
-        onExport(blob, validIndices)
-        onClose()
-      })
+      if (!outputBlob) {
+        throw new Error('Failed to create GIF')
+      }
       
-      gif.render()
+      if (outputBlob.size > MAX_FILE_SIZE) {
+        console.warn(`Final GIF still exceeds size limit: ${outputBlob.size} bytes`)
+        // Show warning to user
+        setLoadError(`Warning: GIF is ${Math.round(outputBlob.size / 1024)}KB (Slack limit: 128KB). The emoji may not upload properly.`)
+        setTimeout(() => setLoadError(null), 5000)
+      }
+      
+      // Pass only the valid indices that were actually used
+      const validIndices = sortedIndices.filter(i => i >= 0 && i < frames.length && frames[i])
+      onExport(outputBlob, validIndices)
+      onClose()
     } catch (error) {
       console.error('Failed to export GIF:', error)
     } finally {
@@ -479,7 +682,10 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
               <p className="text-sm text-muted-foreground">
                 Extracting frames from your {isVideo ? 'video' : 'GIF'}...
               </p>
-              <Progress className="w-48" value={33} />
+              {extractionMessage && (
+                <p className="text-xs text-muted-foreground">{extractionMessage}</p>
+              )}
+              <Progress className="w-48" value={extractionProgress || 0} />
             </div>
           </div>
         ) : loadError ? (
@@ -494,46 +700,83 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
           <div className="flex flex-col flex-1 min-h-0">
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-3 px-1 flex-shrink-0">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={smartSelection}
-                  className="gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Smart Select
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={randomSelection}
-                  className="gap-2"
-                >
-                  <Shuffle className="h-4 w-4" />
-                  Random
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => selectEveryNth(2)}
-                >
-                  Every 2nd
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => selectEveryNth(3)}
-                >
-                  Every 3rd
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSelectedIndices(new Set())}
-                >
-                  Clear All
-                </Button>
+              <div className="flex flex-col gap-3 flex-1">
+                {frames.length > 50 && (
+                  <>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant={frameSelectionMode === 'magic' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setFrameSelectionMode('magic')
+                        }}
+                        className="gap-2"
+                        title="Evenly distribute 50 frames across the animation"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Magic Selection
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={frameSelectionMode === 'everyN' ? 'default' : 'outline'}
+                        onClick={() => {
+                          setFrameSelectionMode('everyN')
+                        }}
+                      >
+                        Every Nth Frame
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedIndices(new Set())
+                          // Clear both canvases
+                          const canvases = [desktopPreviewCanvasRef.current, mobilePreviewCanvasRef.current]
+                          canvases.forEach(canvas => {
+                            if (canvas) {
+                              const ctx = canvas.getContext('2d')
+                              if (ctx) {
+                                ctx.fillStyle = 'white'
+                                ctx.fillRect(0, 0, targetSize, targetSize)
+                              }
+                            }
+                          })
+                        }}
+                      >
+                        Clear All
+                      </Button>
+                    </div>
+                    
+                    {frameSelectionMode === 'everyN' && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Select every</span>
+                          <span className="font-medium">{everyNthFrame} frame{everyNthFrame > 1 ? 's' : ''}</span>
+                        </div>
+                        <Slider
+                          value={[everyNthFrame]}
+                          onValueChange={([v]) => {
+                            setEveryNthFrame(v)
+                            smartSelection()
+                          }}
+                          min={1}
+                          max={Math.min(10, Math.floor(frames.length / 5))}
+                          step={1}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Every frame</span>
+                          <span>Every {Math.min(10, Math.floor(frames.length / 5))} frames</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                {frames.length <= 50 && (
+                  <div className="text-sm text-muted-foreground">
+                    Showing all {frames.length} frames
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center gap-4">
@@ -613,8 +856,11 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
               </div>
               
               {/* Preview Panel */}
-              {showPreview && (
-                <div className="hidden lg:flex lg:flex-1 flex-col gap-4 rounded-lg border bg-muted/20 p-4">
+              {frames.length > 0 && (
+                <div className={cn(
+                  "hidden lg:flex lg:flex-1 flex-col gap-4 rounded-lg border bg-muted/20 p-4",
+                  !showPreview && "opacity-50"
+                )}>
                   <div className="text-center space-y-2">
                     <h3 className="font-semibold text-sm">Slack Emoji Preview</h3>
                     <p className="text-xs text-muted-foreground">
@@ -623,45 +869,81 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
                   </div>
                   
                   <div className="flex-1 flex items-center justify-center">
-                    <div className="space-y-4">
+                    <div className="space-y-6 w-full max-w-sm">
                       {/* Actual size preview */}
                       <div className="text-center space-y-2">
                         <p className="text-xs text-muted-foreground">Actual Size (128×128)</p>
-                        <div className="inline-block bg-white rounded-lg p-4 shadow-sm">
+                        <div className="inline-block bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                           <canvas
-                            ref={previewCanvasRef}
+                            ref={desktopPreviewCanvasRef}
                             width={targetSize}
                             height={targetSize}
                             className="pixelated"
-                            style={{ imageRendering: 'pixelated' }}
+                            style={{ 
+                              imageRendering: 'pixelated',
+                              width: `${targetSize}px`,
+                              height: `${targetSize}px`
+                            }}
                           />
                         </div>
                       </div>
                       
-                      {/* Slack context preview */}
-                      <div className="text-center space-y-2">
-                        <p className="text-xs text-muted-foreground">In Slack Context</p>
-                        <div className="bg-white rounded-lg p-4 shadow-sm">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span>Great work team!</span>
-                            <div 
-                              className="inline-block align-middle"
-                              style={{ 
-                                width: '20px', 
-                                height: '20px',
-                                backgroundImage: currentPreviewDataUrl ? `url(${currentPreviewDataUrl})` : undefined,
-                                backgroundSize: 'contain',
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'center',
-                                imageRendering: 'auto' as any
-                              }}
-                            />
+                      {/* Slack Context Previews */}
+                      <div className="space-y-3 w-full">
+                        <p className="text-xs text-muted-foreground text-center">In Slack</p>
+                        
+                        {/* Standalone Message */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border dark:border-gray-700 text-left">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                              JD
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-1">
+                                <span className="font-semibold text-sm dark:text-gray-100">Jane Doe</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">2:34 PM</span>
+                              </div>
+                              <canvas 
+                                id="v2-message-preview"
+                                width={64} 
+                                height={64} 
+                                className="block"
+                                style={{ imageRendering: 'pixelated' }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Reaction Context */}
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border dark:border-gray-700 text-left">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded bg-green-500 dark:bg-green-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                              JS
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2 mb-1">
+                                <span className="font-semibold text-sm dark:text-gray-100">John Smith</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">2:30 PM</span>
+                              </div>
+                              <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
+                                Woah. Have you seen Emoji Studio? Crazy how Slack won't build something like it.
+                              </div>
+                              <div className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1 border border-gray-200 dark:border-gray-600">
+                                <canvas 
+                                  id="v2-reaction-preview"
+                                  width={16} 
+                                  height={16}
+                                  style={{ imageRendering: 'pixelated' }}
+                                />
+                                <span className="text-xs text-gray-600 dark:text-gray-300">3</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
                       
                       {/* Stats */}
-                      <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="text-xs text-muted-foreground space-y-1 text-center">
                         <p>Frames: {selectedIndices.size}</p>
                         <p>Size: {targetSize}×{targetSize}px</p>
                         <p>Quality: {quality}</p>
@@ -688,57 +970,45 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
                   </Button>
                 </div>
                 <canvas
+                  ref={mobilePreviewCanvasRef}
                   width={targetSize}
                   height={targetSize}
                   style={{ width: '100px', height: '100px' }}
-                  className="bg-white rounded"
-                  ref={el => {
-                    if (el && previewCanvasRef.current) {
-                      const ctx = el.getContext('2d')
-                      if (ctx && currentPreviewDataUrl) {
-                        const img = document.createElement('img')
-                        img.onload = () => {
-                          ctx.drawImage(img, 0, 0, targetSize, targetSize)
-                        }
-                        img.src = currentPreviewDataUrl
-                      }
-                    }
-                  }}
+                  className="bg-white rounded pixelated"
                 />
               </div>
             )}
 
-            {/* Export Settings */}
-            <div className="space-y-3 pt-3 flex-shrink-0">
+            {/* Preview & Export */}
+            <div className="space-y-3 pt-3 flex-shrink-0 border-t">
               <div className="flex gap-6">
                 <div className="flex-1 space-y-2">
-                  <Label className="text-sm">Quality (Lower = Smaller file)</Label>
+                  <Label className="text-sm">GIF Quality (1=Best, 10=Smallest)</Label>
                   <div className="flex items-center gap-3">
                     <Slider
                       value={[quality]}
                       onValueChange={([v]) => setQuality(v)}
                       min={1}
-                      max={30}
+                      max={10}
                       step={1}
                       className="flex-1"
                     />
                     <span className="text-sm text-muted-foreground w-8">{quality}</span>
                   </div>
+                  <p className="text-xs text-muted-foreground">Auto-adjusts to meet 128KB limit</p>
                 </div>
                 
                 <div className="flex-1 space-y-2">
-                  <Label className="text-sm">Output Size</Label>
+                  <Label className="text-sm">Output Size (Slack Maximum)</Label>
                   <div className="flex items-center gap-3">
                     <Slider
-                      value={[targetSize]}
-                      onValueChange={([v]) => setTargetSize(v)}
-                      min={64}
+                      value={[128]}
+                      min={128}
                       max={128}
-                      step={8}
                       disabled
                       className="flex-1"
                     />
-                    <span className="text-sm text-muted-foreground">{targetSize}px</span>
+                    <span className="text-sm text-muted-foreground">128px (Fixed)</span>
                   </div>
                 </div>
               </div>
@@ -770,14 +1040,6 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSpeedMultiplier(1.5)}
-                    className={cn("text-xs", speedMultiplier === 1.5 && "bg-accent")}
-                  >
-                    1.5x
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
                     onClick={() => setSpeedMultiplier(2)}
                     className={cn("text-xs", speedMultiplier === 2 && "bg-accent")}
                   >
@@ -786,22 +1048,72 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSpeedMultiplier(3)}
-                    className={cn("text-xs", speedMultiplier === 3 && "bg-accent")}
+                    onClick={() => setSpeedMultiplier(5)}
+                    className={cn("text-xs", speedMultiplier === 5 && "bg-accent")}
                   >
-                    3x
+                    5x
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSpeedMultiplier(10)}
+                    className={cn("text-xs", speedMultiplier === 10 && "bg-accent")}
+                  >
+                    10x
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSpeedMultiplier(15)}
+                    className={cn("text-xs", speedMultiplier === 15 && "bg-accent")}
+                  >
+                    15x
                   </Button>
                   <div className="text-xs text-muted-foreground ml-2">
-                    Tip: Speed up for smoother animations
+                    Current: {speedMultiplier}x
                   </div>
                 </div>
               </div>
               
-              {selectedIndices.size > 30 && quality > 10 && (
+              {/* Scale Mode */}
+              <div className="space-y-2">
+                <Label className="text-xs">Scale Mode</Label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={scaleMode === 'fit' ? 'default' : 'outline'}
+                    onClick={() => setScaleMode('fit')}
+                    className="flex-1"
+                    title="Maintains aspect ratio, may have white bars"
+                  >
+                    Fit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={scaleMode === 'fill' ? 'default' : 'outline'}
+                    onClick={() => setScaleMode('fill')}
+                    className="flex-1"
+                    title="Crops to fill, no white bars"
+                  >
+                    Fill
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={scaleMode === 'stretch' ? 'default' : 'outline'}
+                    onClick={() => setScaleMode('stretch')}
+                    className="flex-1"
+                    title="Stretches to fill, may distort"
+                  >
+                    Stretch
+                  </Button>
+                </div>
+              </div>
+              
+              {selectedIndices.size > 0 && (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    With {selectedIndices.size} frames, consider lowering quality to keep file size under 128KB
+                    Output will be automatically optimized to meet Slack's 128KB limit
                   </AlertDescription>
                 </Alert>
               )}
@@ -815,8 +1127,9 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
           </Button>
           <Button 
             onClick={() => exportGif()} 
-            disabled={selectedIndices.size === 0 || isExporting || isLoading}
+            disabled={selectedIndices.size === 0 || isExporting || isLoading || !allFramesLoaded}
             className="gap-2"
+            variant="default"
           >
             {isExporting ? (
               <>
@@ -825,7 +1138,7 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
               </>
             ) : (
               <>
-                <Film className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" />
                 Create Emoji ({selectedIndices.size} frames)
               </>
             )}

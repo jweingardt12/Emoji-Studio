@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { initializeExtensionListener, type SlackAuthData, validateSlackAuthData } from "@/lib/chrome-extension"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useOpenPanel } from '@openpanel/nextjs'
+import { LoadingOverlay } from "@/components/loading-overlay"
 
 export function ChromeExtensionOption() {
   const router = useRouter()
@@ -16,6 +17,9 @@ export function ChromeExtensionOption() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const [loadingStage, setLoadingStage] = useState("")
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false)
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const op = useOpenPanel()
   const isConnectingRef = useRef(false)
@@ -113,11 +117,18 @@ export function ChromeExtensionOption() {
     try {
       const workspace = data.workspace || 'slack-workspace'
       
+      // Show loading overlay
+      setShowLoadingOverlay(true)
+      setLoadingProgress(10)
+      setLoadingStage('Connecting to Slack workspace...')
+      
       // Store the auth data
       localStorage.setItem("workspace", workspace)
       setWorkspace(workspace)
 
       setSuccess('Data received from Chrome extension! Processing...')
+      setLoadingProgress(20)
+      setLoadingStage('Authenticating with Slack...')
       
       // Generate curl command from extension data for API compatibility
       const curlFromExtension = generateCurlFromExtensionData(data)
@@ -136,6 +147,9 @@ export function ChromeExtensionOption() {
         },
       }
       
+      setLoadingProgress(40)
+      setLoadingStage('Fetching emoji data from Slack...')
+      
       const response = await fetch("/api/slack-emojis", {
         method: "POST",
         headers: {
@@ -149,11 +163,17 @@ export function ChromeExtensionOption() {
         throw new Error(errorData.error || "Failed to fetch emoji data")
       }
 
+      setLoadingProgress(60)
+      setLoadingStage('Processing emoji data...')
+
       const responseData = await response.json()
       
       if (!responseData.emojis || !Array.isArray(responseData.emojis)) {
         throw new Error("Invalid emoji data format")
       }
+
+      setLoadingProgress(80)
+      setLoadingStage('Saving emojis locally...')
 
       setEmojiData(responseData.emojis)
       setHasRealData(true)
@@ -169,13 +189,16 @@ export function ChromeExtensionOption() {
         workspace: workspace,
       })
 
+      setLoadingProgress(100)
+      setLoadingStage('')
       setSuccess(`Successfully fetched ${responseData.emojis.length} emojis from ${workspace}`)
       setIsConnecting(false)
       isConnectingRef.current = false
 
-      // Redirect to dashboard after success
+      // Show success state briefly before starting fade out
       setTimeout(() => {
-        router.push('/dashboard')
+        // Start fade out by setting isOpen to false
+        setShowLoadingOverlay(false)
       }, 1500)
 
     } catch (err) {
@@ -183,6 +206,7 @@ export function ChromeExtensionOption() {
       setError(err instanceof Error ? err.message : "Failed to process extension data")
       setIsConnecting(false)
       isConnectingRef.current = false
+      setShowLoadingOverlay(false)
     }
   }
 
@@ -236,76 +260,83 @@ export function ChromeExtensionOption() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <ChromeIcon className="h-5 w-5 text-blue-500" />
-          Chrome Extension (Recommended)
-        </CardTitle>
-        <CardDescription>
-          The easiest way to connect your Slack workspace. Install the Chrome extension for one-click authentication.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!isExtensionInstalled ? (
-          <div className="space-y-4">
-            <Button
-              onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa?utm_source=item-share-cb', '_blank')}
-              className="w-full"
-              size="lg"
-            >
-              <DownloadIcon className="h-4 w-4 mr-2" />
-              Download Chrome Extension
-            </Button>
-            
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">How to install:</h4>
-              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-                <li>Download and unzip the extension file</li>
-                <li>Open Chrome and go to <code className="text-xs bg-muted px-1 py-0.5 rounded">chrome://extensions</code></li>
-                <li>Enable "Developer mode" in the top right</li>
-                <li>Click "Load unpacked" and select the unzipped folder</li>
-                <li>The extension will appear in your toolbar</li>
-              </ol>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ChromeIcon className="h-5 w-5 text-blue-500" />
+            Chrome Extension (Recommended)
+          </CardTitle>
+          <CardDescription>
+            The easiest way to connect your Slack workspace. Install the Chrome extension for one-click authentication.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!isExtensionInstalled ? (
+            <div className="space-y-4">
+              <Button
+                onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa', '_blank')}
+                className="w-full"
+                size="lg"
+              >
+                <DownloadIcon className="h-4 w-4 mr-2" />
+                Get Chrome Extension
+              </Button>
+              
+              <p className="text-sm text-muted-foreground text-center">
+                Click the button above to install from the Chrome Web Store
+              </p>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Alert>
-              <CheckCircleIcon className="h-4 w-4" />
-              <AlertTitle>Extension Detected</AlertTitle>
-              <AlertDescription>
-                Chrome extension is installed and ready to connect to your Slack workspace.
-              </AlertDescription>
+          ) : (
+            <div className="space-y-3">
+              <Alert>
+                <CheckCircleIcon className="h-4 w-4" />
+                <AlertTitle>Extension Detected</AlertTitle>
+                <AlertDescription>
+                  Chrome extension is installed and ready to connect to your Slack workspace.
+                </AlertDescription>
+              </Alert>
+              
+              <Button
+                onClick={handleConnectWithExtension}
+                disabled={isConnecting}
+                className="w-full"
+                size="lg"
+              >
+                {isConnecting ? "Connecting..." : "Connect with Extension"}
+              </Button>
+            </div>
+          )}
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircleIcon className="h-4 w-4" />
+              <AlertTitle>Connection Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
-            
-            <Button
-              onClick={handleConnectWithExtension}
-              disabled={isConnecting}
-              className="w-full"
-              size="lg"
-            >
-              {isConnecting ? "Connecting..." : "Connect with Extension"}
-            </Button>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon className="h-4 w-4" />
-            <AlertTitle>Connection Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
-            <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <AlertTitle>Success!</AlertTitle>
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+          {success && !showLoadingOverlay && (
+            <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
+              <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertTitle>Success!</AlertTitle>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+      
+      <LoadingOverlay
+        isOpen={showLoadingOverlay}
+        progress={loadingProgress}
+        loadingStage={loadingStage}
+        isSuccess={loadingProgress === 100}
+        onTransitionComplete={() => {
+          if (loadingProgress === 100) {
+            router.push('/dashboard')
+          }
+        }}
+      />
+    </>
   )
 }
