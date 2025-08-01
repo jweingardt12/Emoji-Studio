@@ -21,7 +21,7 @@ interface GifFrameEditorProps {
   file: File
   isOpen: boolean
   onClose: () => void
-  onExport: (blob: Blob, selectedFrames: number[]) => void
+  onExport: (blob: Blob, selectedFrames: number[], speedMultiplier: number) => void
 }
 
 type FrameData = ExtractedFrame | VideoFrame
@@ -400,7 +400,7 @@ export function GifFrameEditorSimple({ file, isOpen, onClose, onExport }: GifFra
       }
       
       if (outputBlob) {
-        onExport(outputBlob, selectedIndices)
+        onExport(outputBlob, selectedIndices, speedMultiplier)
         onClose()
       } else {
         throw new Error('Failed to create GIF')
@@ -625,7 +625,7 @@ export function GifFrameEditorSimple({ file, isOpen, onClose, onExport }: GifFra
               {/* Speed */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Playback Speed</span>
+                  <span>GIF Speed</span>
                   <span className="text-muted-foreground">{speedMultiplier}x</span>
                 </div>
                 <Slider

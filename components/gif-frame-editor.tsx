@@ -35,7 +35,7 @@ interface GifFrameEditorProps {
   file: File
   isOpen: boolean
   onClose: () => void
-  onExport: (blob: Blob, selectedFrames: number[]) => void
+  onExport: (blob: Blob, selectedFrames: number[], speedMultiplier: number) => void
 }
 
 interface FrameSelection {
@@ -499,7 +499,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
         const selectedIndices = frameSelections
           .map((sel, idx) => sel.selected ? idx : -1)
           .filter(idx => idx !== -1)
-        onExport(blob, selectedIndices)
+        onExport(blob, selectedIndices, speedMultiplier)
         onClose()
       })
       

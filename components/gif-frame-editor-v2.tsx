@@ -33,7 +33,7 @@ interface GifFrameEditorProps {
   file: File
   isOpen: boolean
   onClose: () => void
-  onExport: (blob: Blob, selectedFrames: number[]) => void
+  onExport: (blob: Blob, selectedFrames: number[], speedMultiplier: number) => void
 }
 
 type FrameData = ExtractedFrame | VideoFrame
@@ -606,7 +606,7 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
       
       // Pass only the valid indices that were actually used
       const validIndices = sortedIndices.filter(i => i >= 0 && i < frames.length && frames[i])
-      onExport(outputBlob, validIndices)
+      onExport(outputBlob, validIndices, speedMultiplier)
       onClose()
     } catch (error) {
       console.error('Failed to export GIF:', error)

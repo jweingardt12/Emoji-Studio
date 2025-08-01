@@ -13,6 +13,7 @@ export interface ProcessedEmoji {
   blob: string // Data URL for the processed blob
   wasVideo?: boolean
   processingNote?: string
+  speedMultiplier?: number // For GIFs, stores the speed setting used during processing
 }
 
 export class EmojiProcessor {

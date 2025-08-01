@@ -52,15 +52,17 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
       <div className="absolute inset-0 bg-background" />
       
       {/* Simplified WarpBackground - now with more beams and faster animation */}
-      <WarpBackgroundSimple 
-        className="absolute inset-0"
-        beamsPerSide={12}
-        beamDelayMax={6}
-        beamDelayMin={0}
-        beamDuration={8}
-      >
-        <div className="absolute inset-0" />
-      </WarpBackgroundSimple>
+      <div className="absolute inset-0 overflow-hidden">
+        <WarpBackgroundSimple 
+          className="absolute inset-0"
+          beamsPerSide={12}
+          beamDelayMax={6}
+          beamDelayMin={0}
+          beamDuration={8}
+        >
+          <div className="absolute inset-0" />
+        </WarpBackgroundSimple>
+      </div>
       
       {/* Content overlay */}
       <div className="relative z-10 flex h-full w-full items-center justify-center">

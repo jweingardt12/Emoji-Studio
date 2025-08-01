@@ -41,8 +41,8 @@ const Beam = ({
             background: `linear-gradient(to bottom, transparent, ${color}, transparent)`,
             boxShadow: `0 0 20px ${color}`,
           },
-          initial: { y: '-100vh' },
-          animate: { y: '100vh' },
+          initial: { y: '-120vh' }, // Start further off-screen
+          animate: { y: '120vh' }, // End further off-screen
         };
       case 'bottom':
         return {
@@ -53,8 +53,8 @@ const Beam = ({
             background: `linear-gradient(to bottom, transparent, ${color}, transparent)`,
             boxShadow: `0 0 20px ${color}`,
           },
-          initial: { y: '100vh' },
-          animate: { y: '-100vh' },
+          initial: { y: '120vh' }, // Start further off-screen
+          animate: { y: '-120vh' }, // End further off-screen
         };
       case 'left':
         return {
@@ -65,8 +65,8 @@ const Beam = ({
             background: `linear-gradient(to right, transparent, ${color}, transparent)`,
             boxShadow: `0 0 20px ${color}`,
           },
-          initial: { x: '-100vw' },
-          animate: { x: '100vw' },
+          initial: { x: '-120vw' }, // Start further off-screen
+          animate: { x: '120vw' }, // End further off-screen
         };
       case 'right':
         return {
@@ -77,8 +77,8 @@ const Beam = ({
             background: `linear-gradient(to right, transparent, ${color}, transparent)`,
             boxShadow: `0 0 20px ${color}`,
           },
-          initial: { x: '100vw' },
-          animate: { x: '-100vw' },
+          initial: { x: '120vw' }, // Start further off-screen
+          animate: { x: '-120vw' }, // End further off-screen
         };
     }
   };

@@ -720,7 +720,7 @@ function EmojiCreatorPage() {
     }
   }
   
-  const handleGifExport = async (blob: Blob, selectedFrames: number[]) => {
+  const handleGifExport = async (blob: Blob, selectedFrames: number[], speedMultiplier: number) => {
     if (!gifToEdit) return
     
     // Create a processed emoji from the exported GIF
@@ -735,8 +735,9 @@ function EmojiCreatorPage() {
       format: 'GIF',
       preview: URL.createObjectURL(blob),
       blob: await blobToDataURL(blob),
-      processingNote: `Selected ${selectedFrames.length} frames`,
-      wasVideo: gifToEdit.type.startsWith('video/')
+      processingNote: `Selected ${selectedFrames.length} frames at ${speedMultiplier}x speed`,
+      wasVideo: gifToEdit.type.startsWith('video/'),
+      speedMultiplier: speedMultiplier
     }
     
     // Close the frame editor
@@ -777,7 +778,8 @@ function EmojiCreatorPage() {
       processedSize: blob.size,
       selectedFrames: selectedFrames.length,
       fileName: fileName,
-      isVideo: gifToEdit.type.startsWith('video/')
+      isVideo: gifToEdit.type.startsWith('video/'),
+      speedMultiplier: speedMultiplier
     })
   }
   
