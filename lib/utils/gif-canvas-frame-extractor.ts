@@ -31,10 +31,9 @@ export class GifCanvasFrameExtractor {
     const frameDelays: number[] = []
     for (let i = 0; i < reader.numFrames(); i++) {
       const frameInfo = reader.frameInfo(i)
-      // Speed up by 5x - minimum 20ms per frame
-      const originalDelay = frameInfo.delay * 10 || 100
-      const speedUpDelay = Math.max(20, Math.floor(originalDelay / 5))
-      frameDelays.push(speedUpDelay)
+      // Convert centiseconds to milliseconds (no speed change)
+      const delayMs = frameInfo.delay * 10 || 100
+      frameDelays.push(delayMs)
     }
     
     // For single-frame GIFs, just render once

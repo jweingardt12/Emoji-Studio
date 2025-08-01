@@ -173,123 +173,17 @@ export function ChromeExtensionHandler() {
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
       
-      setLoadingStage(`Success! Loaded ${typedEmojis.length} emojis`)
+      setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 800))
       
-      setSuccess(`Successfully fetched ${typedEmojis.length} emojis from ${workspace}`)
+      setSuccess(`Successfully synced emojis from ${workspace}`)
       
-      // Show success state while keeping overlay visible
+      // Show success state
       setShowSuccess(true)
       
-      // Keep overlay visible during confetti
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      
-      // Create custom logo confetti
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-      canvas.style.position = 'fixed'
-      canvas.style.top = '0'
-      canvas.style.left = '0'
-      canvas.style.pointerEvents = 'none'
-      canvas.style.zIndex = '9999'
-      document.body.appendChild(canvas)
-      
-      // Load logo image
-      const logoImg = new Image()
-      logoImg.src = '/logo.png'
-      await new Promise((resolve) => {
-        logoImg.onload = resolve
-        logoImg.onerror = resolve
-      })
-      
-      // Particle system for logo confetti
-      interface LogoParticle {
-        x: number
-        y: number
-        vx: number
-        vy: number
-        size: number
-        rotation: number
-        rotationSpeed: number
-        opacity: number
-      }
-      
-      const particles: LogoParticle[] = []
-      
-      // Create particles from multiple origins
-      const createBurst = (originX: number, originY: number, count: number) => {
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 * Math.random())
-          const velocity = 2 + Math.random() * 6 // Much slower velocity
-          particles.push({
-            x: originX * canvas.width,
-            y: originY * canvas.height,
-            vx: Math.cos(angle) * velocity,
-            vy: Math.sin(angle) * velocity - 5, // Less upward force
-            size: 80 + Math.random() * 60, // Larger logos 80-140px
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.05, // Slower rotation
-            opacity: 1
-          })
-        }
-      }
-      
-      // Create multiple bursts
-      createBurst(0.5, 0.7, 15)  // Center
-      createBurst(0.2, 0.7, 8)   // Left
-      createBurst(0.8, 0.7, 8)   // Right
-      
-      let startTime = Date.now()
-      const duration = 4000 // 4 seconds
-      
-      const animate = () => {
-        if (!ctx) return
-        
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        
-        particles.forEach(particle => {
-          // Update physics (slower)
-          particle.x += particle.vx * 0.6
-          particle.y += particle.vy * 0.6
-          particle.vy += 0.2 // Lighter gravity
-          particle.vx *= 0.995 // Less air resistance
-          particle.rotation += particle.rotationSpeed
-          particle.opacity = 1 - (progress * progress) * 0.9 // Slower fade out with easing
-          
-          // Draw logo
-          if (particle.opacity > 0) {
-            ctx.save()
-            ctx.globalAlpha = particle.opacity
-            ctx.translate(particle.x, particle.y)
-            ctx.rotate(particle.rotation)
-            ctx.drawImage(
-              logoImg,
-              -particle.size / 2,
-              -particle.size / 2,
-              particle.size,
-              particle.size
-            )
-            ctx.restore()
-          }
-        })
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          document.body.removeChild(canvas)
-        }
-      }
-      
-      requestAnimationFrame(animate)
-      
-      // Wait for confetti animation to complete
-      await new Promise((resolve) => setTimeout(resolve, 4000))
+      // Wait briefly to show success message
+      await new Promise((resolve) => setTimeout(resolve, 1500))
       
       // Hide overlay
       setIsLoading(false)

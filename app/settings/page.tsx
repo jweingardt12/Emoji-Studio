@@ -5,7 +5,7 @@ import { ChromeExtensionOption } from "@/components/chrome-extension-option"
 import { ClearLocalStorageButton } from "@/components/clear-local-storage-button"
 import { FetchStatsDisplay } from "@/components/fetch-stats-display"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SettingsIcon, Zap, ChevronDown, ChevronUp, Terminal } from "lucide-react"
+import { SettingsIcon, Zap, ChevronDown, ChevronUp, Terminal, Sparkles } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,48 @@ import { toast } from "sonner"
 import { openpanel } from "@/lib/safe-openpanel"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
+import { hasSlackConnection } from "@/lib/utils/slack-upload"
+import { ChromeIcon } from "@/components/icons/chrome-icon"
+import Marquee from "@/components/ui/marquee"
+import { cn } from "@/lib/utils"
+
+// Sample emoji tiles for the background
+const emojiTiles = [
+  { name: "party", src: "🎉" },
+  { name: "fire", src: "🔥" },
+  { name: "rocket", src: "🚀" },
+  { name: "heart", src: "❤️" },
+  { name: "star", src: "⭐" },
+  { name: "smile", src: "😊" },
+  { name: "laugh", src: "😂" },
+  { name: "cool", src: "😎" },
+  { name: "thinking", src: "🤔" },
+  { name: "celebrate", src: "🎊" },
+  { name: "rainbow", src: "🌈" },
+  { name: "pizza", src: "🍕" },
+  { name: "coffee", src: "☕" },
+  { name: "thumbsup", src: "👍" },
+  { name: "clap", src: "👏" },
+  { name: "muscle", src: "💪" },
+  { name: "sparkles", src: "✨" },
+  { name: "money", src: "💰" },
+  { name: "gift", src: "🎁" },
+  { name: "trophy", src: "🏆" },
+];
+
+const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
+  return (
+    <div
+      className={cn(
+        "relative size-16 cursor-pointer overflow-hidden rounded-xl border p-3",
+        "bg-white/40 backdrop-blur-[1px] [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+        "transform-gpu dark:bg-white/10 dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]"
+      )}
+    >
+      <span className="text-2xl">{emoji.src}</span>
+    </div>
+  );
+};
 
 export default function SettingsPage() {
   const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(() => {
@@ -24,9 +66,26 @@ export default function SettingsPage() {
   })
   
   const [isManualSetupOpen, setIsManualSetupOpen] = useState(false)
+  const [hasSlack, setHasSlack] = useState(false)
 
   const hasMountedRef = useRef(false);
   const previousThresholdRef = useRef(inactivityThresholdMonths);
+  
+  // Check for Slack connection
+  useEffect(() => {
+    setHasSlack(hasSlackConnection())
+    
+    // Listen for emoji data updates to refresh connection status
+    const handleEmojiDataUpdate = () => {
+      setHasSlack(hasSlackConnection())
+    }
+    
+    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdate)
+    
+    return () => {
+      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdate)
+    }
+  }, [])
   
   // Initialize the extension listener on the settings page
   useEffect(() => {
@@ -79,53 +138,147 @@ export default function SettingsPage() {
 
           {/* Main content grid */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6">
-            {/* Chrome Extension - Primary Method */}
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  Connect Your Slack Workspace
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Connect to your Slack workspace to fetch and manage your custom emojis.
-                </p>
-              </div>
-              
-              <ChromeExtensionOption />
-            </div>
+            {!hasSlack ? (
+              <>
+                {/* Chrome Extension Hero Section - Shown when not connected */}
+                <div className="relative overflow-hidden rounded-xl">
+                  {/* Scrolling emoji background */}
+                  <div className="absolute inset-0 flex w-full flex-col items-center justify-center overflow-hidden">
+                    <Marquee
+                      pauseOnHover
+                      className="[--duration:20s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <Marquee
+                      reverse
+                      pauseOnHover
+                      className="[--duration:30s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(10, 20).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <Marquee
+                      pauseOnHover
+                      className="[--duration:25s]"
+                      repeat={3}
+                    >
+                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                        <EmojiCard key={idx} emoji={emoji} />
+                      ))}
+                    </Marquee>
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                  </div>
 
-            {/* Manual Setup - Collapsible Alternative */}
-            <Card>
-              <CardHeader className="pb-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
-                  className="flex w-full items-center justify-between p-0 text-left hover:bg-transparent"
-                >
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <CardTitle className="text-sm font-medium">Manual Setup (Advanced)</CardTitle>
-                      <CardDescription className="text-xs mt-0.5">
-                        Use browser developer tools to manually copy authentication data
-                      </CardDescription>
+                  {/* Content */}
+                  <div className="relative px-6 py-16 sm:px-10 sm:py-24 lg:py-32 backdrop-blur-[2px]">
+                    <div className="mx-auto max-w-2xl text-center">
+                      <div className="mb-6 inline-flex items-center rounded-full bg-blue-500/10 backdrop-blur-sm px-3 py-1 text-sm">
+                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                        <span className="font-medium text-blue-600 dark:text-blue-400">Recommended!</span>
+                      </div>
+                      
+                      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        Connect Your Slack Workspace
+                      </h2>
+                      
+                      <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-8">
+                        Get the Chrome extension for one-click authentication. Import, manage, and analyze all your Slack emojis instantly.
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <Button
+                          size="lg"
+                          className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
+                          asChild
+                        >
+                          <a 
+                            href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2"
+                          >
+                            <ChromeIcon className="h-5 w-5 text-blue-500" />
+                            Get Chrome Extension
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  {isManualSetupOpen ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </CardHeader>
-              <Collapsible open={isManualSetupOpen}>
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
+                </div>
+
+                {/* Manual Setup - Collapsible Alternative */}
+                <Card className="border-muted/50">
+                  <CardHeader className="pb-3">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
+                      className="flex w-full items-center justify-between p-0 text-left hover:bg-transparent"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <CardTitle className="text-sm font-medium">Manual Setup (Advanced)</CardTitle>
+                          <CardDescription className="text-xs mt-0.5">
+                            Use browser developer tools to manually copy authentication data
+                          </CardDescription>
+                        </div>
+                      </div>
+                      {isManualSetupOpen ? (
+                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </CardHeader>
+                  <Collapsible open={isManualSetupOpen}>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        <SlackCurlInput />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              </>
+            ) : (
+              <>
+                {/* When connected, show the regular connection options */}
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-primary" />
+                      Slack Workspace Connection
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your Slack workspace is connected. You can update your connection or use manual setup.
+                    </p>
+                  </div>
+                  
+                  <ChromeExtensionOption />
+                </div>
+
+                {/* Manual Setup - Always visible when connected */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Terminal className="h-4 w-4 text-muted-foreground" />
+                      Manual Setup
+                    </CardTitle>
+                    <CardDescription>
+                      Alternative method using browser developer tools
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
                     <SlackCurlInput />
                   </CardContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </Card>
+                </Card>
+              </>
+            )}
 
             {/* Leaderboard Settings Card */}
             <Card>

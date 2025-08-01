@@ -207,8 +207,8 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       
       // Calculate delay
       const frame = frames[frameIndex]
-      // GIF delays are in centiseconds (1/100 second), convert to milliseconds
-      const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay * 10 : 100)
+      // frame.delay is already in milliseconds
+      const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
       const targetDelay = Math.max(20, baseDelay / speedMultiplier)
       
       animationIntervalRef.current = window.setTimeout(animate, targetDelay)
@@ -340,8 +340,8 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
             ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
           }
           
-          // GIF encoder expects delay in milliseconds
-          const delay = isVideo ? 100 : ('delay' in frame ? frame.delay * 10 : 100)
+          // GIF encoder expects delay in milliseconds (frame.delay is already in ms)
+          const delay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
           gif.addFrame(ctx, {
             delay: Math.round(delay / speedMultiplier),
             dispose: 1

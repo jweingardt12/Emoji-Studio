@@ -191,7 +191,7 @@ export function ChromeExtensionOption() {
 
       setLoadingProgress(100)
       setLoadingStage('')
-      setSuccess(`Successfully fetched ${responseData.emojis.length} emojis from ${workspace}`)
+      setSuccess(`Successfully synced emojis from ${workspace}`)
       setIsConnecting(false)
       isConnectingRef.current = false
 

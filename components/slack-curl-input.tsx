@@ -214,11 +214,11 @@ export function SlackCurlInput() {
       // Fire event to notify other components that emoji data has been updated
       window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
-      setLoadingStage(`Demo data loaded! (${demoData.length} emojis)`)
+      setLoadingStage(`Demo data loaded!`)
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 800))
 
-      setSuccess(`Successfully loaded ${demoData.length} emojis in demo mode`)
+      setSuccess(`Successfully loaded demo emojis`)
       setShowSuccessState(true)
       setLoadingStage("")
 
@@ -361,11 +361,11 @@ export function SlackCurlInput() {
       // Fire event to notify other components that emoji data has been updated
       window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
-      setLoadingStage(`Success! Loaded ${typedEmojis.length} emojis`)
+      setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 800))
 
-      setSuccess(`Successfully fetched ${typedEmojis.length} emojis from ${workspace}`)
+      setSuccess(`Successfully synced emojis from ${workspace}`)
       setShowSuccessState(true)
       setLoadingStage("")
 

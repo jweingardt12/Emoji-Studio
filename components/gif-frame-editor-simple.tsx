@@ -367,6 +367,7 @@ export function GifFrameEditorSimple({ file, isOpen, onClose, onExport }: GifFra
             ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
           }
           
+          // GIF encoder expects delay in milliseconds (frame.delay is already in ms)
           const delay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
           gif.addFrame(ctx, {
             delay: Math.round(delay / speedMultiplier),
