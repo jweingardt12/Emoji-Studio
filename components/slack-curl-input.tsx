@@ -35,7 +35,7 @@ export function SlackCurlInput() {
   const [isMasked, setIsMasked] = useState(false);
   const [loadingStage, setLoadingStage] = useState("");
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
-  const [redirectPending, setRedirectPending] = useState(false);
+  const [showSuccessState, setShowSuccessState] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const op = useOpenPanel();
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -70,12 +70,6 @@ export function SlackCurlInput() {
     });
   }, [])
 
-  useEffect(() => {
-    if (redirectPending) {
-      router.push('/dashboard');
-      setRedirectPending(false);
-    }
-  }, [redirectPending, router]);
 
   const extractWorkspaceName = (curl: string): string => {
     const workspaceUrlMatch = curl.match(/https?:\/\/([^.]+)\.slack\.com/)
@@ -225,16 +219,23 @@ export function SlackCurlInput() {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       setSuccess(`Successfully loaded ${demoData.length} emojis in demo mode`)
-      setIsLoading(false)
+      setShowSuccessState(true)
       setLoadingStage("")
-      setProgress(0)
 
       op.track('demo_mode_loaded', {
         emojiCount: demoData.length,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setRedirectPending(true)
+      // Show success state for a moment
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      
+      // Start fade out and redirect
+      setIsLoading(false)
+      
+      // Redirect after a short delay to ensure smooth transition
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 600)
     } catch (err) {
       console.error("Error loading demo data:", err)
       setError(err instanceof Error ? err.message : "Unknown error occurred")
@@ -299,6 +300,7 @@ export function SlackCurlInput() {
         },
         formData: {
           token: parsedData.token || "",
+          count: "20000", // Ensure we get all emojis, not just first 1000
         },
       }
       
@@ -364,9 +366,8 @@ export function SlackCurlInput() {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       setSuccess(`Successfully fetched ${typedEmojis.length} emojis from ${workspace}`)
-      setIsLoading(false)
+      setShowSuccessState(true)
       setLoadingStage("")
-      setProgress(0)
 
       op.track('slack_emojis_fetched', {
         emojiCount: typedEmojis.length,
@@ -374,8 +375,16 @@ export function SlackCurlInput() {
         hasAliases: data.emojis.some((e: any) => e.is_alias),
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setRedirectPending(true)
+      // Show success state for a moment
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      
+      // Start fade out and redirect
+      setIsLoading(false)
+      
+      // Redirect after a short delay to ensure smooth transition
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 600)
     } catch (err) {
       console.error("Error fetching emoji data:", err)
       console.error("Full error details:", err)
@@ -562,9 +571,10 @@ export function SlackCurlInput() {
       </div>
 
       <LoadingOverlay
-        isOpen={isLoading}
+        isOpen={isLoading || showSuccessState}
         progress={progress}
         loadingStage={loadingStage}
+        isSuccess={progress === 100}
       />
     </>
   )

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload
 import { toast } from "sonner"
 import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
+import { ChromeIcon } from "@/components/icons/chrome-icon"
 
 interface ProcessingStep {
   id: string
@@ -33,6 +34,8 @@ interface EmojiProcessingModalProps {
   onDownload: (emoji: ProcessedEmoji) => void
   onDownloadAll: () => void
   onUpdateName?: (index: number, newName: string) => void
+  onEdit?: (emoji: ProcessedEmoji, index: number) => void
+  onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
 }
 
 export function EmojiProcessingModal({
@@ -45,7 +48,9 @@ export function EmojiProcessingModal({
   onClose,
   onDownload,
   onDownloadAll,
-  onUpdateName
+  onUpdateName,
+  onEdit,
+  onEditGifFrames
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -428,6 +433,28 @@ export function EmojiProcessingModal({
                         </>
                       )}
                     </div>
+                    {onEdit && emoji.format !== 'GIF' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => onEdit(emoji, index)}
+                        title="Edit emoji"
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    {onEditGifFrames && emoji.format === 'GIF' && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 flex-shrink-0"
+                        onClick={() => onEditGifFrames(emoji, index)}
+                        title="Edit GIF frames"
+                      >
+                        <Sliders className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -436,7 +463,30 @@ export function EmojiProcessingModal({
                 {processedEmojis.length === 1 ? (
                   <div className="space-y-3">
                     <div className="flex gap-2">
+                      {onEdit && processedEmojis[0].format !== 'GIF' && (
+                        <Button 
+                          size="sm"
+                          className="flex-1" 
+                          onClick={() => onEdit(processedEmojis[0], 0)}
+                          variant="outline"
+                        >
+                          <Sliders className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      )}
+                      {onEditGifFrames && processedEmojis[0].format === 'GIF' && (
+                        <Button 
+                          size="sm"
+                          className="flex-1" 
+                          onClick={() => onEditGifFrames(processedEmojis[0], 0)}
+                          variant="outline"
+                        >
+                          <Sliders className="mr-2 h-4 w-4" />
+                          Edit Frames
+                        </Button>
+                      )}
                       <Button 
+                        size="sm"
                         className="flex-1" 
                         onClick={() => onDownload(processedEmojis[0])}
                         variant="outline"
@@ -445,6 +495,7 @@ export function EmojiProcessingModal({
                         Download
                       </Button>
                       <Button 
+                        size="sm"
                         className="flex-1" 
                         onClick={() => hasSlack ? handleSlackUpload(processedEmojis[0], 0) : undefined}
                         disabled={!hasSlack || uploadingIndex !== null}
@@ -466,6 +517,7 @@ export function EmojiProcessingModal({
                 ) : (
                   <div className="flex gap-2">
                     <Button 
+                      size="sm"
                       className="flex-1" 
                       onClick={onDownloadAll}
                       variant="outline"
@@ -474,7 +526,8 @@ export function EmojiProcessingModal({
                       Download All ({processedEmojis.length})
                     </Button>
                     <Button 
-                      className="flex-1" 
+                      size="sm"
+                      className="flex-1"
                       onClick={async () => {
                         if (hasSlack) {
                           setUploadingAll(true)
@@ -571,13 +624,20 @@ export function EmojiProcessingModal({
                   </div>
                 )}
                 {!hasSlack && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Want to send this directly to Slack? Head to{" "}
-                    <Link href="/settings" className="underline hover:text-foreground">
-                      Settings
-                    </Link>{" "}
-                    and enter your Workspace details.
-                  </p>
+                  <div className="space-y-3 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Want to send emojis directly to Slack? Install our Chrome extension to easily import emojis from any website!
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa', '_blank')}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <ChromeIcon className="h-4 w-4 text-blue-500" />
+                      Get Chrome Extension
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

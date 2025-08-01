@@ -13,12 +13,16 @@ export interface ProcessedEmoji {
   blob: string // Data URL for the processed blob
   wasVideo?: boolean
   processingNote?: string
+  speedMultiplier?: number // For GIFs, stores the speed setting used during processing
 }
 
 export class EmojiProcessor {
   static readonly TARGET_SIZE = 128
   static readonly MAX_FILE_SIZE = 128 * 1024 // 128KB
   static readonly MAX_GIF_FRAMES = 50
+  
+  // Option to preserve original quality (can be set via UI)
+  static preserveOriginalQuality = false
 
   private static async blobToDataURL(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -29,7 +33,151 @@ export class EmojiProcessor {
     })
   }
 
-  static async processFile(file: File): Promise<ProcessedEmoji> {
+  private static async isHDRImage(file: File): Promise<boolean> {
+    // Check file extension for known HDR formats
+    const extension = file.name.toLowerCase().split('.').pop()
+    const hdrExtensions = ['heic', 'heif', 'avif', 'jxl', 'exr', 'hdr']
+    if (hdrExtensions.includes(extension || '')) {
+      return true
+    }
+    
+    // Check file type
+    const hdrTypes = ['image/heic', 'image/heif', 'image/avif', 'image/jxl']
+    if (hdrTypes.includes(file.type.toLowerCase())) {
+      return true
+    }
+    
+    // Check if filename contains HDR indicators
+    const nameLower = file.name.toLowerCase()
+    if (nameLower.includes('hdr') || nameLower.includes('_hdr')) {
+      return true
+    }
+    
+    // Check if the file object has HDR metadata (from extension)
+    if ((file as any).isHDR) {
+      return true
+    }
+    
+    // For PNG files, check for HDR metadata in the file content
+    if (file.type === 'image/png' || extension === 'png') {
+      try {
+        // Read first part of the file to check for HDR chunks
+        const arrayBuffer = await file.slice(0, 1024).arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        
+        // Look for PNG chunks that indicate HDR
+        // Check for iCCP (ICC Profile) chunk which might contain HDR color profile
+        const decoder = new TextDecoder('latin1')
+        const header = decoder.decode(uint8Array)
+        
+        // Common HDR indicators in PNG metadata
+        if (header.includes('iCCP') || 
+            header.includes('Display P3') || 
+            header.includes('Rec2020') ||
+            header.includes('HDR') ||
+            header.includes('sRGB') === false) { // Non-sRGB often means HDR
+          console.log('Detected potential HDR PNG based on metadata')
+          return true
+        }
+      } catch (error) {
+        console.warn('Error checking PNG for HDR metadata:', error)
+      }
+    }
+    
+    return false
+  }
+
+  private static async processHDRImage(file: File, name: string): Promise<ProcessedEmoji> {
+    // For HDR images, we want to preserve the original format and metadata
+    // We'll only resize if absolutely necessary for file size limits
+    
+    console.log(`Preserving quality for ${file.name} (size: ${file.size} bytes)`)
+    
+    // For PNG files that might contain HDR or wide gamut colors
+    if (file.type === 'image/png') {
+      // If the file is reasonably sized, preserve it as-is
+      if (file.size <= this.MAX_FILE_SIZE * 3) { // Allow up to 384KB for quality preservation
+        console.log(`PNG ${file.name} preserved at original quality`)
+        const preview = URL.createObjectURL(file)
+        const blobUrl = await this.blobToDataURL(file)
+        const dimensions = await this.getImageDimensions(file)
+        
+        return {
+          name,
+          originalFile: file,
+          processedBlob: file,
+          originalSize: file.size,
+          processedSize: file.size,
+          dimensions,
+          format: 'PNG',
+          preview,
+          blob: blobUrl,
+          processingNote: 'Original quality preserved'
+        }
+      }
+    }
+    
+    // If the file is already small enough, use it as-is
+    if (file.size <= this.MAX_FILE_SIZE) {
+      console.log(`Image ${file.name} is already within size limits, preserving original`)
+      const preview = URL.createObjectURL(file)
+      const blobUrl = await this.blobToDataURL(file)
+      
+      // Get dimensions without using canvas (which would lose HDR)
+      const dimensions = await this.getImageDimensions(file)
+      
+      return {
+        name,
+        originalFile: file,
+        processedBlob: file,
+        originalSize: file.size,
+        processedSize: file.size,
+        dimensions,
+        format: file.type.split('/')[1]?.toUpperCase() || 'PNG',
+        preview,
+        blob: blobUrl,
+        processingNote: 'Original quality preserved'
+      }
+    }
+    
+    // If the file is too large, we'll need to make a choice:
+    // Either preserve quality and exceed size limits, or convert and lose quality
+    console.warn(`Image ${file.name} exceeds size limit (${file.size} bytes). Preserving quality at original size.`)
+    
+    const preview = URL.createObjectURL(file)
+    const blobUrl = await this.blobToDataURL(file)
+    const dimensions = await this.getImageDimensions(file)
+    
+    return {
+      name,
+      originalFile: file,
+      processedBlob: file,
+      originalSize: file.size,
+      processedSize: file.size,
+      dimensions,
+      format: file.type.split('/')[1]?.toUpperCase() || 'PNG',
+      preview,
+      blob: blobUrl,
+      processingNote: `Quality preserved (${(file.size / 1024).toFixed(0)}KB)`
+    }
+  }
+
+  private static async getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        resolve({ width: img.width, height: img.height })
+      }
+      img.onerror = () => {
+        // If we can't load the image (e.g., HEIC not supported in browser),
+        // return target dimensions as fallback
+        resolve({ width: this.TARGET_SIZE, height: this.TARGET_SIZE })
+      }
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  static async processFile(file: File, options?: { preserveHDR?: boolean }): Promise<ProcessedEmoji> {
     const fileType = file.type
     // Remove extension and clean up the filename
     const fileName = file.name
@@ -39,13 +187,28 @@ export class EmojiProcessor {
       .replace(/[^a-z0-9-_]/g, '') // Remove special characters
       .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
 
+    // Check if this is an HDR image
+    const isHDR = await this.isHDRImage(file)
+    
+    // Also check if user wants to preserve quality based on filename
+    const shouldPreserveQuality = options?.preserveHDR || 
+                                 this.preserveOriginalQuality ||
+                                 file.name.toLowerCase().includes('hdr') ||
+                                 file.name.toLowerCase().includes('emoji') && file.size < this.MAX_FILE_SIZE * 2
+    
     // Check for GIF files by examining the file content, not just MIME type
     const isGif = await this.isGifFile(file)
+    const isAnimWebP = await this.isAnimatedWebP(file)
     
-    if (isGif) {
-      console.log(`Processing ${file.name} as GIF (detected by content)`)
+    if (isGif || isAnimWebP) {
+      console.log(`Processing ${file.name} as animated image (GIF: ${isGif}, Animated WebP: ${isAnimWebP})`)
       return this.processGif(file, fileName)
     } else if (fileType.startsWith('image/')) {
+      // Use different processing for HDR images or when quality preservation is requested
+      if (isHDR || shouldPreserveQuality) {
+        console.log(`Processing ${file.name} with quality preservation (HDR: ${isHDR})`)
+        return this.processHDRImage(file, fileName)
+      }
       return this.processImage(file, fileName)
     } else if (fileType.startsWith('video/')) {
       return this.processVideo(file, fileName)
@@ -272,6 +435,41 @@ export class EmojiProcessor {
              bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
     } catch (error) {
       console.error('Error checking if file is GIF:', error)
+      return false
+    }
+  }
+
+  private static async isAnimatedWebP(file: File): Promise<boolean> {
+    try {
+      // Check file extension
+      if (!file.name.toLowerCase().endsWith('.webp') && file.type !== 'image/webp') {
+        return false
+      }
+      
+      // Read WebP header to check for animation
+      const arrayBuffer = await file.slice(0, 100).arrayBuffer()
+      const bytes = new Uint8Array(arrayBuffer)
+      
+      // Check for RIFF header
+      if (bytes[0] !== 0x52 || bytes[1] !== 0x49 || bytes[2] !== 0x46 || bytes[3] !== 0x46) {
+        return false
+      }
+      
+      // Check for WEBP signature
+      if (bytes[8] !== 0x57 || bytes[9] !== 0x45 || bytes[10] !== 0x42 || bytes[11] !== 0x50) {
+        return false
+      }
+      
+      // Look for ANIM chunk which indicates animation
+      for (let i = 12; i < bytes.length - 4; i++) {
+        if (bytes[i] === 0x41 && bytes[i+1] === 0x4E && bytes[i+2] === 0x49 && bytes[i+3] === 0x4D) {
+          return true
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking if WebP is animated:', error)
       return false
     }
   }

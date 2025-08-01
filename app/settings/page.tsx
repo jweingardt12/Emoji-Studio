@@ -27,6 +27,15 @@ export default function SettingsPage() {
 
   const hasMountedRef = useRef(false);
   const previousThresholdRef = useRef(inactivityThresholdMonths);
+  
+  // Initialize the extension listener on the settings page
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // The ChromeExtensionOption component handles this, but we want to ensure
+      // the listener is always active when on settings page
+      console.log('[SettingsPage] Ensuring extension listener is active');
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

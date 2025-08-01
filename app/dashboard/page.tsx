@@ -26,9 +26,15 @@ function DashboardPage() {
   // Add client-side only rendering
   const [isClient, setIsClient] = useState(false)
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
+  const [pageVisible, setPageVisible] = useState(false)
   
   useEffect(() => {
     setIsClient(true)
+    // Trigger fade in animation after a short delay
+    const timer = setTimeout(() => {
+      setPageVisible(true)
+    }, 100)
+    return () => clearTimeout(timer)
     
     // Listen for emoji data updates to force re-render
     const handleEmojiDataUpdated = () => {
@@ -36,10 +42,44 @@ function DashboardPage() {
       setDataRefreshKey(prev => prev + 1);
     };
     
+    // Listen for Chrome extension messages to add emojis from Slackmojis
+    const handleExtensionMessage = async (event: MessageEvent) => {
+      if (event.data.type === 'EMOJI_STUDIO_ADD_EMOJI') {
+        console.log('[Dashboard] Received add emoji request from extension:', event.data);
+        
+        const emojiData = event.data.data;
+        if (!emojiData || !emojiData.url || !emojiData.name) {
+          console.error('[Dashboard] Invalid emoji data received:', emojiData);
+          return;
+        }
+        
+        try {
+          // Navigate to create page with the emoji data
+          const createUrl = new URL('/create', window.location.origin);
+          createUrl.searchParams.set('from', 'extension');
+          
+          // Store the emoji data temporarily so the create page can pick it up
+          window.sessionStorage.setItem('pendingEmojiFromSlackmojis', JSON.stringify({
+            imageUrl: emojiData.url,
+            originalUrl: emojiData.url,
+            name: emojiData.name,
+            source: 'slackmojis'
+          }));
+          
+          // Navigate to create page
+          window.location.href = createUrl.toString();
+        } catch (error) {
+          console.error('[Dashboard] Failed to process emoji from extension:', error);
+        }
+      }
+    };
+    
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+    window.addEventListener('message', handleExtensionMessage);
     
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
+      window.removeEventListener('message', handleExtensionMessage);
     };
   }, [])
   const { 
@@ -119,7 +159,9 @@ function DashboardPage() {
   if (!isClient) return null;
   
   return (
-    <div className="flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
+    <div className={`flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6 transition-all duration-700 ${
+      pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+    }`}>
       <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6"></div>
       {/* SectionCards with skeleton */}

@@ -10,8 +10,8 @@ export default function RootPage() {
     // Check if opened from extension
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('extension') === 'true') {
-      // Redirect to settings page with extension parameter
-      router.push("/settings?extension=true")
+      // Redirect to dashboard with extension parameter to show processing
+      router.push("/dashboard?extension=true")
     } else {
       router.push("/dashboard")
     }

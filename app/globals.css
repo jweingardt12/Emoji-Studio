@@ -21,10 +21,33 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Ensure main element has rounded corners */
   main {
     @apply rounded-xl;
+  }
+  
+  /* Animation delays for loading overlay */
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+  
+  /* Grid pattern background */
+  .bg-grid-pattern {
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  
+  /* Support for container queries if needed */
+  @supports (container-type: size) {
+    .supports-container-queries {
+      container-type: size;
+    }
   }
 }
 
@@ -34,7 +57,6 @@ body {
     transform: translateY(0);
   }
 }
-
 
 @layer base {
   :root {
@@ -118,6 +140,9 @@ body {
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .theme {
+    --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
   }
 }
 
@@ -260,4 +285,24 @@ body {
 
 .animate-gradient-x {
   animation: gradient-x 3s ease infinite;
+}
+
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.5;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 3s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
 }

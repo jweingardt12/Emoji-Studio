@@ -227,6 +227,10 @@ export async function POST(request: NextRequest) {
         // Handle array format
         emojiArray = data.emoji
         console.log("Found emoji array with", emojiArray.length, "items")
+        // Log sample to see structure
+        if (emojiArray.length > 0) {
+          console.log("Sample emoji from array:", emojiArray[0])
+        }
       } else if (data.emoji && typeof data.emoji === "object") {
         // Handle object format (name -> url mapping)
         emojiArray = Object.entries(data.emoji).map(([name, url]) => ({

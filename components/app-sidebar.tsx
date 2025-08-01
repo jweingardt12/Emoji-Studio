@@ -197,8 +197,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       
       // Process the emoji data - similar to SlackCurlInput
       let emojiArray = []
-      if (data.emoji && Array.isArray(data.emoji)) {
+      if (data.emojis && Array.isArray(data.emojis)) {
+        // Handle the response from our API which returns { emojis: [...] }
+        emojiArray = data.emojis
+        console.log(`Found ${emojiArray.length} emojis in data.emojis`);
+      } else if (data.emoji && Array.isArray(data.emoji)) {
         emojiArray = data.emoji
+        console.log(`Found ${emojiArray.length} emojis in data.emoji`);
       } else if (data.slackResponse && data.slackResponse.emoji) {
         // Convert emoji object to array if needed
         const emojiObj = data.slackResponse.emoji
@@ -211,7 +216,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             created: Math.floor(Date.now() / 1000),
             user_display_name: "",
           }))
+          console.log(`Converted ${emojiArray.length} emojis from data.slackResponse.emoji object`);
+        } else if (Array.isArray(emojiObj)) {
+          emojiArray = emojiObj;
+          console.log(`Found ${emojiArray.length} emojis in data.slackResponse.emoji array`);
         }
+      }
+      console.log(`Total emojis to process: ${emojiArray.length}`);
+      
+      // Log the first emoji to see its structure
+      if (emojiArray.length > 0) {
+        console.log('First emoji in array:', emojiArray[0]);
       }
       
       // Process the emoji array with consistent fields
@@ -220,7 +235,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: emoji.url,
         team_id: emoji.team_id || "",
         user_id: emoji.user_id || "",
-        created: emoji.created || Math.floor(Date.now() / 1000),
+        // IMPORTANT: Preserve the created timestamp if it exists and is not 0
+        created: (emoji.created && emoji.created > 0) ? emoji.created : Math.floor(Date.now() / 1000),
         is_alias: emoji.is_alias || 0,
         alias_for: emoji.alias_for || "",
         is_bad: emoji.is_bad || false,
@@ -228,18 +244,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         can_delete: emoji.can_delete || false,
         aliases: emoji.aliases || [],
       }))
+      
+      // Log the first processed emoji to see its structure
+      if (recentData.length > 0) {
+        console.log('First processed emoji:', recentData[0]);
+        console.log('Newest emoji (by created timestamp):', recentData.reduce((newest: any, emoji: any) => 
+          emoji.created > newest.created ? emoji : newest
+        ));
+      }
+      
       if (recentData && Array.isArray(recentData) && recentData.length > 0) {
-        setEmojiData(recentData)
+        // Sort by created timestamp descending (newest first)
+        const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0));
+        console.log(`About to update context with ${sortedData.length} emojis`);
+        console.log('Newest 5 emojis after sorting:', sortedData.slice(0, 5).map(e => ({
+          name: e.name,
+          created: e.created,
+          date: new Date(e.created * 1000).toISOString()
+        })));
+        setEmojiData(sortedData)
         const workspaceName = parsed.workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
         setSlackLoaded(true)
-        localStorage.setItem("emojiData", JSON.stringify(recentData))
+        console.log('Saving to localStorage...');
+        localStorage.setItem("emojiData", JSON.stringify(sortedData))
         localStorage.setItem("workspace", workspaceName)
-        localStorage.setItem("emojiCount", recentData.length.toString())
+        localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-        console.log(`Successfully loaded ${recentData.length} emojis from ${workspaceName}`)
-        window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+        console.log(`Successfully loaded ${sortedData.length} emojis from ${workspaceName}`)
+        console.log('Dispatching emojiDataUpdated event...');
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", { 
+          detail: { 
+            emojiData: sortedData,
+            workspace: workspaceName,
+            timestamp: Date.now()
+          } 
+        }))
+        console.log('Event dispatched!');
       } else {
         toast({
           title: "Failed to load emojis",
@@ -394,27 +436,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <TooltipTrigger asChild>
                   <Link 
                     href="/create" 
-                    onClick={(e) => {
-                      if (!hasRealData && emojiData.length === 0) {
-                        e.preventDefault();
-                        return;
-                      }
+                    onClick={() => {
                       handleNavigate({ title: "Create", url: "/create" })
                     }}
-                    className={cn(
-                      "flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150",
-                      (!hasRealData && emojiData.length === 0) && "pointer-events-none opacity-50"
-                    )}
+                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
                   >
                     <CirclePlus className="h-4 w-4" />
                     <span>Create Emoji</span>
                   </Link>
                 </TooltipTrigger>
-                {(!hasRealData && emojiData.length === 0) && (
-                  <TooltipContent>
-                    <p>Connect to Slack first</p>
-                  </TooltipContent>
-                )}
               </Tooltip>
             </TooltipProvider>
           </div>

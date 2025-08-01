@@ -209,11 +209,6 @@ export function DashboardOverlay() {
       // Dispatch event to notify components that emoji data has been updated
       window.dispatchEvent(new Event("emojiDataUpdated"))
       
-      // Wait for animation to complete before redirecting (4 seconds)
-      // This matches the duration prop we'll pass to EmojiWaterfall
-      await new Promise(resolve => setTimeout(resolve, 4000))
-      console.log("Emoji animation complete, redirecting...")
-      
       // Redirect to dashboard
       router.push("/app")
     } catch (error) {

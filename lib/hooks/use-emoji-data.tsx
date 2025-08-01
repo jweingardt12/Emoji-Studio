@@ -37,12 +37,18 @@ const EmojiDataContext = createContext<EmojiDataContextType | undefined>(undefin
 
 // Provider component
 export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [emojiData, setEmojiData] = useState<Emoji[]>([])
+  const [emojiData, setEmojiDataInternal] = useState<Emoji[]>([])
   const [loading, setLoading] = useState(true)
   const [useDemoData, setUseDemoData] = useState(false)
   const [demoTimeRange, setDemoTimeRange] = useState("90d")
   const [hasRealData, setHasRealData] = useState(false)
   const [workspace, setWorkspace] = useState<string>("")
+  
+  // Wrapper for setEmojiData to add logging
+  const setEmojiData = useCallback((data: Emoji[] | ((prev: Emoji[]) => Emoji[])) => {
+    console.log('[EmojiDataContext] setEmojiData called with:', Array.isArray(data) ? `${data.length} emojis` : 'function');
+    setEmojiDataInternal(data);
+  }, [])
 
   // Demo data state
   const [demoData, setDemoData] = useState<Emoji[]>([])
@@ -141,18 +147,21 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Function to load emoji data from localStorage (moved outside useEffect so it can be properly updated)
   const loadEmojiData = useCallback(() => {
+    console.log('[EmojiDataContext] loadEmojiData called');
     try {
       const storedData = localStorage.getItem("emojiData")
       const storedWorkspace = localStorage.getItem("workspace")
 
       if (storedWorkspace) {
+        console.log('[EmojiDataContext] Setting workspace:', storedWorkspace);
         setWorkspace(storedWorkspace)
       }
 
       if (storedData) {
         const parsedData = JSON.parse(storedData)
         if (Array.isArray(parsedData) && parsedData.length > 0) {
-          console.log(`Loaded ${parsedData.length} emojis from localStorage`)
+          console.log(`[EmojiDataContext] Loaded ${parsedData.length} emojis from localStorage`)
+          console.log('[EmojiDataContext] First few emojis:', parsedData.slice(0, 3));
           setEmojiData(parsedData)
           
           // Check if this is demo data by checking the workspace
@@ -180,7 +189,7 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [setEmojiData])
 
   // Load emoji data from localStorage on mount
   useEffect(() => {
@@ -196,9 +205,26 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     // Listen for emoji data updated event
-    const handleEmojiDataUpdated = () => {
+    const handleEmojiDataUpdated = (event: Event) => {
       console.log("Emoji data updated event detected")
-      loadEmojiData() // Reload data when the emojiDataUpdated event is fired
+      const customEvent = event as CustomEvent;
+      
+      // If the event contains data, use it directly
+      if (customEvent.detail && customEvent.detail.emojiData) {
+        console.log(`[EmojiDataContext] Using data from event, ${customEvent.detail.emojiData.length} emojis`);
+        setEmojiData(customEvent.detail.emojiData);
+        if (customEvent.detail.workspace) {
+          setWorkspace(customEvent.detail.workspace);
+          setHasRealData(true);
+          setUseDemoData(false);
+        }
+        setLoading(false);
+      } else {
+        // Fallback to loading from localStorage
+        setTimeout(() => {
+          loadEmojiData() // Reload data when the emojiDataUpdated event is fired
+        }, 100)
+      }
     }
 
     window.addEventListener("localStorageCleared", handleStorageCleared)
