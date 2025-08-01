@@ -689,7 +689,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     const { isMobile, setOpenMobile } = useSidebar();
     
     // Update to track navigation events with better debugging
-    handleNavigate = (navItem?: { title: string; url: string }) => { 
+    handleNavigate = (navItem?: { title: string; url: string; action?: string }) => { 
       console.log('Navigation handler called with:', navItem);
       
       // Close mobile sidebar if on mobile
