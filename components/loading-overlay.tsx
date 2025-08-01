@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Progress } from "@/components/ui/progress"
 import { Loader2 as LoaderIcon, CheckCircle2 } from "lucide-react"
 import { WarpBackgroundSimple } from "./warp-background-simple"
@@ -17,6 +18,11 @@ interface LoadingOverlayProps {
 export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTransitionComplete }: LoadingOverlayProps) {
   const [shouldRender, setShouldRender] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (isOpen) {
@@ -35,11 +41,11 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
     }
   }, [isOpen, onTransitionComplete])
 
-  if (!shouldRender) return null;
+  if (!shouldRender || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className={cn(
-      "fixed inset-0 z-50 transition-all duration-500",
+      "fixed inset-0 z-[9999] transition-all duration-500",
       isVisible ? "opacity-100" : "opacity-0"
     )}>
       {/* Full opaque background */}
@@ -89,6 +95,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
