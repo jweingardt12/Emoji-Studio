@@ -8,7 +8,6 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Emoji } from "@/lib/services/emoji-service"
 import { LoadingOverlay } from "@/components/loading-overlay"
 import { useOpenPanel } from '@openpanel/nextjs'
-import confetti from "canvas-confetti"
 
 export function ChromeExtensionHandler() {
   const router = useRouter()
