@@ -105,7 +105,6 @@ export default function TestGifPage() {
       console.log(`[TestGif] Extracted ${extractedFrames.length} frames using ${capturedMethod || 'unknown'} method`)
       setExtractionMethod(capturedMethod || "Unknown")
       setFrames(extractedFrames)
-      setEndFrame(extractedFrames.length - 1)
     } catch (err) {
       console.error('[TestGif] Error:', err)
       setError(err instanceof Error ? err.message : 'Failed to load GIF')
