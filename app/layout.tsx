@@ -10,6 +10,7 @@ import { OpenPanelComponent } from '@openpanel/nextjs';
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeTracker } from "@/components/ThemeTracker";
 import { GlobalExtensionListener } from "@/components/global-extension-listener";
+import { NotificationManager } from "@/components/notification-manager";
 
 export default function RootLayout({
   children,
@@ -61,6 +62,7 @@ export default function RootLayout({
                 </SidebarInset>
               </SidebarProvider>
               <GlobalExtensionListener />
+              <NotificationManager />
             </EmojiDataProvider>
             <Toaster />
             <ThemeTracker />

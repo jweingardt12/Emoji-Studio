@@ -7,10 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Rss, Download, Loader2 } from "lucide-react"
+import { Search, Filter, Rss, Download, Loader2, Sparkles, X } from "lucide-react"
 const EmojiOverlay = React.lazy(() => import("@/components/emoji-overlay"))
 const UserOverlay = React.lazy(() => import("@/components/user-overlay"))
-import { getUserLeaderboard } from "@/lib/services/emoji-service"
+import { getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
 // Lightweight date formatter to replace date-fns
 const format = (date: Date | number, formatStr: string) => {
   const d = typeof date === 'number' ? new Date(date * 1000) : date
@@ -18,6 +18,7 @@ const format = (date: Date | number, formatStr: string) => {
 }
 import { useAnalytics } from "@/lib/analytics"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
+import { cn } from "@/lib/utils"
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -40,6 +41,10 @@ function ExplorerPage() {
   const [processedFileCount, setProcessedFileCount] = useState(0);
   const [totalFilesToDownload, setTotalFilesToDownload] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null); // For cancelling fetch
+  
+  // State for date filtering (for notifications)
+  const [sinceFilter, setSinceFilter] = useState<number | null>(null);
+  const [showNewBadge, setShowNewBadge] = useState(false);
 
   // Remove pagination state as we're using virtual scrolling
   
@@ -53,6 +58,18 @@ function ExplorerPage() {
         setSearchQuery(searchParam);
         if (searchParam.startsWith('U')) {
           analytics.trackEmojiFilter('user_id', searchParam);
+        }
+      }
+      
+      // Check for date filter from notifications
+      const sinceParam = urlParams.get('since');
+      if (sinceParam) {
+        const timestamp = parseInt(sinceParam, 10);
+        if (!isNaN(timestamp)) {
+          setSinceFilter(timestamp);
+          setShowNewBadge(true);
+          analytics.trackEmojiFilter('since_date', timestamp.toString());
+          analytics.track('Explorer: Opened From Notification', { timestamp });
         }
       }
     }
@@ -91,9 +108,16 @@ function ExplorerPage() {
         }
       }
       
+      // Apply date filter
+      if (sinceFilter && emoji.created) {
+        if (emoji.created < sinceFilter) {
+          return false;
+        }
+      }
+      
       return true;
     });
-  }, [emojiData, searchQuery]);
+  }, [emojiData, searchQuery, sinceFilter]);
   
   // Count non-alias emojis for consistency with dashboard
   const nonAliasCount = useMemo(() => {
@@ -314,6 +338,32 @@ function ExplorerPage() {
             </div>
             {/* Filters */}
             <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+              {/* New Emojis Badge */}
+              {sinceFilter && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                    <span className="font-medium">Showing new emojis from the last 24 hours</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      analytics.track('Explorer: Clear Date Filter');
+                      setSinceFilter(null);
+                      setShowNewBadge(false);
+                      // Remove since param from URL
+                      const url = new URL(window.location.href);
+                      url.searchParams.delete('since');
+                      window.history.replaceState({}, '', url.toString());
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="ml-1">Clear filter</span>
+                  </Button>
+                </div>
+              )}
+              
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
@@ -412,13 +462,22 @@ function ExplorerPage() {
                       {sortedEmojis.map((emoji) => (
                         <div
                           key={`${emoji.name}-${emoji.url}`}
-                          className="flex flex-col items-center justify-center rounded-lg border bg-card p-2 sm:p-3 shadow hover:border-primary/30 hover:shadow-md transition-all cursor-pointer w-full min-h-[120px] sm:min-h-[130px]"
+                          className={cn(
+                            "relative flex flex-col items-center justify-center rounded-lg border bg-card p-2 sm:p-3 shadow hover:border-primary/30 hover:shadow-md transition-all cursor-pointer w-full min-h-[120px] sm:min-h-[130px]",
+                            showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && "ring-2 ring-primary/50 bg-primary/5"
+                          )}
                           title={emoji.name}
                           onClick={() => {
                             setSelectedEmoji(emoji);
                             analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
                           }}
                         >
+                          {/* New badge */}
+                          {showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && (
+                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
+                              New
+                            </div>
+                          )}
                           {/* Emoji Image */}
                           <div className="flex-shrink-0 mb-1.5 sm:mb-2">
                             {imageErrors[emoji.name] ? (

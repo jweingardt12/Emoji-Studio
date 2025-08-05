@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { openpanel } from "@/lib/safe-openpanel"
 
 export function GlobalExtensionListener() {
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -10,7 +11,12 @@ export function GlobalExtensionListener() {
     console.log('[GlobalExtensionListener] Setting up global message listener')
     
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'EMOJI_STUDIO_CLEAR_DATA_FROM_EXTENSION') {
+      if (event.data.type === 'EXTENSION_TRACK_EVENT') {
+        // Forward tracking events from extension to openpanel
+        if (event.data.eventName && openpanel) {
+          openpanel.track(event.data.eventName, event.data.properties || {})
+        }
+      } else if (event.data.type === 'EMOJI_STUDIO_CLEAR_DATA_FROM_EXTENSION') {
         console.log('[GlobalExtensionListener] Clear data request received!')
         
         // Clear all data
