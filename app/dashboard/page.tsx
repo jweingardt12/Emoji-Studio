@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Trophy, Search } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 
 // Use a client-side only component to avoid hydration mismatches
@@ -27,6 +28,8 @@ function DashboardPage() {
   const [isClient, setIsClient] = useState(false)
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
   const [pageVisible, setPageVisible] = useState(false)
+  const [waitingForData, setWaitingForData] = useState(true)
+  const router = useRouter()
   
   useEffect(() => {
     setIsClient(true)
@@ -91,7 +94,8 @@ function DashboardPage() {
     loading, 
     hasRealData, 
     userLeaderboard,
-    demoChartData
+    demoChartData,
+    useDemoData
   } = useEmojiData()
   const [dateRange, setDateRange] = useState<import("@/components/leaderboard").DateRange>("all")
   const [searchQuery, setSearchQuery] = useState("")
@@ -157,6 +161,30 @@ function DashboardPage() {
       setEmojiGridHeight(leaderboardRef.current.offsetHeight)
     }
   }, [filteredLeaderboard, loading])
+
+  // Check for data after a delay
+  useEffect(() => {
+    if (isClient && !loading) {
+      // Wait 2 seconds for extension data to arrive
+      const timeout = setTimeout(() => {
+        const hasAnyData = hasRealData || useDemoData;
+        if (!hasAnyData) {
+          console.log('Dashboard: No data available after wait, redirecting to settings');
+          router.replace('/settings');
+        } else {
+          setWaitingForData(false);
+        }
+      }, 2000);
+      
+      // If data arrives before timeout, cancel the redirect
+      if (hasRealData || useDemoData) {
+        clearTimeout(timeout);
+        setWaitingForData(false);
+      }
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isClient, loading, hasRealData, useDemoData, router])
 
   // Only render when client-side to avoid hydration mismatches
   if (!isClient) return null;
@@ -320,22 +348,7 @@ function DashboardPage() {
 }
 
 export default function DashboardPageWrapper() {
-  // Check if we're coming from the extension
-  const [isFromExtension, setIsFromExtension] = useState(false);
-  
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    setIsFromExtension(urlParams.get('extension') === 'true');
-  }, []);
-  
-  // If coming from extension, render without RequireData wrapper to allow data processing
-  if (isFromExtension) {
-    return <DashboardPage />;
-  }
-  
-  return (
-    <RequireData>
-      <DashboardPage />
-    </RequireData>
-  );
+  // Always render DashboardPage directly to allow ChromeExtensionHandler to receive synced data
+  // The ChromeExtensionHandler will handle loading synced data from the extension
+  return <DashboardPage />;
 }
