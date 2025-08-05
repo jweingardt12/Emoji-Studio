@@ -262,7 +262,7 @@ export function EmojiProcessingModal({
       onClick={isProcessingComplete ? onClose : undefined}
     >
       <Card 
-        className={`relative w-full max-w-md mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
+        className={`relative w-full max-w-lg mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         } ${processedEmojis.length > 3 ? 'max-h-[90vh] overflow-hidden flex flex-col' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -433,28 +433,30 @@ export function EmojiProcessingModal({
                         </>
                       )}
                     </div>
-                    {onEdit && emoji.format !== 'GIF' && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 flex-shrink-0"
-                        onClick={() => onEdit(emoji, index)}
-                        title="Edit emoji"
-                      >
-                        <Sliders className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    {onEditGifFrames && emoji.format === 'GIF' && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 flex-shrink-0"
-                        onClick={() => onEditGifFrames(emoji, index)}
-                        title="Edit GIF frames"
-                      >
-                        <Sliders className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {onEdit && emoji.format !== 'GIF' && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => onEdit(emoji, index)}
+                          title="Edit emoji"
+                        >
+                          <Sliders className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {onEditGifFrames && emoji.format === 'GIF' && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => onEditGifFrames(emoji, index)}
+                          title="Edit GIF frames"
+                        >
+                          <Sliders className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -470,7 +472,7 @@ export function EmojiProcessingModal({
                           onClick={() => onEdit(processedEmojis[0], 0)}
                           variant="outline"
                         >
-                          <Sliders className="mr-2 h-4 w-4" />
+                          <Sliders className="mr-1.5 h-4 w-4" />
                           Edit
                         </Button>
                       )}
@@ -481,7 +483,7 @@ export function EmojiProcessingModal({
                           onClick={() => onEditGifFrames(processedEmojis[0], 0)}
                           variant="outline"
                         >
-                          <Sliders className="mr-2 h-4 w-4" />
+                          <Sliders className="mr-1.5 h-4 w-4" />
                           Edit Frames
                         </Button>
                       )}
@@ -491,7 +493,7 @@ export function EmojiProcessingModal({
                         onClick={() => onDownload(processedEmojis[0])}
                         variant="outline"
                       >
-                        <Download className="mr-2 h-4 w-4" />
+                        <Download className="mr-1.5 h-4 w-4" />
                         Download
                       </Button>
                       <Button 
@@ -502,12 +504,12 @@ export function EmojiProcessingModal({
                       >
                         {uploadingIndex !== null ? (
                           <>
-                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                             Uploading...
                           </>
                         ) : (
                           <>
-                            <Send className="mr-2 h-4 w-4" />
+                            <Send className="mr-1.5 h-4 w-4" />
                             Send to Slack
                           </>
                         )}

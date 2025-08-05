@@ -5,13 +5,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Progress } from "@/components/ui/progress"
+import { cn } from "@/lib/utils"
 import { 
   Play, 
   Pause, 
   Loader2,
   AlertCircle,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import { GifFrameExtractor, ExtractedFrame } from "@/lib/utils/gif-frame-extractor"
 import { VideoFrameExtractor, VideoFrame } from "@/lib/utils/video-frame-extractor"
@@ -42,7 +55,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
   const [everyNthFrame, setEveryNthFrame] = useState(2) // For 'everyN' mode
   
   // Playback control
-  const [speedMultiplier, setSpeedMultiplier] = useState(5) // Default to 5x speed
+  const [speedMultiplier, setSpeedMultiplier] = useState(2) // Default to 2x speed for auto-play
   const [currentPreviewFrame, setCurrentPreviewFrame] = useState(0)
   
   // Scaling mode: 'fit' maintains aspect ratio with padding, 'fill' crops to fill, 'stretch' distorts to fill
@@ -51,6 +64,10 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
   // Store frame data URLs
   const [frameDataUrls, setFrameDataUrls] = useState<string[]>([])
   const animationIntervalRef = useRef<number | null>(null)
+  
+  // UI state
+  const [showSlackPreviews, setShowSlackPreviews] = useState(false)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
   useEffect(() => {
     if (isOpen && file) {
@@ -91,7 +108,10 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       
       // Convert frames to data URLs
       const urls = await convertFramesToDataUrls(extractedFrames)
+      console.log(`[loadFrames] Created ${urls.length} data URLs`)
       setFrameDataUrls(urls)
+      
+      // The useEffect will handle auto-play when frameDataUrls are ready
       
     } catch (error) {
       console.error("Failed to extract frames:", error)
@@ -229,6 +249,41 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     }
   }
   
+  const handleClose = () => {
+    // If frames are loaded and user hasn't exported yet, show confirmation
+    if (frames.length > 0 && !isExporting) {
+      setShowCloseConfirm(true)
+    } else {
+      onClose()
+    }
+  }
+  
+  const confirmClose = () => {
+    setShowCloseConfirm(false)
+    onClose()
+  }
+  
+  const cancelClose = () => {
+    setShowCloseConfirm(false)
+  }
+  
+  // Auto-play when frameDataUrls are ready (only on initial load)
+  useEffect(() => {
+    console.log('[Auto-play check]', {
+      frameDataUrlsLength: frameDataUrls.length,
+      previewPlaying,
+      framesLength: frames.length,
+      isOpen
+    })
+    if (frameDataUrls.length > 0 && !previewPlaying && frames.length > 0 && isOpen) {
+      console.log('[Auto-play] Starting preview automatically')
+      // Small delay to ensure everything is rendered
+      setTimeout(() => {
+        startPreview()
+      }, 100)
+    }
+  }, [frameDataUrls.length, isOpen]) // Only depend on data URLs length and isOpen
+
   // Restart preview when settings change
   useEffect(() => {
     if (previewPlaying && frames.length > 0) {
@@ -341,9 +396,11 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
           }
           
           // GIF encoder expects delay in milliseconds (frame.delay is already in ms)
-          const delay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+          // Apply speed multiplier to the delay
+          const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+          const delay = Math.max(20, Math.round(baseDelay / speedMultiplier))
           gif.addFrame(ctx, {
-            delay: Math.round(delay / speedMultiplier),
+            delay: delay,
             dispose: 1
           })
           
@@ -399,11 +456,15 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
   const selectedCount = getSelectedFrames().length
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => !isExporting && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Create Slack Emoji</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-2xl" onInteractOutside={(e) => {
+          e.preventDefault()
+          handleClose()
+        }}>
+          <DialogHeader>
+            <DialogTitle>Create Slack Emoji</DialogTitle>
+          </DialogHeader>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
@@ -475,60 +536,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                 </div>
               </div>
               
-              {/* Slack Context Previews */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-center lg:text-left">In Slack</h3>
-                
-                {/* Standalone Message */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border dark:border-gray-700">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
-                      JD
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-semibold text-sm dark:text-gray-100">Jane Doe</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">2:34 PM</span>
-                      </div>
-                      {frameDataUrls[currentPreviewFrame] && (
-                        <img 
-                          src={frameDataUrls[currentPreviewFrame]}
-                          className="block w-16 h-16"
-                          style={{ imageRendering: 'pixelated' }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Reaction Context */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border dark:border-gray-700">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded bg-green-500 dark:bg-green-600 flex items-center justify-center text-white font-semibold text-xs">
-                      JS
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <span className="font-semibold text-sm dark:text-gray-100">John Smith</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">2:30 PM</span>
-                      </div>
-                      <div className="text-sm text-gray-900 dark:text-gray-100 mb-2">
-                        Woah. Have you seen Emoji Studio? Crazy how Slack won't build something like it.
-                      </div>
-                      <div className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1 border border-gray-200 dark:border-gray-600">
-                        {frameDataUrls[currentPreviewFrame] && (
-                          <img 
-                            src={frameDataUrls[currentPreviewFrame]}
-                            className="w-4 h-4"
-                            style={{ imageRendering: 'pixelated' }}
-                          />
-                        )}
-                        <span className="text-xs text-gray-600 dark:text-gray-300">3</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Controls */}
@@ -627,6 +634,76 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                   </Button>
                 </div>
               </div>
+              
+              {/* Slack Context Previews - Collapsible */}
+              <div className="space-y-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-between"
+                  onClick={() => setShowSlackPreviews(!showSlackPreviews)}
+                >
+                  <span className="text-sm font-medium">Show in Slack</span>
+                  {showSlackPreviews ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+                
+                <div 
+                  className={cn(
+                    "space-y-2 overflow-hidden transition-all duration-300 ease-in-out",
+                    showSlackPreviews ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  {/* Standalone Message */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border dark:border-gray-700 text-xs">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0">
+                        JD
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-1.5 mb-0.5">
+                          <span className="font-semibold text-xs dark:text-gray-100">Jane Doe</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">2:34 PM</span>
+                        </div>
+                        {frameDataUrls[currentPreviewFrame] && (
+                          <img 
+                            src={frameDataUrls[currentPreviewFrame]}
+                            className="block w-12 h-12"
+                            style={{ imageRendering: 'pixelated' }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Reaction Context */}
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border dark:border-gray-700 text-xs">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded bg-green-500 dark:bg-green-600 flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0">
+                        JS
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-1.5 mb-0.5">
+                          <span className="font-semibold text-xs dark:text-gray-100">John Smith</span>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400">2:30 PM</span>
+                        </div>
+                        <div className="text-[11px] text-gray-900 dark:text-gray-100 mb-1 line-clamp-2">
+                          Great job on the presentation! 
+                        </div>
+                        <div className="inline-flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-full px-1.5 py-0.5 border border-gray-200 dark:border-gray-600">
+                          {frameDataUrls[currentPreviewFrame] && (
+                            <img 
+                              src={frameDataUrls[currentPreviewFrame]}
+                              className="w-3 h-3"
+                              style={{ imageRendering: 'pixelated' }}
+                            />
+                          )}
+                          <span className="text-[10px] text-gray-600 dark:text-gray-300">3</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Export */}
@@ -665,7 +742,26 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
             </div>
           </div>
         ) : null}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Close Confirmation Dialog */}
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your emoji edits will be lost if you close now. Are you sure you want to exit without creating your emoji?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelClose}>Keep editing</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClose} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

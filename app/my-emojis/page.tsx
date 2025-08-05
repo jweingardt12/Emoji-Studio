@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -53,8 +53,8 @@ function MyEmojisPage() {
   const [isAddingAlias, setIsAddingAlias] = useState(false)
   const [isRenamingEmoji, setIsRenamingEmoji] = useState(false)
   const [isAuthChecking, setIsAuthChecking] = useState(true)
-  const [sortColumn, setSortColumn] = useState<"name" | "created" | null>(null)
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+  const [sortColumn, setSortColumn] = useState<"name" | "created" | null>("created")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [isRefreshing, setIsRefreshing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -71,13 +71,25 @@ function MyEmojisPage() {
     setIsClient(true)
     
     // Check if user has Slack connection (authentication)
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl || !hasRealData) {
         // Don't redirect, just set auth checking to false
         setIsAuthChecking(false)
       } else {
         setIsAuthChecking(false)
+        
+        // Auto-refresh data on page load to ensure freshness
+        const lastRefreshTime = localStorage.getItem("lastEmojiRefreshTime")
+        const now = Date.now()
+        const fiveMinutes = 5 * 60 * 1000
+        
+        // If data is older than 5 minutes, refresh it
+        if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) > fiveMinutes) {
+          console.log("Data is stale, refreshing...")
+          await refreshEmojiData()
+          localStorage.setItem("lastEmojiRefreshTime", now.toString())
+        }
       }
     }
     
@@ -154,20 +166,28 @@ function MyEmojisPage() {
         }
       }
       
+      // Get existing data to preserve timestamps if needed
+      const existingData = emojiData || []
+      const existingDataMap = new Map(existingData.map(e => [e.name, e]))
+      
       // Process the emoji array with consistent fields
-      const recentData = emojiArray.map((emoji: any) => ({
-        name: emoji.name,
-        url: emoji.url,
-        team_id: emoji.team_id || "",
-        user_id: emoji.user_id || "",
-        created: emoji.created || Math.floor(Date.now() / 1000),
-        is_alias: emoji.is_alias || 0,
-        alias_for: emoji.alias_for || "",
-        is_bad: emoji.is_bad || false,
-        user_display_name: emoji.user_display_name || "",
-        can_delete: emoji.can_delete || false,
-        aliases: emoji.aliases || [],
-      }))
+      const recentData = emojiArray.map((emoji: any) => {
+        const existing = existingDataMap.get(emoji.name)
+        return {
+          name: emoji.name,
+          url: emoji.url,
+          team_id: emoji.team_id || "",
+          user_id: emoji.user_id || "",
+          // Use existing created timestamp if available and API doesn't provide one
+          created: emoji.created || emoji.date_created || (existing?.created) || 0,
+          is_alias: emoji.is_alias || 0,
+          alias_for: emoji.alias_for || "",
+          is_bad: emoji.is_bad || false,
+          user_display_name: emoji.user_display_name || "",
+          can_delete: emoji.can_delete || false,
+          aliases: emoji.aliases || [],
+        }
+      })
       
       if (recentData && Array.isArray(recentData) && recentData.length > 0) {
         setEmojiData(recentData)
@@ -178,6 +198,7 @@ function MyEmojisPage() {
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", recentData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
+        localStorage.setItem("lastEmojiRefreshTime", Date.now().toString())
         window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
       }
     } catch (error) {
@@ -230,12 +251,17 @@ function MyEmojisPage() {
     if (sortColumn === 'name') {
       aValue = a.name.toLowerCase()
       bValue = b.name.toLowerCase()
+    } else if (sortColumn === 'created') {
+      // For created date, ensure we have valid timestamps
+      aValue = a.created || 0
+      bValue = b.created || 0
     }
     
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
     return 0
   })
+  
 
   // Handle sort column click
   const handleSort = (column: "name" | "created") => {
@@ -486,10 +512,34 @@ function MyEmojisPage() {
         description: `"${selectedEmoji.name}" → "${newName}"`
       })
       
-      // Refresh the emoji list to show the updated data
-      await refreshEmojiData()
+      // Optimistically update the UI immediately
+      setEmojiData(prevData => {
+        const updatedData = prevData.map(emoji => {
+          if (emoji.name === selectedEmoji.name) {
+            return { ...emoji, name: newName }
+          }
+          // Update aliases that point to this emoji
+          if (emoji.is_alias === 1 && emoji.alias_for === selectedEmoji.name) {
+            return { ...emoji, alias_for: newName }
+          }
+          return emoji
+        })
+        
+        // Update localStorage with the optimistic data
+        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        return updatedData
+      })
       
       setIsRenameDialogOpen(false)
+      
+      // Refresh in the background without blocking UI
+      setTimeout(async () => {
+        try {
+          await refreshEmojiData()
+        } catch (error) {
+          console.error('Background refresh failed:', error)
+        }
+      }, 2000)
     } catch (error) {
       sonner.error("Failed to rename emoji", {
         id: "rename-emoji",
@@ -633,12 +683,33 @@ function MyEmojisPage() {
         description: `"${selectedEmoji.name}" has been updated with the new image`
       })
       
-      // Refresh the emoji list to show the updated data
-      await refreshEmojiData()
+      // For replace, we can't easily update the URL optimistically since we don't know the new URL
+      // But we can at least update the timestamp to show it was recently modified
+      setEmojiData(prevData => {
+        const updatedData = prevData.map(emoji => {
+          if (emoji.name === selectedEmoji.name) {
+            return { ...emoji, created: Math.floor(Date.now() / 1000) }
+          }
+          return emoji
+        })
+        
+        // Update localStorage with the optimistic data
+        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        return updatedData
+      })
       
       setIsReplaceDialogOpen(false)
       setIsProcessing(false)
       setProcessedEmoji(null)
+      
+      // Refresh in the background to get the new URL
+      setTimeout(async () => {
+        try {
+          await refreshEmojiData()
+        } catch (error) {
+          console.error('Background refresh failed:', error)
+        }
+      }, 2000)
     } catch (error) {
       sonner.error("Failed to replace emoji", {
         id: "replace-emoji",
@@ -782,13 +853,42 @@ function MyEmojisPage() {
         description: `"${newAlias}" → "${selectedEmoji.name}"`
       })
       
+      // Optimistically add the alias to the UI immediately
+      setEmojiData(prevData => {
+        // Create the new alias emoji
+        const newAliasEmoji = {
+          name: newAlias.replace(/^:|:$/g, ''),
+          url: selectedEmoji.url,
+          team_id: selectedEmoji.team_id || "",
+          user_id: selectedEmoji.user_id || "",
+          created: Math.floor(Date.now() / 1000),
+          is_alias: 1,
+          alias_for: selectedEmoji.name,
+          is_bad: false,
+          user_display_name: selectedEmoji.user_display_name || "",
+          can_delete: selectedEmoji.can_delete || false,
+          aliases: []
+        }
+        
+        const updatedData = [...prevData, newAliasEmoji]
+        
+        // Update localStorage with the optimistic data
+        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        return updatedData
+      })
+      
       // Clear the form
       setNewAlias("")
-      
-      // Refresh the emoji list to show the updated data
-      await refreshEmojiData()
-      
       setIsAliasDialogOpen(false)
+      
+      // Refresh in the background without blocking UI
+      setTimeout(async () => {
+        try {
+          await refreshEmojiData()
+        } catch (error) {
+          console.error('Background refresh failed:', error)
+        }
+      }, 2000)
     } catch (error) {
       sonner.error("Failed to add alias", {
         id: "add-alias",
@@ -903,10 +1003,30 @@ function MyEmojisPage() {
         description: `Successfully deleted "${selectedEmoji.name}"`
       })
       
-      // Refresh the emoji list to show the updated data
-      await refreshEmojiData()
+      // Optimistically update the UI immediately
+      setEmojiData(prevData => {
+        // Remove the deleted emoji and any aliases pointing to it
+        const updatedData = prevData.filter(emoji => {
+          if (emoji.name === selectedEmoji.name) return false
+          if (emoji.is_alias === 1 && emoji.alias_for === selectedEmoji.name) return false
+          return true
+        })
+        
+        // Update localStorage with the optimistic data
+        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        return updatedData
+      })
       
       setIsDeleteDialogOpen(false)
+      
+      // Refresh in the background without blocking UI
+      setTimeout(async () => {
+        try {
+          await refreshEmojiData()
+        } catch (error) {
+          console.error('Background refresh failed:', error)
+        }
+      }, 2000)
     } catch (error) {
       sonner.error("Failed to delete emoji", {
         description: error instanceof Error ? error.message : "An error occurred"
@@ -943,6 +1063,15 @@ function MyEmojisPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => refreshEmojiData()}
+                    disabled={isRefreshing}
+                    title="Refresh emoji list"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
                   <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "table" | "grid")}>
                     <ToggleGroupItem value="table" aria-label="Table view">
                       <TableIcon className="h-4 w-4" />
@@ -965,7 +1094,7 @@ function MyEmojisPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {loading || isRefreshing ? (
                 viewMode === "table" ? (
                   <div className="w-full overflow-x-auto">
                     <Table className="min-w-[500px]">
@@ -1197,7 +1326,7 @@ function MyEmojisPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                    {filteredEmojis.map((emoji) => (
+                    {sortedEmojis.map((emoji) => (
                       <div
                         key={emoji.name}
                         className="group relative flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
