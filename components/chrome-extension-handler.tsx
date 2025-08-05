@@ -22,11 +22,20 @@ export function ChromeExtensionHandler() {
   const [redirectPending, setRedirectPending] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const hasProcessed = useRef(false)
+  const lastSyncTimeProcessed = useRef(0)
   const op = useOpenPanel()
 
   // Function to process synced data from extension storage
   const processSyncedData = useCallback((data: SyncedEmojiData, meta: SyncedEmojiMeta) => {
     console.log('[ChromeExtensionHandler] Processing synced data:', data, meta)
+    
+    // Prevent duplicate processing of the same sync
+    const syncTime = data.lastSyncTime || 0;
+    if (syncTime === lastSyncTimeProcessed.current) {
+      console.log('[ChromeExtensionHandler] Already processed this sync data, skipping');
+      return;
+    }
+    lastSyncTimeProcessed.current = syncTime;
     
     try {
       // Update emoji data in the app

@@ -24,6 +24,10 @@ export interface SyncedEmojiMeta {
   hasData: boolean;
 }
 
+// Global flag to track if listener has been initialized
+let isListenerInitialized = false;
+let lastSyncedDataProcessedTime = 0;
+
 export function validateSlackAuthData(data: any): data is SlackAuthData {
   return (
     data &&
@@ -44,6 +48,13 @@ export function initializeExtensionListener(
 ) {
   if (typeof window === 'undefined') return;
   
+  // Prevent multiple initializations
+  if (isListenerInitialized) {
+    console.log('[Emoji Studio] Extension listener already initialized, skipping');
+    return;
+  }
+  
+  isListenerInitialized = true;
   console.log('[Emoji Studio] Initializing extension listener');
   console.log('[Emoji Studio] Window location:', window.location.href);
   
@@ -59,6 +70,15 @@ export function initializeExtensionListener(
       if (event.data.data && event.data.meta) {
         console.log('[Emoji Studio] Synced data:', event.data.data);
         console.log('[Emoji Studio] Sync metadata:', event.data.meta);
+        
+        // Prevent processing the same sync data multiple times within 5 seconds
+        const syncTime = event.data.data.lastSyncTime || 0;
+        const now = Date.now();
+        if (syncTime === lastSyncedDataProcessedTime && (now - syncTime) < 5000) {
+          console.log('[Emoji Studio] Duplicate sync data detected, skipping processing');
+          return;
+        }
+        lastSyncedDataProcessedTime = syncTime;
         
         if (onSyncedDataReceived) {
           onSyncedDataReceived(event.data.data, event.data.meta);
@@ -133,6 +153,12 @@ export function initializeExtensionListener(
   // Always request synced data on page load
   console.log('[Emoji Studio] Requesting synced data from extension');
   window.postMessage({ type: 'REQUEST_EXTENSION_SYNC_DATA' }, '*');
+}
+
+// Function to reset the listener initialization state (for testing/cleanup)
+export function resetExtensionListener() {
+  isListenerInitialized = false;
+  lastSyncedDataProcessedTime = 0;
 }
 
 export function isExtensionInstalled(): Promise<boolean> {
