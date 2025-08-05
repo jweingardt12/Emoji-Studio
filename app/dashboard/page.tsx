@@ -40,6 +40,9 @@ function DashboardPage() {
     const handleEmojiDataUpdated = () => {
       console.log('Dashboard: emojiDataUpdated event received, forcing re-render');
       setDataRefreshKey(prev => prev + 1);
+      // Also refresh the page visible state to trigger animations
+      setPageVisible(false);
+      setTimeout(() => setPageVisible(true), 100);
     };
     
     // Listen for Chrome extension messages to add emojis from Slackmojis
@@ -161,7 +164,7 @@ function DashboardPage() {
   return (
     <div className={`flex flex-col gap-3 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6 transition-all duration-700 ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-    }`}>
+    }`} key={dataRefreshKey}>
       <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6"></div>
       {/* SectionCards with skeleton */}

@@ -6,6 +6,24 @@ export interface SlackAuthData {
   xId?: string;
 }
 
+export interface SyncedEmojiData {
+  workspace: string;
+  emojiData: any[];
+  emojiCount: number;
+  lastFetchTime: string;
+  lastSyncTime: number;
+  token?: string | null;
+  cookie?: string | null;
+  version: string;
+}
+
+export interface SyncedEmojiMeta {
+  workspace: string;
+  lastSync: number;
+  emojiCount: number;
+  hasData: boolean;
+}
+
 export function validateSlackAuthData(data: any): data is SlackAuthData {
   return (
     data &&
@@ -21,7 +39,8 @@ export function validateSlackAuthData(data: any): data is SlackAuthData {
 
 export function initializeExtensionListener(
   onDataReceived: (data: SlackAuthData) => void,
-  onClearData?: () => void
+  onClearData?: () => void,
+  onSyncedDataReceived?: (data: SyncedEmojiData, meta: SyncedEmojiMeta) => void
 ) {
   if (typeof window === 'undefined') return;
   
@@ -34,7 +53,46 @@ export function initializeExtensionListener(
     console.log('[Emoji Studio] Message origin:', event.origin);
     console.log('[Emoji Studio] Message type:', event.data?.type);
     
-    if (event.data.type === 'EMOJI_STUDIO_DATA') {
+    // Handle synced data from extension (new background sync)
+    if (event.data.type === 'EMOJI_STUDIO_SYNCED_DATA') {
+      console.log('[Emoji Studio] Received EMOJI_STUDIO_SYNCED_DATA message');
+      if (event.data.data && event.data.meta) {
+        console.log('[Emoji Studio] Synced data:', event.data.data);
+        console.log('[Emoji Studio] Sync metadata:', event.data.meta);
+        
+        if (onSyncedDataReceived) {
+          onSyncedDataReceived(event.data.data, event.data.meta);
+        } else {
+          // Default handling - store in localStorage
+          console.log('[Emoji Studio] No handler provided, storing in localStorage');
+          
+          // Store emoji data
+          localStorage.setItem('emojiData', JSON.stringify(event.data.data.emojiData));
+          localStorage.setItem('workspace', event.data.data.workspace);
+          localStorage.setItem('emojiCount', event.data.data.emojiCount.toString());
+          localStorage.setItem('lastFetchTime', event.data.data.lastFetchTime);
+          localStorage.setItem('lastSyncTime', event.data.data.lastSyncTime.toString());
+          
+          // Store auth data if provided
+          if (event.data.data.token) {
+            localStorage.setItem('extensionToken', event.data.data.token);
+          }
+          if (event.data.data.cookie) {
+            localStorage.setItem('extensionCookie', event.data.data.cookie);
+          }
+          
+          // Trigger UI update
+          window.dispatchEvent(new CustomEvent('emojiDataUpdated'));
+          
+          // Show success notification
+          const notification = document.createElement('div');
+          notification.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+          notification.textContent = `Synced ${event.data.data.emojiCount} emojis from ${event.data.data.workspace}`;
+          document.body.appendChild(notification);
+          setTimeout(() => notification.remove(), 3000);
+        }
+      }
+    } else if (event.data.type === 'EMOJI_STUDIO_DATA') {
       console.log('[Emoji Studio] Received EMOJI_STUDIO_DATA message');
       if (event.data.data) {
         console.log('[Emoji Studio] Raw extension data:', event.data.data);
@@ -71,6 +129,10 @@ export function initializeExtensionListener(
     // Request data from extension
     window.postMessage({ type: 'REQUEST_EXTENSION_DATA' }, '*');
   }
+  
+  // Always request synced data on page load
+  console.log('[Emoji Studio] Requesting synced data from extension');
+  window.postMessage({ type: 'REQUEST_EXTENSION_SYNC_DATA' }, '*');
 }
 
 export function isExtensionInstalled(): Promise<boolean> {

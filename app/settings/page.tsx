@@ -17,6 +17,7 @@ import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import Marquee from "@/components/ui/marquee"
 import { cn } from "@/lib/utils"
+import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 
 // Sample emoji tiles for the background
 const emojiTiles = [
@@ -124,6 +125,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
+      <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6">
         <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
           <div className="mb-4 sm:mb-6">
