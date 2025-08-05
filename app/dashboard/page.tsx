@@ -30,52 +30,15 @@ function DashboardPage() {
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
   const [pageVisible, setPageVisible] = useState(false)
   const [waitingForData, setWaitingForData] = useState(true)
-  const [showSyncLoading, setShowSyncLoading] = useState(false)
-  const [syncProgress, setSyncProgress] = useState(0)
-  const [syncStage, setSyncStage] = useState("")
+  // Sync loading is now handled by ChromeExtensionHandler
   const router = useRouter()
   const searchParams = useSearchParams()
   
   useEffect(() => {
     setIsClient(true)
     
-    // Check if we're coming from sync button
-    const syncing = searchParams.get('syncing')
-    if (syncing === 'true') {
-      console.log('[Dashboard] Syncing parameter detected, showing loading overlay');
-      setShowSyncLoading(true);
-      setSyncProgress(10);
-      setSyncStage("Syncing emoji data from extension...");
-      
-      // Simulate progress updates
-      const progressTimer = setInterval(() => {
-        setSyncProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressTimer);
-            return prev;
-          }
-          return prev + 10;
-        });
-      }, 200);
-      
-      // Hide loading overlay after data arrives or timeout
-      const hideTimer = setTimeout(() => {
-        setSyncProgress(100);
-        setSyncStage("Sync complete!");
-        setTimeout(() => {
-          setShowSyncLoading(false);
-          // Remove syncing parameter from URL
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.delete('syncing');
-          window.history.replaceState({}, '', newUrl.toString());
-        }, 1000);
-      }, 3000);
-      
-      return () => {
-        clearInterval(progressTimer);
-        clearTimeout(hideTimer);
-      };
-    }
+    // The ChromeExtensionHandler now handles sync progress in real-time
+    // Remove old URL parameter handling as it's been replaced by real sync progress messages
     
     // Trigger fade in animation after a short delay
     const timer = setTimeout(() => {
@@ -88,18 +51,7 @@ function DashboardPage() {
       console.log('Dashboard: emojiDataUpdated event received, forcing re-render');
       setDataRefreshKey(prev => prev + 1);
       
-      // If sync loading is showing, complete it
-      if (showSyncLoading) {
-        setSyncProgress(100);
-        setSyncStage("Sync complete!");
-        setTimeout(() => {
-          setShowSyncLoading(false);
-          // Remove syncing parameter from URL
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.delete('syncing');
-          window.history.replaceState({}, '', newUrl.toString());
-        }, 1000);
-      }
+      // Sync loading is now handled by ChromeExtensionHandler
       
       // Also refresh the page visible state to trigger animations
       setPageVisible(false);
@@ -402,13 +354,7 @@ function DashboardPage() {
         onClose={() => setSelectedEmojiForOverlay(null)}
       />
       
-      {/* Sync Loading Overlay */}
-      <LoadingOverlay
-        isOpen={showSyncLoading}
-        progress={syncProgress}
-        loadingStage={syncStage}
-        isSuccess={syncProgress === 100}
-      />
+      {/* ChromeExtensionHandler now handles sync loading overlay */}
     </div>
   )
 }

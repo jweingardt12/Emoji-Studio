@@ -362,6 +362,46 @@ export function ChromeExtensionHandler() {
     }
   }, [searchParams, processSyncedData])
 
+  // Listen for sync progress messages from the extension
+  useEffect(() => {
+    const handleSyncProgress = (event: MessageEvent) => {
+      if (event.data?.type === 'EMOJI_STUDIO_SYNC_PROGRESS') {
+        const { status, workspace, emojiCount, error } = event.data;
+        
+        if (status === 'started') {
+          console.log('[ChromeExtensionHandler] Sync started for:', workspace);
+          setIsLoading(true);
+          setProgress(10);
+          setLoadingStage(`Syncing emojis from ${workspace}...`);
+          setError(null);
+        } else if (status === 'completed') {
+          console.log('[ChromeExtensionHandler] Sync completed for:', workspace, 'with', emojiCount, 'emojis');
+          setProgress(90);
+          setLoadingStage(`Synced ${emojiCount} emojis successfully!`);
+          
+          // Complete the loading after a short delay
+          setTimeout(() => {
+            setProgress(100);
+            setTimeout(() => {
+              setIsLoading(false);
+              setProgress(0);
+              setLoadingStage("");
+            }, 500);
+          }, 1000);
+        } else if (status === 'error') {
+          console.log('[ChromeExtensionHandler] Sync error for:', workspace, error);
+          setProgress(0);
+          setLoadingStage("");
+          setError(`Sync failed: ${error}`);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleSyncProgress);
+    return () => window.removeEventListener('message', handleSyncProgress);
+  }, []);
+
   return (
     <>
       <LoadingOverlay
