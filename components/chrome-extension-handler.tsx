@@ -293,7 +293,24 @@ export function ChromeExtensionHandler() {
     console.log('[ChromeExtensionHandler] Component mounted')
     // Check if we're coming from the extension
     const fromExtension = searchParams.get('extension') === 'true'
+    const syncStarting = searchParams.get('syncStarting') === 'true'
     console.log('[ChromeExtensionHandler] Extension parameter:', fromExtension)
+    console.log('[ChromeExtensionHandler] SyncStarting parameter:', syncStarting)
+    
+    // If sync is starting, show loading overlay immediately
+    if (syncStarting) {
+      setIsLoading(true)
+      setProgress(5)
+      setLoadingStage("Preparing to sync...")
+      setError(null)
+      
+      // Clean up URL parameter after a delay
+      setTimeout(() => {
+        const newUrl = new URL(window.location.href)
+        newUrl.searchParams.delete('syncStarting')
+        window.history.replaceState({}, '', newUrl.toString())
+      }, 2000)
+    }
     
     // Always initialize the extension listener to handle synced data
     if (fromExtension && !hasProcessed.current) {
@@ -371,7 +388,7 @@ export function ChromeExtensionHandler() {
         if (status === 'started') {
           console.log('[ChromeExtensionHandler] Sync started for:', workspace);
           setIsLoading(true);
-          setProgress(10);
+          setProgress(20);
           setLoadingStage(`Syncing emojis from ${workspace}...`);
           setError(null);
         } else if (status === 'completed') {
