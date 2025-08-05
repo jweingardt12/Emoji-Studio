@@ -153,8 +153,8 @@ export default function SettingsPage() {
       }
       
       // Method 2: Check if chrome.runtime is available (for injected scripts)
-      if (typeof window !== 'undefined' && typeof chrome !== 'undefined' && chrome?.runtime?.id) {
-        console.log('[Settings] Extension detected via chrome.runtime.id:', chrome.runtime.id)
+      if (typeof window !== 'undefined' && typeof (window as any).chrome !== 'undefined' && (window as any).chrome?.runtime?.id) {
+        console.log('[Settings] Extension detected via chrome.runtime.id:', (window as any).chrome.runtime.id)
         sessionStorage.setItem('emojiStudioExtensionDetected', 'true')
         setHasExtension(true)
         return true
