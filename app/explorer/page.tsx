@@ -582,13 +582,4 @@ interface User {
   user_display_name: string;
 }
 
-// Define UserWithEmojiCount type if not already globally available
-// This is based on the structure returned by getUserLeaderboard
-interface UserWithEmojiCount extends User {
-  emoji_count: number;
-  most_recent_emoji_timestamp: number;
-  oldest_emoji_timestamp: number;
-  l4wepw: number;
-  l4wepwChange: number;
-  // rank?: number; // Optional rank if you plan to use it
-}
+// UserWithEmojiCount is now imported from @/lib/services/emoji-service
