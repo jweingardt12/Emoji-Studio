@@ -190,7 +190,7 @@ export function ChromeExtensionHandler() {
         },
         formData: {
           token: parsedData.token || "",
-          count: "20000", // Ensure we get all emojis, not just first 1000
+          count: "100000", // Set very high to get all emojis
         },
       }
       
