@@ -97,13 +97,26 @@ export function ChromeExtensionHandler() {
         version: data.version,
         source: 'background_sync'
       })
+      
+      // Hide loading overlay after data is successfully processed
+      setProgress(100);
+      setLoadingStage(`Processing complete!`);
+      setTimeout(() => {
+        setIsLoading(false);
+        setProgress(0);
+        setLoadingStage("");
+      }, 1000);
     } catch (error) {
       console.error('[ChromeExtensionHandler] Error processing synced data:', error)
       toast.error('Failed to process synced data', {
         description: error instanceof Error ? error.message : 'Unknown error',
       })
+      // Hide loading overlay on error
+      setIsLoading(false);
+      setProgress(0);
+      setLoadingStage("");
     }
-  }, [setEmojiData, setWorkspace, setHasRealData, op])
+  }, [setEmojiData, setWorkspace, setHasRealData, op, setIsLoading, setProgress, setLoadingStage])
   
   // Function to process extension data
   const processExtensionData = async (data: SlackAuthData) => {
@@ -414,15 +427,8 @@ export function ChromeExtensionHandler() {
           setProgress(90);
           setLoadingStage(`Synced ${displayCount} emojis successfully!`);
           
-          // Complete the loading after a short delay
-          setTimeout(() => {
-            setProgress(100);
-            setTimeout(() => {
-              setIsLoading(false);
-              setProgress(0);
-              setLoadingStage("");
-            }, 500);
-          }, 1000);
+          // DON'T hide the loading overlay yet - wait for data to be processed
+          // The processSyncedData function will handle hiding it after data is stored
         } else if (status === 'error') {
           console.log('[ChromeExtensionHandler] Sync error for:', workspace, error);
           setProgress(0);

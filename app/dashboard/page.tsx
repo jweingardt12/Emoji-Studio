@@ -175,7 +175,11 @@ function DashboardPage() {
   // Check for data after a delay
   useEffect(() => {
     if (isClient && !loading) {
-      // Wait 2 seconds for extension data to arrive
+      // Check if we're syncing - if so, wait longer
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSyncing = urlParams.get('syncStarting') === 'true';
+      const waitTime = isSyncing ? 10000 : 2000; // 10 seconds if syncing, 2 seconds otherwise
+      
       const timeout = setTimeout(() => {
         const hasAnyData = hasRealData || useDemoData;
         if (!hasAnyData) {
@@ -184,7 +188,7 @@ function DashboardPage() {
         } else {
           setWaitingForData(false);
         }
-      }, 2000);
+      }, waitTime);
       
       // If data arrives before timeout, cancel the redirect
       if (hasRealData || useDemoData) {
