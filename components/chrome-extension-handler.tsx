@@ -308,12 +308,24 @@ export function ChromeExtensionHandler() {
       setLoadingStage("Preparing to sync...")
       setError(null)
       
+      // Set a timeout to hide loading if sync doesn't start within 10 seconds
+      const timeoutId = setTimeout(() => {
+        console.log('[ChromeExtensionHandler] Sync timeout - no progress messages received');
+        setIsLoading(false)
+        setError("Sync timeout. Please ensure you've visited a Slack emoji page first.")
+      }, 10000)
+      
       // Clean up URL parameter after a delay
       setTimeout(() => {
         const newUrl = new URL(window.location.href)
         newUrl.searchParams.delete('syncStarting')
         window.history.replaceState({}, '', newUrl.toString())
       }, 2000)
+      
+      // Return cleanup function
+      return () => {
+        clearTimeout(timeoutId)
+      }
     }
     
     // Always initialize the extension listener to handle synced data
