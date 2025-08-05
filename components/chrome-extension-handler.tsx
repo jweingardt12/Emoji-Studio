@@ -80,8 +80,11 @@ export function ChromeExtensionHandler() {
       // Trigger UI update
       window.dispatchEvent(new CustomEvent('emojiDataUpdated'))
       
+      // Calculate non-alias emoji count (to match dashboard display)
+      const nonAliasCount = (data.emojiData as Emoji[]).filter(emoji => !emoji.is_alias).length
+      
       // Show success toast
-      toast.success(`Synced ${data.emojiCount} emojis from ${data.workspace}`, {
+      toast.success(`Synced ${nonAliasCount} emojis from ${data.workspace}`, {
         description: `Last updated: ${new Date(data.lastFetchTime).toLocaleString()}`,
         duration: 4000,
       })
@@ -89,6 +92,7 @@ export function ChromeExtensionHandler() {
       // Track event
       op.track('chrome_extension_synced_data', {
         emojiCount: data.emojiCount,
+        nonAliasCount: nonAliasCount,
         workspace: data.workspace,
         version: data.version,
         source: 'background_sync'
@@ -392,9 +396,11 @@ export function ChromeExtensionHandler() {
           setLoadingStage(`Syncing emojis from ${workspace}...`);
           setError(null);
         } else if (status === 'completed') {
-          console.log('[ChromeExtensionHandler] Sync completed for:', workspace, 'with', emojiCount, 'emojis');
+          const { nonAliasCount } = event.data;
+          const displayCount = nonAliasCount !== undefined ? nonAliasCount : emojiCount;
+          console.log('[ChromeExtensionHandler] Sync completed for:', workspace, 'with', emojiCount, 'total emojis,', nonAliasCount, 'non-alias');
           setProgress(90);
-          setLoadingStage(`Synced ${emojiCount} emojis successfully!`);
+          setLoadingStage(`Synced ${displayCount} emojis successfully!`);
           
           // Complete the loading after a short delay
           setTimeout(() => {
