@@ -17,7 +17,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Trophy, Search } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { LoadingOverlay } from "@/components/loading-overlay"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 
 // Use a client-side only component to avoid hydration mismatches
@@ -29,10 +30,53 @@ function DashboardPage() {
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
   const [pageVisible, setPageVisible] = useState(false)
   const [waitingForData, setWaitingForData] = useState(true)
+  const [showSyncLoading, setShowSyncLoading] = useState(false)
+  const [syncProgress, setSyncProgress] = useState(0)
+  const [syncStage, setSyncStage] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
   
   useEffect(() => {
     setIsClient(true)
+    
+    // Check if we're coming from sync button
+    const syncing = searchParams.get('syncing')
+    if (syncing === 'true') {
+      console.log('[Dashboard] Syncing parameter detected, showing loading overlay');
+      setShowSyncLoading(true);
+      setSyncProgress(10);
+      setSyncStage("Syncing emoji data from extension...");
+      
+      // Simulate progress updates
+      const progressTimer = setInterval(() => {
+        setSyncProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressTimer);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+      
+      // Hide loading overlay after data arrives or timeout
+      const hideTimer = setTimeout(() => {
+        setSyncProgress(100);
+        setSyncStage("Sync complete!");
+        setTimeout(() => {
+          setShowSyncLoading(false);
+          // Remove syncing parameter from URL
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('syncing');
+          window.history.replaceState({}, '', newUrl.toString());
+        }, 1000);
+      }, 3000);
+      
+      return () => {
+        clearInterval(progressTimer);
+        clearTimeout(hideTimer);
+      };
+    }
+    
     // Trigger fade in animation after a short delay
     const timer = setTimeout(() => {
       setPageVisible(true)
@@ -43,6 +87,20 @@ function DashboardPage() {
     const handleEmojiDataUpdated = () => {
       console.log('Dashboard: emojiDataUpdated event received, forcing re-render');
       setDataRefreshKey(prev => prev + 1);
+      
+      // If sync loading is showing, complete it
+      if (showSyncLoading) {
+        setSyncProgress(100);
+        setSyncStage("Sync complete!");
+        setTimeout(() => {
+          setShowSyncLoading(false);
+          // Remove syncing parameter from URL
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('syncing');
+          window.history.replaceState({}, '', newUrl.toString());
+        }, 1000);
+      }
+      
       // Also refresh the page visible state to trigger animations
       setPageVisible(false);
       setTimeout(() => setPageVisible(true), 100);
@@ -342,6 +400,14 @@ function DashboardPage() {
       <EmojiOverlay
         emoji={selectedEmojiForOverlay}
         onClose={() => setSelectedEmojiForOverlay(null)}
+      />
+      
+      {/* Sync Loading Overlay */}
+      <LoadingOverlay
+        isOpen={showSyncLoading}
+        progress={syncProgress}
+        loadingStage={syncStage}
+        isSuccess={syncProgress === 100}
       />
     </div>
   )
