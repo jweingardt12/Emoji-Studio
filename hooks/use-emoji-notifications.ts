@@ -3,15 +3,21 @@ import { useEmojiData } from '@/lib/hooks/use-emoji-data';
 
 export function useEmojiNotifications() {
   const { emojiData } = useEmojiData();
-  const lastCheckRef = useRef<{ [key: string]: any }>({});
+  const lastCheckRef = useRef<{ [key: string]: number }>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if notifications are enabled
-    const settings = localStorage.getItem('notificationSettings');
-    if (!settings) return;
-
-    const notificationSettings = JSON.parse(settings);
+    let notificationSettings: any;
+    try {
+      const settings = localStorage.getItem('notificationSettings');
+      if (!settings) return;
+      notificationSettings = JSON.parse(settings);
+    } catch (e) {
+      console.error('[Notifications] Failed to parse settings:', e);
+      return;
+    }
+    
     if (!notificationSettings.enabled) return;
 
     // Check for notification permission
@@ -20,24 +26,59 @@ export function useEmojiNotifications() {
       return;
     }
 
+    // Function to safely access localStorage with quota handling
+    const safeLocalStorageSet = (key: string, value: string) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          console.warn('[Notifications] localStorage quota exceeded, cleaning up...');
+          // Try to clean up old data
+          try {
+            // Remove old tracking data
+            const keysToRemove = ['lastEmojiCheck', 'emojiData', 'emojiCacheTimestamp'];
+            keysToRemove.forEach(k => {
+              if (k !== key) {
+                localStorage.removeItem(k);
+              }
+            });
+            // Try again
+            localStorage.setItem(key, value);
+          } catch (retryError) {
+            console.error('[Notifications] Failed to save even after cleanup:', retryError);
+          }
+        } else {
+          console.error('[Notifications] Failed to save to localStorage:', e);
+        }
+      }
+    };
+
     // Function to check for new emojis
     const checkForNewEmojis = () => {
       if (!emojiData || emojiData.length === 0) return;
 
-      // Get last known emoji state
-      const storedLastCheck = localStorage.getItem('lastEmojiCheck');
-      const lastCheck = storedLastCheck ? JSON.parse(storedLastCheck) : {};
+      // Get last known emoji state - only store names and timestamps
+      let lastCheck: { [name: string]: number } = {};
+      try {
+        const storedLastCheck = localStorage.getItem('lastEmojiCheck');
+        if (storedLastCheck) {
+          lastCheck = JSON.parse(storedLastCheck);
+        }
+      } catch (e) {
+        console.error('[Notifications] Failed to parse lastEmojiCheck:', e);
+        localStorage.removeItem('lastEmojiCheck');
+      }
       
-      // Create a map of current emojis
-      const currentEmojis: { [name: string]: any } = {};
+      // Create a lightweight map of current emojis (only names and timestamps)
+      const currentEmojis: { [name: string]: number } = {};
       emojiData.forEach(emoji => {
-        currentEmojis[emoji.name] = emoji;
+        currentEmojis[emoji.name] = emoji.created || 0;
       });
 
       // Check if this is first run
       if (Object.keys(lastCheck).length === 0) {
         console.log('[Notifications] First run, storing initial state');
-        localStorage.setItem('lastEmojiCheck', JSON.stringify(currentEmojis));
+        safeLocalStorageSet('lastEmojiCheck', JSON.stringify(currentEmojis));
         lastCheckRef.current = currentEmojis;
         return;
       }
@@ -47,11 +88,11 @@ export function useEmojiNotifications() {
       const now = Date.now() / 1000;
       const checkWindow = 86400; // 24 hours in seconds
 
-      for (const [name, emoji] of Object.entries(currentEmojis)) {
+      for (const [name, created] of Object.entries(currentEmojis)) {
         // Check if emoji is new (not in last check)
         if (!lastCheck[name]) {
           // Check if emoji was created recently
-          if (emoji.created && (now - emoji.created) < checkWindow) {
+          if (created && (now - created) < checkWindow) {
             newEmojis.push(name);
           }
         }
@@ -80,8 +121,8 @@ export function useEmojiNotifications() {
           notification.close();
         };
 
-        // Update last check
-        localStorage.setItem('lastEmojiCheck', JSON.stringify(currentEmojis));
+        // Update last check with lightweight data
+        safeLocalStorageSet('lastEmojiCheck', JSON.stringify(currentEmojis));
         lastCheckRef.current = currentEmojis;
       }
     };
