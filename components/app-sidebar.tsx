@@ -412,8 +412,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       return
     }
     
-    // Always get the latest curl command from localStorage when refresh is clicked
-    // This ensures we use any curl command that was saved in the settings page
+    // Check for extension auth data first
+    const extensionToken = typeof window !== "undefined" ? localStorage.getItem("extensionToken") : null
+    const extensionCookie = typeof window !== "undefined" ? localStorage.getItem("extensionCookie") : null
+    const workspace = typeof window !== "undefined" ? localStorage.getItem("workspace") : null
+    
+    if (extensionToken && extensionCookie && workspace) {
+      // We have extension auth data, construct a curl command from it
+      console.log("Using extension auth data for refresh")
+      const timestamp = Math.floor(Date.now() / 1000)
+      const curlCommand = `curl 'https://${workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
+        -H 'accept: */*' \
+        -H 'accept-language: en-US,en;q=0.9' \
+        -H 'cache-control: no-cache' \
+        -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' \
+        -b '${extensionCookie}' \
+        -H 'pragma: no-cache' \
+        -H 'sec-fetch-dest: empty' \
+        -H 'sec-fetch-mode: cors' \
+        -H 'sec-fetch-site: same-origin' \
+        --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${extensionToken}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+      
+      await fetchWithCurl(curlCommand)
+      return
+    }
+    
+    // Fall back to checking for a stored curl command
     const lastCurl = typeof window !== "undefined" ? localStorage.getItem("slackCurlCommand") : null
     console.log("Refresh clicked, curl command found:", !!lastCurl)
     

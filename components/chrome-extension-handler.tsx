@@ -58,6 +58,25 @@ export function ChromeExtensionHandler() {
         localStorage.setItem('extensionCookie', data.cookie)
       }
       
+      // Also generate and store a curl command for compatibility with the refresh button
+      if (data.token && data.cookie && data.workspace) {
+        const timestamp = Math.floor(Date.now() / 1000)
+        const curlCommand = `curl 'https://${data.workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
+          -H 'accept: */*' \
+          -H 'accept-language: en-US,en;q=0.9' \
+          -H 'cache-control: no-cache' \
+          -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' \
+          -b '${data.cookie}' \
+          -H 'pragma: no-cache' \
+          -H 'sec-fetch-dest: empty' \
+          -H 'sec-fetch-mode: cors' \
+          -H 'sec-fetch-site: same-origin' \
+          --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+        
+        localStorage.setItem('slackCurlCommand', curlCommand)
+        console.log('[ChromeExtensionHandler] Generated and stored curl command for refresh')
+      }
+      
       // Trigger UI update
       window.dispatchEvent(new CustomEvent('emojiDataUpdated'))
       
