@@ -26,6 +26,7 @@ import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 interface Emoji {
   name: string
   url: string
+  team_id?: string
   user_id: string
   created: number
   user_display_name: string
