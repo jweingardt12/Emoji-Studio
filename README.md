@@ -1,57 +1,127 @@
-# 🥳🤠 Emoji Studio: the missing dashboard for Slack emojis 📊📈
+# Emoji Studio: Analytics Platform for Slack Custom Emojis
 
-![Main Dashboard View](/assets/screenshots/og-image.png "Main Dashboard - Overview of emoji trends and leaderboard")
-<a href="https://www.producthunt.com/posts/emoji-studio-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-emoji&#0045;studio&#0045;2" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=969390&theme=light&t=1748379392664" alt="Emoji&#0032;Studio - The&#0032;missing&#0032;analytics&#0032;platform&#0032;for&#0032;custom&#0032;Slack&#0032;emoji | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+[![Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=969390&theme=light&t=1748379392664)](https://www.producthunt.com/posts/emoji-studio-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-emoji&#0045;studio&#0045;2)
 
-## What is this?
+![Emoji Studio Dashboard](/assets/screenshots/og-image.png)
 
-Ever wondered how many custom emojis your Slack workspace has? Curious about the most common words in emoji names, or whether your teammates prefer GIFs or static images? Want to see who creates the longest-named emojis? You’re in the right place.
+## Overview
 
-This dashboard takes your Slack emoji data (not usage!) and turns it into a smorgasbord of dazzling charts, fun facts, and interactive elements. Any Slack user can use it, and the app runs ok browser local storage entirely—nothing is stored on any server. 
+Emoji Studio is a comprehensive analytics and management platform for Slack custom emojis. Track creation trends, identify top contributors, and manage your workspace's emoji library through a modern dashboard interface. All processing happens in your browser with zero server-side data storage.
 
+## Features
 
-## What does it do?
+### Analytics Dashboard
+- Real-time metrics for total emojis, unique creators, and weekly growth
+- Contributor leaderboard with historical performance tracking
+- Time-series analysis of emoji creation patterns
+- Activity heatmaps showing peak creation periods
+- Individual user profiles with detailed contribution metrics
 
-- View, search, and inspect all emojis in a Slack workspace
-- See a leaderboard of top emoji uploaders
-- Bulk download a selection–or all–emojis for maximum portability
-- Process and convert any image, video, or GIF into a fully-working custom emoji that fits within Slack's restrictions.
-- Send processed emojis directly to Slack - no download/upload required.
-- Gain a deep understanding (or possibly more confusion) with beautiful charts and visualizations
+### Emoji Explorer
+- Full-text search across emoji names and creators
+- Advanced filtering by date ranges and user IDs
+- Bulk export functionality with ZIP download
+- Grid view with lazy loading for large collections
+- Direct integration with Slack for seamless updates
 
+### Emoji Creator
+- Image optimization for Slack's technical requirements
+- Video to GIF conversion with frame rate control
+- Automatic resizing and compression
+- Direct upload to Slack workspaces
+- Batch processing for multiple files
 
-## Why would you build this?
+### Notifications
+- Background monitoring for new emoji additions
+- Configurable check intervals (15 minutes to daily)
+- Browser notifications with direct links to new content
+- Requires Chrome extension for background operation
 
-Every company I've worked at has had one thing in common: an extremely robust library of custom Slack emojis. Slack provides no great way to explore this library, and it's frustrating to understand the provenance of a given emoji. Emojis are an expression of company culture, and teams deserve the ability to explore, understand, and celebrate the creativity that goes into their creation.
+### Data Visualizations
+- Word frequency analysis for emoji naming patterns
+- Creation timeline with monthly and weekly aggregations
+- Distribution charts for static vs animated emojis
+- Contributor pie charts and participation metrics
+- Trend analysis for workspace emoji growth
+
+### Chrome Extension
+- One-click authentication without developer tools
+- Automatic background synchronization
+- Context menu integration for quick emoji creation
+- Cross-tab data synchronization
+- Powers notification system for real-time updates
+
+## Installation
+
+### Via Chrome Extension (Recommended)
+1. Install the [Emoji Studio Chrome Extension](https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa)
+2. Click extension icon → "Sync Slack Data"
+3. Visit [app.emojistudio.xyz](https://app.emojistudio.xyz)
+4. Data loads automatically
+
+### Manual Setup
+1. Navigate to [app.emojistudio.xyz](https://app.emojistudio.xyz)
+2. Open Settings → Connection
+3. Follow browser developer tools instructions
+4. Paste Slack authentication credentials
+
+## Privacy & Security
+
+- **Browser-only storage**: All data remains in localStorage
+- **No server persistence**: Zero backend data retention
+- **Direct API access**: Connects directly to Slack
+- **Data portability**: Export or delete at any time
+- **Open source**: Full code transparency
 
 ## Screenshots
 
-Here's a glimpse of what Emoji Studio can do:
+### Main Dashboard
+![Dashboard View](/assets/screenshots/main-dashboard-view.png)
+*Metrics overview with contributor leaderboard and growth charts*
 
-![Main Dashboard View](/assets/screenshots/main-dashboard-view.png "")
+### Emoji Explorer
+![Explorer View](/assets/screenshots/explorer-view.png)
+*Browse and manage emoji collections with advanced filtering*
 
-![User Dashboard View](/assets/screenshots/user-dashboard-view.png "User Dashboard - Stats and activity for a specific user")
+### User Analytics
+![User Dashboard](/assets/screenshots/user-dashboard-view.png)
+*Individual contributor statistics and activity history*
 
-![Emoji Explorer View](/assets/screenshots/explorer-view.png "Emoji Explorer - Browse and search all emojis")
+### Data Visualizations
+![Visualizations](/assets/screenshots/visualizations-view.png)
+*Interactive charts for emoji usage patterns and trends*
 
-![Visualizations Page](/assets/screenshots/visualizations-view.png "Visualizations - Various charts showing emoji trends and data")
-
-![Emoji Details Overlay](/assets/screenshots/emoji-details-overlay.png "Emoji Details - Modal showing details for a specific emoji")
-
-
+### Emoji Details
+![Emoji Details](/assets/screenshots/emoji-details-overlay.png)
+*Metadata view with download and sharing options*
 
 ## Tech Stack
 
-- Next.js
-- TypeScript
-- shadcn/ui 
-- Chart.js
-- Tailwind CSS
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **UI**: shadcn/ui components
+- **Styling**: Tailwind CSS
+- **Charts**: Recharts, Chart.js
+- **Image Processing**: Canvas API, GIF.js
+- **Analytics**: OpenPanel
+- **Hosting**: Vercel
 
 ## Contributing
 
-[Pull requests](https://github.com/jweingardt12/Emoji-Studio) welcome! Bonus points for adding new charts, fixing bugs, or sneaking in more puns.
+Contributions welcome. Areas of interest:
+- Bug fixes and performance improvements
+- Additional data visualizations
+- Enhanced filtering capabilities
+- UI/UX refinements
+- Documentation improvements
+
+Submit pull requests at [github.com/jweingardt12/Emoji-Studio](https://github.com/jweingardt12/Emoji-Studio)
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+**Issues**: [github.com/jweingardt12/Emoji-Studio/issues](https://github.com/jweingardt12/Emoji-Studio/issues)  
+**Source**: [github.com/jweingardt12/Emoji-Studio](https://github.com/jweingardt12/Emoji-Studio)
