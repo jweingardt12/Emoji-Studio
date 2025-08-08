@@ -49,8 +49,24 @@ export class GifCanvasFrameExtractor {
         })
         
         const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
+        // Use naturalWidth/naturalHeight if available, fallback to width/height, then reader dimensions
+        const imgWidth = img.naturalWidth || img.width || reader.width
+        const imgHeight = img.naturalHeight || img.height || reader.height
+        
+        if (imgWidth === 0 || imgHeight === 0) {
+          console.error('[GifCanvasFrameExtractor] Invalid image dimensions for single frame:', { 
+            naturalWidth: img.naturalWidth, 
+            naturalHeight: img.naturalHeight,
+            width: img.width,
+            height: img.height,
+            readerWidth: reader.width,
+            readerHeight: reader.height
+          })
+          throw new Error('Invalid image dimensions - cannot extract frame')
+        }
+        
+        canvas.width = imgWidth
+        canvas.height = imgHeight
         const ctx = canvas.getContext('2d')
         
         if (!ctx) throw new Error('Failed to create canvas context')
@@ -98,8 +114,24 @@ export class GifCanvasFrameExtractor {
       
       // Create canvas for capturing
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      // Use naturalWidth/naturalHeight if available, fallback to width/height, then reader dimensions
+      const imgWidth = img.naturalWidth || img.width || reader.width
+      const imgHeight = img.naturalHeight || img.height || reader.height
+      
+      if (imgWidth === 0 || imgHeight === 0) {
+        console.error('[GifCanvasFrameExtractor] Invalid image dimensions:', { 
+          naturalWidth: img.naturalWidth, 
+          naturalHeight: img.naturalHeight,
+          width: img.width,
+          height: img.height,
+          readerWidth: reader.width,
+          readerHeight: reader.height
+        })
+        throw new Error('Invalid image dimensions - cannot extract frames')
+      }
+      
+      canvas.width = imgWidth
+      canvas.height = imgHeight
       const ctx = canvas.getContext('2d')
       
       if (!ctx) throw new Error('Failed to create canvas context')
@@ -114,7 +146,7 @@ export class GifCanvasFrameExtractor {
       // Function to capture current frame
       const captureFrame = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(img, 0, 0)
+        ctx.drawImage(img, 0, 0, imgWidth, imgHeight)
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         
         // Check if this frame is different from the last
@@ -156,6 +188,12 @@ export class GifCanvasFrameExtractor {
       document.body.removeChild(container)
       
       console.log(`[GifCanvasFrameExtractor] Captured ${frames.length} unique frames`)
+      
+      // If we only captured 1 frame but the GIF has multiple frames, this method failed
+      if (frames.length <= 1 && reader.numFrames() > 1) {
+        console.warn('[GifCanvasFrameExtractor] Failed to capture animated frames - only got 1 unique frame')
+        throw new Error('Canvas extraction failed to capture animated frames')
+      }
       
       // If we didn't capture enough frames, pad with the last frame
       while (frames.length < reader.numFrames()) {

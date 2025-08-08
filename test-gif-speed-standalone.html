@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GIF Speed Test - Standalone</title>
+  <style>
+    body { 
+      font-family: monospace; 
+      padding: 20px; 
+      max-width: 800px; 
+      margin: 0 auto;
+    }
+    .container { 
+      margin: 20px 0; 
+      padding: 20px; 
+      border: 1px solid #ccc; 
+      border-radius: 8px;
+    }
+    .preview-box {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+      vertical-align: top;
+    }
+    img { 
+      display: block;
+      margin: 10px auto;
+      border: 1px solid #999;
+    }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+    .speed-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+    }
+    .info {
+      background: #e8f4f8;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    h2 { color: #333; }
+    button {
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 GIF Speed Test - Standalone Version</h1>
+  
+  <div class="container">
+    <h2>Test with Tenor GIF</h2>
+    <p>This test shows how different speed multipliers affect the Tenor GIF animation.</p>
+    
+    <div class="info">
+      <strong>About Tenor GIFs:</strong><br>
+      • Tenor GIFs typically have 100ms frame delays (10 fps)<br>
+      • For Slack emojis, we need faster animation (20-50ms delays)<br>
+      • Speed multiplier of 3-5x usually works best
+    </div>
+    
+    <div style="text-align: center;">
+      <div class="preview-box">
+        <h3>Original (1x speed)</h3>
+        <img id="original" src="https://media1.tenor.com/m/3l4Ky00EA8IAAAAd/liam-neeson-i-will-find-you.gif" width="200">
+        <small>~100ms per frame (10 fps)</small>
+      </div>
+      
+      <div class="preview-box">
+        <h3>Simulated Speed Change</h3>
+        <img id="preview" src="https://media1.tenor.com/m/3l4Ky00EA8IAAAAd/liam-neeson-i-will-find-you.gif" width="200">
+        <small id="speedInfo">Speed: 1x</small>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <h3>Speed Control Simulation</h3>
+      <label for="speedSlider">
+        <strong>Speed Multiplier:</strong> 
+        <span id="speedValue">1</span>x
+        <span id="frameDelay">(100ms → 100ms per frame)</span>
+      </label>
+      <input type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="1">
+      <div class="speed-labels">
+        <span>0.5x (slower)</span>
+        <span>5x (moderate)</span>
+        <span>10x (very fast)</span>
+      </div>
+      
+      <div style="margin-top: 15px;">
+        <button onclick="setSpeed(1)">1x (Original)</button>
+        <button onclick="setSpeed(2)">2x</button>
+        <button onclick="setSpeed(3)">3x (Recommended)</button>
+        <button onclick="setSpeed(5)">5x</button>
+      </div>
+    </div>
+    
+    <div class="info">
+      <strong>Speed Calculation:</strong><br>
+      <span id="calculation">
+        Base delay: 100ms<br>
+        Speed multiplier: 1x<br>
+        Adjusted delay: 100ms<br>
+        Effective FPS: 10
+      </span>
+    </div>
+  </div>
+  
+  <div class="container">
+    <h2>How This Works in Emoji Studio</h2>
+    <p>In the actual Emoji Studio app:</p>
+    <ol>
+      <li>GIF frames are extracted with their original delays</li>
+      <li>The speed multiplier adjusts these delays</li>
+      <li>Higher multiplier = faster animation (shorter delays)</li>
+      <li>The preview updates in real-time as you adjust the slider</li>
+      <li>The exported emoji uses the adjusted speed</li>
+    </ol>
+    
+    <p><strong>Note:</strong> This page simulates the speed control concept. The actual implementation in Emoji Studio extracts and re-encodes frames with adjusted timing.</p>
+  </div>
+
+  <script>
+    const slider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const frameDelay = document.getElementById('frameDelay');
+    const speedInfo = document.getElementById('speedInfo');
+    const calculation = document.getElementById('calculation');
+    const previewImg = document.getElementById('preview');
+    
+    // Base frame delay for Tenor GIFs
+    const BASE_DELAY = 100; // milliseconds
+    
+    slider.addEventListener('input', updateSpeed);
+    
+    function updateSpeed() {
+      const speed = parseFloat(slider.value);
+      const adjustedDelay = Math.max(20, Math.round(BASE_DELAY / speed));
+      const fps = Math.round(1000 / adjustedDelay);
+      
+      speedValue.textContent = speed.toFixed(1);
+      frameDelay.textContent = `(100ms → ${adjustedDelay}ms per frame)`;
+      speedInfo.textContent = `Speed: ${speed.toFixed(1)}x (~${fps} fps)`;
+      
+      calculation.innerHTML = `
+        Base delay: ${BASE_DELAY}ms<br>
+        Speed multiplier: ${speed.toFixed(1)}x<br>
+        Adjusted delay: ${adjustedDelay}ms<br>
+        Effective FPS: ${fps}
+      `;
+      
+      // Visual feedback - change border color based on speed
+      if (speed >= 2.5 && speed <= 4) {
+        previewImg.style.borderColor = '#4CAF50'; // Green for recommended range
+      } else if (speed >= 1.5 && speed <= 5) {
+        previewImg.style.borderColor = '#FF9800'; // Orange for acceptable range
+      } else {
+        previewImg.style.borderColor = '#999'; // Gray for other
+      }
+      
+      // Add visual indicator
+      if (speed > 1) {
+        previewImg.style.transform = `scale(${1 + (speed - 1) * 0.02})`;
+      } else {
+        previewImg.style.transform = 'scale(1)';
+      }
+    }
+    
+    function setSpeed(value) {
+      slider.value = value;
+      updateSpeed();
+    }
+    
+    // Initialize
+    updateSpeed();
+    
+    // Add some animation info
+    console.log('GIF Speed Test Page Loaded');
+    console.log('Tenor GIF typical delays: 100ms per frame (10 fps)');
+    console.log('Recommended speed for Slack: 3-5x (resulting in 20-33ms per frame)');
+  </script>
+</body>
+</html>

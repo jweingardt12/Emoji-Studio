@@ -365,9 +365,13 @@ export function EmojiProcessingModal({
                   }`}>
                     <div className="relative w-12 h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
-                        src={emoji.preview} 
+                        src={emoji.blob || emoji.preview} 
                         alt={emoji.name}
                         className="absolute inset-0 w-full h-full object-contain"
+                        loading="eager"
+                        decoding="async"
+                        style={{ imageRendering: 'auto' }}
+                        key={`${emoji.name}-${index}-modal`}
                       />
                       {uploadingIndex === index && (
                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center">

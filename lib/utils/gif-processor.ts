@@ -236,6 +236,13 @@ export class GifProcessor {
         try {
           const info = await this.getGifInfo(file)
           console.log(`GIF has ${info.frameCount} frames`)
+          
+          // If we couldn't extract frames but file is large, assume it's animated
+          if (info.frameCount === 0 && file.size > 100 * 1024) {
+            console.log('No frames extracted but file is large, assuming animated GIF')
+            return true
+          }
+          
           return info.frameCount > 1
         } catch (parseError) {
           console.warn('Could not parse GIF frames, assuming animated:', parseError)

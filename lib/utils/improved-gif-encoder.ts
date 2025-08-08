@@ -41,7 +41,9 @@ export class ImprovedGIFEncoder {
       quality: this.options.quality,
       workers: this.options.workers,
       workerScript: this.options.workerScript,
-      dither: this.options.dither as any
+      dither: this.options.dither as any,
+      repeat: 0, // 0 = loop forever, -1 = no loop, n = loop n times
+      transparent: this.options.transparent || null
       // Remove background color - let GIF handle transparency naturally
     })
   }
@@ -81,10 +83,19 @@ export class ImprovedGIFEncoder {
   render(): Promise<Blob> {
     return new Promise((resolve, reject) => {
       this.gif.on('finished', (blob: Blob) => {
+        // Ensure the blob has the correct MIME type
+        if (blob.type !== 'image/gif') {
+          blob = new Blob([blob], { type: 'image/gif' })
+        }
+        console.log('[ImprovedGIFEncoder] Rendered GIF:', {
+          size: blob.size,
+          type: blob.type
+        })
         resolve(blob)
       })
       
       this.gif.on('error', (error: any) => {
+        console.error('[ImprovedGIFEncoder] Error rendering GIF:', error)
         reject(error)
       })
       

@@ -55,19 +55,24 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
   const [everyNthFrame, setEveryNthFrame] = useState(2) // For 'everyN' mode
   
   // Playback control
-  const [speedMultiplier, setSpeedMultiplier] = useState(2) // Default to 2x speed for auto-play
+  const [speedMultiplier, setSpeedMultiplier] = useState(3) // Default to 3x speed (100ms -> 33ms)
   const [currentPreviewFrame, setCurrentPreviewFrame] = useState(0)
+  
+  // Export strategy - determined once and used for both preview and export
+  const [exportStrategy, setExportStrategy] = useState<{frameSkip: number, quality: number} | null>(null)
   
   // Scaling mode: 'fit' maintains aspect ratio with padding, 'fill' crops to fill, 'stretch' distorts to fill
   const [scaleMode, setScaleMode] = useState<'fit' | 'fill' | 'stretch'>('fill')
   
   // Store frame data URLs
   const [frameDataUrls, setFrameDataUrls] = useState<string[]>([])
+  const [exportPreviewUrls, setExportPreviewUrls] = useState<string[]>([])  // 128x128 previews matching export
   const animationIntervalRef = useRef<number | null>(null)
   
   // UI state
   const [showSlackPreviews, setShowSlackPreviews] = useState(false)
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const [showExportPreview, setShowExportPreview] = useState(false) // Toggle between display and export preview
 
   useEffect(() => {
     if (isOpen && file) {
@@ -103,13 +108,30 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       }
       
       console.log(`[loadFrames] Extracted ${extractedFrames.length} frames`)
+      const delays = extractedFrames.map(f => f.delay)
+      console.log(`[loadFrames] Frame delays:`, delays)
+      console.log(`[loadFrames] Average delay: ${(delays.reduce((a, b) => a + b, 0) / delays.length).toFixed(1)}ms`)
+      console.log(`[loadFrames] Min: ${Math.min(...delays)}ms, Max: ${Math.max(...delays)}ms`)
+      
+      // If no frames were extracted, close the editor and let normal processing continue
+      if (extractedFrames.length === 0) {
+        console.log('[loadFrames] No frames extracted, closing editor to continue with normal processing')
+        // Don't show an error - just close and continue processing
+        onClose()
+        return
+      }
       
       setFrames(extractedFrames)
       
-      // Convert frames to data URLs
+      // Convert frames to data URLs for display (200x200)
       const urls = await convertFramesToDataUrls(extractedFrames)
-      console.log(`[loadFrames] Created ${urls.length} data URLs`)
+      console.log(`[loadFrames] Created ${urls.length} display URLs`)
       setFrameDataUrls(urls)
+      
+      // Also create export previews (128x128) that match what will be exported
+      const exportUrls = await createExportPreviews(extractedFrames)
+      console.log(`[loadFrames] Created ${exportUrls.length} export preview URLs`)
+      setExportPreviewUrls(exportUrls)
       
       // The useEffect will handle auto-play when frameDataUrls are ready
       
@@ -126,8 +148,78 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     }
   }
 
+  // Create 128x128 previews that match exactly what will be exported
+  const createExportPreviews = async (framesToConvert: FrameData[]): Promise<string[]> => {
+    console.log(`[createExportPreviews] Creating ${framesToConvert.length} export previews at 128x128`)
+    
+    return framesToConvert.map((frame, index) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 128
+      canvas.height = 128
+      const ctx = canvas.getContext('2d', { 
+        alpha: false,
+        willReadFrequently: true
+      })
+      if (!ctx) return ''
+      
+      // White background
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, 128, 128)
+      
+      // Create temp canvas for frame
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = frame.data.width
+      tempCanvas.height = frame.data.height
+      const tempCtx = tempCanvas.getContext('2d')
+      if (!tempCtx) return ''
+      
+      tempCtx.putImageData(frame.data, 0, 0)
+      
+      // Apply scaling EXACTLY as export does
+      ctx.imageSmoothingEnabled = false
+      
+      if (scaleMode === 'stretch') {
+        ctx.drawImage(tempCanvas, 0, 0, 128, 128)
+      } else if (scaleMode === 'fill') {
+        const scale = Math.max(128 / tempCanvas.width, 128 / tempCanvas.height)
+        const scaledWidth = tempCanvas.width * scale
+        const scaledHeight = tempCanvas.height * scale
+        const offsetX = (128 - scaledWidth) / 2
+        const offsetY = (128 - scaledHeight) / 2
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, 128, 128)
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+      } else {
+        const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
+        const scaledWidth = tempCanvas.width * scale
+        const scaledHeight = tempCanvas.height * scale
+        const offsetX = (128 - scaledWidth) / 2
+        const offsetY = (128 - scaledHeight) / 2
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+      }
+      
+      return canvas.toDataURL('image/png')
+    })
+  }
+  
   const convertFramesToDataUrls = async (framesToConvert: FrameData[]): Promise<string[]> => {
     console.log(`[convertFramesToDataUrls] Converting ${framesToConvert.length} frames to data URLs`)
+    
+    // Check if frames are actually different
+    if (framesToConvert.length > 1) {
+      const firstFrameData = framesToConvert[0].data.data
+      const secondFrameData = framesToConvert[1].data.data
+      let areSame = true
+      for (let i = 0; i < Math.min(100, firstFrameData.length); i += 4) {
+        if (firstFrameData[i] !== secondFrameData[i] || 
+            firstFrameData[i+1] !== secondFrameData[i+1] ||
+            firstFrameData[i+2] !== secondFrameData[i+2]) {
+          areSame = false
+          break
+        }
+      }
+      console.log(`[convertFramesToDataUrls] First two frames are ${areSame ? 'IDENTICAL' : 'different'}`)
+    }
     
     return framesToConvert.map((frame, index) => {
       const canvas = document.createElement('canvas')
@@ -150,6 +242,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       tempCtx.putImageData(frame.data, 0, 0)
       
       // Apply scaling based on mode
+      // Disable smoothing to preserve pixel art
       ctx.imageSmoothingEnabled = false
       
       if (scaleMode === 'stretch') {
@@ -207,38 +300,173 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     
     return indices
   }
+  
+  // Calculate what export strategy will be needed based on estimated file size
+  const calculateExportStrategy = () => {
+    const selectedIndices = getSelectedFrames()
+    if (selectedIndices.length === 0) return { frameSkip: 1, quality: 1 }
+    
+    // Slack requirements:
+    // - Max file size: 128KB (strict limit)
+    // - Max frames: 50 (Slack displays up to 50 frames well)
+    // - Max dimensions: 128x128 (we handle this in encoding)
+    
+    const MAX_FILE_SIZE = 128 * 1024
+    const MAX_FRAMES = 50
+    
+    // PRIORITY: Maximize smoothness (frame count) while maintaining acceptable quality
+    // Strategy: Use as many frames as possible, adjusting quality to fit
+    let frameSkip = 1
+    let quality = 1 // Start with BEST quality (1 is best in gif.js)
+    
+    // First, ensure we don't exceed 50 frames
+    if (selectedIndices.length > MAX_FRAMES) {
+      frameSkip = Math.ceil(selectedIndices.length / MAX_FRAMES)
+    }
+    
+    const resultingFrames = Math.ceil(selectedIndices.length / frameSkip)
+    
+    // Updated bytes per frame estimates for smoother animations
+    // More conservative estimates to avoid overshooting
+    // Based on empirical data for 128x128 GIFs with gif.js:
+    const bytesPerFrameEstimates = {
+      1: 3500,   // Best quality - conservative estimate
+      3: 3000,   // Excellent quality
+      5: 2500,   // Very good quality
+      8: 2100,   // Good quality
+      10: 1800,  // Good balance
+      12: 1600,  // Acceptable quality
+      15: 1400,  // Slightly reduced quality
+      20: 1200,  // Moderate quality
+      25: 1050,  // Lower quality but smooth
+      30: 950,   // Compressed
+      40: 850,   // More compressed
+      50: 750,   // Maximum compression
+      60: 650,   // Ultra compressed
+      80: 550,   // Extreme compression
+      100: 450   // Last resort
+    }
+    
+    // Find the HIGHEST quality that fits our frame count
+    // We prioritize keeping all frames for smoothness
+    const qualityLevels = [1, 3, 5, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100]
+    const targetSize = MAX_FILE_SIZE * 0.94 // Target 94% to leave buffer
+    
+    // Find best quality for current frame count
+    for (const q of qualityLevels) {
+      const bytesPerFrame = bytesPerFrameEstimates[q] || 600
+      const estimatedSize = resultingFrames * bytesPerFrame
+      
+      if (estimatedSize <= targetSize) {
+        quality = q
+        console.log(`[Strategy] Quality ${q}: ${resultingFrames} frames × ${bytesPerFrame}B = ${(estimatedSize/1024).toFixed(1)}KB (limit: ${(targetSize/1024).toFixed(1)}KB)`)
+        break
+      }
+    }
+    
+    // Only skip frames as a last resort
+    if (quality === 100) {
+      const bytesPerFrame = bytesPerFrameEstimates[100] || 500
+      const maxFramesAtLowestQuality = Math.floor(targetSize / bytesPerFrame)
+      
+      if (resultingFrames > maxFramesAtLowestQuality) {
+        // Try to keep at least 30 frames for smooth animation
+        const targetFrames = Math.max(30, Math.min(MAX_FRAMES, maxFramesAtLowestQuality))
+        frameSkip = Math.ceil(selectedIndices.length / targetFrames)
+        
+        // After skipping, try to improve quality if possible
+        const newFrameCount = Math.ceil(selectedIndices.length / frameSkip)
+        for (const q of qualityLevels) {
+          const estimatedSize = newFrameCount * (bytesPerFrameEstimates[q] || 600)
+          if (estimatedSize <= targetSize) {
+            quality = q
+            break
+          }
+        }
+        
+        console.log(`[Strategy] Frame skipping required: skip=${frameSkip}, new frame count=${newFrameCount}, quality=${quality}`)
+      }
+    }
+    
+    const finalFrameCount = Math.ceil(selectedIndices.length / frameSkip)
+    const estimatedFinalSize = finalFrameCount * (bytesPerFrameEstimates[quality] || 600)
+    
+    // Log the strategy
+    console.log(`[Strategy] Frames: ${finalFrameCount}/${selectedIndices.length}, Quality: ${quality}, Est: ${(estimatedFinalSize/1024).toFixed(1)}KB`)
+    
+    return { frameSkip, quality }
+  }
+  
+  // Get frames that will actually be used in export (after frame skipping)
+  const getExportFrameIndices = () => {
+    const selectedIndices = getSelectedFrames()
+    const strategy = exportStrategy || calculateExportStrategy()
+    
+    if (strategy.frameSkip <= 1) {
+      return selectedIndices
+    }
+    
+    // Apply frame skipping
+    const exportIndices = selectedIndices.filter((_, idx) => idx % strategy.frameSkip === 0)
+    
+    // Ensure at least 2 frames for animation
+    if (exportIndices.length < 2 && selectedIndices.length >= 2) {
+      return [selectedIndices[0], selectedIndices[selectedIndices.length - 1]]
+    }
+    
+    return exportIndices
+  }
 
   const startPreview = () => {
-    if (frames.length === 0 || frameDataUrls.length === 0) return
+    if (frames.length === 0) return
+    if (!showExportPreview && frameDataUrls.length === 0) return
+    if (showExportPreview && exportPreviewUrls.length === 0) return
     
-    const selectedIndices = getSelectedFrames()
-    if (selectedIndices.length === 0) return
+    // Use the EXACT same frames that will be exported
+    const exportIndices = getExportFrameIndices()
+    if (exportIndices.length === 0) return
+    
+    const strategy = exportStrategy || calculateExportStrategy()
     
     setPreviewPlaying(true)
     let currentIndex = 0
     
     // Show first frame
-    setCurrentPreviewFrame(selectedIndices[0])
+    setCurrentPreviewFrame(exportIndices[0])
+    
+    console.log(`[Preview Start] Using export strategy: frameSkip=${strategy.frameSkip}, Frames: ${exportIndices.length}, Indices: ${exportIndices.slice(0, 5).join(', ')}...`)
     
     const animate = () => {
-      currentIndex = (currentIndex + 1) % selectedIndices.length
-      const frameIndex = selectedIndices[currentIndex]
+      currentIndex = (currentIndex + 1) % exportIndices.length
+      const frameIndex = exportIndices[currentIndex]
       setCurrentPreviewFrame(frameIndex)
       
-      // Calculate delay
+      // Calculate delay - EXACTLY as export does
       const frame = frames[frameIndex]
-      // frame.delay is already in milliseconds
       const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
-      const targetDelay = Math.max(20, baseDelay / speedMultiplier)
+      let targetDelay = Math.max(20, Math.round(baseDelay / speedMultiplier))
+      
+      // Apply frame skip adjustment EXACTLY as export does
+      if (strategy.frameSkip > 1) {
+        targetDelay = targetDelay * strategy.frameSkip
+      }
+      
+      // Log for debugging
+      if (currentIndex === 0 || currentIndex === Math.floor(exportIndices.length / 2)) {
+        console.log(`[Preview] Frame ${frameIndex} (${currentIndex}/${exportIndices.length}), Speed: ${speedMultiplier}x, Base: ${baseDelay}ms, Delay: ${targetDelay}ms, FrameSkip: ${strategy.frameSkip}`)
+      }
       
       animationIntervalRef.current = window.setTimeout(animate, targetDelay)
     }
     
-    // Start animation
     // Start animation with first frame's delay
-    const firstFrame = frames[selectedIndices[0]]
-    const firstDelay = isVideo ? 100 : ('delay' in firstFrame ? firstFrame.delay * 10 : 100)
-    animationIntervalRef.current = window.setTimeout(animate, Math.max(20, firstDelay / speedMultiplier))
+    const firstFrame = frames[exportIndices[0]]
+    const firstDelay = isVideo ? 100 : ('delay' in firstFrame ? firstFrame.delay : 100)
+    let adjustedFirstDelay = Math.max(20, Math.round(firstDelay / speedMultiplier))
+    if (strategy.frameSkip > 1) {
+      adjustedFirstDelay = adjustedFirstDelay * strategy.frameSkip
+    }
+    animationIntervalRef.current = window.setTimeout(animate, adjustedFirstDelay)
   }
 
   const stopPreview = () => {
@@ -284,158 +512,464 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     }
   }, [frameDataUrls.length, isOpen]) // Only depend on data URLs length and isOpen
 
+  // Recalculate export strategy when relevant settings change
+  useEffect(() => {
+    if (frames.length > 0) {
+      const newStrategy = calculateExportStrategy()
+      setExportStrategy(newStrategy)
+      console.log(`[Strategy Update] New strategy: frameSkip=${newStrategy.frameSkip}, quality=${newStrategy.quality}`)
+    }
+  }, [frames.length, frameSelectionMode, everyNthFrame])
+  
   // Restart preview when settings change
   useEffect(() => {
     if (previewPlaying && frames.length > 0) {
-      stopPreview()
-      startPreview()
+      // Clear any existing animation
+      if (animationIntervalRef.current) {
+        clearTimeout(animationIntervalRef.current)
+      }
+      
+      // Use export frame indices for consistency
+      const exportIndices = getExportFrameIndices()
+      const strategy = exportStrategy || calculateExportStrategy()
+      
+      if (exportIndices.length > 0) {
+        let currentIndex = 0
+        
+        const animate = () => {
+          currentIndex = (currentIndex + 1) % exportIndices.length
+          const frameIndex = exportIndices[currentIndex]
+          setCurrentPreviewFrame(frameIndex)
+          
+          // Calculate delay with new speed
+          const frame = frames[frameIndex]
+          const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+          let targetDelay = Math.max(20, Math.round(baseDelay / speedMultiplier))
+          
+          // Apply frame skip adjustment
+          if (strategy.frameSkip > 1) {
+            targetDelay = targetDelay * strategy.frameSkip
+          }
+          
+          if (currentIndex === 0) {
+            console.log(`[Speed Change] Speed: ${speedMultiplier}x, Delay: ${targetDelay}ms, FrameSkip: ${strategy.frameSkip}`)
+          }
+          
+          animationIntervalRef.current = window.setTimeout(animate, targetDelay)
+        }
+        
+        // Start with first frame
+        setCurrentPreviewFrame(exportIndices[0])
+        const firstFrame = frames[exportIndices[0]]
+        const firstDelay = isVideo ? 100 : ('delay' in firstFrame ? firstFrame.delay : 100)
+        let adjustedDelay = Math.max(20, Math.round(firstDelay / speedMultiplier))
+        if (strategy.frameSkip > 1) {
+          adjustedDelay = adjustedDelay * strategy.frameSkip
+        }
+        animationIntervalRef.current = window.setTimeout(animate, adjustedDelay)
+      }
     }
-  }, [speedMultiplier, scaleMode, frameSelectionMode, everyNthFrame])
+  }, [speedMultiplier, scaleMode, frameSelectionMode, everyNthFrame, previewPlaying, exportStrategy])
   
   // Re-render frames when scale mode changes
   useEffect(() => {
     if (frames.length > 0) {
+      // Update both display and export previews
       convertFramesToDataUrls(frames).then(setFrameDataUrls)
+      createExportPreviews(frames).then(setExportPreviewUrls)
     }
   }, [scaleMode])
 
   const exportGif = async () => {
-    const selectedIndices = getSelectedFrames()
-    if (selectedIndices.length === 0) return
+    // Use the EXACT same frames as preview
+    const exportIndices = getExportFrameIndices()
+    if (exportIndices.length === 0) return
+    
+    // Use pre-calculated strategy
+    const strategy = exportStrategy || calculateExportStrategy()
+    
+    console.log(`[Export Start] Using strategy: frameSkip=${strategy.frameSkip}, quality=${strategy.quality}, Frames: ${exportIndices.length}, ScaleMode: ${scaleMode}`)
     
     setIsExporting(true)
     setExportProgress(0)
     
     try {
-      const selectedFrames = selectedIndices.map(i => frames[i]).filter(Boolean)
+      const usedFrames = exportIndices.map(i => frames[i]).filter(Boolean)
       const MAX_FILE_SIZE = 128 * 1024 // 128KB strict limit
       
-      // Optimization strategies with increasing aggressiveness
-      const strategies = [
-        { quality: 10, frameSkip: 1, dither: false },   // Best quality, all frames
-        { quality: 20, frameSkip: 1, dither: false },   // Good quality, all frames
-        { quality: 30, frameSkip: 2, dither: false },   // OK quality, every 2nd frame
-        { quality: 40, frameSkip: 3, dither: false },   // Lower quality, every 3rd frame
-        { quality: 50, frameSkip: 4, dither: false },   // Lower quality, every 4th frame
-        { quality: 60, frameSkip: 5, dither: false },   // Very low quality, every 5th frame
-        { quality: 80, frameSkip: 8, dither: false },   // Extreme compression
-        { quality: 100, frameSkip: 10, dither: false }, // Maximum compression
-        { quality: 100, frameSkip: 15, dither: false }, // Last resort - very few frames
-        { quality: 100, frameSkip: 20, dither: false }, // Final attempt
-      ]
+      // Create encoder with pre-calculated strategy
+      // Use more workers for faster processing on initial attempt
+      const gif = new ImprovedGIFEncoder({
+        width: 128,
+        height: 128,
+        quality: strategy.quality,
+        workers: 4, // More workers for faster processing
+        workerScript: '/gif.worker.js',
+        dither: false // No dithering for cleaner look
+      })
       
-      let outputBlob: Blob | null = null
-      let usedFrames = selectedFrames
-      
-      for (let strategyIndex = 0; strategyIndex < strategies.length; strategyIndex++) {
-        const strategy = strategies[strategyIndex]
-        console.log(`Trying strategy ${strategyIndex + 1}/${strategies.length}: quality=${strategy.quality}, frameSkip=${strategy.frameSkip}`)
+      // Process each frame
+      for (let i = 0; i < usedFrames.length; i++) {
+        const frame = usedFrames[i]
         
-        // Apply frame skipping
-        if (strategy.frameSkip > 1) {
-          usedFrames = selectedFrames.filter((_, idx) => idx % strategy.frameSkip === 0)
-          
-          // Ensure at least 2 frames for animation
-          if (usedFrames.length < 2 && selectedFrames.length >= 2) {
-            usedFrames = [selectedFrames[0], selectedFrames[selectedFrames.length - 1]]
-          }
-        } else {
-          usedFrames = selectedFrames
-        }
-        
-        // Create encoder with current strategy
-        const gif = new ImprovedGIFEncoder({
-          width: 128,
-          height: 128,
-          quality: strategy.quality,
-          workers: 2,
-          workerScript: '/gif.worker.js',
-          dither: strategy.dither
+        // Create fresh canvas for each frame to avoid state issues
+        const canvas = document.createElement('canvas')
+        canvas.width = 128
+        canvas.height = 128
+        const ctx = canvas.getContext('2d', { 
+          alpha: false,  // No transparency for smaller file size
+          willReadFrequently: true
         })
+        if (!ctx) continue
         
-        // Process each frame
-        for (let i = 0; i < usedFrames.length; i++) {
-          const frame = usedFrames[i]
-          const canvas = document.createElement('canvas')
-          canvas.width = 128
-          canvas.height = 128
-          const ctx = canvas.getContext('2d', { alpha: true })
-          if (!ctx) continue
+        // Start with white background
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, 128, 128)
+        
+        const tempCanvas = document.createElement('canvas')
+        tempCanvas.width = frame.data.width
+        tempCanvas.height = frame.data.height
+        const tempCtx = tempCanvas.getContext('2d')
+        if (!tempCtx) continue
+        
+        tempCtx.putImageData(frame.data, 0, 0)
+        
+        // Apply scaling based on mode
+        if (scaleMode === 'stretch') {
+          // Stretch to fill entire 128x128 (may distort)
+          ctx.drawImage(tempCanvas, 0, 0, 128, 128)
+          if (i === 0) console.log(`[Export] Using STRETCH mode`)
+        } else if (scaleMode === 'fill') {
+          // Scale to fill (crop to fit) - no white bars
+          const scale = Math.max(128 / tempCanvas.width, 128 / tempCanvas.height)
+          const scaledWidth = tempCanvas.width * scale
+          const scaledHeight = tempCanvas.height * scale
+          const offsetX = (128 - scaledWidth) / 2
+          const offsetY = (128 - scaledHeight) / 2
           
+          // CRITICAL: Clear the canvas first to ensure frames are different
           ctx.fillStyle = 'white'
           ctx.fillRect(0, 0, 128, 128)
           
-          const tempCanvas = document.createElement('canvas')
-          tempCanvas.width = frame.data.width
-          tempCanvas.height = frame.data.height
-          const tempCtx = tempCanvas.getContext('2d')
-          if (!tempCtx) continue
+          // Disable image smoothing for pixel-perfect rendering
+          ctx.imageSmoothingEnabled = false
+          ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
           
-          tempCtx.putImageData(frame.data, 0, 0)
+          if (i === 0) {
+            console.log(`[Export] Using FILL mode - scale: ${scale}, offset: (${offsetX}, ${offsetY})`)
+            console.log(`[Export] Source: ${tempCanvas.width}x${tempCanvas.height} -> Scaled: ${scaledWidth}x${scaledHeight}`)
+          }
+        } else {
+          // Scale to fit while maintaining aspect ratio (may have white bars)
+          const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
+          const scaledWidth = tempCanvas.width * scale
+          const scaledHeight = tempCanvas.height * scale
+          const offsetX = (128 - scaledWidth) / 2
+          const offsetY = (128 - scaledHeight) / 2
+          ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+          if (i === 0) console.log(`[Export] Using FIT mode - scale: ${scale}`)
+        }
+        
+        // Calculate delay EXACTLY as preview does
+        const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+        let delay = Math.max(20, Math.round(baseDelay / speedMultiplier))
+        
+        // Apply frame skip adjustment EXACTLY as preview does
+        if (strategy.frameSkip > 1) {
+          delay = delay * strategy.frameSkip
+        }
+        
+        // Ensure delay is reasonable for Slack (20-1000ms, ideally 30-200ms)
+        delay = Math.max(20, Math.min(1000, delay))
+        
+        // Log for verification
+        if (i < 3 || i === usedFrames.length - 1) {
+          console.log(`[Export] Frame ${i}/${usedFrames.length}, Speed: ${speedMultiplier}x, Delay: ${delay}ms, FrameSkip: ${strategy.frameSkip}`)
+        }
+        
+        // Debug: Check if frames are actually different
+        if (i > 0 && i <= 2) {
+          const imageData = ctx.getImageData(64, 64, 1, 1) // Sample center pixel
+          console.log(`[Export] Frame ${i} center pixel:`, imageData.data.slice(0, 3))
+        }
+        
+        gif.addFrame(ctx, {
+          delay: delay,
+          dispose: 1,
+          copy: true  // Ensure frame is copied
+        })
+        
+        // Update progress
+        const progress = Math.round((i + 1) / usedFrames.length * 100)
+        setExportProgress(progress)
+      }
+      
+      let outputBlob = await gif.render()
+      console.log(`[Export Complete] Size: ${outputBlob.size} bytes (limit: ${MAX_FILE_SIZE})`)
+      
+      // If still over limit, try more aggressive strategies
+      if (outputBlob.size > MAX_FILE_SIZE) {
+        console.warn(`First attempt ${outputBlob.size} bytes exceeds limit, trying more aggressive compression`)
+        
+        // Fallback strategies - PRIORITIZE SMOOTHNESS (more frames) over quality
+        // Try to keep as many frames as possible for smooth animation
+        const targetSize = MAX_FILE_SIZE * 0.92 // ~118KB target (more conservative)
+        const fallbackStrategies = [
+          // First try reducing quality while keeping most frames
+          { quality: 15, maxFrames: Math.min(50, Math.floor(targetSize / 1400)) },  // ~1.4KB per frame
+          { quality: 20, maxFrames: Math.min(50, Math.floor(targetSize / 1200)) },  // ~1.2KB per frame
+          { quality: 25, maxFrames: Math.min(50, Math.floor(targetSize / 1050)) },  // ~1.05KB per frame
+          { quality: 30, maxFrames: Math.min(45, Math.floor(targetSize / 950)) },   // ~0.95KB per frame
+          { quality: 40, maxFrames: Math.min(40, Math.floor(targetSize / 850)) },   // ~0.85KB per frame
+          { quality: 50, maxFrames: Math.min(35, Math.floor(targetSize / 750)) },   // ~0.75KB per frame
+          { quality: 60, maxFrames: Math.min(30, Math.floor(targetSize / 650)) },   // ~0.65KB per frame
+          { quality: 80, maxFrames: Math.min(25, Math.floor(targetSize / 550)) },   // ~0.55KB per frame
+          { quality: 100, maxFrames: Math.min(20, Math.floor(targetSize / 450)) },  // ~0.45KB per frame
+          // Very low quality but try to keep at least 15 frames
+          { quality: 150, maxFrames: Math.max(15, Math.floor(targetSize / 400)) },  // ~0.4KB per frame
+          { quality: 200, maxFrames: Math.max(10, Math.floor(targetSize / 350)) }   // ~0.35KB per frame
+        ]
+        
+        for (const fallback of fallbackStrategies) {
+          console.log(`Trying fallback: quality=${fallback.quality}, maxFrames=${fallback.maxFrames}`)
           
-          // Apply scaling based on mode
-          if (scaleMode === 'stretch') {
-            // Stretch to fill entire 128x128 (may distort)
-            ctx.drawImage(tempCanvas, 0, 0, 128, 128)
-          } else if (scaleMode === 'fill') {
-            // Scale to fill (crop to fit) - no white bars
-            const scale = Math.max(128 / tempCanvas.width, 128 / tempCanvas.height)
-            const scaledWidth = tempCanvas.width * scale
-            const scaledHeight = tempCanvas.height * scale
-            const offsetX = (128 - scaledWidth) / 2
-            const offsetY = (128 - scaledHeight) / 2
-            ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+          // Sample frames evenly throughout the animation instead of just taking the first N
+          let fallbackFrames: typeof usedFrames
+          if (fallback.maxFrames >= usedFrames.length) {
+            fallbackFrames = usedFrames
           } else {
-            // Scale to fit while maintaining aspect ratio (may have white bars)
-            const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
-            const scaledWidth = tempCanvas.width * scale
-            const scaledHeight = tempCanvas.height * scale
-            const offsetX = (128 - scaledWidth) / 2
-            const offsetY = (128 - scaledHeight) / 2
-            ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            // Calculate sampling interval to get evenly distributed frames
+            const interval = usedFrames.length / fallback.maxFrames
+            fallbackFrames = []
+            for (let i = 0; i < fallback.maxFrames; i++) {
+              const index = Math.floor(i * interval)
+              if (index < usedFrames.length) {
+                fallbackFrames.push(usedFrames[index])
+              }
+            }
+            console.log(`Sampling ${fallbackFrames.length} frames evenly from ${usedFrames.length} total frames`)
           }
           
-          // GIF encoder expects delay in milliseconds (frame.delay is already in ms)
-          // Apply speed multiplier to the delay
-          const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
-          const delay = Math.max(20, Math.round(baseDelay / speedMultiplier))
-          gif.addFrame(ctx, {
-            delay: delay,
-            dispose: 1
+          const fallbackGif = new ImprovedGIFEncoder({
+            width: 128,
+            height: 128,
+            quality: fallback.quality,
+            workers: 2,
+            workerScript: '/gif.worker.js',
+            dither: false
           })
           
-          // Update progress
-          const overallProgress = Math.round(
-            (strategyIndex / strategies.length) * 100 + 
-            ((i + 1) / usedFrames.length) * (100 / strategies.length)
-          )
-          setExportProgress(overallProgress)
+          for (let i = 0; i < fallbackFrames.length; i++) {
+            const frame = fallbackFrames[i]
+            const canvas = document.createElement('canvas')
+            canvas.width = 128
+            canvas.height = 128
+            const ctx = canvas.getContext('2d', { alpha: true })
+            if (!ctx) continue
+            
+            ctx.fillStyle = 'white'
+            ctx.fillRect(0, 0, 128, 128)
+            
+            const tempCanvas = document.createElement('canvas')
+            tempCanvas.width = frame.data.width
+            tempCanvas.height = frame.data.height
+            const tempCtx = tempCanvas.getContext('2d')
+            if (!tempCtx) continue
+            
+            tempCtx.putImageData(frame.data, 0, 0)
+            
+            // Apply scaling based on mode (same as main export)
+            ctx.imageSmoothingEnabled = false // Pixel-perfect rendering
+            
+            if (scaleMode === 'stretch') {
+              ctx.drawImage(tempCanvas, 0, 0, 128, 128)
+            } else if (scaleMode === 'fill') {
+              const scale = Math.max(128 / tempCanvas.width, 128 / tempCanvas.height)
+              const scaledWidth = tempCanvas.width * scale
+              const scaledHeight = tempCanvas.height * scale
+              const offsetX = (128 - scaledWidth) / 2
+              const offsetY = (128 - scaledHeight) / 2
+              
+              // Clear first for fill mode
+              ctx.fillStyle = 'white'
+              ctx.fillRect(0, 0, 128, 128)
+              ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            } else {
+              const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
+              const scaledWidth = tempCanvas.width * scale
+              const scaledHeight = tempCanvas.height * scale
+              const offsetX = (128 - scaledWidth) / 2
+              const offsetY = (128 - scaledHeight) / 2
+              ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+            }
+            
+            // Adjust delay for sampled frames
+            const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+            // When sampling frames, we need to adjust the delay to maintain animation speed
+            const samplingRatio = fallback.maxFrames < usedFrames.length ? 
+              usedFrames.length / fallback.maxFrames : 1
+            let delay = Math.max(20, Math.round(baseDelay / speedMultiplier * samplingRatio))
+            
+            // Apply any existing frame skip adjustment
+            if (strategy.frameSkip > 1) {
+              delay = delay * strategy.frameSkip
+            }
+            
+            fallbackGif.addFrame(ctx, {
+              delay: delay,
+              dispose: 1,
+              copy: true  // Ensure frame is copied
+            })
+          }
+          
+          outputBlob = await fallbackGif.render()
+          console.log(`Fallback attempt size: ${outputBlob.size} bytes`)
+          
+          if (outputBlob.size <= MAX_FILE_SIZE) {
+            console.log(`Success with fallback strategy!`)
+            
+            // Simple feedback about the optimization
+            const sizeKB = (outputBlob.size / 1024).toFixed(1)
+            setLoadError(`Optimized to ${fallbackFrames.length} frames, ${sizeKB}KB`)
+            setTimeout(() => setLoadError(null), 3000)
+            break
+          }
         }
         
-        outputBlob = await gif.render()
-        console.log(`Strategy ${strategyIndex + 1} produced ${outputBlob.size} bytes (limit: ${MAX_FILE_SIZE})`)
-        
-        // Check if we're under the limit
-        if (outputBlob.size <= MAX_FILE_SIZE) {
-          console.log(`Success! File size: ${outputBlob.size} bytes`)
-          break
-        }
-        
-        // If this is the last strategy and we're still over, we have no choice but to use it
-        if (strategyIndex === strategies.length - 1) {
-          console.warn(`Could not get under 128KB. Final size: ${outputBlob.size} bytes`)
-          // Add a warning to the user
-          setLoadError(`Warning: GIF is ${Math.round(outputBlob.size / 1024)}KB (limit: 128KB). Try selecting fewer frames.`)
-          setTimeout(() => setLoadError(null), 5000)
+        // Final check - if still too large, use extreme measures
+        if (outputBlob.size > MAX_FILE_SIZE) {
+          console.warn(`Still over limit after all fallbacks. Trying extreme compression...`)
+          
+          // Last resort: Use only keyframes with maximum compression
+          const extremeStrategies = [
+            { quality: 200, frames: 15 },  // Very few frames, extreme compression
+            { quality: 255, frames: 10 },  // Minimal frames
+            { quality: 255, frames: 5 },   // Bare minimum for animation
+            { quality: 255, frames: 3 },   // Absolute minimum
+            { quality: 255, frames: 2 }    // Just 2 frames
+          ]
+          
+          for (const extreme of extremeStrategies) {
+            console.log(`Extreme fallback: ${extreme.frames} frames at quality ${extreme.quality}`)
+            
+            // Sample frames evenly
+            const step = Math.floor(usedFrames.length / extreme.frames)
+            const extremeFrames = []
+            for (let i = 0; i < extreme.frames && i * step < usedFrames.length; i++) {
+              extremeFrames.push(usedFrames[i * step])
+            }
+            
+            const extremeGif = new ImprovedGIFEncoder({
+              width: 128,
+              height: 128,
+              quality: Math.min(255, extreme.quality), // Cap at max quality value
+              workers: 2,
+              workerScript: '/gif.worker.js',
+              dither: false
+            })
+            
+            for (const frame of extremeFrames) {
+              const canvas = document.createElement('canvas')
+              canvas.width = 128
+              canvas.height = 128
+              const ctx = canvas.getContext('2d', { alpha: false })
+              if (!ctx) continue
+              
+              ctx.fillStyle = 'white'
+              ctx.fillRect(0, 0, 128, 128)
+              
+              const tempCanvas = document.createElement('canvas')
+              tempCanvas.width = frame.data.width
+              tempCanvas.height = frame.data.height
+              const tempCtx = tempCanvas.getContext('2d')
+              if (!tempCtx) continue
+              
+              tempCtx.putImageData(frame.data, 0, 0)
+              
+              // Apply scaling
+              if (scaleMode === 'fill') {
+                const scale = Math.max(128 / tempCanvas.width, 128 / tempCanvas.height)
+                const scaledWidth = tempCanvas.width * scale
+                const scaledHeight = tempCanvas.height * scale
+                const offsetX = (128 - scaledWidth) / 2
+                const offsetY = (128 - scaledHeight) / 2
+                ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+              } else {
+                const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
+                const scaledWidth = tempCanvas.width * scale
+                const scaledHeight = tempCanvas.height * scale
+                const offsetX = (128 - scaledWidth) / 2
+                const offsetY = (128 - scaledHeight) / 2
+                ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+              }
+              
+              // Adjust delay for extreme frame reduction
+              const baseDelay = isVideo ? 100 : ('delay' in frame ? frame.delay : 100)
+              const frameRatio = usedFrames.length / extremeFrames.length
+              const delay = Math.max(30, Math.min(500, Math.round(baseDelay / speedMultiplier * frameRatio)))
+              
+              extremeGif.addFrame(ctx, {
+                delay: delay,
+                dispose: 1,
+                copy: true
+              })
+            }
+            
+            outputBlob = await extremeGif.render()
+            console.log(`Extreme attempt size: ${outputBlob.size} bytes with ${extremeFrames.length} frames`)
+            
+            if (outputBlob.size <= MAX_FILE_SIZE) {
+              setLoadError(`Reduced to ${extremeFrames.length} frames`)
+              setTimeout(() => setLoadError(null), 3000)
+              break
+            }
+          }
+          
+          // Absolute last resort: single frame
+          if (outputBlob.size > MAX_FILE_SIZE) {
+            console.error(`Creating single frame as last resort`)
+            const singleFrameGif = new ImprovedGIFEncoder({
+              width: 128,
+              height: 128,
+              quality: 255,
+              workers: 1,
+              workerScript: '/gif.worker.js'
+            })
+            
+            const canvas = document.createElement('canvas')
+            canvas.width = 128
+            canvas.height = 128
+            const ctx = canvas.getContext('2d', { alpha: false })
+            if (ctx) {
+              ctx.fillStyle = 'white'
+              ctx.fillRect(0, 0, 128, 128)
+              
+              const frame = usedFrames[Math.floor(usedFrames.length / 2)] // Middle frame
+              const tempCanvas = document.createElement('canvas')
+              tempCanvas.width = frame.data.width
+              tempCanvas.height = frame.data.height
+              const tempCtx = tempCanvas.getContext('2d')
+              if (tempCtx) {
+                tempCtx.putImageData(frame.data, 0, 0)
+                const scale = Math.min(128 / tempCanvas.width, 128 / tempCanvas.height)
+                const scaledWidth = tempCanvas.width * scale
+                const scaledHeight = tempCanvas.height * scale
+                const offsetX = (128 - scaledWidth) / 2
+                const offsetY = (128 - scaledHeight) / 2
+                ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight)
+              }
+              
+              singleFrameGif.addFrame(ctx, { delay: 100, dispose: 1, copy: true })
+              outputBlob = await singleFrameGif.render()
+              setLoadError(`Converted to static image`)
+              setTimeout(() => setLoadError(null), 5000)
+            }
+          }
         }
       }
       
-      if (outputBlob) {
-        onExport(outputBlob, selectedIndices, speedMultiplier)
-        onClose()
-      } else {
-        throw new Error('Failed to create GIF')
-      }
+      // Export with the indices we actually used (may be reduced)
+      onExport(outputBlob, exportIndices, speedMultiplier)
       
     } catch (error) {
       console.error('Failed to export GIF:', error)
@@ -453,7 +987,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     }
   }, [frames.length, frameDataUrls.length])
 
-  const selectedCount = getSelectedFrames().length
+  const selectedCount = getExportFrameIndices().length
 
   return (
     <>
@@ -493,17 +1027,27 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
               {/* Main Preview */}
               <div className="flex flex-col items-center space-y-4">
                 <div className="text-center">
-                  <h3 className="text-sm font-medium mb-2">Emoji Preview</h3>
-                  <div className="relative w-[200px] h-[200px] border rounded-lg shadow-sm bg-white overflow-hidden">
-                    {frameDataUrls[currentPreviewFrame] && (
+                  <h3 className="text-sm font-medium mb-2">
+                    {showExportPreview ? 'Export Preview (128x128)' : 'Display Preview (200x200)'}
+                  </h3>
+                  <div className={`relative border rounded-lg shadow-sm bg-white overflow-hidden ${
+                    showExportPreview ? 'w-[128px] h-[128px]' : 'w-[200px] h-[200px]'
+                  }`}>
+                    {(showExportPreview ? exportPreviewUrls[currentPreviewFrame] : frameDataUrls[currentPreviewFrame]) && (
                       <img 
-                        src={frameDataUrls[currentPreviewFrame]}
+                        src={showExportPreview ? exportPreviewUrls[currentPreviewFrame] : frameDataUrls[currentPreviewFrame]}
                         alt={`Frame ${currentPreviewFrame + 1}`}
                         className="absolute inset-0 w-full h-full"
                         style={{ imageRendering: 'pixelated' }}
                       />
                     )}
                   </div>
+                  <button
+                    onClick={() => setShowExportPreview(!showExportPreview)}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {showExportPreview ? 'Show display preview' : 'Show exact export preview'}
+                  </button>
                 </div>
                 
                 <div className="flex items-center gap-4">
@@ -527,11 +1071,28 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                   </Button>
                   
                   <div className="text-sm text-muted-foreground">
-                    {frames.length <= 50 ? (
-                      <span>Using all {frames.length} frames</span>
-                    ) : (
-                      <span>Using {getSelectedFrames().length} of {frames.length} frames</span>
-                    )}
+                    {(() => {
+                      const exportIndices = getExportFrameIndices()
+                      const selectedIndices = getSelectedFrames()
+                      const strategy = exportStrategy || calculateExportStrategy()
+                      const smoothnessPercent = Math.round((exportIndices.length / selectedIndices.length) * 100)
+                      
+                      if (strategy.frameSkip > 1) {
+                        // Frames are being skipped
+                        return (
+                          <span className="text-muted-foreground">
+                            {exportIndices.length} of {selectedIndices.length} frames
+                          </span>
+                        )
+                      } else {
+                        // All frames are being used
+                        return (
+                          <span className="text-muted-foreground">
+                            All {frames.length} frames
+                          </span>
+                        )
+                      }
+                    })()}
                   </div>
                 </div>
               </div>
@@ -590,7 +1151,14 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>GIF Speed</span>
-                  <span className="text-muted-foreground">{speedMultiplier}x</span>
+                  <span className="text-muted-foreground">
+                    {speedMultiplier}x
+                    {frames.length > 0 && frames[0] && (
+                      <span className="ml-1 text-xs">
+                        (~{Math.round(1000 / Math.max(20, Math.round(100 / speedMultiplier)))} fps)
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <Slider
                   value={[speedMultiplier]}

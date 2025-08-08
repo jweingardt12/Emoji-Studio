@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Animation Speed Demo</title>
+  <style>
+    body { 
+      font-family: monospace; 
+      padding: 20px; 
+      max-width: 800px; 
+      margin: 0 auto;
+    }
+    .container { 
+      margin: 20px 0; 
+      padding: 20px; 
+      border: 1px solid #ccc; 
+      border-radius: 8px;
+    }
+    canvas { 
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #999;
+      background: white;
+    }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+    button {
+      padding: 8px 16px;
+      margin: 5px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+    button.active {
+      background: #4CAF50;
+      color: white;
+    }
+    .info {
+      background: #e8f4f8;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    #stats {
+      font-family: monospace;
+      background: #333;
+      color: #0f0;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎬 Animation Speed Demo</h1>
+  
+  <div class="container">
+    <h2>Visual Speed Test</h2>
+    
+    <div class="info">
+      <strong>This demo creates an actual animation you can control!</strong><br>
+      Watch the bouncing ball speed up and slow down as you adjust the slider.
+    </div>
+    
+    <canvas id="animCanvas" width="600" height="200"></canvas>
+    
+    <div class="controls">
+      <h3>Speed Control</h3>
+      <label for="speedSlider">
+        <strong>Speed Multiplier:</strong> 
+        <span id="speedValue">1</span>x
+      </label>
+      <input type="range" id="speedSlider" min="0.5" max="10" step="0.5" value="1">
+      
+      <div style="margin-top: 15px;">
+        <button onclick="setSpeed(0.5)">0.5x (Slow)</button>
+        <button onclick="setSpeed(1)">1x (Normal)</button>
+        <button onclick="setSpeed(3)">3x (Fast)</button>
+        <button onclick="setSpeed(5)">5x (Faster)</button>
+        <button onclick="setSpeed(10)">10x (Very Fast)</button>
+      </div>
+      
+      <div style="margin-top: 15px;">
+        <button id="playBtn" onclick="toggleAnimation()">Pause</button>
+        <button onclick="resetAnimation()">Reset</button>
+      </div>
+    </div>
+    
+    <div id="stats">
+      Frame: 0 | Base delay: 100ms | Adjusted: 100ms | FPS: 10
+    </div>
+    
+    <div class="info">
+      <strong>How this relates to GIFs:</strong><br>
+      • Tenor GIFs have ~100ms delays between frames (10 FPS)<br>
+      • Speed 3x = 33ms delays (30 FPS) - good for Slack<br>
+      • Speed 5x = 20ms delays (50 FPS) - very snappy<br>
+      • The ball represents a GIF frame updating at the adjusted speed
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('animCanvas');
+    const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const stats = document.getElementById('stats');
+    const playBtn = document.getElementById('playBtn');
+    
+    // Animation properties
+    let animationTimeout = null;
+    let isPlaying = true;
+    let speed = 1;
+    let frameCount = 0;
+    
+    // Ball properties
+    let ballX = 50;
+    let ballY = 100;
+    let ballRadius = 20;
+    let ballSpeed = 4;
+    let ballDirection = 1;
+    let ballColor = 0;
+    
+    // Trail effect
+    let trail = [];
+    const maxTrailLength = 10;
+    
+    const BASE_DELAY = 100; // Simulating Tenor GIF frame delay
+    
+    function drawFrame() {
+      // Semi-transparent fill for trail effect
+      ctx.fillStyle = 'rgba(240, 240, 240, 0.3)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw trail
+      trail.forEach((pos, index) => {
+        const alpha = (index / trail.length) * 0.5;
+        ctx.fillStyle = `rgba(100, 150, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, ballRadius * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      
+      // Update ball position
+      ballX += ballSpeed * ballDirection;
+      
+      // Bounce off walls
+      if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) {
+        ballDirection *= -1;
+        ballColor = (ballColor + 60) % 360;
+      }
+      
+      // Add to trail
+      trail.push({ x: ballX, y: ballY });
+      if (trail.length > maxTrailLength) {
+        trail.shift();
+      }
+      
+      // Draw ball with color that changes on bounce
+      const gradient = ctx.createRadialGradient(ballX, ballY, 0, ballX, ballY, ballRadius);
+      gradient.addColorStop(0, `hsl(${ballColor}, 70%, 60%)`);
+      gradient.addColorStop(1, `hsl(${ballColor}, 70%, 40%)`);
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Draw border
+      ctx.strokeStyle = `hsl(${ballColor}, 70%, 30%)`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Draw frame counter on ball
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(frameCount % 100, ballX, ballY);
+      
+      // Draw speed indicator
+      ctx.fillStyle = '#333';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`Speed: ${speed}x`, 10, 10);
+      
+      frameCount++;
+    }
+    
+    function animate() {
+      if (!isPlaying) return;
+      
+      drawFrame();
+      
+      // Calculate adjusted delay based on speed
+      const adjustedDelay = Math.max(16, Math.round(BASE_DELAY / speed));
+      const fps = Math.round(1000 / adjustedDelay);
+      
+      // Update stats
+      stats.textContent = `Frame: ${frameCount} | Base delay: ${BASE_DELAY}ms | Adjusted: ${adjustedDelay}ms | FPS: ${fps}`;
+      
+      // Schedule next frame
+      animationTimeout = setTimeout(animate, adjustedDelay);
+    }
+    
+    function toggleAnimation() {
+      if (isPlaying) {
+        isPlaying = false;
+        playBtn.textContent = 'Play';
+        if (animationTimeout) {
+          clearTimeout(animationTimeout);
+        }
+      } else {
+        isPlaying = true;
+        playBtn.textContent = 'Pause';
+        animate();
+      }
+    }
+    
+    function resetAnimation() {
+      ballX = 50;
+      ballY = 100;
+      ballDirection = 1;
+      ballColor = 0;
+      frameCount = 0;
+      trail = [];
+      
+      if (!isPlaying) {
+        drawFrame();
+      }
+    }
+    
+    function setSpeed(value) {
+      slider.value = value;
+      updateSpeed();
+    }
+    
+    function updateSpeed() {
+      speed = parseFloat(slider.value);
+      speedValue.textContent = speed.toFixed(1);
+      
+      // Update ball speed for visual feedback
+      ballSpeed = 2 + (speed * 0.5);
+      
+      // Restart animation with new speed
+      if (isPlaying && animationTimeout) {
+        clearTimeout(animationTimeout);
+        animate();
+      }
+    }
+    
+    // Event listeners
+    slider.addEventListener('input', updateSpeed);
+    
+    // Start animation
+    animate();
+  </script>
+</body>
+</html>

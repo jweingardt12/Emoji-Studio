@@ -149,9 +149,13 @@ export function EmojiProcessorPreview({
                 <div className="flex-shrink-0">
                   <div className="relative w-16 h-16 bg-checkered rounded overflow-hidden">
                     <img 
-                      src={emoji.preview} 
+                      src={emoji.blob || emoji.preview} // Use data URL if available, fallback to object URL
                       alt={emoji.name}
                       className="absolute inset-0 w-full h-full object-contain"
+                      loading="eager"
+                      decoding="async"
+                      style={{ imageRendering: 'auto' }}
+                      key={`${emoji.name}-${index}-${emoji.blob?.substring(0, 50)}`} // Force re-render with unique key
                     />
                   </div>
                 </div>

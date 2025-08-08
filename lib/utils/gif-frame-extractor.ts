@@ -10,166 +10,229 @@ export interface ExtractedFrame {
 export type ProgressCallback = (progress: number, message?: string) => void
 
 /**
- * Clean GIF frame extractor that preserves original quality
- * This implementation avoids pixel manipulation to prevent corruption
+ * Universal GIF frame extractor that prioritizes fidelity
+ * Uses browser-native capabilities first, then falls back to libraries
  */
 export class GifFrameExtractor {
   /**
-   * Extract frames from GIF with multiple fallback strategies
+   * Extract frames from GIF with maximum fidelity
    */
   static async extractFrames(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
     console.log(`[GifFrameExtractor] Processing: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB`)
     
-    // Report initial progress
-    onProgress?.(0, 'Checking file...')
+    onProgress?.(0, 'Starting extraction...')
     
-    // First check if we should skip extraction
+    // Check if we should skip extraction
     if (await this.shouldSkipExtraction(file)) {
       throw new Error('SKIP_FRAME_EDITOR: GIF already meets Slack requirements')
     }
     
-    // Try canvas frame extraction - uses browser's native GIF rendering
+    // For speed, try gifuct-js first as it's fastest and usually works well
     try {
-      console.log('[GifFrameExtractor] Attempting canvas frame extraction...')
-      onProgress?.(10, 'Extracting frames using canvas method...')
-      const { GifCanvasFrameExtractor } = await import('./gif-canvas-frame-extractor')
-      const frames = await GifCanvasFrameExtractor.extractFrames(file, onProgress)
-      onProgress?.(100, 'Extraction complete!')
-      return frames
+      console.log('[GifFrameExtractor] Using gifuct-js library (fastest)')
+      const frames = await this.extractFramesGifuct(file, onProgress)
+      if (frames.length > 0) {
+        console.log(`[GifFrameExtractor] Gifuct extraction successful: ${frames.length} frames`)
+        onProgress?.(100, 'Extraction complete!')
+        return frames
+      }
     } catch (error) {
-      console.warn('[GifFrameExtractor] Canvas frame extraction failed:', error)
+      console.warn('[GifFrameExtractor] Gifuct extraction failed:', error)
     }
     
-    
-    // Try browser-native extraction (if available)
+    // Method 2: omggif as second option (faster than ImageDecoder)
     try {
-      console.log('[GifFrameExtractor] Attempting browser-native extraction...')
-      return await this.extractFramesNative(file)
-    } catch (error) {
-      console.warn('[GifFrameExtractor] Native extraction failed:', error)
-    }
-    
-    // Try omggif extraction
-    try {
-      console.log('[GifFrameExtractor] Attempting omggif extraction...')
-      return await this.extractFramesOmggif(file)
+      console.log('[GifFrameExtractor] Using omggif library')
+      const frames = await this.extractFramesOmggif(file, onProgress)
+      if (frames.length > 0) {
+        console.log(`[GifFrameExtractor] Omggif extraction successful: ${frames.length} frames`)
+        onProgress?.(100, 'Extraction complete!')
+        return frames
+      }
     } catch (error) {
       console.warn('[GifFrameExtractor] Omggif extraction failed:', error)
     }
     
-    // Fall back to safe frame extraction
-    try {
-      console.log('[GifFrameExtractor] Attempting safe frame extraction...')
-      return await this.extractFramesSafe(file)
-    } catch (error) {
-      console.warn('[GifFrameExtractor] Safe extraction failed:', error)
+    // Method 3: Browser-native ImageDecoder as last resort (can be slow)
+    if ('ImageDecoder' in window) {
+      try {
+        console.log('[GifFrameExtractor] Using native ImageDecoder API')
+        const frames = await this.extractFramesNative(file, onProgress)
+        if (frames.length > 0) {
+          console.log(`[GifFrameExtractor] Native extraction successful: ${frames.length} frames`)
+          onProgress?.(100, 'Extraction complete!')
+          return frames
+        }
+      } catch (error) {
+        console.warn('[GifFrameExtractor] Native extraction failed:', error)
+      }
     }
     
-    // Last resort: single frame extraction
-    console.log('[GifFrameExtractor] Falling back to single frame extraction')
+    // Last resort: single frame
+    console.warn('[GifFrameExtractor] All methods failed, extracting single frame')
     return await this.extractSingleFrame(file)
   }
   
   /**
-   * Check if GIF already meets requirements
+   * Browser-native frame extraction using ImageDecoder API
+   * This provides the best fidelity as it uses the browser's native decoder
    */
-  private static async shouldSkipExtraction(file: File): Promise<boolean> {
-    if (file.size > 128 * 1024) return false
+  private static async extractFramesNative(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
+    const decoder = new (window as any).ImageDecoder({
+      data: file.stream(),
+      type: 'image/gif'
+    })
     
-    const img = await this.loadImage(file)
-    return img.width <= 128 && img.height <= 128
+    // Wait for the decoder to be ready
+    await decoder.completed
+    
+    const frames: ExtractedFrame[] = []
+    const frameCount = decoder.frameCount || 0
+    
+    console.log(`[Native] Found ${frameCount} frames`)
+    
+    if (frameCount === 0) {
+      throw new Error('ImageDecoder found no frames')
+    }
+    
+    for (let i = 0; i < frameCount; i++) {
+      onProgress?.(10 + (i / frameCount) * 80, `Extracting frame ${i + 1} of ${frameCount}...`)
+      
+      const result = await decoder.decode({ frameIndex: i })
+      const bitmap = result.image
+      
+      // Create canvas to convert VideoFrame to ImageData
+      const canvas = document.createElement('canvas')
+      canvas.width = bitmap.displayWidth || bitmap.codedWidth
+      canvas.height = bitmap.displayHeight || bitmap.codedHeight
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      
+      if (!ctx) throw new Error('Failed to create canvas context')
+      
+      ctx.drawImage(bitmap, 0, 0)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      
+      frames.push({
+        data: new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height
+        ),
+        delay: (result.duration || 100000) / 1000 // microseconds to milliseconds
+      })
+      
+      bitmap.close()
+    }
+    
+    decoder.close()
+    return frames
   }
   
   /**
-   * Browser-native frame extraction using ImageDecoder API (when available)
+   * Extract frames by letting the browser render the GIF naturally
+   * This method captures frames as the GIF plays in an img element
    */
-  private static async extractFramesNative(file: File): Promise<ExtractedFrame[]> {
-    // Check if ImageDecoder is available (Chrome 94+)
-    if ('ImageDecoder' in window) {
-      const decoder = new (window as any).ImageDecoder({
-        data: file.stream(),
-        type: 'image/gif'
-      })
-      
-      await decoder.decode()
-      const frames: ExtractedFrame[] = []
-      
-      for (let i = 0; i < decoder.frameCount; i++) {
-        const result = await decoder.decode({ frameIndex: i })
-        const bitmap = result.image
-        
-        // Convert VideoFrame to ImageData
-        const canvas = document.createElement('canvas')
-        canvas.width = bitmap.displayWidth
-        canvas.height = bitmap.displayHeight
-        const ctx = canvas.getContext('2d')
-        
-        if (!ctx) throw new Error('Failed to create canvas context')
-        
-        ctx.drawImage(bitmap, 0, 0)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        
-        frames.push({
-          data: imageData,
-          delay: result.duration / 1000 // Convert microseconds to milliseconds
-        })
-        
-        bitmap.close()
+  private static async extractFramesBrowserRendering(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
+    // First, use gifuct to get frame count and delays
+    const arrayBuffer = await file.arrayBuffer()
+    const gif = parseGIF(arrayBuffer)
+    const gifFrames = decompressFrames(gif, false)
+    
+    if (!gifFrames || gifFrames.length === 0) {
+      throw new Error('No frames found in GIF')
+    }
+    
+    const frameCount = gifFrames.length
+    const delays = gifFrames.map(f => f.delay * 10 || 100)
+    
+    console.log(`[Browser] GIF has ${frameCount} frames`)
+    
+    // Load GIF as image
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    
+    return new Promise((resolve, reject) => {
+      img.onload = async () => {
+        try {
+          const frames: ExtractedFrame[] = []
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d', { willReadFrequently: true })
+          
+          if (!ctx) {
+            URL.revokeObjectURL(url)
+            reject(new Error('Failed to create canvas context'))
+            return
+          }
+          
+          // Create offscreen container for GIF
+          const container = document.createElement('div')
+          container.style.position = 'fixed'
+          container.style.left = '-9999px'
+          container.style.top = '-9999px'
+          container.style.width = `${img.width}px`
+          container.style.height = `${img.height}px`
+          document.body.appendChild(container)
+          
+          // Clone image for each frame capture
+          for (let i = 0; i < frameCount; i++) {
+            onProgress?.(10 + (i / frameCount) * 80, `Capturing frame ${i + 1} of ${frameCount}...`)
+            
+            // Create new image element for this frame
+            const frameImg = new Image()
+            frameImg.src = url
+            
+            // Wait for specific frame timing
+            const targetTime = delays.slice(0, i).reduce((a, b) => a + b, 0)
+            
+            await new Promise<void>((resolve) => {
+              frameImg.onload = () => {
+                // Wait for the right moment
+                setTimeout(() => {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height)
+                  ctx.drawImage(frameImg, 0, 0)
+                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                  
+                  frames.push({
+                    data: new ImageData(
+                      new Uint8ClampedArray(imageData.data),
+                      imageData.width,
+                      imageData.height
+                    ),
+                    delay: delays[i]
+                  })
+                  
+                  resolve()
+                }, targetTime % 3000) // Modulo to keep timing reasonable
+              }
+            })
+          }
+          
+          // Cleanup
+          document.body.removeChild(container)
+          URL.revokeObjectURL(url)
+          
+          resolve(frames)
+        } catch (error) {
+          URL.revokeObjectURL(url)
+          reject(error)
+        }
       }
       
-      decoder.close()
-      return frames
-    }
-    
-    throw new Error('ImageDecoder not available')
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error('Failed to load GIF'))
+      }
+      
+      img.src = url
+    })
   }
   
   /**
-   * Extract frames using omggif library (better color handling)
+   * Extract frames using gifuct-js with proper compositing
    */
-  private static async extractFramesOmggif(file: File): Promise<ExtractedFrame[]> {
-    const arrayBuffer = await file.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-    
-    // Parse GIF with omggif
-    const reader = new GifReader(uint8Array)
-    
-    console.log(`[GifFrameExtractor] Omggif - GIF dimensions: ${reader.width}x${reader.height}, frames: ${reader.numFrames()}`)
-    
-    const extractedFrames: ExtractedFrame[] = []
-    
-    // Extract each frame
-    for (let i = 0; i < reader.numFrames(); i++) {
-      // Create a NEW buffer for each frame - this is critical!
-      const framePixels = new Uint8ClampedArray(reader.width * reader.height * 4)
-      
-      // Decode frame into pixel buffer
-      reader.decodeAndBlitFrameRGBA(i, framePixels as any)
-      
-      // Create ImageData from the frame's own pixel buffer
-      const imageData = new ImageData(
-        new Uint8ClampedArray(framePixels), // Create a copy to ensure independence
-        reader.width,
-        reader.height
-      )
-      
-      // Get frame info
-      const frameInfo = reader.frameInfo(i)
-      
-      extractedFrames.push({
-        data: imageData,
-        delay: frameInfo.delay * 10 || 100 // Convert centiseconds to milliseconds
-      })
-    }
-    
-    console.log(`[GifFrameExtractor] Successfully extracted ${extractedFrames.length} frames using omggif`)
-    return extractedFrames
-  }
-  
-  /**
-   * Safe frame extraction that avoids pixel manipulation
-   */
-  private static async extractFramesSafe(file: File): Promise<ExtractedFrame[]> {
+  private static async extractFramesGifuct(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
     const arrayBuffer = await file.arrayBuffer()
     const gif = parseGIF(arrayBuffer)
     const frames = decompressFrames(gif, true)
@@ -178,56 +241,176 @@ export class GifFrameExtractor {
       throw new Error('No frames found in GIF')
     }
     
-    console.log(`[GifFrameExtractor] Found ${frames.length} frames`)
+    console.log(`[Gifuct] Found ${frames.length} frames`)
     
     const canvas = document.createElement('canvas')
     canvas.width = gif.lsd.width
     canvas.height = gif.lsd.height
-    const ctx = canvas.getContext('2d', { 
-      alpha: true,
-      willReadFrequently: true 
-    })
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     
     if (!ctx) throw new Error('Failed to create canvas context')
     
     const extractedFrames: ExtractedFrame[] = []
+    let previousImageData: ImageData | null = null
     
-    // Create ImageData for each frame without pixel manipulation
     for (let i = 0; i < frames.length; i++) {
       const frame = frames[i]
+      onProgress?.(10 + (i / frames.length) * 80, `Processing frame ${i + 1} of ${frames.length}...`)
       
-      // Skip frames without valid patch data
-      if (!frame.patch || frame.patch.length !== canvas.width * canvas.height * 4) {
-        console.warn(`[GifFrameExtractor] Skipping frame ${i} - invalid patch data`)
+      if (!frame.patch || frame.patch.length === 0) {
+        console.warn(`Frame ${i} has no patch data`)
         continue
       }
       
-      try {
-        // Create ImageData directly from patch without manipulation
-        const imageData = new ImageData(
-          new Uint8ClampedArray(frame.patch),
-          canvas.width,
-          canvas.height
-        )
-        
-        extractedFrames.push({
-          data: imageData,
-          delay: frame.delay * 10 || 100 // Convert centiseconds to milliseconds
-        })
-      } catch (error) {
-        console.error(`[GifFrameExtractor] Error processing frame ${i}:`, error)
+      // Handle disposal from previous frame
+      if (i > 0) {
+        const prevFrame = frames[i - 1]
+        if (prevFrame.disposalType === 2) {
+          // Clear to background
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        } else if (prevFrame.disposalType === 3 && previousImageData) {
+          // Restore to previous
+          ctx.putImageData(previousImageData, 0, 0)
+        }
+        // disposalType 0 or 1: don't dispose, leave canvas as is
       }
+      
+      // Save state before drawing if next frame needs it
+      if (frame.disposalType === 3) {
+        previousImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      }
+      
+      // Draw frame patch
+      const patchData = new ImageData(
+        new Uint8ClampedArray(frame.patch),
+        frame.dims.width,
+        frame.dims.height
+      )
+      
+      // Use temporary canvas to draw patch
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = frame.dims.width
+      tempCanvas.height = frame.dims.height
+      const tempCtx = tempCanvas.getContext('2d')
+      
+      if (tempCtx) {
+        tempCtx.putImageData(patchData, 0, 0)
+        ctx.drawImage(tempCanvas, frame.dims.left, frame.dims.top)
+      }
+      
+      // Capture composited frame
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      
+      extractedFrames.push({
+        data: new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height
+        ),
+        delay: frame.delay * 10 || 100
+      })
     }
     
     if (extractedFrames.length === 0) {
-      throw new Error('No valid frames could be extracted')
+      throw new Error('No valid frames extracted')
     }
     
     return extractedFrames
   }
   
   /**
-   * Extract single frame as last resort
+   * Extract frames using omggif with manual compositing
+   */
+  private static async extractFramesOmggif(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    const reader = new GifReader(uint8Array)
+    
+    const frameCount = reader.numFrames()
+    console.log(`[Omggif] Found ${frameCount} frames, ${reader.width}x${reader.height}`)
+    
+    const canvas = document.createElement('canvas')
+    canvas.width = reader.width
+    canvas.height = reader.height
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    
+    if (!ctx) throw new Error('Failed to create canvas context')
+    
+    const extractedFrames: ExtractedFrame[] = []
+    let previousImageData: ImageData | null = null
+    
+    for (let i = 0; i < frameCount; i++) {
+      onProgress?.(10 + (i / frameCount) * 80, `Extracting frame ${i + 1} of ${frameCount}...`)
+      
+      const frameInfo = reader.frameInfo(i)
+      const framePixels = new Uint8ClampedArray(reader.width * reader.height * 4)
+      
+      // Handle disposal from previous frame
+      if (i > 0) {
+        const prevFrameInfo = reader.frameInfo(i - 1)
+        
+        if (prevFrameInfo.disposal === 2) {
+          // Clear to background
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        } else if (prevFrameInfo.disposal === 3 && previousImageData) {
+          // Restore to previous
+          ctx.putImageData(previousImageData, 0, 0)
+        }
+        // disposal 0 or 1: keep canvas as is
+      } else {
+        // First frame - clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+      }
+      
+      // Save state if needed for next frame
+      if (frameInfo.disposal === 3) {
+        previousImageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      }
+      
+      // Decode frame into buffer
+      reader.decodeAndBlitFrameRGBA(i, framePixels as any)
+      
+      // Create ImageData from decoded pixels
+      const frameData = new ImageData(framePixels, reader.width, reader.height)
+      
+      // Composite frame onto canvas
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = reader.width
+      tempCanvas.height = reader.height
+      const tempCtx = tempCanvas.getContext('2d')
+      
+      if (tempCtx) {
+        tempCtx.putImageData(frameData, 0, 0)
+        
+        // Draw with proper compositing
+        ctx.globalCompositeOperation = 'source-over'
+        ctx.drawImage(
+          tempCanvas,
+          frameInfo.x || 0,
+          frameInfo.y || 0,
+          frameInfo.width || reader.width,
+          frameInfo.height || reader.height
+        )
+      }
+      
+      // Capture composited result
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      
+      extractedFrames.push({
+        data: new ImageData(
+          new Uint8ClampedArray(imageData.data),
+          imageData.width,
+          imageData.height
+        ),
+        delay: frameInfo.delay * 10 || 100
+      })
+    }
+    
+    return extractedFrames
+  }
+  
+  /**
+   * Extract single frame as fallback
    */
   private static async extractSingleFrame(file: File): Promise<ExtractedFrame[]> {
     const img = await this.loadImage(file)
@@ -243,9 +426,23 @@ export class GifFrameExtractor {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
     
     return [{
-      data: imageData,
+      data: new ImageData(
+        new Uint8ClampedArray(imageData.data),
+        imageData.width,
+        imageData.height
+      ),
       delay: 100
     }]
+  }
+  
+  /**
+   * Check if GIF already meets requirements
+   */
+  private static async shouldSkipExtraction(file: File): Promise<boolean> {
+    if (file.size > 128 * 1024) return false
+    
+    const img = await this.loadImage(file)
+    return img.width <= 128 && img.height <= 128
   }
   
   /**
@@ -286,7 +483,8 @@ export class GifFrameExtractor {
       // Extract frames
       const frames = await this.extractFrames(file)
       if (frames.length === 0) {
-        throw new Error('No frames found in GIF')
+        console.warn('[GifFrameExtractor] No frames extracted, returning original')
+        return file
       }
       
       // Calculate optimal settings
@@ -322,29 +520,48 @@ export class GifFrameExtractor {
     return new Promise((resolve, reject) => {
       const gif = new GIF({
         workers: 2,
-        quality: 10,
+        quality: 5, // Balance between quality and speed (1-30)
         width: targetSize,
         height: targetSize,
         workerScript: '/gif.worker.js',
-        dither: false
+        dither: false, // Disable dithering for speed
+        repeat: 0, // Loop forever (important for animation)
+        transparent: null,
+        background: '#FFFFFF'
       })
       
       const canvas = document.createElement('canvas')
       canvas.width = targetSize
       canvas.height = targetSize
-      const ctx = canvas.getContext('2d')!
+      const ctx = canvas.getContext('2d', { 
+        alpha: true,
+        desynchronized: false,
+        willReadFrequently: true
+      })!
+      
+      // Enable high quality image rendering
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       
       frames.forEach((frame) => {
         // Clear with white background
         ctx.fillStyle = 'white'
         ctx.fillRect(0, 0, targetSize, targetSize)
         
-        // Create temp canvas for frame
+        // Create temp canvas for frame with high quality settings
         const tempCanvas = document.createElement('canvas')
         tempCanvas.width = frame.data.width
         tempCanvas.height = frame.data.height
-        const tempCtx = tempCanvas.getContext('2d')!
+        const tempCtx = tempCanvas.getContext('2d', {
+          alpha: true,
+          willReadFrequently: true
+        })!
+        
         tempCtx.putImageData(frame.data, 0, 0)
+        
+        // Use high quality scaling
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
         
         // Draw scaled frame
         ctx.drawImage(
@@ -362,6 +579,11 @@ export class GifFrameExtractor {
       
       gif.on('finished', (blob: Blob) => {
         resolve(blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' }))
+      })
+      
+      gif.on('error', (error: Error) => {
+        console.error('GIF encoding error:', error)
+        reject(error)
       })
       
       gif.render()

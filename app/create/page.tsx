@@ -75,6 +75,7 @@ function EmojiCreatorPage() {
   const [gifToEdit, setGifToEdit] = useState<File | null>(null)
   const [showGifEditor, setShowGifEditor] = useState(false)
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
+  const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
   const { toast } = useToast()
 
   useEffect(() => {
@@ -415,6 +416,13 @@ function EmojiCreatorPage() {
     const files = filesToProcess || selectedFiles
     if (files.length === 0) return
 
+    // Check if any files are from URLs that might need special handling
+    for (const file of files) {
+      if (file.name.includes('tenor') || file.name.includes('giphy')) {
+        console.log('[processFiles] Detected URL-based GIF that may need special handling:', file.name)
+      }
+    }
+
     openpanel.track("Emoji Creator: Processing Started", { 
       fileCount: files.length,
       fileTypes: files.map(f => f.type),
@@ -498,13 +506,20 @@ function EmojiCreatorPage() {
                 console.warn(`GIF dimensions too large for frame editor: ${img.width}x${img.height}`)
                 // Process normally without frame editor
               } else {
-                // Show GIF frame editor
-                setGifToEdit(file)
-                setShowGifEditor(true)
-                setIsProcessing(false)
-                
-                // Wait for user to complete frame selection
-                return
+                // Check if we've already failed to extract frames for this file
+                const fileKey = `${file.name}-${file.size}-${file.lastModified}`
+                if (failedFrameExtraction.has(fileKey)) {
+                  console.log('Skipping frame editor for file that already failed frame extraction:', file.name)
+                  // Process normally without frame editor
+                } else {
+                  // Show GIF frame editor
+                  setGifToEdit(file)
+                  setShowGifEditor(true)
+                  setIsProcessing(false)
+                  
+                  // Wait for user to complete frame selection
+                  return
+                }
               }
             } else if (file.size >= 100 * 1024 * 1024) {
               console.log(`${isGif ? 'GIF' : 'Animated WebP'} too large for frame editor (${(file.size / 1024 / 1024).toFixed(2)}MB), processing normally`)
@@ -569,7 +584,7 @@ function EmojiCreatorPage() {
         totalProcessedSize: newProcessedEmojis.reduce((sum, e) => sum + e.processedSize, 0)
       })
     }
-  }, [selectedFiles, setProcessingFiles, setIsProcessing, setCurrentFileIndex, setCurrentStep, setProcessingError, setProcessedEmojis, setGifToEdit, setShowGifEditor])
+  }, [selectedFiles, setProcessingFiles, setIsProcessing, setCurrentFileIndex, setCurrentStep, setProcessingError, setProcessedEmojis, setGifToEdit, setShowGifEditor, failedFrameExtraction])
 
   const handleRemoveProcessed = (index: number) => {
     setProcessedEmojis(prev => prev.filter((_, i) => i !== index))
@@ -723,6 +738,18 @@ function EmojiCreatorPage() {
   const handleGifExport = async (blob: Blob, selectedFrames: number[], speedMultiplier: number) => {
     if (!gifToEdit) return
     
+    console.log('[handleGifExport] Exporting GIF:', {
+      originalSize: gifToEdit.size,
+      exportedSize: blob.size,
+      selectedFrames: selectedFrames.length,
+      speedMultiplier,
+      blobType: blob.type
+    })
+    
+    // Mark this file as having been through frame editor to prevent loops
+    const fileKey = `${gifToEdit.name}-${gifToEdit.size}-${gifToEdit.lastModified}`
+    setFailedFrameExtraction(prev => new Set(prev).add(fileKey))
+    
     // Create a processed emoji from the exported GIF
     const fileName = gifToEdit.name.replace(/\.[^/.]+$/, '').toLowerCase().replace(/\s+/g, '-')
     const processedEmoji: ProcessedEmoji = {
@@ -740,15 +767,19 @@ function EmojiCreatorPage() {
       speedMultiplier: speedMultiplier
     }
     
-    // Close the frame editor
-    setShowGifEditor(false)
+    // Store the original file reference before clearing
+    const originalFile = gifToEdit
+    
+    // Clear state first
+    setGifToEdit(null)
+    setSelectedFiles([])
     
     if (isReEditingFromModal) {
       // If we're re-editing from the modal, update the existing processed emoji
       setProcessedEmojis(prev => {
         // Replace the existing emoji with the new one
         const newEmojis = [...prev]
-        const existingIndex = newEmojis.findIndex(e => e.originalFile === gifToEdit)
+        const existingIndex = newEmojis.findIndex(e => e.originalFile === originalFile)
         if (existingIndex >= 0) {
           newEmojis[existingIndex] = processedEmoji
         } else {
@@ -763,22 +794,22 @@ function EmojiCreatorPage() {
     } else {
       // Normal flow - new file being processed
       setProcessedEmojis([processedEmoji])
-      setProcessingFiles([gifToEdit])
+      setProcessingFiles([originalFile])
       setCurrentFileIndex(0)
       setCurrentStep('completed')
       setIsProcessing(true) // This shows the processing modal
     }
     
-    setGifToEdit(null)
-    setSelectedFiles([])
+    // Close the frame editor after setting everything up
+    setShowGifEditor(false)
     
     
     openpanel.track("Emoji Creator: GIF Frame Editor Export", {
-      originalSize: gifToEdit.size,
+      originalSize: originalFile.size,
       processedSize: blob.size,
       selectedFrames: selectedFrames.length,
       fileName: fileName,
-      isVideo: gifToEdit.type.startsWith('video/'),
+      isVideo: originalFile.type.startsWith('video/'),
       speedMultiplier: speedMultiplier
     })
   }
@@ -1153,45 +1184,33 @@ function EmojiCreatorPage() {
           isOpen={showGifEditor}
           onClose={() => {
             setShowGifEditor(false)
+            
+            // If gifToEdit is null, it means we already handled the export
+            if (!gifToEdit) {
+              return
+            }
+            
             const wasReEditing = isReEditingFromModal
             const hadProcessedEmojis = processedEmojis.length > 0
+            const fileToProcess = gifToEdit // Save reference before clearing
             setGifToEdit(null)
             
             // If we were re-editing, show the processing modal again
             if (wasReEditing && hadProcessedEmojis) {
               setIsProcessing(true)
               setIsReEditingFromModal(false)
-            } else {
+            } else if (fileToProcess) {
               // User canceled frame selection - continue processing the original file
               console.log('Frame editor canceled - processing original file without frame selection')
               setIsReEditingFromModal(false)
               
-              // Continue processing the original file
-              if (gifToEdit) {
-                // Process the original file without frame selection
-                setProcessingFiles([gifToEdit])
-                setIsProcessing(true)
-                setCurrentFileIndex(0)
-                setCurrentStep('processing')
-                
-                // Process the file normally (will skip frame editor this time)
-                setTimeout(async () => {
-                  try {
-                    const processor = new EmojiProcessor()
-                    const result = await processor.processFile(gifToEdit)
-                    
-                    if (result) {
-                      setProcessedEmojis([result])
-                      setCurrentStep('complete')
-                    } else {
-                      setProcessingError('Failed to process file')
-                    }
-                  } catch (error) {
-                    console.error('Error processing file:', error)
-                    setProcessingError('Failed to process file')
-                  }
-                }, 100)
-              }
+              // Mark this file as having failed frame extraction to avoid infinite loop
+              const fileKey = `${fileToProcess.name}-${fileToProcess.size}-${fileToProcess.lastModified}`
+              setFailedFrameExtraction(prev => new Set(prev).add(fileKey))
+              
+              // Use the main processFiles function to handle the complete flow
+              // This will show the proper processing modal and handle large files correctly
+              processFiles([fileToProcess])
             }
           }}
           onExport={handleGifExport}

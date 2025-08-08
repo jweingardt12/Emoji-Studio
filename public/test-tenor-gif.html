@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tenor GIF Test</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #333; }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    img {
+      max-width: 300px;
+      display: block;
+      margin: 10px 0;
+      border: 2px solid #007bff;
+      border-radius: 4px;
+    }
+    .instructions {
+      background: #f0f8ff;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tenor GIF Frame Extraction Test</h1>
+  
+  <div class="test-section">
+    <h2>Test GIF from Tenor:</h2>
+    <img src="https://media1.tenor.com/m/3l4Ky00EA8IAAAAd/liam-neeson-i-will-find-you.gif" alt="Liam Neeson Tenor GIF">
+    <p>URL: <code>https://media1.tenor.com/m/3l4Ky00EA8IAAAAd/liam-neeson-i-will-find-you.gif</code></p>
+  </div>
+  
+  <div class="instructions">
+    <h2>Testing Instructions:</h2>
+    <ol>
+      <li>Download the GIF above (right-click → Save Image As...)</li>
+      <li>Go to <a href="/create" target="_blank">Emoji Studio Create Page</a></li>
+      <li>Upload the downloaded GIF</li>
+      <li>Check if the frames are extracted correctly without distortion</li>
+      <li>The frame editor should show all frames with proper quality</li>
+    </ol>
+    
+    <p><strong>Expected Result:</strong> All frames should be extracted clearly without distortion or corruption.</p>
+    
+    <p><a href="/create" target="_blank">→ Open Emoji Studio Create Page</a></p>
+  </div>
+  
+  <div class="test-section">
+    <h2>Additional Test GIFs:</h2>
+    <p>You can also test with these other Tenor GIFs:</p>
+    <img src="https://media.tenor.com/images/4e3e38820c6e2c3e0f4e5b7f3e6f9e2f/tenor.gif" alt="Test GIF 2" onerror="this.style.display='none'">
+    <img src="https://media.tenor.com/QBWbWY5sVhQAAAAC/cat-cute.gif" alt="Cat GIF" onerror="this.style.display='none'">
+  </div>
+</body>
+</html>
