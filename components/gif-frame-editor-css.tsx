@@ -108,7 +108,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       }
       
       console.log(`[loadFrames] Extracted ${extractedFrames.length} frames`)
-      const delays = extractedFrames.map(f => f.delay)
+      const delays = extractedFrames.map(f => 'delay' in f ? f.delay : 100) // VideoFrames use 100ms default delay
       console.log(`[loadFrames] Frame delays:`, delays)
       console.log(`[loadFrames] Average delay: ${(delays.reduce((a, b) => a + b, 0) / delays.length).toFixed(1)}ms`)
       console.log(`[loadFrames] Min: ${Math.min(...delays)}ms, Max: ${Math.max(...delays)}ms`)
@@ -329,7 +329,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
     // Updated bytes per frame estimates for smoother animations
     // More conservative estimates to avoid overshooting
     // Based on empirical data for 128x128 GIFs with gif.js:
-    const bytesPerFrameEstimates = {
+    const bytesPerFrameEstimates: Record<number, number> = {
       1: 3500,   // Best quality - conservative estimate
       3: 3000,   // Excellent quality
       5: 2500,   // Very good quality

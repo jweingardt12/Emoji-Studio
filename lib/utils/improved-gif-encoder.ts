@@ -43,7 +43,7 @@ export class ImprovedGIFEncoder {
       workerScript: this.options.workerScript,
       dither: this.options.dither as any,
       repeat: 0, // 0 = loop forever, -1 = no loop, n = loop n times
-      transparent: this.options.transparent || null
+      transparent: this.options.transparent as any
       // Remove background color - let GIF handle transparency naturally
     })
   }

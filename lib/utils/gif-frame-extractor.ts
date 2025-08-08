@@ -581,7 +581,7 @@ export class GifFrameExtractor {
         resolve(blob.type === 'image/gif' ? blob : new Blob([blob], { type: 'image/gif' }))
       })
       
-      gif.on('error', (error: Error) => {
+      gif.on('error' as any, (error: any) => {
         console.error('GIF encoding error:', error)
         reject(error)
       })
