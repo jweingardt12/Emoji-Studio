@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -82,39 +82,6 @@ function EmojiCreatorPage() {
     
     console.log('[Create Page] Component mounted, URL:', window.location.href)
     console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
-    
-    // Check if we have pending emoji data from Slackmojis or cart
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('from') === 'extension') {
-      const pendingData = window.sessionStorage.getItem('pendingEmojiFromSlackmojis');
-      if (pendingData) {
-        try {
-          const emojiData = JSON.parse(pendingData);
-          console.log('[Create Page] Found pending emoji from Slackmojis:', emojiData);
-          
-          // Clear the session storage
-          window.sessionStorage.removeItem('pendingEmojiFromSlackmojis');
-          
-          // Process the emoji data
-          setTimeout(() => {
-            handleExtensionMessage({
-              data: {
-                type: 'EMOJI_STUDIO_CREATE_EMOJI',
-                imageUrl: emojiData.imageUrl,
-                originalUrl: emojiData.originalUrl,
-                emojiName: emojiData.name
-              }
-            } as MessageEvent);
-          }, 500);
-        } catch (error) {
-          console.error('[Create Page] Failed to parse pending emoji data:', error);
-        }
-      }
-    } else if (urlParams.get('from') === 'extension-cart') {
-      // Handle cart data from extension
-      console.log('[Create Page] Waiting for cart data from extension...');
-      // Cart data will be sent via postMessage from the extension's inject.js script
-    }
     
     // Listen for Chrome extension messages
     const handleExtensionMessage = async (event: MessageEvent) => {
@@ -339,6 +306,39 @@ function EmojiCreatorPage() {
           })
         }
       }
+  }
+    
+    // Check if we have pending emoji data from Slackmojis or cart
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('from') === 'extension') {
+      const pendingData = window.sessionStorage.getItem('pendingEmojiFromSlackmojis');
+      if (pendingData) {
+        try {
+          const emojiData = JSON.parse(pendingData);
+          console.log('[Create Page] Found pending emoji from Slackmojis:', emojiData);
+          
+          // Clear the session storage
+          window.sessionStorage.removeItem('pendingEmojiFromSlackmojis');
+          
+          // Process the emoji data
+          setTimeout(() => {
+            handleExtensionMessage({
+              data: {
+                type: 'EMOJI_STUDIO_CREATE_EMOJI',
+                imageUrl: emojiData.imageUrl,
+                originalUrl: emojiData.originalUrl,
+                emojiName: emojiData.name
+              }
+            } as MessageEvent);
+          }, 500);
+        } catch (error) {
+          console.error('[Create Page] Failed to parse pending emoji data:', error);
+        }
+      }
+    } else if (urlParams.get('from') === 'extension-cart') {
+      // Handle cart data from extension
+      console.log('[Create Page] Waiting for cart data from extension...');
+      // Cart data will be sent via postMessage from the extension's inject.js script
     }
     
     window.addEventListener('message', handleExtensionMessage)
@@ -411,7 +411,7 @@ function EmojiCreatorPage() {
     }
   }
 
-  const processFiles = async (filesToProcess?: File[]) => {
+  const processFiles = useCallback(async (filesToProcess?: File[]) => {
     const files = filesToProcess || selectedFiles
     if (files.length === 0) return
 
@@ -569,7 +569,7 @@ function EmojiCreatorPage() {
         totalProcessedSize: newProcessedEmojis.reduce((sum, e) => sum + e.processedSize, 0)
       })
     }
-  }
+  }, [selectedFiles, setProcessingFiles, setIsProcessing, setCurrentFileIndex, setCurrentStep, setProcessingError, setProcessedEmojis, setGifToEdit, setShowGifEditor])
 
   const handleRemoveProcessed = (index: number) => {
     setProcessedEmojis(prev => prev.filter((_, i) => i !== index))
