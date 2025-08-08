@@ -1162,12 +1162,36 @@ function EmojiCreatorPage() {
               setIsProcessing(true)
               setIsReEditingFromModal(false)
             } else {
-              // User canceled - clear everything and exit the flow
-              setSelectedFiles([])
-              setIsProcessing(false)
-              setProcessedEmojis([])
+              // User canceled frame selection - continue processing the original file
+              console.log('Frame editor canceled - processing original file without frame selection')
               setIsReEditingFromModal(false)
-              console.log('Frame editor canceled - exiting emoji creation flow')
+              
+              // Continue processing the original file
+              if (gifToEdit) {
+                // Process the original file without frame selection
+                setProcessingFiles([gifToEdit])
+                setIsProcessing(true)
+                setCurrentFileIndex(0)
+                setCurrentStep('processing')
+                
+                // Process the file normally (will skip frame editor this time)
+                setTimeout(async () => {
+                  try {
+                    const processor = new EmojiProcessor()
+                    const result = await processor.processFile(gifToEdit)
+                    
+                    if (result) {
+                      setProcessedEmojis([result])
+                      setCurrentStep('complete')
+                    } else {
+                      setProcessingError('Failed to process file')
+                    }
+                  } catch (error) {
+                    console.error('Error processing file:', error)
+                    setProcessingError('Failed to process file')
+                  }
+                }, 100)
+              }
             }
           }}
           onExport={handleGifExport}
