@@ -6,11 +6,14 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 
 export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   // Get sidebar state to check if it's expanded or collapsed
   const { state } = useSidebar()
   const isExpanded = state === "expanded"
+  const pathname = usePathname()
+  const isDashboard = pathname === "/dashboard"
   
   return (
     <header className={cn("group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear", className)} {...props}>
@@ -18,14 +21,16 @@ export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLEle
         <SidebarTrigger className="-ml-1 hidden md:flex" />
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4 hidden md:block" />
         
-        {/* Logo and app name - always visible on mobile, conditionally on desktop */}
+        {/* Logo and app name - only on dashboard for mobile, conditionally on desktop */}
         <div className="relative overflow-hidden flex-1">
           <div 
-            className={`
-              flex items-center gap-2 
-              transition-all duration-300 ease-in-out
-              ${isExpanded ? 'lg:opacity-0 lg:-translate-x-8 lg:absolute' : 'opacity-100 translate-x-0'}
-            `}
+            className={cn(
+              "flex items-center gap-2 transition-all duration-300 ease-in-out",
+              // Desktop: show/hide based on sidebar state
+              isExpanded ? 'lg:opacity-0 lg:-translate-x-8 lg:absolute' : 'lg:opacity-100 lg:translate-x-0',
+              // Mobile: only show on dashboard
+              !isDashboard && "md:flex hidden"
+            )}
           >
             <Image 
               src="/logo.png" 
@@ -44,7 +49,10 @@ export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLEle
         {/* Refresh button and theme toggle on the right */}
         <div className="flex items-center gap-1">
           <RefreshButton />
-          <ThemeToggle />
+          {/* Theme toggle only on desktop - mobile users use Settings */}
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>

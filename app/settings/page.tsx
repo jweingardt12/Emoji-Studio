@@ -26,8 +26,64 @@ import { Textarea } from "@/components/ui/textarea"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { useAnalytics } from "@/lib/analytics"
 import { usePathname } from "next/navigation"
+import { useTheme } from "next-themes"
+import { Monitor, Moon, Sun } from "lucide-react"
 
 type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
+
+// Theme Selector Component
+function ThemeSelector() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div className="flex gap-1">
+        <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
+        <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
+        <div className="w-10 h-10 rounded-lg bg-muted animate-pulse" />
+      </div>
+    )
+  }
+
+  const themes = [
+    { value: 'light', icon: Sun, label: 'Light' },
+    { value: 'dark', icon: Moon, label: 'Dark' },
+    { value: 'system', icon: Monitor, label: 'System' }
+  ]
+
+  return (
+    <div className="flex gap-1">
+      {themes.map(({ value, icon: Icon, label }) => (
+        <button
+          key={value}
+          onClick={() => {
+            setTheme(value)
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+              navigator.vibrate(10)
+            }
+          }}
+          className={cn(
+            "flex items-center justify-center w-10 h-10 rounded-lg transition-all",
+            "hover:bg-muted active:scale-95",
+            theme === value 
+              ? "bg-primary text-primary-foreground shadow-sm" 
+              : "bg-card border border-border"
+          )}
+          aria-label={label}
+          title={label}
+        >
+          <Icon className="h-4 w-4" />
+        </button>
+      ))}
+    </div>
+  )
+}
 
 // Feedback Modal implementation
 function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -1150,9 +1206,34 @@ export default function SettingsPage() {
                 <div>
                   <h2 className="text-xl font-semibold">Preferences</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Customize how data is displayed across the dashboard
+                    Customize your app experience and display settings
                   </p>
                 </div>
+                
+                {/* Theme Settings Card */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      <h3 className="font-semibold">Appearance</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Customize how Emoji Studio looks on your device
+                      </p>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Theme</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Choose between light, dark, or system theme
+                          </p>
+                        </div>
+                        <ThemeSelector />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {/* Leaderboard Settings Card */}
                 <Card>
                   <CardContent className="p-6">
                     <div className="mb-4">
