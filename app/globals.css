@@ -32,6 +32,16 @@ body {
   display: none;
 }
 
+/* Hide scrollbar for specific class */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth momentum scrolling for all scrollable containers */
 .native-scroll {
   -webkit-overflow-scrolling: touch;

@@ -733,20 +733,58 @@ export default function SettingsPage() {
       <ChromeExtensionHandler />
       <div className="px-2 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Settings
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             Manage your workspace connection, notifications, and preferences
           </p>
         </div>
 
         {/* Settings Layout with Sidebar */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          {/* Sidebar Navigation */}
+          {/* Sidebar Navigation - Mobile optimized */}
           <aside className="w-full lg:w-64 lg:shrink-0">
-            <nav className="flex lg:flex-col gap-2 lg:gap-1 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
+            {/* Mobile: Horizontal scrollable pills with visual affordance */}
+            <div className="lg:hidden relative">
+              {/* Gradient fade indicators */}
+              <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none lg:hidden" />
+              <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none lg:hidden" />
+              
+              <nav className="flex gap-2 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide px-1">
+                {sections.map((section, index) => {
+                  const Icon = section.icon;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        handleSectionChange(section.id)
+                        // Haptic feedback
+                        if ('vibrate' in navigator) {
+                          navigator.vibrate(10)
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-200 whitespace-nowrap snap-center",
+                        "min-w-fit touch-target",
+                        activeSection === section.id
+                          ? "bg-primary text-primary-foreground shadow-lg"
+                          : "bg-card border border-border text-foreground active:scale-95",
+                        index === 0 && "ml-1",
+                        index === sections.length - 1 && "mr-1"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="font-semibold text-sm">{section.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+            
+            {/* Desktop: Vertical sidebar */}
+            <nav className="hidden lg:flex lg:flex-col gap-1">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
@@ -754,7 +792,7 @@ export default function SettingsPage() {
                     key={section.id}
                     onClick={() => handleSectionChange(section.id)}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-left whitespace-nowrap lg:whitespace-normal lg:w-full",
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 text-left w-full",
                       activeSection === section.id
                         ? "bg-primary/10 text-primary shadow-sm"
                         : "hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -769,7 +807,7 @@ export default function SettingsPage() {
           </aside>
 
           {/* Content Area */}
-          <div className="flex-1 max-w-2xl">
+          <div className="flex-1 max-w-2xl mt-2 lg:mt-0">
             {/* Connection Section */}
             {activeSection === 'connection' && (
               <div className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-300">
