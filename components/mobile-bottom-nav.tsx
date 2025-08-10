@@ -55,8 +55,8 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t md:hidden">
-      <div className="grid grid-cols-5 h-16">
+    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t md:hidden pb-safe">
+      <div className="grid grid-cols-5 h-16 px-safe">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.url

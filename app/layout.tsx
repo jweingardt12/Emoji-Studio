@@ -21,7 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="theme-color" content="#000000" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/logo.png" />
         <link rel="manifest" href="/manifest.json" />
@@ -54,7 +57,7 @@ export default function RootLayout({
                 <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0">
                   <SiteHeader className="flex-shrink-0" />
                   <div className="flex flex-1 flex-col overflow-hidden">
-                    <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto pb-16 md:pb-0">
+                    <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto mobile-nav-padding md:pb-0">
                       <div className="flex flex-col gap-4 p-4 md:p-6 lg:px-6">
                         {children}
                       </div>
