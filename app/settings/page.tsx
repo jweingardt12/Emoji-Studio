@@ -769,14 +769,17 @@ export default function SettingsPage() {
                         "flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-200 whitespace-nowrap snap-center",
                         "min-w-fit touch-target",
                         activeSection === section.id
-                          ? "bg-primary text-primary-foreground shadow-lg"
+                          ? "bg-primary/10 text-primary border-2 border-primary shadow-sm font-semibold"
                           : "bg-card border border-border text-foreground active:scale-95",
                         index === 0 && "ml-1",
                         index === sections.length - 1 && "mr-1"
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="font-semibold text-sm">{section.label}</span>
+                      <Icon className={cn(
+                        "h-4 w-4 shrink-0",
+                        activeSection === section.id && "text-primary"
+                      )} />
+                      <span className="text-sm">{section.label}</span>
                     </button>
                   );
                 })}
