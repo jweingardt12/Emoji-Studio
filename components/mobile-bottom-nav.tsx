@@ -52,10 +52,14 @@ export function MobileBottomNav() {
 
   const handleNavClick = (item: NavItem) => {
     trackNavigation(item.title, item.url)
+    // Haptic feedback on tap
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10)
+    }
   }
 
   return (
-    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-sm border-t md:hidden pb-safe">
+    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden pb-safe">
       <div className="grid grid-cols-5 h-16 px-safe">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -67,14 +71,26 @@ export function MobileBottomNav() {
               href={item.url}
               onClick={() => handleNavClick(item)}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
+                "flex flex-col items-center justify-center gap-1 text-xs transition-all relative touch-target",
+                "active:scale-95 active:opacity-70",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground"
               )}
             >
-              <Icon className="h-5 w-5" />
-              <span className="truncate max-w-[60px]">{item.title}</span>
+              <div className={cn(
+                "flex flex-col items-center justify-center gap-1 transition-transform",
+                isActive && "scale-110"
+              )}>
+                <Icon className={cn(
+                  "h-5 w-5 transition-all",
+                  isActive && "h-6 w-6"
+                )} />
+                <span className={cn(
+                  "truncate max-w-[60px] transition-all",
+                  isActive ? "font-semibold" : "font-normal"
+                )}>{item.title}</span>
+              </div>
             </Link>
           )
         })}

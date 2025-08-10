@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
 
 export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
@@ -40,8 +41,11 @@ export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLEle
           </div>
         </div>
 
-        {/* Theme toggle on the right */}
-        <ThemeToggle />
+        {/* Refresh button and theme toggle on the right */}
+        <div className="flex items-center gap-1">
+          <RefreshButton />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )

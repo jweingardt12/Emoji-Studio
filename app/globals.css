@@ -8,8 +8,49 @@
     monospace;
 }
 
+/* Prevent pull-to-refresh and elastic scrolling on mobile */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 body {
   font-family: var(--font-sans);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: pan-x pan-y;
+}
+
+/* Native app-like scrolling */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth momentum scrolling for all scrollable containers */
+.native-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection on mobile for app-like feel */
+@media (max-width: 768px) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* Allow text selection only for specific elements */
+  input, textarea, [contenteditable], .selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @layer utilities {
@@ -32,6 +73,59 @@ body {
     /* Hide desktop sidebar on mobile */
     .sidebar-hidden-mobile {
       display: none;
+    }
+    
+    /* Native app-like touch targets (minimum 44px) */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Larger tap targets for interactive elements */
+    .touch-target {
+      position: relative;
+    }
+    
+    .touch-target::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      bottom: -8px;
+      left: -8px;
+    }
+    
+    /* Snap scrolling for horizontal lists */
+    .snap-x {
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 1rem;
+    }
+    
+    .snap-center {
+      scroll-snap-align: center;
+    }
+    
+    .snap-start {
+      scroll-snap-align: start;
+    }
+    
+    /* Prevent accidental horizontal scrolling */
+    .no-horizontal-scroll {
+      overflow-x: hidden;
+      touch-action: pan-y pinch-zoom;
+    }
+    
+    /* Native-style active states */
+    button:active, a:active, [role="button"]:active {
+      transform: scale(0.97);
+      transition: transform 0.1s ease;
+    }
+    
+    /* Disable hover effects on touch devices */
+    @media (hover: none) {
+      button:hover, a:hover {
+        background-color: inherit;
+      }
     }
   }
 

@@ -15,26 +15,24 @@ export function FloatingCreateButton() {
     return null
   }
 
-  const handleClick = () => {
-    trackNavigation("Create", "/create")
-  }
-
   return (
     <Link
       href="/create"
-      onClick={handleClick}
       className={cn(
-        "floating-create-btn fixed z-50 md:hidden mr-safe",
-        "flex h-14 w-14 items-center justify-center",
-        "rounded-full bg-primary text-primary-foreground shadow-lg",
-        "hover:bg-primary/90 active:scale-95",
-        "transition-all duration-150"
+        "floating-create-btn fixed right-4 z-30 md:hidden",
+        "flex h-14 w-14 items-center justify-center rounded-full",
+        "bg-primary text-primary-foreground shadow-lg",
+        "transition-all duration-200 active:scale-90",
+        "touch-target"
       )}
-      style={{
-        bottom: "calc(4rem + 1rem + env(safe-area-inset-bottom))",
-        right: "1rem"
-      }}
       aria-label="Create new emoji"
+      onClick={() => {
+        trackNavigation("Create", "/create")
+        // Haptic feedback on tap
+        if ('vibrate' in navigator) {
+          navigator.vibrate(10)
+        }
+      }}
     >
       <Plus className="h-6 w-6" />
     </Link>

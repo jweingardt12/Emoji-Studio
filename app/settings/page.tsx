@@ -25,6 +25,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { useAnalytics } from "@/lib/analytics"
+import { usePathname } from "next/navigation"
 
 type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
 
@@ -38,7 +39,6 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [isVisible, setIsVisible] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [errors, setErrors] = useState<{name?: string; email?: string; message?: string}>({})
-  const pathname = usePathname()
   const { trackFeedbackSubmitted, trackFeedbackSubmissionFailed, trackFeedbackModalClosed, trackFeedbackModalOpened } = useAnalytics()
 
   // Validate email format
@@ -129,7 +129,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
         message,
         timestamp: new Date().toISOString(),
         source: "emoji-studio-app",
-        currentPage: pathname,
+        currentPage: "/settings",
         ...(workspace && {
           workspace,
           emojiCount
@@ -149,7 +149,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
       }
       
       setShowSuccess(true)
-      trackFeedbackSubmitted(feedbackType as 'bug' | 'feature', !!workspace, pathname)
+      trackFeedbackSubmitted(feedbackType as 'bug' | 'feature', !!workspace, "/settings")
       
       setTimeout(() => {
         handleClose()
@@ -293,6 +293,8 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
 }
 
 export default function SettingsPage() {
+  const pathname = usePathname()
+  
   // Initialize active section from URL hash or default to 'connection'
   const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
     if (typeof window !== 'undefined') {
