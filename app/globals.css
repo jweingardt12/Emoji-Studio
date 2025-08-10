@@ -77,7 +77,7 @@ body {
   @media (max-width: 768px) {
     /* Add padding bottom for mobile nav */
     .mobile-nav-padding {
-      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
       padding-top: env(safe-area-inset-top);
     }
     
@@ -207,7 +207,7 @@ body {
     
     /* Adjust floating button position */
     .floating-create-btn {
-      bottom: calc(4rem + 1rem + env(safe-area-inset-bottom));
+      bottom: calc(5rem + 1rem + env(safe-area-inset-bottom));
     }
   }
 

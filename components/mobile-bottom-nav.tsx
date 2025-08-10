@@ -59,8 +59,8 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden pb-safe">
-      <div className="grid grid-cols-5 h-14 px-safe">
+    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden">
+      <div className="grid grid-cols-5 h-16 px-safe pb-safe pt-2">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.url
@@ -82,7 +82,7 @@ export function MobileBottomNav() {
               <Icon className="h-6 w-6" />
               {/* Visual indicator for active state */}
               {isActive && (
-                <div className="absolute -bottom-1 w-1 h-1 bg-primary rounded-full" />
+                <div className="absolute bottom-0 w-1 h-1 bg-primary rounded-full" />
               )}
             </Link>
           )
