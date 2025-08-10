@@ -78,6 +78,7 @@ body {
     /* Add padding bottom for mobile nav */
     .mobile-nav-padding {
       padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+      padding-top: env(safe-area-inset-top);
     }
     
     /* Hide desktop sidebar on mobile */

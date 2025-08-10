@@ -58,11 +58,14 @@ export default function RootLayout({
                   <AppSidebar variant="inset" />
                 </div>
                 <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0 w-full">
-                  <SiteHeader className="flex-shrink-0" />
+                  {/* Header only on desktop */}
+                  <div className="hidden md:block">
+                    <SiteHeader className="flex-shrink-0" />
+                  </div>
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto mobile-nav-padding md:pb-0 native-scroll no-horizontal-scroll">
                       <PullToRefreshWrapper>
-                        <div className="flex flex-col gap-4 p-4 md:p-6 lg:px-6">
+                        <div className="flex flex-col gap-4 p-4 pt-safe md:p-6 lg:px-6">
                           {children}
                         </div>
                       </PullToRefreshWrapper>
