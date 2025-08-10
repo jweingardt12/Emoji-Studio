@@ -53,8 +53,10 @@ export default function RootLayout({
                 }
                 className="h-screen"
               >
-                <AppSidebar variant="inset" className="hidden md:flex" />
-                <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0">
+                <div className="hidden md:block">
+                  <AppSidebar variant="inset" />
+                </div>
+                <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0 w-full">
                   <SiteHeader className="flex-shrink-0" />
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto mobile-nav-padding md:pb-0">

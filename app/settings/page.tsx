@@ -5,7 +5,7 @@ import { ChromeExtensionOption } from "@/components/chrome-extension-option"
 import { ClearLocalStorageButton } from "@/components/clear-local-storage-button"
 import { FetchStatsDisplay } from "@/components/fetch-stats-display"
 import { Card, CardContent } from "@/components/ui/card"
-import { Zap, ChevronDown, ChevronUp, Terminal, Bell, Clock, Link2, Trophy, Database } from "lucide-react"
+import { Zap, ChevronDown, ChevronUp, Terminal, Bell, Clock, Link2, Trophy, Database, RefreshCw, MessageSquare, Github, ExternalLink } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -19,15 +19,285 @@ import { cn } from "@/lib/utils"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
+import { ShineBorder } from "@/src/components/magicui/shine-border"
+import { useAnalytics } from "@/lib/analytics"
 
-type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data';
+type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
+
+// Feedback Modal implementation
+function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [feedbackType, setFeedbackType] = useState("feature")
+  const [message, setMessage] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [errors, setErrors] = useState<{name?: string; email?: string; message?: string}>({})
+  const pathname = usePathname()
+  const { trackFeedbackSubmitted, trackFeedbackSubmissionFailed, trackFeedbackModalClosed, trackFeedbackModalOpened } = useAnalytics()
+
+  // Validate email format
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors: {name?: string; email?: string; message?: string} = {}
+    
+    if (!name.trim()) {
+      newErrors.name = "Name is required"
+    } else if (name.trim().length < 2) {
+      newErrors.name = "Name must be at least 2 characters"
+    }
+    
+    if (!email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Please enter a valid email address"
+    }
+    
+    if (!message.trim()) {
+      newErrors.message = "Message is required"
+    } else if (message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters"
+    } else if (message.trim().length > 1000) {
+      newErrors.message = "Message must be less than 1000 characters"
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  useEffect(() => {
+    if (open) {
+      trackFeedbackModalOpened()
+      const timer = setTimeout(() => setIsVisible(true), 10)
+      return () => clearTimeout(timer)
+    } else {
+      setIsVisible(false)
+    }
+  }, [open, trackFeedbackModalOpened])
+
+  const handleClose = () => {
+    setIsVisible(false)
+    trackFeedbackModalClosed(showSuccess)
+    setTimeout(() => {
+      onClose()
+      setName("")
+      setEmail("")
+      setFeedbackType("feature")
+      setMessage("")
+      setErrors({})
+      setShowSuccess(false)
+    }, 200)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+    
+    setSubmitting(true)
+    
+    try {
+      const workspace = localStorage.getItem("workspace") || null
+      const emojiData = localStorage.getItem("emojiData")
+      let emojiCount = 0
+      
+      if (emojiData) {
+        try {
+          const parsedData = JSON.parse(emojiData)
+          emojiCount = Array.isArray(parsedData) ? parsedData.length : 0
+        } catch (e) {
+          console.error("Error parsing emoji data:", e)
+        }
+      }
+      
+      const feedbackData = {
+        name,
+        email,
+        feedbackType,
+        message,
+        timestamp: new Date().toISOString(),
+        source: "emoji-studio-app",
+        currentPage: pathname,
+        ...(workspace && {
+          workspace,
+          emojiCount
+        })
+      }
+      
+      const response = await fetch("https://cloud.activepieces.com/api/v1/webhooks/XWehbc587ULYJx3eoWxZz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedbackData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      setShowSuccess(true)
+      trackFeedbackSubmitted(feedbackType as 'bug' | 'feature', !!workspace, pathname)
+      
+      setTimeout(() => {
+        handleClose()
+        setTimeout(() => {
+          toast.success("Feedback sent! Thank you for your feedback. We'll get back to you soon.")
+        }, 300)
+      }, 3000)
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      trackFeedbackSubmissionFailed(errorMessage)
+      toast.error("Error submitting feedback. Please try again later.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!open) return null
+  
+  return (
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`relative bg-card rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+        <ShineBorder 
+          borderWidth={2} 
+          duration={8} 
+          shineColor={["#60a5fa", "#e879f9", "#60a5fa"]} 
+        />
+        <div className="relative p-8 overflow-y-auto max-h-[90vh]">
+        {showSuccess ? (
+          <div className="flex flex-col items-center justify-center py-16 space-y-4">
+            <div className="relative">
+              <div className="absolute inset-0 animate-ping rounded-full h-20 w-20 bg-green-500/20"></div>
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-green-500">
+                <svg className="h-10 w-10 text-white animate-[scale-in_0.3s_ease-out]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold animate-[fade-in_0.4s_ease-out_0.2s_both]">Message sent!</h2>
+            <p className="text-muted-foreground animate-[fade-in_0.4s_ease-out_0.3s_both]">We'll get back to you soon.</p>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold mb-4">Send Feedback</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (errors.name) setErrors({...errors, name: undefined})
+              }}
+              placeholder="Your name"
+              className={errors.name ? "border-destructive" : ""}
+              required
+            />
+            {errors.name && (
+              <p className="text-sm text-destructive mt-1">{errors.name}</p>
+            )}
+          </div>
+          
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                if (errors.email) setErrors({...errors, email: undefined})
+              }}
+              placeholder="your@email.com"
+              className={errors.email ? "border-destructive" : ""}
+              required
+            />
+            {errors.email && (
+              <p className="text-sm text-destructive mt-1">{errors.email}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Feedback Type</Label>
+            <RadioGroup value={feedbackType} onValueChange={setFeedbackType}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="bug" id="bug" />
+                <Label htmlFor="bug" className="font-normal cursor-pointer">
+                  Bug Report
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="feature" id="feature" />
+                <Label htmlFor="feature" className="font-normal cursor-pointer">
+                  Feature Request
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          
+          <div>
+            <Label htmlFor="message">Message</Label>
+            <Textarea
+              id="message"
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value)
+                if (errors.message) setErrors({...errors, message: undefined})
+              }}
+              placeholder={feedbackType === "bug" ? "Please describe the issue you're experiencing..." : "Please describe the feature you'd like to see..."}
+              rows={5}
+              className={errors.message ? "border-destructive" : ""}
+              required
+            />
+            <div className="flex justify-between items-center mt-1">
+              {errors.message && (
+                <p className="text-sm text-destructive">{errors.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground ml-auto">
+                {message.length}/1000
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={handleClose} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Sending..." : "Send Feedback"}
+            </Button>
+          </div>
+            </form>
+          </>
+        )}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   // Initialize active section from URL hash or default to 'connection'
   const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.slice(1) as SettingsSection;
-      if (hash && ['connection', 'notifications', 'preferences', 'data'].includes(hash)) {
+      if (hash && ['connection', 'notifications', 'preferences', 'data', 'actions'].includes(hash)) {
         return hash;
       }
     }
@@ -50,6 +320,10 @@ export default function SettingsPage() {
   const [notificationTime, setNotificationTime] = useState('09:00')
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'default' | null>(null)
   const [hasExtension, setHasExtension] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  
+  const { emojiData, hasRealData, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
 
   const hasMountedRef = useRef(false);
   const previousThresholdRef = useRef(inactivityThresholdMonths);
@@ -59,7 +333,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1) as SettingsSection;
-      if (hash && ['connection', 'notifications', 'preferences', 'data'].includes(hash)) {
+      if (hash && ['connection', 'notifications', 'preferences', 'data', 'actions'].includes(hash)) {
         setActiveSection(hash);
       }
     };
@@ -238,6 +512,187 @@ export default function SettingsPage() {
     }
   }
 
+  // Handler to refresh emoji data (copied from sidebar)
+  const handleRefresh = async () => {
+    // If we're in demo mode (no real data), don't show the modal - just return early
+    if (!hasRealData) {
+      console.log("In demo mode, refresh not available")
+      return
+    }
+    
+    // Check for extension auth data first
+    const extensionToken = typeof window !== "undefined" ? localStorage.getItem("extensionToken") : null
+    const extensionCookie = typeof window !== "undefined" ? localStorage.getItem("extensionCookie") : null
+    const workspace = typeof window !== "undefined" ? localStorage.getItem("workspace") : null
+    
+    if (extensionToken && extensionCookie && workspace) {
+      // We have extension auth data, construct a curl command from it
+      console.log("Using extension auth data for refresh")
+      const timestamp = Math.floor(Date.now() / 1000)
+      const curlCommand = `curl 'https://${workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
+        -H 'accept: */*' \
+        -H 'accept-language: en-US,en;q=0.9' \
+        -H 'cache-control: no-cache' \
+        -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' \
+        -b '${extensionCookie}' \
+        -H 'pragma: no-cache' \
+        -H 'sec-fetch-dest: empty' \
+        -H 'sec-fetch-mode: cors' \
+        -H 'sec-fetch-site: same-origin' \
+        --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${extensionToken}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+      
+      await fetchWithCurl(curlCommand)
+      return
+    }
+    
+    // Fall back to checking for a stored curl command
+    const lastCurl = typeof window !== "undefined" ? localStorage.getItem("slackCurlCommand") : null
+    console.log("Refresh clicked, curl command found:", !!lastCurl)
+    
+    // Only proceed if the curl command exists and is not just whitespace
+    if (!lastCurl || !lastCurl.trim()) {
+      console.log("No valid curl command found")
+      toast.error("No Slack connection found. Please connect your workspace first.")
+      return
+    }
+    
+    await fetchWithCurl(lastCurl.trim())
+  }
+
+  // Helper to fetch with a curl command (copied from sidebar)
+  const fetchWithCurl = async (curl: string) => {
+    setRefreshing(true)
+    try {
+      const parsed = parseSlackCurl(curl)
+      if (!parsed.isValid) {
+        toast.error(parsed.error || "Invalid Slack curl command. Please check your connection.")
+        setRefreshing(false)
+        return
+      }
+      
+      // Extract necessary data from the curl command
+      const { token, cookie, workspace } = parsed
+      const url = parsed.url || ""
+      
+      // Create form data
+      const formData: Record<string, string> = {}
+      if (token) formData.token = token
+      
+      // Ensure we have count for emoji requests
+      if (!formData["count"] && url.includes("emoji")) {
+        formData["count"] = "20000"
+      }
+      
+      console.log("Making direct request to API proxy with curl data")
+      
+      // Make the request to our API endpoint
+      const response = await fetch("/api/slack-emojis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          curlRequest: {
+            url,
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              ...(cookie ? { Cookie: cookie } : {}),
+            },
+            formData,
+          },
+        }),
+      })
+      
+      // Parse the response
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("Error response from API:", errorText)
+        throw new Error(`Error from Slack API: ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log("API response:", data)
+      
+      // Process the emoji data
+      let emojiArray = []
+      if (data.emojis && Array.isArray(data.emojis)) {
+        emojiArray = data.emojis
+        console.log(`Found ${emojiArray.length} emojis in data.emojis`);
+      } else if (data.emoji && Array.isArray(data.emoji)) {
+        emojiArray = data.emoji
+        console.log(`Found ${emojiArray.length} emojis in data.emoji`);
+      } else if (data.slackResponse && data.slackResponse.emoji) {
+        const emojiObj = data.slackResponse.emoji
+        if (typeof emojiObj === "object" && !Array.isArray(emojiObj)) {
+          emojiArray = Object.entries(emojiObj).map(([name, url]) => ({
+            name,
+            url,
+            is_alias: 0,
+            user_id: "",
+            created: Math.floor(Date.now() / 1000),
+            user_display_name: "",
+          }))
+          console.log(`Converted ${emojiArray.length} emojis from data.slackResponse.emoji object`);
+        } else if (Array.isArray(emojiObj)) {
+          emojiArray = emojiObj;
+          console.log(`Found ${emojiArray.length} emojis in data.slackResponse.emoji array`);
+        }
+      }
+      console.log(`Total emojis to process: ${emojiArray.length}`);
+      
+      // Process the emoji array with consistent fields
+      const recentData = emojiArray.map((emoji: any) => ({
+        name: emoji.name,
+        url: emoji.url,
+        team_id: emoji.team_id || "",
+        user_id: emoji.user_id || "",
+        created: (emoji.created && emoji.created > 0) ? emoji.created : Math.floor(Date.now() / 1000),
+        is_alias: emoji.is_alias || 0,
+        alias_for: emoji.alias_for || "",
+        is_bad: emoji.is_bad || false,
+        user_display_name: emoji.user_display_name || "",
+        can_delete: emoji.can_delete || false,
+        aliases: emoji.aliases || [],
+      }))
+      
+      if (recentData && Array.isArray(recentData) && recentData.length > 0) {
+        // Sort by created timestamp descending (newest first)
+        const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0));
+        console.log(`About to update context with ${sortedData.length} emojis`);
+        setEmojiData(sortedData)
+        const workspaceName = parsed.workspace || "slack-workspace"
+        setWorkspace(workspaceName)
+        setHasRealData(true)
+        localStorage.setItem("emojiData", JSON.stringify(sortedData))
+        localStorage.setItem("workspace", workspaceName)
+        localStorage.setItem("emojiCount", sortedData.length.toString())
+        localStorage.setItem("lastFetchTime", new Date().toISOString())
+        console.log(`Successfully loaded ${sortedData.length} emojis from ${workspaceName}`)
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", { 
+          detail: { 
+            emojiData: sortedData,
+            workspace: workspaceName,
+            timestamp: Date.now()
+          } 
+        }))
+        toast.success(`Successfully refreshed ${sortedData.length} emojis!`)
+      } else {
+        toast.error("No emoji data returned from Slack. Please check your connection.")
+      }
+    } catch (err) {
+      // Check for invalid_auth error specifically
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred."
+      const isAuthError = errorMessage.includes("invalid_auth")
+      
+      toast.error(isAuthError 
+        ? "Your Slack token has expired. Please update your connection." 
+        : errorMessage || "Failed to fetch emojis from Slack.")
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const sections = [
     {
       id: 'connection' as const,
@@ -262,6 +717,12 @@ export default function SettingsPage() {
       label: 'Data Management',
       icon: Database,
       description: 'Manage cached data'
+    },
+    {
+      id: 'actions' as const,
+      label: 'Actions',
+      icon: RefreshCw,
+      description: 'Quick actions and links'
     }
   ];
 
@@ -709,9 +1170,125 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+            
+            {/* Actions Section */}
+            {activeSection === 'actions' && (
+              <div className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-300">
+                <div>
+                  <h2 className="text-xl font-semibold">Actions</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Quick actions and useful links
+                  </p>
+                </div>
+                
+                <div className="grid gap-4 sm:gap-6">
+                  {/* Refresh Data Card */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-lg bg-primary/10 p-3">
+                          <RefreshCw className={cn("h-6 w-6 text-primary", refreshing && "animate-spin")} />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <h3 className="font-semibold">Refresh Emoji Data</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Sync the latest emojis from your Slack workspace
+                            </p>
+                          </div>
+                          <Button
+                            onClick={handleRefresh}
+                            disabled={refreshing || !hasRealData}
+                            className="w-full sm:w-auto"
+                          >
+                            <RefreshCw className={cn("mr-2 h-4 w-4", refreshing && "animate-spin")} />
+                            {refreshing ? "Refreshing..." : "Refresh Now"}
+                          </Button>
+                          {!hasRealData && (
+                            <p className="text-xs text-muted-foreground">
+                              Connect your Slack workspace first to enable refresh
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Feedback Card */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-lg bg-blue-500/10 p-3">
+                          <MessageSquare className="h-6 w-6 text-blue-500" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <h3 className="font-semibold">Send Feedback</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Report bugs, request features, or share your thoughts
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => setFeedbackModalOpen(true)}
+                            className="w-full sm:w-auto"
+                          >
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Give Feedback
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* GitHub Card */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="rounded-lg bg-gray-500/10 p-3">
+                          <Github className="h-6 w-6 text-gray-500" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <h3 className="font-semibold">View on GitHub</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Check out the source code, contribute, or report issues
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            asChild
+                            className="w-full sm:w-auto"
+                          >
+                            <a 
+                              href="https://github.com/jweingardt12/Emoji-Studio" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center"
+                            >
+                              <Github className="mr-2 h-4 w-4" />
+                              Open GitHub
+                              <ExternalLink className="ml-2 h-3 w-3" />
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+      
+      {/* Feedback Modal */}
+      {feedbackModalOpen && (
+        <FeedbackModal 
+          open={feedbackModalOpen} 
+          onClose={() => setFeedbackModalOpen(false)} 
+        />
+      )}
     </div>
   )
 }
