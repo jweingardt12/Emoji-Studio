@@ -22,6 +22,24 @@ body {
     text-wrap: balance;
   }
 
+  /* Mobile PWA adjustments */
+  @media (max-width: 768px) {
+    /* Add padding bottom for mobile nav */
+    .mobile-nav-padding {
+      padding-bottom: 4rem;
+    }
+    
+    /* Hide desktop sidebar on mobile */
+    .sidebar-hidden-mobile {
+      display: none;
+    }
+  }
+
+  /* PWA safe area adjustments for iOS */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   /* Ensure main element has rounded corners */
   main {
     @apply rounded-xl;

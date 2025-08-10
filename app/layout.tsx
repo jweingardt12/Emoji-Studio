@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { ThemeTracker } from "@/components/ThemeTracker";
 import { GlobalExtensionListener } from "@/components/global-extension-listener";
 import { NotificationManager } from "@/components/notification-manager";
+import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 
 export default function RootLayout({
   children,
@@ -49,11 +50,11 @@ export default function RootLayout({
                 }
                 className="h-screen"
               >
-                <AppSidebar variant="inset" />
-                <SidebarInset className="h-screen overflow-hidden flex flex-col">
+                <AppSidebar variant="inset" className="hidden md:flex" />
+                <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0">
                   <SiteHeader className="flex-shrink-0" />
                   <div className="flex flex-1 flex-col overflow-hidden">
-                    <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto">
+                    <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto pb-16 md:pb-0">
                       <div className="flex flex-col gap-4 p-4 md:p-6 lg:px-6">
                         {children}
                       </div>
@@ -61,8 +62,10 @@ export default function RootLayout({
                   </div>
                 </SidebarInset>
               </SidebarProvider>
-              <GlobalExtensionListener />
-              <NotificationManager />
+              <PWALayoutWrapper>
+                <GlobalExtensionListener />
+                <NotificationManager />
+              </PWALayoutWrapper>
             </EmojiDataProvider>
             <Toaster />
             <ThemeTracker />
