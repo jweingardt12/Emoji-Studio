@@ -60,7 +60,7 @@ export function MobileBottomNav() {
 
   return (
     <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden">
-      <div className="grid grid-cols-5 px-safe pt-3 pb-2" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))', minHeight: '4.5rem' }}>
+      <div className="grid grid-cols-5 px-safe pt-3 pb-4" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom))', minHeight: '5.5rem' }}>
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.url

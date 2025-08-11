@@ -35,7 +35,7 @@ export function FloatingCreateButton() {
       <button
         className={cn(
           "fixed z-50",
-          "bottom-20 right-4", // Account for mobile bottom nav
+          "bottom-24 right-4", // Account for mobile bottom nav with extra padding
           "flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
           "shadow-lg hover:shadow-xl",
