@@ -62,7 +62,7 @@
     "dom-to-image-more": "^3.6.0",
     "embla-carousel-react": "8.5.1",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.12.1",
+    "framer-motion": "^12.23.12",
     "geist": "latest",
     "gif-frames": "^1.0.1",
     "gif.js": "^0.2.0",

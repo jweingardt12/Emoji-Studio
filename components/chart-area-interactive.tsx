@@ -203,9 +203,41 @@ export function ChartAreaInteractive() {
   /*  Handle click → open modal                                           */
   /* -------------------------------------------------------------------- */
   const handleDataPointClick = (d: any) => {
-    if (!d?.activePayload?.length || !emojiData.length) return;
-    const payload = d.activePayload[0].payload;
-    if (!payload?.date) return;
+    console.log('Chart clicked:', d);
+    
+    // Handle the new event structure
+    if (d && d.activeLabel && typeof d.activeIndex !== 'undefined') {
+      // Get the data point from chartData using the activeIndex
+      const index = parseInt(d.activeIndex);
+      if (chartData && chartData[index]) {
+        const payload = chartData[index];
+        console.log('Processing data point:', payload);
+        processDataPoint(payload);
+        return;
+      }
+    }
+    
+    // Handle direct dot click (when d is the data point itself)
+    if (d && d.payload && d.payload.date) {
+      const payload = d.payload;
+      console.log('Direct dot click detected, payload:', payload);
+      processDataPoint(payload);
+      return;
+    }
+    
+    // Handle chart area click (when d has activePayload) - legacy support
+    if (d?.activePayload?.length && emojiData.length) {
+      const payload = d.activePayload[0].payload;
+      if (payload?.date) {
+        console.log('Chart area click detected, payload:', payload);
+        processDataPoint(payload);
+      }
+    }
+  };
+
+  const processDataPoint = (payload: any) => {
+    if (!payload?.date || !emojiData.length) return;
+    console.log('Processing payload:', payload);
 
     try {
       const monthly =
@@ -331,6 +363,7 @@ export function ChartAreaInteractive() {
           <AreaChart
             data={chartData}
             onClick={handleDataPointClick}
+            onMouseDown={handleDataPointClick}
             style={{ cursor: "pointer" }}
             margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
           >
@@ -502,14 +535,23 @@ export function ChartAreaInteractive() {
               strokeWidth={2}
               fill="url(#createdGradient)"
               fillOpacity={0.3}
+              dot={chartData.length <= 31 ? {
+                r: 3,
+                fill: "var(--color-created)",
+                stroke: "var(--color-created)",
+                strokeWidth: 1,
+                style: { cursor: "pointer" },
+              } : false}
               activeDot={{
-                r: isMobile ? 4 : 6,
+                r: isMobile ? 5 : 7,
                 fill: "var(--color-created)",
                 stroke: "#fff",
                 strokeWidth: isMobile ? 1.5 : 2,
+                style: { cursor: "pointer" },
               }}
               connectNulls
               isAnimationActive={false}
+              onClick={handleDataPointClick}
             />
             <Area
               type="monotone"
@@ -519,14 +561,23 @@ export function ChartAreaInteractive() {
               strokeWidth={2}
               fill="url(#contributorsGradient)"
               fillOpacity={0.3}
+              dot={chartData.length <= 31 ? {
+                r: 3,
+                fill: "#FF00B8",
+                stroke: "#FF00B8",
+                strokeWidth: 1,
+                style: { cursor: "pointer" },
+              } : false}
               activeDot={{
-                r: isMobile ? 4 : 6,
+                r: isMobile ? 5 : 7,
                 fill: "#FF00B8",
                 stroke: "#fff",
                 strokeWidth: isMobile ? 1.5 : 2,
+                style: { cursor: "pointer" },
               }}
               connectNulls
               isAnimationActive={false}
+              onClick={handleDataPointClick}
             />
 
             <Legend verticalAlign="bottom" height={isMobile ? 28 : 36} iconType="plainline" />

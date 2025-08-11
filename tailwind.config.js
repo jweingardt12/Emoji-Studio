@@ -135,6 +135,10 @@ module.exports = {
           "0%": { opacity: "0", transform: "translateY(10px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -143,6 +147,7 @@ module.exports = {
         marquee: "marquee var(--duration) linear infinite",
         "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
         shine: "shine var(--duration) linear infinite",
+        shimmer: "shimmer 2s linear infinite",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

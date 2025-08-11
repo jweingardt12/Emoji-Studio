@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { toast as sonner } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -38,6 +40,7 @@ interface Emoji {
 
 function MyEmojisPage() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const { emojiData, loading, hasRealData, workspace, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
@@ -46,6 +49,7 @@ function MyEmojisPage() {
   const [isReplaceDialogOpen, setIsReplaceDialogOpen] = useState(false)
   const [isAliasDialogOpen, setIsAliasDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isActionsDrawerOpen, setIsActionsDrawerOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [newAlias, setNewAlias] = useState("")
   const [isClient, setIsClient] = useState(false)
@@ -87,7 +91,6 @@ function MyEmojisPage() {
         
         // If data is older than 5 minutes, refresh it
         if (!lastRefreshTime || (now - parseInt(lastRefreshTime)) > fiveMinutes) {
-          console.log("Data is stale, refreshing...")
           await refreshEmojiData()
           localStorage.setItem("lastEmojiRefreshTime", now.toString())
         }
@@ -296,7 +299,6 @@ function MyEmojisPage() {
   }
 
   const handleDelete = (emoji: Emoji) => {
-    console.log("handleDelete called for:", emoji.name)
     setSelectedEmoji(emoji)
     setIsDeleteDialogOpen(true)
   }
@@ -382,9 +384,6 @@ function MyEmojisPage() {
       sonner.loading("Deleting old emoji...", { id: "rename-emoji" })
 
       // Step 2: Delete the old emoji
-      console.log("Attempting to delete emoji:", selectedEmoji.name)
-      console.log("Selected emoji details:", selectedEmoji)
-      
       // Ensure we're using the correct emoji name (strip colons if present)
       const emojiNameToDelete = selectedEmoji.name.replace(/^:|:$/g, '')
       
@@ -414,7 +413,6 @@ function MyEmojisPage() {
       })
 
       const deleteResult = await deleteResponse.json()
-      console.log("Delete response:", deleteResult)
       const deleteSlackResponse = deleteResult.slackResponse || deleteResult
       
       if (!deleteResponse.ok || !deleteSlackResponse.ok) {
@@ -782,10 +780,6 @@ function MyEmojisPage() {
       ]
       const multipartBody = formParts.join('')
       
-      console.log("Alias multipart body:", multipartBody)
-      console.log("Boundary:", boundary)
-      console.log("Creating alias for emoji:", selectedEmoji.name, "with alias name:", newAlias)
-
       // Extract _x_id from the d cookie - it should be at the end after 'd='
       let xId = ""
       if (cookie) {
@@ -832,7 +826,6 @@ function MyEmojisPage() {
       })
 
       const result = await response.json()
-      console.log("Alias creation response:", result)
       
       // Check the Slack response
       const slackResponse = result.slackResponse || result
@@ -845,9 +838,6 @@ function MyEmojisPage() {
         }
         throw new Error(errorMessage)
       }
-      
-      // Verify the alias was created correctly
-      console.log("Alias creation successful, response:", slackResponse)
       
       sonner.success("Alias added successfully", {
         id: "add-alias",
@@ -912,7 +902,6 @@ function MyEmojisPage() {
   const performDelete = async () => {
     if (!selectedEmoji || isDeletingEmoji) return
 
-    console.log("Starting delete for emoji:", selectedEmoji.name)
     setIsDeletingEmoji(true)
 
     try {
@@ -959,10 +948,6 @@ function MyEmojisPage() {
         _x_reason: 'customize-emoji-remove',
         _x_mode: 'online'
       }
-
-      console.log("Making delete request to Slack API")
-      console.log("Using token:", formData.token.substring(0, 10) + "...")
-      console.log("Deleting emoji:", selectedEmoji.name)
       
       // Use the same API endpoint we use for fetching emojis
       const response = await fetch("/api/slack-emojis", {
@@ -986,7 +971,6 @@ function MyEmojisPage() {
       let result;
       try {
         result = await response.json()
-        console.log("Delete response:", response.status, result)
       } catch (jsonError) {
         console.error("JSON parse error:", jsonError)
         const text = await response.text()
@@ -1046,55 +1030,267 @@ function MyEmojisPage() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
-        <div className="px-2 sm:px-4 lg:px-6">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-                    <User className="h-5 w-5" />
+      <div className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6'}`}>
+        <div className={isMobile ? '' : 'px-2 sm:px-4 lg:px-6'}>
+          {isMobile ? (
+            // Mobile: No Card wrapper
+            <>
+              {/* Mobile Header */}
+              <div className="px-3 pt-4 pb-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-2xl font-bold tracking-tight">
                     My Emojis {myEmojis.length > 0 && <span className="text-muted-foreground font-normal">({myEmojis.length})</span>}
-                  </CardTitle>
-                  <CardDescription>
-                    {hasRealData 
-                      ? `Manage the emojis you've created in ${workspace || "your workspace"}`
-                      : "Connect to Slack to see and manage your emojis"
-                    }
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => refreshEmojiData()}
-                    disabled={isRefreshing}
-                    title="Refresh emoji list"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  </Button>
-                  <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "table" | "grid")}>
-                    <ToggleGroupItem value="table" aria-label="Table view">
-                      <TableIcon className="h-4 w-4" />
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="grid" aria-label="Grid view">
-                      <Grid3X3 className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search emojis..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full sm:w-[300px] pl-9"
-                    />
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => refreshEmojiData()}
+                      disabled={isRefreshing}
+                      className="h-8 w-8"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "table" | "grid")} className="h-8">
+                      <ToggleGroupItem value="table" aria-label="Table view" className="h-8 px-2">
+                        <TableIcon className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="grid" aria-label="Grid view" className="h-8 px-2">
+                        <Grid3X3 className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
                   </div>
                 </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search emojis..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 h-9"
+                  />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
+              {/* Mobile Content */}
+              <div>
+                {loading || isRefreshing ? (
+                  viewMode === "table" ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                          <Skeleton className="h-12 w-12 rounded" />
+                          <div className="flex-1">
+                            <Skeleton className="h-4 w-24 mb-2" />
+                            <Skeleton className="h-3 w-16" />
+                          </div>
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="flex flex-col items-center gap-2">
+                          <Skeleton className="h-16 w-16 rounded-lg" />
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : sortedEmojis.length === 0 ? (
+                  <div className="text-center py-12">
+                    <User className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">
+                      {searchQuery ? "No emojis found matching your search." : "You haven't created any emojis yet."}
+                    </p>
+                    {!hasRealData && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Connect to Slack in Settings to see your emojis.
+                      </p>
+                    )}
+                  </div>
+                ) : (viewMode === "table") ? (
+                  // Mobile cards view for table mode
+                  <div className="space-y-2">
+                    {sortedEmojis.map((emoji) => (
+                      <div key={emoji.name} className="flex items-center gap-3 p-3 border-b bg-card">
+                        <div className="relative h-12 w-12 flex-shrink-0">
+                          <Image
+                            src={emoji.url}
+                            alt={emoji.name}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">:{emoji.name}:</p>
+                          {emoji.created && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(emoji.created * 1000), { addSuffix: true })}
+                            </p>
+                          )}
+                          {(() => {
+                            const aliases = getAliasesForEmoji(emoji.name)
+                            if (aliases.length > 0) {
+                              return (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {aliases.slice(0, 2).map(alias => (
+                                    <Badge key={alias} variant="outline" className="text-xs py-0 px-1">
+                                      :{alias}:
+                                    </Badge>
+                                  ))}
+                                  {aliases.length > 2 && (
+                                    <Badge variant="outline" className="text-xs py-0 px-1">
+                                      +{aliases.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 flex-shrink-0"
+                          onClick={() => {
+                            setSelectedEmoji(emoji)
+                            setIsActionsDrawerOpen(true)
+                          }}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  // Mobile grid view
+                  <div className="grid grid-cols-2 gap-2 px-2">
+                    {sortedEmojis.map((emoji) => (
+                      <div
+                        key={emoji.name}
+                        className="group relative flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
+                      >
+                        {/* Emoji Image */}
+                        <div className="relative h-16 w-16">
+                          <Image
+                            src={emoji.url}
+                            alt={emoji.name}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        
+                        {/* Emoji Info */}
+                        <div className="text-center w-full">
+                          <p className="font-medium text-sm truncate">:{emoji.name}:</p>
+                          {emoji.created && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(emoji.created * 1000), { addSuffix: true })}
+                            </p>
+                          )}
+                          {emoji.is_alias === 1 && emoji.alias_for ? (
+                            <div className="mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                alias of :{emoji.alias_for}:
+                              </Badge>
+                            </div>
+                          ) : (
+                            <>
+                              {(() => {
+                                const aliases = getAliasesForEmoji(emoji.name)
+                                if (aliases.length > 0) {
+                                  return (
+                                    <div className="mt-1 flex flex-wrap gap-1 justify-center">
+                                      {aliases.slice(0, 2).map(alias => (
+                                        <Badge key={alias} variant="outline" className="text-xs">
+                                          :{alias}:
+                                        </Badge>
+                                      ))}
+                                      {aliases.length > 2 && (
+                                        <Badge variant="outline" className="text-xs">
+                                          +{aliases.length - 2}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })()}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Action Button for Mobile */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
+                          onClick={() => {
+                            setSelectedEmoji(emoji)
+                            setIsActionsDrawerOpen(true)
+                          }}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            // Desktop: With Card wrapper
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                  <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
+                    My Emojis {myEmojis.length > 0 && <span className="text-muted-foreground font-normal">({myEmojis.length})</span>}
+                  </CardTitle>                    <CardDescription>
+                      {hasRealData 
+                        ? `Manage the emojis you've created in ${workspace || "your workspace"}`
+                        : "Connect to Slack to see and manage your emojis"
+                      }
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => refreshEmojiData()}
+                      disabled={isRefreshing}
+                      title="Refresh emoji list"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "table" | "grid")}>
+                      <ToggleGroupItem value="table" aria-label="Table view">
+                        <TableIcon className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="grid" aria-label="Grid view">
+                        <Grid3X3 className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="search"
+                        placeholder="Search emojis..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full sm:w-[300px] pl-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
               {loading || isRefreshing ? (
                 viewMode === "table" ? (
                   <div className="w-full overflow-x-auto">
@@ -1326,14 +1522,14 @@ function MyEmojisPage() {
                     </Table>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'} gap-4`}>
                     {sortedEmojis.map((emoji) => (
                       <div
                         key={emoji.name}
                         className="group relative flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
                       >
                         {/* Emoji Image */}
-                        <div className="relative h-24 w-24">
+                        <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-24 w-24'}`}>
                           <Image
                             src={emoji.url}
                             alt={emoji.name}
@@ -1384,205 +1580,371 @@ function MyEmojisPage() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-2 text-xs"
-                              onClick={() => handleRename(emoji)}
-                              disabled={emoji.is_alias === 1}
-                              title={emoji.is_alias === 1 ? "Cannot rename aliases" : undefined}
-                            >
-                              <Edit2 className="h-3 w-3 mr-1" />
-                              Rename
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-2 text-xs"
-                              onClick={() => handleReplace(emoji)}
-                            >
-                              <ImageUp className="h-3 w-3 mr-1" />
-                              Replace
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-2 text-xs"
-                              onClick={() => handleAddAlias(emoji)}
-                            >
-                              <LetterText className="h-3 w-3 mr-1" />
-                              Add Alias
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(emoji)}
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              Delete
-                            </Button>
+                        {isMobile ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
+                            onClick={() => {
+                              setSelectedEmoji(emoji)
+                              setIsActionsDrawerOpen(true)
+                            }}
+                          >
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        ) : (
+                          <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => handleRename(emoji)}
+                                disabled={emoji.is_alias === 1}
+                                title={emoji.is_alias === 1 ? "Cannot rename aliases" : undefined}
+                              >
+                                <Edit2 className="h-3 w-3 mr-1" />
+                                Rename
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => handleReplace(emoji)}
+                              >
+                                <ImageUp className="h-3 w-3 mr-1" />
+                                Replace
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-xs"
+                                onClick={() => handleAddAlias(emoji)}
+                              >
+                                <LetterText className="h-3 w-3 mr-1" />
+                                Add Alias
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(emoji)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )
               )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      {/* Rename Dialog */}
-      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Emoji</DialogTitle>
-            <DialogDescription>
-              Enter a new name for :{selectedEmoji?.name}:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="new-name">New name</Label>
-              <Input
-                id="new-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Enter new emoji name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)} disabled={isRenamingEmoji}>
-              Cancel
-            </Button>
-            <Button onClick={performRename} disabled={!newName || newName === selectedEmoji?.name || isRenamingEmoji}>
-              {isRenamingEmoji ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Renaming...
-                </>
-              ) : (
-                "Rename"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Replace Dialog */}
-      <Dialog open={isReplaceDialogOpen} onOpenChange={setIsReplaceDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Replace Emoji</DialogTitle>
-            <DialogDescription>
-              Upload a new image for :{selectedEmoji?.name}:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="replace-file">New image</Label>
-              <Input
-                ref={fileInputRef}
-                id="replace-file"
-                type="file"
-                accept="image/*,video/*,.gif"
-                onChange={handleFileSelect}
-              />
-            </div>
-            {processedEmoji && (
-              <div className="flex items-center gap-4 p-4 border rounded-lg">
-                <div className="relative h-16 w-16">
-                  <Image
-                    src={processedEmoji.blob}
-                    alt={processedEmoji.name}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{processedEmoji.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(processedEmoji.processedSize / 1024).toFixed(1)} KB
-                  </p>
-                </div>
+      {/* Rename Dialog/Drawer */}
+      {isMobile ? (
+        <Drawer open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Rename Emoji</DrawerTitle>
+              <DrawerDescription>
+                Enter a new name for :{selectedEmoji?.name}:
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4">
+              <div className="grid gap-2">
+                <Label htmlFor="new-name-mobile">New name</Label>
+                <Input
+                  id="new-name-mobile"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Enter new emoji name"
+                />
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsReplaceDialogOpen(false)
-              setProcessedEmoji(null)
-              setSelectedFile(null)
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={performReplace} disabled={!processedEmoji}>
-              Replace
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Alias Dialog */}
-      <Dialog open={isAliasDialogOpen} onOpenChange={setIsAliasDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Alias</DialogTitle>
-            <DialogDescription>
-              Add an alias for :{selectedEmoji?.name}:
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="new-alias">Alias name</Label>
-              <Input
-                id="new-alias"
-                value={newAlias}
-                onChange={(e) => setNewAlias(e.target.value)}
-                placeholder="Enter alias name"
-              />
             </div>
-            {selectedEmoji && (() => {
-              const existingAliases = getAliasesForEmoji(selectedEmoji.name)
-              if (existingAliases.length > 0) {
-                return (
-                  <div className="grid gap-2">
-                    <Label>Existing aliases</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {existingAliases.map(alias => (
-                        <Badge key={alias} variant="secondary">
-                          :{alias}:
-                        </Badge>
-                      ))}
-                    </div>
+            <DrawerFooter>
+              <Button onClick={performRename} disabled={!newName || newName === selectedEmoji?.name || isRenamingEmoji}>
+                {isRenamingEmoji ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Renaming...
+                  </>
+                ) : (
+                  "Rename"
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)} disabled={isRenamingEmoji}>
+                Cancel
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Emoji</DialogTitle>
+              <DialogDescription>
+                Enter a new name for :{selectedEmoji?.name}:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="new-name">New name</Label>
+                <Input
+                  id="new-name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Enter new emoji name"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenameDialogOpen(false)} disabled={isRenamingEmoji}>
+                Cancel
+              </Button>
+              <Button onClick={performRename} disabled={!newName || newName === selectedEmoji?.name || isRenamingEmoji}>
+                {isRenamingEmoji ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Renaming...
+                  </>
+                ) : (
+                  "Rename"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Replace Dialog/Drawer */}
+      {isMobile ? (
+        <Drawer open={isReplaceDialogOpen} onOpenChange={setIsReplaceDialogOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Replace Emoji</DrawerTitle>
+              <DrawerDescription>
+                Upload a new image for :{selectedEmoji?.name}:
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="replace-file-mobile">New image</Label>
+                <Input
+                  ref={fileInputRef}
+                  id="replace-file-mobile"
+                  type="file"
+                  accept="image/*,video/*,.gif"
+                  onChange={handleFileSelect}
+                />
+              </div>
+              {processedEmoji && (
+                <div className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div className="relative h-16 w-16">
+                    <Image
+                      src={processedEmoji.blob}
+                      alt={processedEmoji.name}
+                      fill
+                      className="object-contain"
+                    />
                   </div>
-                )
-              }
-              return null
-            })()}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAliasDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={performAddAlias} disabled={!newAlias || isAddingAlias}>
-              {isAddingAlias ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                "Add Alias"
+                  <div className="flex-1">
+                    <p className="font-medium">{processedEmoji.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(processedEmoji.processedSize / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </div>
+            <DrawerFooter>
+              <Button onClick={performReplace} disabled={!processedEmoji}>
+                Replace
+              </Button>
+              <Button variant="outline" onClick={() => {
+                setIsReplaceDialogOpen(false)
+                setProcessedEmoji(null)
+                setSelectedFile(null)
+              }}>
+                Cancel
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isReplaceDialogOpen} onOpenChange={setIsReplaceDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Replace Emoji</DialogTitle>
+              <DialogDescription>
+                Upload a new image for :{selectedEmoji?.name}:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="replace-file">New image</Label>
+                <Input
+                  ref={fileInputRef}
+                  id="replace-file"
+                  type="file"
+                  accept="image/*,video/*,.gif"
+                  onChange={handleFileSelect}
+                />
+              </div>
+              {processedEmoji && (
+                <div className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div className="relative h-16 w-16">
+                    <Image
+                      src={processedEmoji.blob}
+                      alt={processedEmoji.name}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{processedEmoji.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(processedEmoji.processedSize / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsReplaceDialogOpen(false)
+                setProcessedEmoji(null)
+                setSelectedFile(null)
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={performReplace} disabled={!processedEmoji}>
+                Replace
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Add Alias Dialog/Drawer */}
+      {isMobile ? (
+        <Drawer open={isAliasDialogOpen} onOpenChange={setIsAliasDialogOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Add Alias</DrawerTitle>
+              <DrawerDescription>
+                Add an alias for :{selectedEmoji?.name}:
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-4 space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="new-alias-mobile">Alias name</Label>
+                <Input
+                  id="new-alias-mobile"
+                  value={newAlias}
+                  onChange={(e) => setNewAlias(e.target.value)}
+                  placeholder="Enter alias name"
+                />
+              </div>
+              {selectedEmoji && (() => {
+                const existingAliases = getAliasesForEmoji(selectedEmoji.name)
+                if (existingAliases.length > 0) {
+                  return (
+                    <div className="grid gap-2">
+                      <Label>Existing aliases</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {existingAliases.map(alias => (
+                          <Badge key={alias} variant="secondary">
+                            :{alias}:
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+            </div>
+            <DrawerFooter>
+              <Button onClick={performAddAlias} disabled={!newAlias || isAddingAlias}>
+                {isAddingAlias ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Alias"
+                )}
+              </Button>
+              <Button variant="outline" onClick={() => setIsAliasDialogOpen(false)}>
+                Cancel
+              </Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isAliasDialogOpen} onOpenChange={setIsAliasDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Alias</DialogTitle>
+              <DialogDescription>
+                Add an alias for :{selectedEmoji?.name}:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="new-alias">Alias name</Label>
+                <Input
+                  id="new-alias"
+                  value={newAlias}
+                  onChange={(e) => setNewAlias(e.target.value)}
+                  placeholder="Enter alias name"
+                />
+              </div>
+              {selectedEmoji && (() => {
+                const existingAliases = getAliasesForEmoji(selectedEmoji.name)
+                if (existingAliases.length > 0) {
+                  return (
+                    <div className="grid gap-2">
+                      <Label>Existing aliases</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {existingAliases.map(alias => (
+                          <Badge key={alias} variant="secondary">
+                            :{alias}:
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAliasDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={performAddAlias} disabled={!newAlias || isAddingAlias}>
+                {isAddingAlias ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add Alias"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -1599,10 +1961,7 @@ function MyEmojisPage() {
             </AlertDialogCancel>
             <Button
               variant="destructive"
-              onClick={() => {
-                console.log("Delete button clicked in AlertDialog")
-                performDelete()
-              }}
+              onClick={() => performDelete()}
               disabled={isDeletingEmoji}
             >
               {isDeletingEmoji ? (
@@ -1637,6 +1996,67 @@ function MyEmojisPage() {
         onDownloadAll={() => {}}
         onUpdateName={() => {}}
       />
+
+      {/* Mobile Actions Drawer */}
+      {isMobile && (
+        <Drawer open={isActionsDrawerOpen} onOpenChange={setIsActionsDrawerOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Emoji Actions</DrawerTitle>
+              <DrawerDescription>
+                Choose an action for :{selectedEmoji?.name}:
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 pb-6 space-y-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12"
+                onClick={() => {
+                  setIsActionsDrawerOpen(false)
+                  handleRename(selectedEmoji!)
+                }}
+                disabled={selectedEmoji?.is_alias === 1}
+              >
+                <Edit2 className="h-5 w-5 mr-3" />
+                <span className="text-base">Rename</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12"
+                onClick={() => {
+                  setIsActionsDrawerOpen(false)
+                  handleReplace(selectedEmoji!)
+                }}
+              >
+                <ImageUp className="h-5 w-5 mr-3" />
+                <span className="text-base">Replace Image</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12"
+                onClick={() => {
+                  setIsActionsDrawerOpen(false)
+                  handleAddAlias(selectedEmoji!)
+                }}
+              >
+                <LetterText className="h-5 w-5 mr-3" />
+                <span className="text-base">Add Alias</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12 text-destructive hover:text-destructive"
+                onClick={() => {
+                  setIsActionsDrawerOpen(false)
+                  handleDelete(selectedEmoji!)
+                }}
+              >
+                <Trash2 className="h-5 w-5 mr-3" />
+                <span className="text-base">Delete</span>
+              </Button>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </>
   )
 }

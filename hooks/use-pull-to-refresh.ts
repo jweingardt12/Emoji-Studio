@@ -19,12 +19,15 @@ export function usePullToRefresh({
   
   const startY = useRef(0)
   const currentY = useRef(0)
+  const lastRefreshTime = useRef(0)
+  const minRefreshInterval = 3000 // Minimum 3 seconds between refreshes
   
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!enabled || isRefreshing) return
     
-    // Only trigger if we're at the top of the page
-    if (window.scrollY === 0) {
+    // Only trigger if we're at the very top of the page
+    // and the touch starts in the upper portion of the screen
+    if (window.scrollY === 0 && e.touches[0].clientY < window.innerHeight * 0.5) {
       startY.current = e.touches[0].clientY
     }
   }, [enabled, isRefreshing])
@@ -51,7 +54,20 @@ export function usePullToRefresh({
     const distance = currentY.current - startY.current
     
     if (distance > threshold) {
+      // Check if enough time has passed since last refresh
+      const now = Date.now()
+      if (now - lastRefreshTime.current < minRefreshInterval) {
+        // Too soon, don't refresh
+        setIsPulling(false)
+        setPullDistance(0)
+        startY.current = 0
+        currentY.current = 0
+        return
+      }
+      
       setIsRefreshing(true)
+      lastRefreshTime.current = now
+      
       // Haptic feedback if available
       if ('vibrate' in navigator) {
         navigator.vibrate(10)

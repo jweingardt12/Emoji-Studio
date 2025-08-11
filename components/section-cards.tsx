@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { useEmojiData } from "@/lib/hooks/use-emoji-data";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InfoDrawer } from "@/components/info-drawer";
+import { InfoDrawerResponsive } from "@/components/info-drawer-responsive";
 import {
   ChartContainer,
   ChartTooltip,
@@ -17,17 +17,14 @@ import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftBlur, setShowLeftBlur] = useState(false);
+  const [showRightBlur, setShowRightBlur] = useState(true);
+  const [now, setNow] = useState<number | null>(null);
   
-  console.log('SectionCards render:', { 
-    hasStats: !!stats, 
-    emojiDataLength: emojiData.length, 
-    useDemoData, 
-    hasRealData,
-    loading 
-  });
+
 
   // Calculate time boundaries (hydration-safe)
-  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Math.floor(Date.now() / 1000));
   }, []);
@@ -35,11 +32,6 @@ export function SectionCards() {
   // Force re-render when emoji data is updated
   useEffect(() => {
     const handleEmojiDataUpdated = (event: Event) => {
-      console.log('SectionCards: emojiDataUpdated event received, forcing re-render');
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.emojiData) {
-        console.log(`SectionCards: Event contains ${customEvent.detail.emojiData.length} emojis`);
-      }
       setNow(Math.floor(Date.now() / 1000)); // Update the timestamp to force recalculation
     };
     
@@ -48,6 +40,22 @@ export function SectionCards() {
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     };
+  }, []);
+
+  // Handle scroll to show/hide blur effects
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setShowLeftBlur(scrollLeft > 10);
+      setShowRightBlur(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  // Check scroll position on mount and resize
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
   }, []);
   
   if (now === null) {
@@ -123,9 +131,9 @@ export function SectionCards() {
 
   if (loading && !useDemoData) {
     return (
-      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 xs:grid-cols-2 gap-3 xs:gap-4 px-2 xs:px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide min-w-fit *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="@container/card">
+          <Card key={i} className="@container/card flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1">
             <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
               <Skeleton className="h-3 xs:h-4 w-16 xs:w-24" />
               <Skeleton className="h-6 xs:h-8 w-24 xs:w-32" />
@@ -142,8 +150,8 @@ export function SectionCards() {
 
   if (!stats && !useDemoData) {
     return (
-      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 xs:grid-cols-2 gap-3 xs:gap-4 px-2 xs:px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
-        <Card className="@container/card col-span-full">
+      <div className="*:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+        <Card className="@container/card">
           <CardHeader className="text-center py-4 xs:py-6">
             <CardTitle className="text-base xs:text-lg sm:text-xl">No Emoji Data Yet</CardTitle>
             <CardDescription className="text-xs xs:text-sm">Use the form above to fetch emoji data from your Slack workspace</CardDescription>
@@ -156,11 +164,26 @@ export function SectionCards() {
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
   return (
-    <div>
-      <div className="flex w-full overflow-x-auto snap-x snap-mandatory space-x-4 sm:grid sm:gap-4 sm:space-x-0 grid-cols-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+    <div className="relative w-full">
+      {/* Left blur effect */}
+      {showLeftBlur && (
+        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+      )}
+      
+      {/* Right blur effect */}
+      {showRightBlur && (
+        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+      )}
+      
+      <div 
+        ref={scrollContainerRef}
+        className="w-full overflow-x-auto scrollbar-hide"
+        onScroll={handleScroll}
+      >
+        <div className="flex gap-3 min-w-fit *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         {/* Total Emojis */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
@@ -230,11 +253,11 @@ export function SectionCards() {
               <p><strong>What:</strong> Total number of unique emojis.</p>
               <p><strong>Why:</strong> Reflects team creativity and engagement.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* AEU */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
@@ -297,11 +320,11 @@ export function SectionCards() {
               <p><strong>What:</strong> Number of unique users who have added emojis in the last 7 days.</p>
               <p><strong>Why:</strong> Shows team's engagement and participation.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* EPU */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
@@ -366,11 +389,11 @@ export function SectionCards() {
               <p><strong>What:</strong> Avg. emojis per active user in 7 days.</p>
               <p><strong>Why:</strong> Shows how prolific your emoji creators are.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* EPW */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
@@ -427,9 +450,10 @@ export function SectionCards() {
               <p><strong>What:</strong> Avg. emojis per week in 4 weeks.</p>
               <p><strong>Why:</strong> Shows team's emoji creation pace.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
       </div>
     </div>
+  </div>
   );
 }

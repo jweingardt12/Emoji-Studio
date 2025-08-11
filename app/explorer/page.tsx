@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Emoji } from "@/lib/services/emoji-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Rss, Download, Loader2, Sparkles, X } from "lucide-react"
+import { Search, Filter, Download, Loader2, Sparkles, X } from "lucide-react"
 const EmojiOverlay = React.lazy(() => import("@/components/emoji-overlay"))
 const UserOverlay = React.lazy(() => import("@/components/user-overlay"))
 import { getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
@@ -26,6 +27,7 @@ function ExplorerPage() {
   const contentRef = useRef<HTMLDivElement>(null);
   // Add client-side only rendering to avoid hydration mismatches
   const [isClient, setIsClient] = useState(false);
+  const isMobile = useIsMobile();
   
   const { emojiData, loading } = useEmojiData();
   const analytics = useAnalytics();
@@ -85,7 +87,6 @@ function ExplorerPage() {
         const data = getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000));
         setLeaderboard(data);
       } catch (error) {
-        console.error('Error fetching leaderboard:', error);
         setLeaderboard([]);
       }
     };
@@ -162,7 +163,6 @@ function ExplorerPage() {
     setDownloadProgress(0);
     setProcessedFileCount(0);
     setTotalFilesToDownload(0);
-    console.log('Download cancelled by user.');
   };
 
   const handleDownloadAll = async () => {
@@ -202,7 +202,6 @@ function ExplorerPage() {
         
         // Aliases are already filtered out, but keeping this check for safety
         if (emoji.is_alias || emoji.url.startsWith('alias:')) {
-          console.log(`Skipping alias: ${emoji.name}`);
           continue;
         }
         
@@ -214,11 +213,9 @@ function ExplorerPage() {
 
         try {
           const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
-          console.log(`Attempting to fetch emoji via proxy: ${emoji.name}, Proxy URL: ${proxyUrl}`); 
-          const response = await fetch(proxyUrl, { signal }); // Pass signal to fetch
+          const response = await fetch(proxyUrl, { signal: abortControllerRef.current.signal });
+          
           if (!response.ok) {
-            if (signal.aborted) break; // Check again if aborted during fetch response handling
-            console.error(`Failed to fetch ${emoji.name} (via Proxy URL: ${proxyUrl}): HTTP ${response.status} ${response.statusText}`); 
             handleImageError(emoji.name); 
             continue;
           }
@@ -235,11 +232,8 @@ function ExplorerPage() {
           zip.file(fileName, blob);
         } catch (error: any) { 
           if (error.name === 'AbortError') {
-            console.log('Fetch aborted for emoji:', emoji.name);
-            // Error state is handled by handleCancelDownload
-            break; // Exit loop
+            break; // Exit loop if fetch was aborted
           }
-          console.error(`Error processing emoji ${emoji.name} (Original URL: ${emoji.url}):`, error.message, error.stack); 
           handleImageError(emoji.name);
         }
       }
@@ -275,12 +269,10 @@ function ExplorerPage() {
               console.log('Zip generation aborted.');
               return;
             }
-            console.error('Error generating zip file:', err);
             setDownloadError('Failed to generate zip file. Please try again.');
             analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'zip_generation_failed');
           });
       } else if (!signal.aborted) {
-        console.log('No files to zip.');
         if (totalFilesToDownload > 0) { // If there were files expected but none were added to zip (e.g. all errored)
           setDownloadError('No images could be added to the zip. Check for errors.');
           analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'empty_zip_due_to_errors');
@@ -289,10 +281,8 @@ function ExplorerPage() {
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        console.log('Download operation aborted.');
-        // State handled by handleCancelDownload
+        // No need to set error here, handleCancelDownload does it.
       } else {
-        console.error('An unexpected error occurred during download:', error);
         setDownloadError('An unexpected error occurred. Please try again.');
         analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'unexpected_error');
       }
@@ -312,33 +302,32 @@ function ExplorerPage() {
 
   if (!isClient) return null;
 
-  return (
-    <div className="relative">
-      <div ref={contentRef} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 md:py-6">
-        <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 md:p-6">
-            <div className="mb-4 sm:mb-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-                    <Rss className="h-5 w-5" />
-                    <span>Emoji Explorer</span>
-                  </h1>
-                  <p className="text-sm sm:text-base text-muted-foreground mt-1">
-                    Browse and search all emojis in your Slack workspace.
-                  </p>
-                </div>
-                <div className="flex flex-col sm:items-end gap-1">
-                  <div className="text-lg sm:text-xl font-semibold tabular-nums">
-                    {nonAliasCount.toLocaleString()}
-                  </div>
-                  <div className="text-xs sm:text-sm text-muted-foreground">
-                    {nonAliasCount === 1 ? 'emoji' : 'emojis'}
-                  </div>
-                </div>
-              </div>
+  const content = (
+    <>
+      <div className={`${isMobile ? 'px-3 pt-4 pb-3' : 'mb-4 sm:mb-6'}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+          <div>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-2xl sm:text-3xl'} font-bold tracking-tight`}>
+              Emoji Explorer
+            </h1>
+            {!isMobile && (
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                Browse and search all emojis in your Slack workspace.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:items-end gap-1">
+            <div className={`${isMobile ? 'text-base' : 'text-lg sm:text-xl'} font-semibold tabular-nums`}>
+              {nonAliasCount.toLocaleString()}
             </div>
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {nonAliasCount === 1 ? 'emoji' : 'emojis'}
+            </div>
+          </div>
+        </div>
+      </div>
             {/* Filters */}
-            <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+            <div className={`space-y-3 sm:space-y-4 ${isMobile ? 'px-3 pb-3' : 'mb-4 sm:mb-6'}`}>
               {/* New Emojis Badge */}
               {sinceFilter && (
                 <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
@@ -417,7 +406,7 @@ function ExplorerPage() {
             </div>
             {/* Emoji Grid */}
             {loading ? (
-              <div className="mt-4">
+              <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                   {Array.from({ length: 24 }).map((_, i) => (
                     <div key={i} className="flex flex-col items-center justify-center p-2 sm:p-3 border rounded-lg bg-card min-h-[120px] sm:min-h-[130px]">
@@ -458,7 +447,7 @@ function ExplorerPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="mt-4">
+                  <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                       {sortedEmojis.map((emoji) => (
                         <div
@@ -523,7 +512,21 @@ function ExplorerPage() {
                 )}
               </>
             )}
-        </div>
+    </>
+  );
+
+  return (
+    <div className="relative">
+      <div ref={contentRef} className={`${isMobile ? 'pt-4' : 'px-3 sm:px-4 lg:px-6 py-3 sm:py-4 md:py-6'}`}>
+        {isMobile ? (
+          // Mobile: No card wrapper
+          content
+        ) : (
+          // Desktop: With card wrapper
+          <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 md:p-6">
+            {content}
+          </div>
+        )}
       </div>
       {/* Emoji Overlay */}
       {selectedEmoji && (

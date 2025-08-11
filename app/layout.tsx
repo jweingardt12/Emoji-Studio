@@ -78,7 +78,14 @@ export default function RootLayout({
                 <NotificationManager />
               </PWALayoutWrapper>
             </EmojiDataProvider>
-            <Toaster />
+            <Toaster 
+              position="bottom-center"
+              toastOptions={{
+                style: {
+                  bottom: 'calc(env(safe-area-inset-bottom) + 80px)', // Position above bottom nav on mobile
+                },
+              }}
+            />
             <ThemeTracker />
           </ClientBody>
         </ThemeProvider>

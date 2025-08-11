@@ -42,6 +42,19 @@ body {
   display: none;
 }
 
+/* Sparkline scan animation */
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(calc(100% + 100vw));
+  }
+  100% {
+    transform: translateX(calc(100% + 100vw));
+  }
+}
+
 /* Smooth momentum scrolling for all scrollable containers */
 .native-scroll {
   -webkit-overflow-scrolling: touch;

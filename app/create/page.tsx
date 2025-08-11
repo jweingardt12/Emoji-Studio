@@ -19,6 +19,7 @@ import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import Marquee from "@/components/ui/marquee"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 // Sample emoji tiles for the background
 const emojiTiles = [
@@ -60,6 +61,7 @@ const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
 
 function EmojiCreatorPage() {
   const { hasRealData, loading } = useEmojiData()
+  const isMobile = useIsMobile()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [processedEmojis, setProcessedEmojis] = useState<ProcessedEmoji[]>([])
   const [processingFiles, setProcessingFiles] = useState<File[]>([])
@@ -83,6 +85,36 @@ function EmojiCreatorPage() {
     
     console.log('[Create Page] Component mounted, URL:', window.location.href)
     console.log('[Create Page] Search params:', new URLSearchParams(window.location.search).toString())
+    
+    // Check for pending file from mobile drawer
+    const pendingFile = sessionStorage.getItem('pendingEmojiFile')
+    if (pendingFile) {
+      try {
+        const fileData = JSON.parse(pendingFile)
+        sessionStorage.removeItem('pendingEmojiFile')
+        
+        // Convert data URL to File
+        fetch(fileData.dataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], fileData.fileName, { type: fileData.fileType })
+            setSelectedFiles([file])
+            setProcessingFiles([file])
+            
+            toast({
+              title: `Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`,
+              description: "Converting to emoji format...",
+            })
+            
+            // Auto-start processing
+            setTimeout(() => {
+              processFiles([file])
+            }, 500)
+          })
+      } catch (error) {
+        console.error('[Create Page] Failed to process pending file:', error)
+      }
+    }
     
     // Listen for Chrome extension messages
     const handleExtensionMessage = async (event: MessageEvent) => {
@@ -852,16 +884,18 @@ function EmojiCreatorPage() {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <div className="px-2 sm:px-4 lg:px-6">
+        <div className="px-3 sm:px-4 lg:px-6">
           <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
-            <div className="mb-4 sm:mb-6">
+            <div className={`${isMobile ? 'pt-2 pb-3' : 'mb-4 sm:mb-6'}`}>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
                 <span>Create Slack Emojis</span>
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Upload images, videos, or GIFs to create perfectly formatted Slack emojis.
-              </p>
+              {!isMobile && (
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  Upload images, videos, or GIFs to create perfectly formatted Slack emojis.
+                </p>
+              )}
             </div>
 
             {/* Main content grid */}

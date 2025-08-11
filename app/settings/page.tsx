@@ -28,6 +28,7 @@ import { useAnalytics } from "@/lib/analytics"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Monitor, Moon, Sun } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
 
@@ -350,6 +351,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 export default function SettingsPage() {
   const pathname = usePathname()
+  const isMobile = useIsMobile()
   
   // Initialize active section from URL hash or default to 'connection'
   const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
@@ -787,15 +789,17 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
       <ChromeExtensionHandler />
-      <div className="px-2 sm:px-4 lg:px-6">
+      <div className="px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-4 sm:mb-6 lg:mb-8">
+        <div className={`${isMobile ? 'pt-4 pb-3' : 'mb-4 sm:mb-6 lg:mb-8'}`}>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Settings
           </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Manage your workspace connection, notifications, and preferences
-          </p>
+          {!isMobile && (
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+              Manage your workspace connection, notifications, and preferences
+            </p>
+          )}
         </div>
 
         {/* Settings Layout with Sidebar */}

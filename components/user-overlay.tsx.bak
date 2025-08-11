@@ -1,6 +1,6 @@
 "use client"
 import { X, TrendingUp, PieChart, Calendar, Info, ChartNoAxesCombined, ImageUp, ArrowLeft  } from "lucide-react"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer"
@@ -197,17 +197,11 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
     }
   }, [user, analytics, isMobile])
   
-  // Handle drawer close - only trigger onClose if drawer was previously open
-  const wasDrawerOpen = useRef(false)
+  // Handle drawer close
   useEffect(() => {
-    if (isMobile && user) {
-      if (isDrawerOpen) {
-        wasDrawerOpen.current = true
-      } else if (wasDrawerOpen.current) {
-        // Drawer was open and is now closed, trigger onClose
-        onClose()
-        wasDrawerOpen.current = false
-      }
+    if (isMobile && !isDrawerOpen && user) {
+      // Drawer was closed, trigger onClose
+      onClose()
     }
   }, [isDrawerOpen, isMobile, user, onClose])
 
@@ -219,7 +213,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
     }, 300) // Match transition duration
   }
 
-  if (!user) return null
+  if (!user || !mounted) return null
   
   // Shared content component
   const OverlayContent = () => (
@@ -606,15 +600,271 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   }
 
 
+
+
+
+                      <button
+                        className={`px-3 py-1.5 rounded text-sm font-medium border ${viewMode === "monthly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
+                        onClick={() => {
+                          setViewMode("monthly")
+                          analytics.trackEmojiFilter("chart_view", "monthly")
+                        }}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        className={`px-3 py-1.5 rounded text-sm font-medium border ${viewMode === "weekly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
+                        onClick={() => {
+                          setViewMode("weekly")
+                          analytics.trackEmojiFilter("chart_view", "weekly")
+                        }}
+                      >
+                        Weekly
+                      </button>
+                    </div>
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    {chartData.length > 0
+                      ? `${format(new Date(chartData[0].date), viewMode === "monthly" ? "MMMM yyyy" : "MMM d, yyyy")} - ${format(new Date(chartData[chartData.length - 1].date), viewMode === "monthly" ? "MMMM yyyy" : "MMM d, yyyy")}`
+                      : "All Time Activity"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-0 py-0">
+                  {chartData.length > 0 ? (
+                    <div className="h-[200px] w-full px-4 pt-2 pb-4">
+                      <ChartContainer
+                        config={{
+                          count: {
+                            label: viewMode === "weekly" ? "Weekly Count" : "Emojis Created",
+                            color: "hsl(var(--chart-1))",
+                          },
+                          ...(viewMode === "weekly"
+                            ? {
+                                movingAvg: {
+                                  label: "4-week Moving Avg",
+                                  color: "hsl(var(--chart-2))",
+                                },
+                              }
+                            : {}),
+                        }}
+                        className="h-full w-full"
+                      >
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={chartData}
+                            margin={{
+                              top: 5,
+                              right: 20,
+                              left: 20,
+                              bottom: 5
+                            }}
+                          >
+                            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.4} />
+                            <XAxis
+                              dataKey="label"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={10}
+                              height={30}
+                              interval={viewMode === "weekly" ? "preserveStartEnd" : "preserveStart"}
+                              minTickGap={viewMode === "weekly" ? 40 : 30}
+                              tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                              tickFormatter={(label: string, index: number): string => {
+                                if (index === 0 || index === chartData.length - 1) {
+                                  return String(label ?? "")
+                                }
+                                if (viewMode === "weekly" && chartData.length > 12) {
+                                  return index % 4 === 0 ? String(label ?? "") : ""
+                                }
+                                if (viewMode === "monthly") {
+                                  return index % 2 === 0 ? String(label ?? "") : ""
+                                }
+                                return String(label ?? "")
+                              }}
+                            />
+                            <ChartTooltip 
+                              cursor={false} 
+                              content={(props: any) => {
+                                const { active, payload } = props as { active?: boolean; payload?: any[] };
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  const date = data.date;
+                                  
+                                  const formattedDate = date ? 
+                                    format(new Date(date), viewMode === "monthly" ? "MMM yyyy" : "MMM d, yyyy") : '';
+                                  
+                                  return (
+                                    <div className="bg-card border border-border rounded-md shadow-md p-2">
+                                      <div className="text-xs text-muted-foreground">{formattedDate}</div>
+                                      {payload.map((entry: any, index: number) => (
+                                        <div key={`item-${index}`} className="font-semibold text-sm">
+                                          {entry.dataKey === "count" ? 
+                                            `${entry.value} emojis` : 
+                                            `${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value} avg`}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Line
+                              dataKey="count"
+                              type="natural"
+                              stroke="var(--color-count)"
+                              strokeWidth={2}
+                              dot={viewMode === "monthly" ? { fill: "hsl(var(--primary))" } : false}
+                              activeDot={viewMode === "monthly" ? { r: 6 } : { r: 4, fill: "hsl(var(--primary))" }}
+                              name="Emoji Count"
+                              animationDuration={700}
+                            >
+                              {viewMode === "monthly" && (
+                                <LabelList
+                                  position="top"
+                                  offset={12}
+                                  className="fill-foreground"
+                                  fontSize={12}
+                                />
+                              )}
+                            </Line>
+                            {viewMode === "weekly" && (
+                              <Line
+                                dataKey="movingAvg"
+                                type="natural"
+                                stroke="var(--color-movingAvg)"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                dot={false}
+                                activeDot={false}
+                                name="4-week Moving Avg"
+                                animationDuration={700}
+                              />
+                            )}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                      No chart data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              {/* Radar Chart Card */}
+              <Card className="border shadow-none w-full">
+                <CardHeader className="py-3 px-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center text-base">
+                      <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
+                      Weekly Pattern
+                    </CardTitle>
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    Emoji creation by day of week
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-0 py-0">
+                  {userEmojis.length > 0 ? (
+                    <div className="h-[200px] w-full px-2 pt-2 pb-4 flex items-center justify-center">
+                      <ChartContainer
+                        config={{
+                          emojiCount: {
+                            label: "Emoji Count",
+                            color: "hsl(var(--primary))",
+                          },
+                        }}
+                        className="aspect-square h-full max-w-[220px]"
+                      >
+                        <RadarChart 
+                          data={getDayOfWeekDistributionData()} 
+                          outerRadius={65} 
+                          startAngle={90} 
+                          endAngle={-270}
+                          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                        >
+                          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                          <PolarAngleAxis 
+                            dataKey="day" 
+                            tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
+                            axisLine={{ stroke: 'hsl(var(--border))' }}
+                            tickLine={false}
+                            cy={5}
+                          />
+                          <PolarGrid 
+                            stroke="hsl(var(--border))" 
+                            strokeOpacity={0.6} 
+                            gridType="polygon"
+                          />
+                          <Radar
+                            dataKey="emojiCount"
+                            fill="hsl(var(--primary))"
+                            fillOpacity={0.4}
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                            isAnimationActive={true}
+                            dot={{
+                              r: 4,
+                              fill: 'hsl(var(--primary))',
+                              stroke: 'white',
+                              strokeWidth: 1,
+                            }}
+                            activeDot={{
+                              r: 6,
+                              stroke: 'hsl(var(--primary))',
+                              strokeWidth: 2,
+                              fill: 'white'
+                            }}
+                            animationDuration={700}
+                          />
+                        </RadarChart>
+                      </ChartContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                      No chart data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    )
+  }
+
   // Desktop overlay (existing code)
   const overlayContent = (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-300 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 ${isVisible ? "opacity-100" : "opacity-0"}`}
-      onClick={handleClose}
+      className={`fixed inset-0 z-[9999] transition-all duration-300 ${
+        isMobile 
+          ? "" 
+          : "bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+      } ${isVisible ? "opacity-100" : "opacity-0"}`}
+      onClick={isMobile ? undefined : handleClose}
     >
+      {/* Backdrop for mobile */}
+      {isMobile && (
+        <div 
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+            isVisible ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={handleClose}
+        />
+      )}
+      
       <div
-        className={`bg-card border border-border shadow-lg w-full overflow-y-auto transition-all duration-300 rounded-xl max-w-5xl max-h-[85vh] ${
-          isVisible ? "scale-100" : "scale-95"
+        className={`bg-card border border-border shadow-lg w-full overflow-y-auto transition-all duration-300 ${
+          isMobile 
+            ? "absolute bottom-0 left-0 right-0 h-[90vh] rounded-t-xl" 
+            : "rounded-xl max-w-5xl max-h-[85vh]"
+        } ${
+          isMobile
+            ? isVisible ? "translate-y-0" : "translate-y-full"
+            : isVisible ? "scale-100" : "scale-95"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -996,7 +1246,5 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   )
 
   // Use portal to render outside of normal DOM hierarchy
-  // Only render portal after component is mounted to avoid SSR issues
-  if (!mounted) return null
   return createPortal(overlayContent, document.body)
 } 
