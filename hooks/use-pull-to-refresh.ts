@@ -20,15 +20,17 @@ export function usePullToRefresh({
   const startY = useRef(0)
   const currentY = useRef(0)
   const lastRefreshTime = useRef(0)
-  const minRefreshInterval = 3000 // Minimum 3 seconds between refreshes
+  const minRefreshInterval = 5000 // Minimum 5 seconds between refreshes
+  const initialTouchTime = useRef(0)
   
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!enabled || isRefreshing) return
     
     // Only trigger if we're at the very top of the page
     // and the touch starts in the upper portion of the screen
-    if (window.scrollY === 0 && e.touches[0].clientY < window.innerHeight * 0.5) {
+    if (window.scrollY === 0 && e.touches[0].clientY < window.innerHeight * 0.3) {
       startY.current = e.touches[0].clientY
+      initialTouchTime.current = Date.now()
     }
   }, [enabled, isRefreshing])
   
@@ -38,12 +40,24 @@ export function usePullToRefresh({
     currentY.current = e.touches[0].clientY
     const distance = currentY.current - startY.current
     
-    // Only pull down, not up
-    if (distance > 0 && window.scrollY === 0) {
+    // Require minimum pull distance before activating (reduces accidental triggers)
+    const minActivationDistance = 20
+    
+    // Only pull down, not up, and require minimum distance
+    if (distance > minActivationDistance && window.scrollY === 0) {
+      // Check if the gesture is slow enough (not a quick flick)
+      const timeDiff = Date.now() - initialTouchTime.current
+      const velocity = distance / timeDiff
+      
+      // If moving too fast (likely scrolling), don't trigger pull to refresh
+      if (velocity > 0.5) {
+        return
+      }
+      
       e.preventDefault()
       setIsPulling(true)
-      // Apply resistance to the pull
-      const resistedDistance = Math.min(distance * 0.5, 150)
+      // Apply more resistance to the pull
+      const resistedDistance = Math.min((distance - minActivationDistance) * 0.3, 150)
       setPullDistance(resistedDistance)
     }
   }, [enabled, isRefreshing])
@@ -84,6 +98,7 @@ export function usePullToRefresh({
     setPullDistance(0)
     startY.current = 0
     currentY.current = 0
+    initialTouchTime.current = 0
   }, [enabled, isPulling, threshold, onRefresh])
   
   useEffect(() => {

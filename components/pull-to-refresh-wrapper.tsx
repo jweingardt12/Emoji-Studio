@@ -186,7 +186,7 @@ export function PullToRefreshWrapper({ children, enabled = true }: PullToRefresh
 
   const { isPulling, pullDistance, isRefreshing, pullProgress } = usePullToRefresh({
     onRefresh: handleRefresh,
-    threshold: 120, // Increased from 80 to require more deliberate pull
+    threshold: 150, // Increased to require more deliberate pull
     enabled: enabled && hasRealData && typeof window !== 'undefined' && 'ontouchstart' in window
   })
 

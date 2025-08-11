@@ -82,7 +82,7 @@ export default function RootLayout({
               position="bottom-center"
               toastOptions={{
                 style: {
-                  bottom: 'calc(env(safe-area-inset-bottom) + 80px)', // Position above bottom nav on mobile
+                  bottom: 'calc(env(safe-area-inset-bottom) + 90px)', // Position above bottom nav on mobile
                 },
               }}
             />
