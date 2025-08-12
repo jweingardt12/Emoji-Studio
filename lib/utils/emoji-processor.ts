@@ -88,43 +88,19 @@ export class EmojiProcessor {
   }
 
   private static async processHDRImage(file: File, name: string): Promise<ProcessedEmoji> {
-    // For HDR images, we want to preserve the original format and metadata
-    // We'll only resize if absolutely necessary for file size limits
+    // For HDR images, we MUST resize to 128x128 and compress to meet Slack's requirements
+    // Slack won't accept files over 128KB or larger than 128x128px
     
-    console.log(`Preserving quality for ${file.name} (size: ${file.size} bytes)`)
+    console.log(`Processing HDR image for Slack compliance: ${file.name} (size: ${file.size} bytes)`)
     
-    // For PNG files that might contain HDR or wide gamut colors
-    if (file.type === 'image/png') {
-      // If the file is reasonably sized, preserve it as-is
-      if (file.size <= this.MAX_FILE_SIZE * 3) { // Allow up to 384KB for quality preservation
-        console.log(`PNG ${file.name} preserved at original quality`)
-        const preview = URL.createObjectURL(file)
-        const blobUrl = await this.blobToDataURL(file)
-        const dimensions = await this.getImageDimensions(file)
-        
-        return {
-          name,
-          originalFile: file,
-          processedBlob: file,
-          originalSize: file.size,
-          processedSize: file.size,
-          dimensions,
-          format: 'PNG',
-          preview,
-          blob: blobUrl,
-          processingNote: 'Original quality preserved'
-        }
-      }
-    }
-    
-    // If the file is already small enough, use it as-is
-    if (file.size <= this.MAX_FILE_SIZE) {
-      console.log(`Image ${file.name} is already within size limits, preserving original`)
+    // Check if already meets ALL requirements
+    const dimensions = await this.getImageDimensions(file)
+    if (file.size <= this.MAX_FILE_SIZE && 
+        dimensions.width <= this.TARGET_SIZE && 
+        dimensions.height <= this.TARGET_SIZE) {
+      console.log(`Image ${file.name} already meets all Slack requirements`)
       const preview = URL.createObjectURL(file)
       const blobUrl = await this.blobToDataURL(file)
-      
-      // Get dimensions without using canvas (which would lose HDR)
-      const dimensions = await this.getImageDimensions(file)
       
       return {
         name,
@@ -136,30 +112,85 @@ export class EmojiProcessor {
         format: file.type.split('/')[1]?.toUpperCase() || 'PNG',
         preview,
         blob: blobUrl,
-        processingNote: 'Original quality preserved'
+        processingNote: 'Already Slack-compliant'
       }
     }
     
-    // If the file is too large, we'll need to make a choice:
-    // Either preserve quality and exceed size limits, or convert and lose quality
-    console.warn(`Image ${file.name} exceeds size limit (${file.size} bytes). Preserving quality at original size.`)
+    // Must resize and/or compress to meet Slack requirements
+    console.log(`Resizing/compressing ${file.name} to meet Slack requirements`)
     
-    const preview = URL.createObjectURL(file)
-    const blobUrl = await this.blobToDataURL(file)
-    const dimensions = await this.getImageDimensions(file)
-    
-    return {
-      name,
-      originalFile: file,
-      processedBlob: file,
-      originalSize: file.size,
-      processedSize: file.size,
-      dimensions,
-      format: file.type.split('/')[1]?.toUpperCase() || 'PNG',
-      preview,
-      blob: blobUrl,
-      processingNote: `Quality preserved (${(file.size / 1024).toFixed(0)}KB)`
-    }
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      
+      img.onload = async () => {
+        try {
+          // Always resize to 128x128 for Slack
+          canvas.width = this.TARGET_SIZE
+          canvas.height = this.TARGET_SIZE
+          
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+          
+          const scale = Math.min(this.TARGET_SIZE / img.width, this.TARGET_SIZE / img.height)
+          const scaledWidth = img.width * scale
+          const scaledHeight = img.height * scale
+          const offsetX = (this.TARGET_SIZE - scaledWidth) / 2
+          const offsetY = (this.TARGET_SIZE - scaledHeight) / 2
+          
+          ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
+          
+          // Start with high quality PNG
+          let quality = 0.95
+          let blob: Blob | null = await this.canvasToBlob(canvas, 'image/png', quality)
+          let format = 'image/png'
+          
+          // If PNG is too large, try reducing quality or switch to JPEG
+          if (blob && blob.size > this.MAX_FILE_SIZE) {
+            console.log(`PNG too large (${blob.size} bytes), trying JPEG...`)
+            format = 'image/jpeg'
+            quality = 0.9
+            
+            while (quality > 0.3 && (!blob || blob.size > this.MAX_FILE_SIZE)) {
+              blob = await this.canvasToBlob(canvas, format, quality)
+              if (blob && blob.size > this.MAX_FILE_SIZE) {
+                quality -= 0.05
+              }
+            }
+            console.log(`Compressed to JPEG at ${quality.toFixed(2)} quality, size: ${blob?.size} bytes`)
+          }
+          
+          if (!blob) {
+            reject(new Error('Failed to process image'))
+            return
+          }
+          
+          const preview = canvas.toDataURL(format, quality)
+          const blobUrl = await this.blobToDataURL(blob)
+          
+          resolve({
+            name,
+            originalFile: file,
+            processedBlob: blob,
+            originalSize: file.size,
+            processedSize: blob.size,
+            dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
+            format: format.split('/')[1].toUpperCase(),
+            preview,
+            blob: blobUrl,
+            processingNote: `Optimized for Slack (${(blob.size / 1024).toFixed(0)}KB)`
+          })
+        } catch (error) {
+          reject(error)
+        }
+      }
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'))
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
   }
 
   private static async getImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -177,7 +208,7 @@ export class EmojiProcessor {
     })
   }
 
-  static async processFile(file: File, options?: { preserveHDR?: boolean }): Promise<ProcessedEmoji> {
+  static async processFile(file: File, options?: { preserveHDR?: boolean; processingOptions?: any }): Promise<ProcessedEmoji> {
     const fileType = file.type
     // Remove extension and clean up the filename
     const fileName = file.name
@@ -211,75 +242,97 @@ export class EmojiProcessor {
       }
       return this.processImage(file, fileName)
     } else if (fileType.startsWith('video/')) {
-      return this.processVideo(file, fileName)
+      return this.processVideo(file, fileName, (file as any).processingOptions || options?.processingOptions)
     } else {
       throw new Error('Unsupported file type')
     }
   }
 
   private static async processImage(file: File, name: string): Promise<ProcessedEmoji> {
+    console.log(`[EmojiProcessor] Processing image: ${file.name}, type: ${file.type}, size: ${file.size}`)
+    
     return new Promise((resolve, reject) => {
       const img = new Image()
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
 
       img.onload = async () => {
-        canvas.width = this.TARGET_SIZE
-        canvas.height = this.TARGET_SIZE
+        try {
+          console.log(`[EmojiProcessor] Image loaded: ${img.width}x${img.height}`)
+          
+          canvas.width = this.TARGET_SIZE
+          canvas.height = this.TARGET_SIZE
 
-        // Clear canvas with transparent background
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
+          // Clear canvas with transparent background
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-        // Calculate scaling to fit within target size while maintaining aspect ratio
-        const scale = Math.min(this.TARGET_SIZE / img.width, this.TARGET_SIZE / img.height)
-        const scaledWidth = img.width * scale
-        const scaledHeight = img.height * scale
-        const offsetX = (this.TARGET_SIZE - scaledWidth) / 2
-        const offsetY = (this.TARGET_SIZE - scaledHeight) / 2
+          // Calculate scaling to fit within target size while maintaining aspect ratio
+          const scale = Math.min(this.TARGET_SIZE / img.width, this.TARGET_SIZE / img.height)
+          const scaledWidth = img.width * scale
+          const scaledHeight = img.height * scale
+          const offsetX = (this.TARGET_SIZE - scaledWidth) / 2
+          const offsetY = (this.TARGET_SIZE - scaledHeight) / 2
 
-        // Draw image centered on canvas
-        ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
+          // Draw image centered on canvas
+          ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
 
-        // Convert to blob with quality adjustment to stay under size limit
-        let quality = 0.95
-        let blob: Blob | null = null
-        let format = 'image/png'
+          // Convert to blob with quality adjustment to stay under size limit
+          let quality = 0.95
+          let blob: Blob | null = null
+          let format = 'image/png'
 
-        // Try PNG first
-        blob = await this.canvasToBlob(canvas, format, quality)
+          // Try PNG first
+          blob = await this.canvasToBlob(canvas, format, quality)
+          console.log(`[EmojiProcessor] Initial PNG blob size: ${blob?.size}`)
         
-        // If PNG is too large, try JPEG with decreasing quality
-        if (blob && blob.size > this.MAX_FILE_SIZE) {
-          format = 'image/jpeg'
-          while (quality > 0.1 && (!blob || blob.size > this.MAX_FILE_SIZE)) {
-            blob = await this.canvasToBlob(canvas, format, quality)
-            quality -= 0.1
+          // If PNG is too large, try JPEG with decreasing quality
+          if (blob && blob.size > this.MAX_FILE_SIZE) {
+            console.log(`[EmojiProcessor] PNG too large (${blob.size}), trying JPEG`)
+            format = 'image/jpeg'
+            while (quality > 0.1 && (!blob || blob.size > this.MAX_FILE_SIZE)) {
+              blob = await this.canvasToBlob(canvas, format, quality)
+              quality -= 0.1
+            }
           }
+
+          if (!blob) {
+            console.error('[EmojiProcessor] Failed to create blob from canvas')
+            reject(new Error('Failed to process image'))
+            return
+          }
+
+          console.log(`[EmojiProcessor] Final blob - format: ${format}, size: ${blob.size}, quality: ${quality}`)
+
+          const preview = canvas.toDataURL(format, quality)
+          const blobUrl = await this.blobToDataURL(blob)
+
+          console.log(`[EmojiProcessor] Image processing complete for ${name}`)
+
+          resolve({
+            name,
+            originalFile: file,
+            processedBlob: blob,
+            originalSize: file.size,
+            processedSize: blob.size,
+            dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
+            format: format.split('/')[1].toUpperCase(),
+            preview,
+            blob: blobUrl
+          })
+        } catch (error) {
+          console.error('[EmojiProcessor] Error processing image:', error)
+          reject(error)
         }
-
-        if (!blob) {
-          reject(new Error('Failed to process image'))
-          return
-        }
-
-        const preview = canvas.toDataURL(format, quality)
-        const blobUrl = await this.blobToDataURL(blob)
-
-        resolve({
-          name,
-          originalFile: file,
-          processedBlob: blob,
-          originalSize: file.size,
-          processedSize: blob.size,
-          dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
-          format: format.split('/')[1].toUpperCase(),
-          preview,
-          blob: blobUrl
-        })
       }
 
-      img.onerror = () => reject(new Error('Failed to load image'))
-      img.src = URL.createObjectURL(file)
+      img.onerror = (error) => {
+        console.error('[EmojiProcessor] Failed to load image:', error)
+        reject(new Error('Failed to load image'))
+      }
+      
+      const objectUrl = URL.createObjectURL(file)
+      console.log(`[EmojiProcessor] Created object URL for image: ${objectUrl}`)
+      img.src = objectUrl
     })
   }
 
@@ -328,44 +381,63 @@ export class EmojiProcessor {
     }
   }
 
-  private static async processVideo(file: File, name: string): Promise<ProcessedEmoji> {
-    console.log('Converting video to animated GIF...')
+  private static async processVideo(file: File, name: string, options?: any): Promise<ProcessedEmoji> {
+    console.log('[EmojiProcessor] Converting video to animated GIF...', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      options
+    })
     
-    const gifBlob = await GifVideoProcessor.videoToAnimatedGif(
-      file,
-      this.TARGET_SIZE,
-      this.MAX_GIF_FRAMES,
-      this.MAX_FILE_SIZE
-    )
+    // Check if file has processing options attached
+    const processingOptions = (file as any).processingOptions || options
     
-    const preview = URL.createObjectURL(gifBlob)
-    
-    // Provide informative processing note
-    let processingNote = `Converted to ${(gifBlob.size / 1024).toFixed(0)}KB animated GIF`
-    
-    // Add quality/processing details
-    if (gifBlob.size > 100 * 1024) {
-      processingNote += ' (50 frames, optimized)'
-    } else if (gifBlob.size > 80 * 1024) {
-      processingNote += ' (50 frames, compressed)'
-    } else {
-      processingNote += ' (full quality)'
-    }
-    
-    const blobUrl = await this.blobToDataURL(gifBlob)
-    
-    return {
-      name,
-      originalFile: file,
-      processedBlob: gifBlob,
-      originalSize: file.size,
-      processedSize: gifBlob.size,
-      dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
-      format: 'GIF',
-      preview,
-      blob: blobUrl,
-      wasVideo: true,
-      processingNote
+    try {
+      const gifBlob = await GifVideoProcessor.videoToAnimatedGif(
+        file,
+        this.TARGET_SIZE,
+        this.MAX_GIF_FRAMES,
+        this.MAX_FILE_SIZE,
+        processingOptions
+      )
+      
+      console.log('[EmojiProcessor] Video converted successfully to GIF:', {
+        originalSize: file.size,
+        gifSize: gifBlob.size
+      })
+      
+      const preview = URL.createObjectURL(gifBlob)
+      
+      // Provide informative processing note
+      let processingNote = `Converted to ${(gifBlob.size / 1024).toFixed(0)}KB animated GIF`
+      
+      // Add quality/processing details
+      if (gifBlob.size > 100 * 1024) {
+        processingNote += ' (50 frames, optimized)'
+      } else if (gifBlob.size > 80 * 1024) {
+        processingNote += ' (50 frames, compressed)'
+      } else {
+        processingNote += ' (full quality)'
+      }
+      
+      const blobUrl = await this.blobToDataURL(gifBlob)
+      
+      return {
+        name,
+        originalFile: file,
+        processedBlob: gifBlob,
+        originalSize: file.size,
+        processedSize: gifBlob.size,
+        dimensions: { width: this.TARGET_SIZE, height: this.TARGET_SIZE },
+        format: 'GIF',
+        preview,
+        blob: blobUrl,
+        wasVideo: true,
+        processingNote
+      }
+    } catch (error) {
+      console.error('[EmojiProcessor] Video processing failed:', error)
+      throw new Error(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

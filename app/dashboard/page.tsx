@@ -13,6 +13,7 @@ import React, { useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
+import { RefreshButton } from "@/components/refresh-button"
 import {
   DashboardHeroSkeleton,
   DashboardChartSkeleton,
@@ -213,13 +214,16 @@ function DashboardPage() {
       <ChromeExtensionHandler />
       
       {/* Mobile Header - Only show on mobile */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-3 border-b border-border">
-        <img 
-          src="/logo.png" 
-          alt="Emoji Studio" 
-          className="h-8 w-8 rounded-lg shadow-sm"
-        />
-        <h1 className="text-lg font-semibold">Emoji Studio</h1>
+      <div className="md:hidden flex items-center justify-between px-3 py-3 border-b border-border">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/logo.png" 
+            alt="Emoji Studio" 
+            className="h-8 w-8 rounded-lg shadow-sm"
+          />
+          <h1 className="text-lg font-semibold">Emoji Studio</h1>
+        </div>
+        <RefreshButton />
       </div>
       
       {/* Hero Metrics Section */}

@@ -20,6 +20,7 @@ const format = (date: Date | number, formatStr: string) => {
 import { useAnalytics } from "@/lib/analytics"
 import { openpanel } from "@/lib/safe-openpanel"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
+import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
 
 function ExplorerPage() {
@@ -316,13 +317,16 @@ function ExplorerPage() {
               </p>
             )}
           </div>
-          <div className="flex flex-col sm:items-end gap-1">
-            <div className={`${isMobile ? 'text-base' : 'text-lg sm:text-xl'} font-semibold tabular-nums`}>
-              {nonAliasCount.toLocaleString()}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:items-end gap-1">
+              <div className={`${isMobile ? 'text-base' : 'text-lg sm:text-xl'} font-semibold tabular-nums`}>
+                {nonAliasCount.toLocaleString()}
+              </div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {nonAliasCount === 1 ? 'emoji' : 'emojis'}
+              </div>
             </div>
-            <div className="text-xs sm:text-sm text-muted-foreground">
-              {nonAliasCount === 1 ? 'emoji' : 'emojis'}
-            </div>
+            <RefreshButton />
           </div>
         </div>
       </div>

@@ -1044,10 +1044,10 @@ function MyEmojisPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="icon"
-                      variant="ghost"
+                      variant="outline"
                       onClick={() => refreshEmojiData()}
                       disabled={isRefreshing}
-                      className="h-8 w-8"
+                      className="h-8 w-8 border-primary/20 hover:border-primary/40"
                     >
                       <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                     </Button>

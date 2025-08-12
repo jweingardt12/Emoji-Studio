@@ -419,7 +419,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
           onClose()
         }
       }}>
-        <DrawerContent className="h-[85vh]">
+        <DrawerContent className="h-[92vh]">
           {/* Mobile Header */}
           <div className="sticky top-0 z-10 bg-card border-b border-border">
             <div className="flex items-center justify-between p-4">

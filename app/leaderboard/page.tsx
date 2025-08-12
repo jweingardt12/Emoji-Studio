@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
+import { RefreshButton } from "@/components/refresh-button"
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Use a client-side only component to avoid hydration mismatches
@@ -160,10 +161,11 @@ function LeaderboardPage() {
         {isMobile ? (
           // Mobile: No card wrapper
           <>
-            <div className="px-3 pt-4 pb-3">
+            <div className="px-3 pt-4 pb-3 flex items-center justify-between">
               <h1 className="text-2xl font-bold tracking-tight">
                 Leaderboard
               </h1>
+              <RefreshButton />
             </div>
             <Leaderboard
               leaderboard={filteredLeaderboard}

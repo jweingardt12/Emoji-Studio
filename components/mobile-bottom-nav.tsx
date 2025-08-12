@@ -1,7 +1,6 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import Link from "next/link"
 import {
   LayoutDashboardIcon,
   TrophyIcon,
@@ -52,9 +51,13 @@ export function MobileBottomNav() {
 
   const handleNavClick = (item: NavItem) => {
     trackNavigation(item.title, item.url)
-    // Haptic feedback on tap
-    if ('vibrate' in navigator) {
-      navigator.vibrate(10)
+    
+    // Use mobile navigation if available, otherwise fallback to regular navigation
+    if (typeof window !== 'undefined' && (window as any).__mobileNavigate) {
+      (window as any).__mobileNavigate(item.url)
+    } else {
+      // Fallback to regular navigation
+      window.location.href = item.url
     }
   }
 
@@ -66,9 +69,8 @@ export function MobileBottomNav() {
           const isActive = pathname === item.url
           
           return (
-            <Link
+            <button
               key={item.url}
-              href={item.url}
               onClick={() => handleNavClick(item)}
               className={cn(
                 "flex items-center justify-center transition-colors relative touch-target",
@@ -84,7 +86,7 @@ export function MobileBottomNav() {
               {isActive && (
                 <div className="absolute bottom-0 w-1 h-1 bg-primary rounded-full" />
               )}
-            </Link>
+            </button>
           )
         })}
       </div>

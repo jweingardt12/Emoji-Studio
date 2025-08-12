@@ -202,12 +202,12 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   /*  Handle click → open modal                                           */
   /* -------------------------------------------------------------------- */
+  // Handle chart clicks - full functionality on desktop, dots only on mobile
   const handleDataPointClick = (d: any) => {
     console.log('Chart clicked:', d);
     
-    // Handle the new event structure
+    // Handle the new event structure (chart area clicks)
     if (d && d.activeLabel && typeof d.activeIndex !== 'undefined') {
-      // Get the data point from chartData using the activeIndex
       const index = parseInt(d.activeIndex);
       if (chartData && chartData[index]) {
         const payload = chartData[index];
@@ -308,12 +308,7 @@ export function ChartAreaInteractive() {
             <span className="border-b border-dotted border-muted-foreground">Emoji Trends</span>
           </Link>
         </h2>
-        <CardDescription className="text-xs xs:text-sm">
-          <span className="@[540px]/card:block hidden">
-            Click a point to see that day’s emojis.
-          </span>
-          <span className="@[540px]/card:hidden">Tap a point to see that day’s emojis.</span>
-        </CardDescription>
+
 
         {/* time-range controls */}
         <div className="absolute right-2 xs:right-3 sm:right-4 top-3 xs:top-4 flex items-center gap-1 xs:gap-2">
@@ -362,9 +357,8 @@ export function ChartAreaInteractive() {
         >
           <AreaChart
             data={chartData}
-            onClick={handleDataPointClick}
-            onMouseDown={handleDataPointClick}
-            style={{ cursor: "pointer" }}
+            onClick={!isMobile ? handleDataPointClick : undefined}
+            style={{ cursor: !isMobile ? "pointer" : "default" }}
             margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -536,19 +530,12 @@ export function ChartAreaInteractive() {
               fill="url(#createdGradient)"
               fillOpacity={0.3}
               dot={chartData.length <= 31 ? {
-                r: 3,
+                r: isMobile ? 2 : 3,
                 fill: "var(--color-created)",
                 stroke: "var(--color-created)",
-                strokeWidth: 1,
-                style: { cursor: "pointer" },
+                strokeWidth: isMobile ? 1 : 2,
+                style: { cursor: isMobile ? "default" : "pointer" },
               } : false}
-              activeDot={{
-                r: isMobile ? 5 : 7,
-                fill: "var(--color-created)",
-                stroke: "#fff",
-                strokeWidth: isMobile ? 1.5 : 2,
-                style: { cursor: "pointer" },
-              }}
               connectNulls
               isAnimationActive={false}
               onClick={handleDataPointClick}
@@ -562,19 +549,12 @@ export function ChartAreaInteractive() {
               fill="url(#contributorsGradient)"
               fillOpacity={0.3}
               dot={chartData.length <= 31 ? {
-                r: 3,
+                r: isMobile ? 2 : 3,
                 fill: "#FF00B8",
                 stroke: "#FF00B8",
-                strokeWidth: 1,
-                style: { cursor: "pointer" },
+                strokeWidth: isMobile ? 1 : 2,
+                style: { cursor: isMobile ? "default" : "pointer" },
               } : false}
-              activeDot={{
-                r: isMobile ? 5 : 7,
-                fill: "#FF00B8",
-                stroke: "#fff",
-                strokeWidth: isMobile ? 1.5 : 2,
-                style: { cursor: "pointer" },
-              }}
               connectNulls
               isAnimationActive={false}
               onClick={handleDataPointClick}

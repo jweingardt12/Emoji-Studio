@@ -13,6 +13,7 @@ import { GlobalExtensionListener } from "@/components/global-extension-listener"
 import { NotificationManager } from "@/components/notification-manager";
 import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
+import { MobilePageManager } from "@/components/mobile-page-manager";
 
 export default function RootLayout({
   children,
@@ -66,7 +67,9 @@ export default function RootLayout({
                     <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto mobile-nav-padding md:pb-0 native-scroll no-horizontal-scroll">
                       <PullToRefreshWrapper>
                         <div className="flex flex-col gap-4 p-4 pt-safe md:p-6 lg:px-6">
-                          {children}
+                          <MobilePageManager>
+                            {children}
+                          </MobilePageManager>
                         </div>
                       </PullToRefreshWrapper>
                     </div>

@@ -10,6 +10,7 @@ import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiEditor } from "@/components/emoji-editor"
 import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
+import { MobileEmojiCreator } from "@/components/mobile-emoji-creator"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -78,6 +79,7 @@ function EmojiCreatorPage() {
   const [showGifEditor, setShowGifEditor] = useState(false)
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
+  const [pendingMobileFile, setPendingMobileFile] = useState<File | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -91,25 +93,66 @@ function EmojiCreatorPage() {
     if (pendingFile) {
       try {
         const fileData = JSON.parse(pendingFile)
+        console.log('[Create Page] Found pending file:', {
+          fileName: fileData.fileName,
+          fileType: fileData.fileType,
+          source: fileData.source,
+          dataUrlLength: fileData.dataUrl?.length
+        })
         sessionStorage.removeItem('pendingEmojiFile')
         
         // Convert data URL to File
         fetch(fileData.dataUrl)
-          .then(res => res.blob())
+          .then(res => {
+            console.log('[Create Page] Fetch response:', {
+              ok: res.ok,
+              status: res.status,
+              type: res.type
+            })
+            return res.blob()
+          })
           .then(blob => {
-            const file = new File([blob], fileData.fileName, { type: fileData.fileType })
-            setSelectedFiles([file])
-            setProcessingFiles([file])
-            
-            toast({
-              title: `Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`,
-              description: "Converting to emoji format...",
+            console.log('[Create Page] Created blob:', {
+              size: blob.size,
+              type: blob.type
             })
             
-            // Auto-start processing
-            setTimeout(() => {
-              processFiles([file])
-            }, 500)
+            const file = new File([blob], fileData.fileName, { type: fileData.fileType })
+            
+            // Check if mobile at this moment (window width < 768px)
+            const isCurrentlyMobile = window.innerWidth < 768
+            
+            console.log('[Create Page] Created file:', {
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              isMobile,
+              isCurrentlyMobile,
+              windowWidth: window.innerWidth
+            })
+            
+            if (isCurrentlyMobile) {
+              // Use mobile-optimized flow
+              console.log('[Create Page] Setting pending mobile file (mobile detected)')
+              setPendingMobileFile(file)
+            } else {
+              // Use desktop flow
+              setSelectedFiles([file])
+              setProcessingFiles([file])
+              
+              toast({
+                title: `Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`,
+                description: "Converting to emoji format...",
+              })
+              
+              // Auto-start processing
+              setTimeout(() => {
+                processFiles([file])
+              }, 500)
+            }
+          })
+          .catch(error => {
+            console.error('[Create Page] Error converting data URL to file:', error)
           })
       } catch (error) {
         console.error('[Create Page] Failed to process pending file:', error)
@@ -874,6 +917,18 @@ function EmojiCreatorPage() {
   }
 
   // Only render when client-side to avoid hydration mismatches
+
+  // Show mobile-optimized flow on mobile devices
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MobileEmojiCreator 
+          initialFile={pendingMobileFile || undefined}
+          onCancel={() => setPendingMobileFile(null)}
+        />
+      </div>
+    )
+  }
 
   return (
     <>

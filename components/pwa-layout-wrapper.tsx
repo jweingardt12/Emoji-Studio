@@ -4,12 +4,16 @@ import { useEffect, useState } from "react"
 import { MobileBottomNav } from "./mobile-bottom-nav"
 import { FloatingCreateButton } from "./floating-create-button"
 import { useIOSViewportFix } from "@/hooks/use-ios-viewport-fix"
+import { useAutoRefresh } from "@/hooks/use-auto-refresh"
 
 export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   
   // Apply iOS Safari viewport fixes
   useIOSViewportFix()
+  
+  // Enable auto-refresh on app focus
+  useAutoRefresh()
 
   useEffect(() => {
     // Check if running as PWA (for future use)

@@ -35,14 +35,17 @@ export function FloatingCreateButton() {
       <button
         className={cn(
           "fixed z-50",
-          "bottom-24 right-4", // Account for mobile bottom nav with extra padding
+          "bottom-28 right-4", // Moved up from bottom-24 to bottom-28
           "flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
-          "shadow-lg hover:shadow-xl",
+          "shadow-2xl hover:shadow-2xl",
+          "drop-shadow-2xl hover:drop-shadow-2xl",
+          "[box-shadow:0_20px_25px_-5px_rgba(0,0,0,0.3),0_10px_10px_-5px_rgba(0,0,0,0.2)]",
           "hover:scale-110 active:scale-95",
           "transition-all duration-200",
           "group",
-          "animate-in fade-in slide-in-from-bottom-5 duration-500"
+          "animate-in fade-in slide-in-from-bottom-5 duration-500",
+          "ring-1 ring-black/5"
         )}
         aria-label="Create new emoji"
         onClick={() => {
