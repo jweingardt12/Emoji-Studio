@@ -67,10 +67,7 @@ export function MobileEmojiCreator({
   // Video/GIF editing states
   const [videoAdjustments, setVideoAdjustments] = useState({
     speed: 1.0, // 1.0 = normal, 0.5 = slow, 2.0 = fast
-    scale: 100, // percentage, 100 = original size
-    startFrame: 0,
-    endFrame: 100, // percentage of total frames
-    loop: true
+    scaleMode: 'cover' as 'cover' | 'contain' | 'stretch' // Match desktop options
   })
 
   // Auto-start processing if we have an initial file
@@ -248,10 +245,7 @@ export function MobileEmojiCreator({
     setShouldRemoveBackground(false)
     setVideoAdjustments({
       speed: 1.0,
-      scale: 100,
-      startFrame: 0,
-      endFrame: 100,
-      loop: true
+      scaleMode: 'cover'
     })
   }
 
@@ -266,10 +260,7 @@ export function MobileEmojiCreator({
       // Pass the video adjustments to the processor
       const options = {
         speed: videoAdjustments.speed,
-        scale: videoAdjustments.scale / 100, // Convert percentage to decimal
-        trimStart: videoAdjustments.startFrame / 100,
-        trimEnd: videoAdjustments.endFrame / 100,
-        loop: videoAdjustments.loop
+        scaleMode: videoAdjustments.scaleMode
       }
       
       console.log('[MobileEmojiCreator] Applying video edits with options:', options)
@@ -727,81 +718,33 @@ export function MobileEmojiCreator({
                 </div>
               </div>
 
-              {/* Scale Control */}
+              {/* Scale Mode Control */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm flex items-center gap-2">
-                    <Maximize2 className="h-4 w-4" />
-                    Scale
-                  </Label>
-                  <span className="text-xs text-muted-foreground">{videoAdjustments.scale}%</span>
-                </div>
-                <Slider
-                  value={[videoAdjustments.scale]}
-                  onValueChange={([value]) => setVideoAdjustments(prev => ({ 
-                    ...prev, 
-                    scale: value 
-                  }))}
-                  min={50}
-                  max={150}
-                  step={10}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Trim Control */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm flex items-center gap-2">
-                    <Film className="h-4 w-4" />
-                    Trim Frames
-                  </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {videoAdjustments.startFrame}% - {videoAdjustments.endFrame}%
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs">Start</span>
-                    <Slider
-                      value={[videoAdjustments.startFrame]}
-                      onValueChange={([value]) => setVideoAdjustments(prev => ({ 
+                <Label className="text-sm flex items-center gap-2">
+                  <Maximize2 className="h-4 w-4" />
+                  Scale Mode
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['cover', 'contain', 'stretch'] as const).map((mode) => (
+                    <Button
+                      key={mode}
+                      variant={videoAdjustments.scaleMode === mode ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setVideoAdjustments(prev => ({ 
                         ...prev, 
-                        startFrame: Math.min(value, prev.endFrame - 10)
+                        scaleMode: mode 
                       }))}
-                      min={0}
-                      max={90}
-                      step={5}
-                      className="flex-1"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs">End</span>
-                    <Slider
-                      value={[videoAdjustments.endFrame]}
-                      onValueChange={([value]) => setVideoAdjustments(prev => ({ 
-                        ...prev, 
-                        endFrame: Math.max(value, prev.startFrame + 10)
-                      }))}
-                      min={10}
-                      max={100}
-                      step={5}
-                      className="flex-1"
-                    />
-                  </div>
+                      className="capitalize"
+                    >
+                      {mode === 'cover' ? 'Fill' : mode === 'contain' ? 'Fit' : 'Stretch'}
+                    </Button>
+                  ))}
                 </div>
-              </div>
-
-              {/* Loop Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t">
-                <Label className="text-sm">Loop Animation</Label>
-                <Switch
-                  checked={videoAdjustments.loop}
-                  onCheckedChange={(checked) => setVideoAdjustments(prev => ({ 
-                    ...prev, 
-                    loop: checked 
-                  }))}
-                />
+                <p className="text-xs text-muted-foreground">
+                  {videoAdjustments.scaleMode === 'cover' ? 'Fills the frame, may crop edges' :
+                   videoAdjustments.scaleMode === 'contain' ? 'Fits entire image, may add padding' :
+                   'Stretches to fill exactly'}
+                </p>
               </div>
 
               {/* Reset Button */}
@@ -811,10 +754,7 @@ export function MobileEmojiCreator({
                 onClick={() => {
                   setVideoAdjustments({
                     speed: 1.0,
-                    scale: 100,
-                    startFrame: 0,
-                    endFrame: 100,
-                    loop: true
+                    scaleMode: 'cover'
                   })
                 }}
                 className="w-full"
@@ -832,10 +772,7 @@ export function MobileEmojiCreator({
               size="lg"
               disabled={isApplyingEdits || (
                 videoAdjustments.speed === 1.0 && 
-                videoAdjustments.scale === 100 && 
-                videoAdjustments.startFrame === 0 && 
-                videoAdjustments.endFrame === 100 &&
-                videoAdjustments.loop === true
+                videoAdjustments.scaleMode === 'cover'
               )}
             >
               {isApplyingEdits ? (
