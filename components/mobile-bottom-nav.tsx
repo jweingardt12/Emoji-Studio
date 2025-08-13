@@ -37,14 +37,14 @@ export function MobileBottomNav({ isPWA = false }: MobileBottomNavProps) {
       icon: TrophyIcon,
     },
     {
-      title: "Explorer",
-      url: "/explorer",
-      icon: Images,
-    },
-    {
       title: "My Emojis",
       url: "/my-emojis",
       icon: UserCircle,
+    },
+    {
+      title: "Explorer",
+      url: "/explorer",
+      icon: Images,
     },
     {
       title: "Settings",
@@ -67,6 +67,13 @@ export function MobileBottomNav({ isPWA = false }: MobileBottomNavProps) {
 
   return (
     <>
+      {/* Background fill for PWA mode */}
+      {isPWA && (
+        <div 
+          className="fixed bottom-0 left-0 right-0 bg-background md:hidden z-30"
+          style={{ height: '3px' }}
+        />
+      )}
       <nav 
         className="mobile-bottom-nav fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden"
         style={{ bottom: isPWA ? '3px' : '0' }}

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3'; // Updated for new icon set
 const CACHE_NAME = `emoji-studio-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `emoji-studio-data-${CACHE_VERSION}`;
 
