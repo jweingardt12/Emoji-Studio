@@ -5,7 +5,8 @@ import { ChromeExtensionOption } from "@/components/chrome-extension-option"
 import { ClearLocalStorageButton } from "@/components/clear-local-storage-button"
 import { FetchStatsDisplay } from "@/components/fetch-stats-display"
 import { Card, CardContent } from "@/components/ui/card"
-import { Zap, ChevronDown, ChevronUp, Terminal, Bell, Clock, Link2, Trophy, Database, RefreshCw, MessageSquare, Github, ExternalLink } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
+import { Zap, ChevronDown, ChevronUp, Terminal, Bell, Clock, Link2, Trophy, Database, RefreshCw, MessageSquare, Github, ExternalLink, Smartphone, Check } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -29,6 +30,7 @@ import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { PairToMobile } from "@/components/pair-to-mobile"
 
 type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
 
@@ -352,6 +354,22 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
 export default function SettingsPage() {
   const pathname = usePathname()
   const isMobile = useIsMobile()
+  const [showPWAWelcome, setShowPWAWelcome] = useState(false)
+  
+  // Check if it's a first-time PWA user
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('pwa') === 'first') {
+      setShowPWAWelcome(true)
+      // Remove the query parameter from URL
+      window.history.replaceState({}, '', '/settings')
+    }
+  }, [])
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log('Settings page - isMobile:', isMobile)
+  }, [isMobile])
   
   // Initialize active section from URL hash or default to 'connection'
   const [activeSection, setActiveSection] = useState<SettingsSection>(() => {
@@ -372,6 +390,10 @@ export default function SettingsPage() {
   })
   
   const [isManualSetupOpen, setIsManualSetupOpen] = useState(false)
+  const [isChromeExtensionOpen, setIsChromeExtensionOpen] = useState(false)
+  const [isPairToMobileOpen, setPairToMobileOpen] = useState(false)
+  const [isChromeExtensionConnectedOpen, setIsChromeExtensionConnectedOpen] = useState(false)
+  const [isUpdateConnectionOpen, setIsUpdateConnectionOpen] = useState(false)
   const [hasSlack, setHasSlack] = useState(false)
   
   // Notification settings state
@@ -773,6 +795,12 @@ export default function SettingsPage() {
       description: 'Customize display settings'
     },
     {
+      id: 'pwa' as const,
+      label: 'Install App',
+      icon: Smartphone,
+      description: 'Install as mobile/desktop app'
+    },
+    {
       id: 'data' as const,
       label: 'Data Management',
       icon: Database,
@@ -789,6 +817,52 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
       <ChromeExtensionHandler />
+      
+      {/* PWA Welcome Message for first-time users */}
+      {showPWAWelcome && (
+        <div className="mx-3 sm:mx-4 lg:mx-6 mb-4">
+          <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-primary/20">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Smartphone className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-lg font-semibold">Welcome to Emoji Studio Mobile!</h2>
+                  <p className="text-sm text-muted-foreground">
+                    To get started, you'll need to sync with your desktop browser. Choose one of these options below:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1 mt-3">
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Pair with Desktop:</strong> Scan a QR code from your desktop browser</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Chrome Extension:</strong> Install our extension for automatic sync</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Manual Setup:</strong> Copy a cURL command from Slack</span>
+                    </li>
+                  </ul>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPWAWelcome(false)}
+                    className="mt-3"
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
       <div className="px-3 sm:px-4 lg:px-6">
         {/* Header */}
         <div className={`${isMobile ? 'pt-4 pb-3' : 'mb-4 sm:mb-6 lg:mb-8'}`}>
@@ -806,13 +880,9 @@ export default function SettingsPage() {
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Sidebar Navigation - Mobile optimized */}
           <aside className="w-full lg:w-64 lg:shrink-0">
-            {/* Mobile: Horizontal scrollable pills with visual affordance */}
+            {/* Mobile: Horizontal scrollable pills */}
             <div className="lg:hidden relative">
-              {/* Gradient fade indicators */}
-              <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none lg:hidden" />
-              <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none lg:hidden" />
-              
-              <nav className="flex gap-2 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide px-1">
+              <nav className="flex gap-1 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide px-3">
                 {sections.map((section, index) => {
                   const Icon = section.icon;
                   return (
@@ -826,20 +896,18 @@ export default function SettingsPage() {
                         }
                       }}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-200 whitespace-nowrap snap-center",
-                        "min-w-fit touch-target",
+                        "flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all duration-200 whitespace-nowrap snap-center",
+                        "min-w-fit text-[11px]",
                         activeSection === section.id
-                          ? "bg-primary/10 text-primary border-2 border-primary shadow-sm font-semibold"
-                          : "bg-card border border-border text-foreground active:scale-95",
-                        index === 0 && "ml-1",
-                        index === sections.length - 1 && "mr-1"
+                          ? "bg-primary/10 text-primary border border-primary/30 shadow-sm font-medium"
+                          : "bg-card/80 border border-border/50 text-muted-foreground active:scale-95"
                       )}
                     >
                       <Icon className={cn(
-                        "h-4 w-4 shrink-0",
+                        "h-3 w-3 shrink-0",
                         activeSection === section.id && "text-primary"
                       )} />
-                      <span className="text-sm">{section.label}</span>
+                      <span>{section.label}</span>
                     </button>
                   );
                 })}
@@ -883,79 +951,145 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   {!hasSlack ? (
                     <>
-                      {/* Chrome Extension Connection Card */}
-                      <Card className="border-primary/20 bg-primary/5">
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4">
-                            <div className="rounded-lg bg-primary/10 p-3">
-                              <ChromeIcon className="h-6 w-6 text-primary" />
-                            </div>
-                            <div className="flex-1 space-y-3">
-                              <div>
-                                <h3 className="font-semibold">Chrome Extension (Recommended)</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  One-click authentication with the Chrome extension. The fastest way to connect your Slack workspace.
-                                </p>
+                      {/* Mobile: Show Pair to Desktop as primary option */}
+                      {isMobile && <PairToMobile />}
+                      
+                      {/* Chrome Extension Connection Card - secondary on mobile */}
+                      {isMobile ? (
+                        <Card>
+                          <CardContent className="p-4">
+                            <Collapsible open={isChromeExtensionOpen}>
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-lg bg-muted p-2 shrink-0">
+                                  <ChromeIcon className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => setIsChromeExtensionOpen(!isChromeExtensionOpen)}
+                                    className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+                                  >
+                                    <div className="text-left">
+                                      <h3 className="font-semibold">Chrome Extension</h3>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        Desktop browser extension
+                                      </p>
+                                    </div>
+                                    <div className="ml-2 shrink-0">
+                                      {isChromeExtensionOpen ? (
+                                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </Button>
+                                  <CollapsibleContent>
+                                    <div className="mt-3 space-y-3">
+                                      <p className="text-sm text-muted-foreground">
+                                        Install on desktop for one-click auth.
+                                      </p>
+                                      <Button
+                                        className="w-full"
+                                        variant="outline"
+                                        size="sm"
+                                        asChild
+                                      >
+                                        <a 
+                                          href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2"
+                                        >
+                                          <ChromeIcon className="h-4 w-4" />
+                                          Get Extension
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  </CollapsibleContent>
+                                </div>
                               </div>
-                              <Button
-                                className="w-full sm:w-auto"
-                                asChild
-                              >
-                                <a 
-                                  href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2"
-                                >
-                                  <ChromeIcon className="h-4 w-4" />
-                                  Get Chrome Extension
-                                </a>
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Manual Setup Alternative */}
-                      <Card>
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4">
-                            <div className="rounded-lg bg-muted p-3">
-                              <Terminal className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1">
-                              <Button
-                                variant="ghost"
-                                onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
-                                className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
-                              >
+                            </Collapsible>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <Card className="border-primary/20 bg-primary/5">
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                              <div className="rounded-lg bg-primary/10 p-3">
+                                <ChromeIcon className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1 space-y-3">
                                 <div>
-                                  <h3 className="font-semibold">Manual Setup</h3>
+                                  <h3 className="font-semibold">Chrome Extension (Recommended)</h3>
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    Advanced method using browser developer tools
+                                    One-click authentication with the Chrome extension. The fastest way to connect your Slack workspace.
                                   </p>
                                 </div>
-                                {isManualSetupOpen ? (
-                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                ) : (
-                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                )}
-                              </Button>
-                              <Collapsible open={isManualSetupOpen}>
+                                <Button
+                                  className="w-full sm:w-auto"
+                                  asChild
+                                >
+                                  <a 
+                                    href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2"
+                                  >
+                                    <ChromeIcon className="h-4 w-4" />
+                                    Get Chrome Extension
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Manual Setup - always collapsible */}
+                      <Card>
+                        <CardContent className={isMobile ? "p-4" : "p-6"}>
+                          <Collapsible open={isManualSetupOpen}>
+                            <div className={`flex items-start ${isMobile ? "gap-3" : "gap-4"}`}>
+                              <div className={`rounded-lg bg-muted ${isMobile ? "p-2 shrink-0" : "p-3"}`}>
+                                <Terminal className={`${isMobile ? "h-5 w-5" : "h-6 w-6"} text-muted-foreground`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
+                                  className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+                                >
+                                  <div className="text-left">
+                                    <h3 className="font-semibold">Manual Setup</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {isMobile ? "Advanced curl method" : "Advanced method using browser developer tools"}
+                                    </p>
+                                  </div>
+                                  <div className="ml-2 shrink-0">
+                                    {isManualSetupOpen ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </Button>
                                 <CollapsibleContent>
                                   <div className="mt-4">
                                     <SlackCurlInput />
                                   </div>
                                 </CollapsibleContent>
-                              </Collapsible>
+                              </div>
                             </div>
-                          </div>
+                          </Collapsible>
                         </CardContent>
                       </Card>
+                      
+                      {/* Desktop: Show Pair to Mobile after other options */}
+                      {!isMobile && <PairToMobile />}
                     </>
                   ) : (
                     <>
-                      {/* Connected state */}
+                      {/* Connected state banner */}
                       <Card className="border-green-500/20 bg-green-500/5">
                         <CardContent className="p-6">
                           <div className="flex items-center gap-4">
@@ -972,20 +1106,94 @@ export default function SettingsPage() {
                         </CardContent>
                       </Card>
                       
-                      <ChromeExtensionOption />
+                      {/* Show the same connection options as disconnected state, just collapsible */}
+                      {/* Mobile: Show Pair to Desktop as primary option */}
+                      {isMobile && <PairToMobile />}
                       
-                      {/* Update connection option */}
+                      {/* Chrome Extension Connection Card - secondary on mobile, collapsible when connected */}
+                      {isMobile ? (
+                        <Card>
+                          <CardContent className="p-4">
+                            <Collapsible open={isChromeExtensionOpen}>
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-lg bg-muted p-2 shrink-0">
+                                  <ChromeIcon className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => setIsChromeExtensionOpen(!isChromeExtensionOpen)}
+                                    className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+                                  >
+                                    <div className="text-left">
+                                      <h3 className="font-semibold">Chrome Extension</h3>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        Desktop browser extension
+                                      </p>
+                                    </div>
+                                    <div className="ml-2 shrink-0">
+                                      {isChromeExtensionOpen ? (
+                                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </Button>
+                                  <CollapsibleContent>
+                                    <div className="mt-3">
+                                      <ChromeExtensionOption />
+                                    </div>
+                                  </CollapsibleContent>
+                                </div>
+                              </div>
+                            </Collapsible>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <ChromeExtensionOption />
+                      )}
+
+                      {/* Manual Setup - always collapsible when connected */}
                       <Card>
-                        <CardContent className="p-6">
-                          <div className="space-y-3">
-                            <h3 className="font-semibold">Update Connection</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Refresh your authentication or connect a different workspace
-                            </p>
-                            <SlackCurlInput />
-                          </div>
+                        <CardContent className={isMobile ? "p-4" : "p-6"}>
+                          <Collapsible open={isManualSetupOpen}>
+                            <div className={`flex items-start ${isMobile ? "gap-3" : "gap-4"}`}>
+                              <div className={`rounded-lg bg-muted ${isMobile ? "p-2 shrink-0" : "p-3"}`}>
+                                <Terminal className={`${isMobile ? "h-5 w-5" : "h-6 w-6"} text-muted-foreground`} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => setIsManualSetupOpen(!isManualSetupOpen)}
+                                  className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+                                >
+                                  <div className="text-left">
+                                    <h3 className="font-semibold">Update Connection</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {isMobile ? "Update or change workspace" : "Update authentication or change workspace"}
+                                    </p>
+                                  </div>
+                                  <div className="ml-2 shrink-0">
+                                    {isManualSetupOpen ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </Button>
+                                <CollapsibleContent>
+                                  <div className="mt-4">
+                                    <SlackCurlInput />
+                                  </div>
+                                </CollapsibleContent>
+                              </div>
+                            </div>
+                          </Collapsible>
                         </CardContent>
                       </Card>
+                      
+                      {/* Desktop: Show Pair to Mobile after other options */}
+                      {!isMobile && <PairToMobile />}
                     </>
                   )}
                 </div>
@@ -1262,6 +1470,120 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+            
+            {/* PWA Install Section */}
+            {activeSection === 'pwa' && (
+              <div className="space-y-6 animate-in fade-in-0 slide-in-from-right-4 duration-300">
+                <div>
+                  <h2 className="text-xl font-semibold">Install App</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Install Emoji Studio as a mobile or desktop app
+                  </p>
+                </div>
+                
+                <div className="grid gap-4 sm:gap-6">
+                  {/* PWA Install Instructions */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <div className="flex items-start gap-4">
+                          <div className="rounded-lg bg-primary/10 p-3">
+                            <Smartphone className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">Install on Mobile</h3>
+                            <div className="mt-3 space-y-3">
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium">iOS (Safari):</p>
+                                <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                                  <li>Tap the Share button (square with arrow)</li>
+                                  <li>Scroll down and tap "Add to Home Screen"</li>
+                                  <li>Tap "Add" to install</li>
+                                </ol>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium">Android (Chrome):</p>
+                                <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                                  <li>Tap the menu button (three dots)</li>
+                                  <li>Tap "Install app" or "Add to Home Screen"</li>
+                                  <li>Follow the prompts to install</li>
+                                </ol>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <Separator />
+                        
+                        <div className="flex items-start gap-4">
+                          <div className="rounded-lg bg-primary/10 p-3">
+                            <Monitor className="h-6 w-6 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">Install on Desktop</h3>
+                            <div className="mt-3 space-y-3">
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium">Chrome/Edge:</p>
+                                <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                                  <li>Look for the install icon in the address bar</li>
+                                  <li>Click "Install Emoji Studio"</li>
+                                  <li>The app will open in its own window</li>
+                                </ol>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  {/* PWA Features */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="font-semibold mb-4">App Features</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-full bg-green-500/10 p-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Works Offline</p>
+                            <p className="text-xs text-muted-foreground">View cached emojis without internet</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-full bg-green-500/10 p-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Persistent Data</p>
+                            <p className="text-xs text-muted-foreground">Your data is saved locally and persists across sessions</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-full bg-green-500/10 p-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Native App Experience</p>
+                            <p className="text-xs text-muted-foreground">Full-screen mode with no browser UI</p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="rounded-full bg-green-500/10 p-1">
+                            <Check className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">Quick Access</p>
+                            <p className="text-xs text-muted-foreground">Launch from home screen or app drawer</p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             )}
             

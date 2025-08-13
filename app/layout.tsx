@@ -26,9 +26,16 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Emoji Studio" />
         <meta name="theme-color" content="#1a1a1a" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/logo-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/logo-512.png" />
+        <link rel="apple-touch-icon" sizes="1024x1024" href="/app-icon-1024.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
@@ -82,12 +89,7 @@ export default function RootLayout({
               </PWALayoutWrapper>
             </EmojiDataProvider>
             <Toaster 
-              position="bottom-center"
-              toastOptions={{
-                style: {
-                  bottom: 'calc(env(safe-area-inset-bottom) + 115px)', // Position above bottom nav on mobile
-                },
-              }}
+              position="bottom-right"
             />
             <ThemeTracker />
           </ClientBody>
@@ -101,10 +103,26 @@ export const metadata = {
   title: "Emoji Studio - Analytics for Slack Emojis",
   description: "Emoji Studio is the missing analytics platform for custom Slack emojis. See leaderboards, visualizations, and insights into company culture.",
   generator: "v0.dev",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/logo.png",
+  applicationName: "Emoji Studio",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Emoji Studio",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/logo-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/logo-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.json",
   openGraph: {
     images: ['/assets/screenshots/og-image.png'],
   },

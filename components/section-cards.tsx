@@ -189,16 +189,16 @@ export function SectionCards() {
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">Total Emojis</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">All Unique Emojis</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">Total Emojis</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">All Unique Emojis</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {totalNonAliasEmojis.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-[10px] xs:text-xs ${
+                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-xs xs:text-sm ${
                         emojisLastYear.length > 0
                           ? totalNonAliasEmojis > emojisLastYear.length
                             ? "text-green-600 dark:text-green-400"
@@ -225,13 +225,13 @@ export function SectionCards() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-[10px] xs:text-xs md:text-sm">
-                  <div className="flex gap-0.5 xs:gap-1 font-medium text-[10px] xs:text-xs">
+                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs xs:text-sm md:text-base">
+                  <div className="flex gap-0.5 xs:gap-1 font-medium text-xs xs:text-sm">
                     {totalNonAliasEmojis > emojisLastYear.length
                       ? "Year-over-year growth"
                       : "Year-over-year decline"}
                   </div>
-                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-[10px] xs:text-xs">
+                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs xs:text-sm">
                     {emojisLastYear.length.toLocaleString()} emojis this time last year
                   </div>
                 </CardFooter>
@@ -263,24 +263,24 @@ export function SectionCards() {
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">AEU</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Active Emoji Uploaders</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">AEU</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Active Emoji Uploaders</div>
                   </div>
                   <div className="flex items-center justify-between mt-1 xs:mt-2">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {aeu.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-[10px] xs:text-xs ${aeuChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-xs xs:text-sm ${aeuChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />}
                       {Math.abs(aeuChange).toFixed(1)}% W/W
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-[10px] xs:text-xs md:text-sm">
-                  <div className="flex gap-0.5 xs:gap-1 font-medium text-[10px] xs:text-xs">
+                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs xs:text-sm md:text-base">
+                  <div className="flex gap-0.5 xs:gap-1 font-medium text-xs xs:text-sm">
                     {aeu === 0 
                       ? "No active uploaders" 
                       : aeuChange >= 0 
@@ -288,7 +288,7 @@ export function SectionCards() {
                         : "Stagnant participation"} 
                     {aeu > 0 && (aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />)}
                   </div>
-                  <div className="text-muted-foreground text-[10px] xs:text-xs">
+                  <div className="text-muted-foreground text-xs xs:text-sm">
                     {aeu === 0 
                       ? "No uploads this week" 
                       : aeuChange > 10
@@ -330,16 +330,16 @@ export function SectionCards() {
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPU</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Emojis Per User</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPU</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Emojis Per User</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {emojisPerUser.toFixed(2)}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-1 rounded-lg text-xs ${activeUsersCount === 0 ? "text-muted-foreground" : emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-1 rounded-lg text-xs xs:text-sm ${activeUsersCount === 0 ? "text-muted-foreground" : emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {activeUsersCount === 0 ? (
                         "N/A"
@@ -352,8 +352,8 @@ export function SectionCards() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
-                  <div className="flex gap-1 font-medium text-xs">
+                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-sm md:text-base">
+                  <div className="flex gap-1 font-medium text-xs xs:text-sm">
                     {activeUsersCount === 0 
                       ? "No active users"
                       : emojisPerUser > 10 
@@ -361,7 +361,7 @@ export function SectionCards() {
                         : "Low engagement"} 
                     {activeUsersCount > 0 && (emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
-                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs">
+                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs xs:text-sm">
                     {activeUsersCount === 0
                       ? "No activity this week"
                       : emojisPerUser > 15
@@ -399,24 +399,24 @@ export function SectionCards() {
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPW</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Emojis Per Week</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPW</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Emojis Per Week</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {epw.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-1 rounded-lg text-xs ${epwChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-1 rounded-lg text-xs xs:text-sm ${epwChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
                       {Math.abs(epwChange).toFixed(1)}% W/W
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
-                  <div className="flex gap-1 font-medium text-xs">
+                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-sm md:text-base">
+                  <div className="flex gap-1 font-medium text-xs xs:text-sm">
                     {epw === 0 
                       ? "No weekly activity"
                       : epwChange >= 0 
@@ -424,7 +424,7 @@ export function SectionCards() {
                         : "Declining"} 
                     {epw > 0 && (epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-muted-foreground text-xs xs:text-sm">
                     {epw === 0
                       ? "No emojis created"
                       : epwChange >= 0 

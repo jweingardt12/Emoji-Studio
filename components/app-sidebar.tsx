@@ -365,10 +365,12 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
 
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAnalytics } from "@/lib/analytics";
+import { useRouter } from "next/navigation";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const { toast } = useToast();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
@@ -706,47 +708,59 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const sidebarCtx = typeof window !== "undefined" ? ((window as any).__SIDEBAR_CTX__ || null) : null;
   const { trackEmojiFilter, trackNavigation, trackFeedbackClicked } = useAnalytics();
   
-  let handleNavigate = (navItem?: { title: string; url: string }) => {};
+  // Use the sidebar hook safely
+  let isMobile = false;
+  let setOpenMobile = (open: boolean) => {};
+  
   try {
     // This will only work in components rendered inside the SidebarProvider
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { isMobile, setOpenMobile } = useSidebar();
-    
-    // Update to track navigation events with better debugging
-    handleNavigate = (navItem?: { title: string; url: string; action?: string }) => { 
-      console.log('Navigation handler called with:', navItem);
-      
-      // Close mobile sidebar if on mobile
-      if (isMobile) setOpenMobile(false);
-      
-      // Track the navigation event if we have a nav item
-      if (navItem && navItem.url && !navItem.url.startsWith('#')) {
-        try {
-          console.log('About to track navigation event for:', navItem.title);
-          
-          // Use our analytics utility to track navigation
-          console.log('Using trackNavigation to track page view');
-          // Use the dedicated navigation tracking function
-          trackNavigation(navItem.title, navItem.url);
-          
-          // Track feedback click specifically
-          if (navItem.action === 'feedback') {
-            trackFeedbackClicked();
-          }
-          
-          console.log('Navigation tracking complete for:', navItem.title);
-        } catch (error) {
-          console.error('Error tracking navigation:', error);
-        }
-      }
-    };
+    const sidebarContext = useSidebar();
+    isMobile = sidebarContext.isMobile;
+    setOpenMobile = sidebarContext.setOpenMobile;
   } catch {}
+  
+  const handleNavigate = (navItem?: { title: string; url: string; action?: string }) => { 
+    console.log('Navigation handler called with:', navItem);
+    
+    // Close mobile sidebar if on mobile
+    if (isMobile) setOpenMobile(false);
+    
+    // Track the navigation event if we have a nav item
+    if (navItem && navItem.url && !navItem.url.startsWith('#')) {
+      try {
+        console.log('About to track navigation event for:', navItem.title);
+        
+        // Use our analytics utility to track navigation
+        console.log('Using trackNavigation to track page view');
+        // Use the dedicated navigation tracking function
+        trackNavigation(navItem.title, navItem.url);
+        
+        // Track feedback click specifically
+        if (navItem.action === 'feedback') {
+          trackFeedbackClicked();
+        }
+        
+        console.log('Navigation tracking complete for:', navItem.title);
+        
+        // NavMain handles the actual navigation, we just track and close sidebar
+      } catch (error) {
+        console.error('Error in navigation tracking:', error);
+      }
+    }
+  };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <div className="pl-4 pt-4 pb-2 hidden md:block">
-          <Link href="/dashboard" className="flex items-center gap-2 focus:outline-none">
+          <Link 
+            href="/dashboard" 
+            onClick={() => {
+              handleNavigate({ title: "Dashboard", url: "/dashboard" });
+            }}
+            className="flex items-center gap-2 focus:outline-none"
+          >
             <div className="relative w-10 h-10 flex-shrink-0">
               <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
             </div>
@@ -762,9 +776,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Link 
-                    href="/create" 
+                    href="/create"
+                    prefetch={true}
                     onClick={() => {
-                      handleNavigate({ title: "Create", url: "/create" })
+                      handleNavigate({ title: "Create", url: "/create" });
                     }}
                     className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
                   >

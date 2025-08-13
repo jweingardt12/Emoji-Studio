@@ -1,4 +1,8 @@
-const CACHE_NAME = 'emoji-studio-v1';
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = `emoji-studio-${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `emoji-studio-data-${CACHE_VERSION}`;
+
+// Critical resources to cache on install
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -8,9 +12,14 @@ const urlsToCache = [
   '/visualizations',
   '/settings',
   '/create',
+  '/apple-touch-icon.png',
   '/logo.png',
   '/logo-192.png',
   '/logo-512.png',
+  '/app-icon-1024.png',
+  '/favicon.ico',
+  '/favicon-16.png',
+  '/favicon-32.png',
   '/manifest.json'
 ];
 
@@ -32,7 +41,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CACHE_NAME && cacheName !== DATA_CACHE_NAME) {
             console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -43,24 +52,63 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache when possible
+// Fetch event - serve from cache when possible with network-first for API
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
+  const url = new URL(event.request.url);
+  
+  // Skip non-GET requests except for critical API endpoints
   if (event.request.method !== 'GET') {
     return;
   }
 
-  // Skip API requests and external resources
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/') || url.origin !== location.origin) {
+  // Handle API requests with network-first strategy
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Clone the response before caching
+          const responseToCache = response.clone();
+          
+          // Cache successful API responses
+          if (response.status === 200) {
+            caches.open(DATA_CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          
+          return response;
+        })
+        .catch(() => {
+          // Try to return cached API response when offline
+          return caches.match(event.request);
+        })
+    );
     return;
   }
 
+  // Skip external resources
+  if (url.origin !== location.origin) {
+    return;
+  }
+
+  // Cache-first strategy for static assets
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Cache hit - return response
         if (response) {
+          // Fetch in background to update cache
+          fetch(event.request).then((response) => {
+            if (response && response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+          }).catch(() => {
+            // Silently fail background update
+          });
+          
           return response;
         }
 
@@ -89,6 +137,8 @@ self.addEventListener('fetch', (event) => {
         if (event.request.mode === 'navigate') {
           return caches.match('/');
         }
+        // Return cached version for other resources
+        return caches.match(event.request);
       })
   );
 });

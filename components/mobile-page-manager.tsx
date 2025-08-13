@@ -47,6 +47,13 @@ export function MobilePageManager({ children, fallbackPath = '/dashboard' }: Mob
 
   // Check if current path is a mobile-managed page
   const isMobilePage = MOBILE_PAGES[pathname] !== undefined
+  
+  // Sync activePage with pathname changes from Next.js navigation
+  useEffect(() => {
+    if (pathname !== activePage && MOBILE_PAGES[pathname]) {
+      setActivePage(pathname)
+    }
+  }, [pathname, activePage])
 
   // Handle page transitions
   const navigateToPage = async (path: string, skipTransition = false) => {

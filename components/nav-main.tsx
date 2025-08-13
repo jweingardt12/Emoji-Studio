@@ -3,7 +3,7 @@
 import type React from "react"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -28,6 +28,7 @@ interface NavMainProps {
 
 export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true, onFeedback }: NavMainProps) {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <div className="grid gap-1 p-2">
@@ -57,8 +58,13 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             onNavigate?.(item)
             return
           }
-          // Pass the navigation item to track the event
-          onNavigate?.(item)
+          
+          // For internal navigation, don't prevent default - let Link handle it naturally
+          // Just call onNavigate for tracking/sidebar closing
+          if (!item.external) {
+            onNavigate?.(item)
+            // Don't prevent default, don't call router.push - let Link component handle navigation
+          }
         }
 
         // Handle external links
@@ -130,6 +136,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             key={item.title}
             href={item.url}
             onClick={handleClick}
+            prefetch={true}
             className={cn(
               "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
               isActive && "bg-accent text-accent-foreground",

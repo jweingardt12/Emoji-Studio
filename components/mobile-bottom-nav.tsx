@@ -17,7 +17,11 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>
 }
 
-export function MobileBottomNav() {
+interface MobileBottomNavProps {
+  isPWA?: boolean
+}
+
+export function MobileBottomNav({ isPWA = false }: MobileBottomNavProps) {
   const pathname = usePathname()
   const { trackNavigation } = useAnalytics()
 
@@ -62,9 +66,13 @@ export function MobileBottomNav() {
   }
 
   return (
-    <nav className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden">
-      <div className="grid grid-cols-5 px-safe pt-3 pb-4" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom))', minHeight: '5.5rem' }}>
-        {navItems.map((item) => {
+    <>
+      <nav 
+        className="mobile-bottom-nav fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-lg border-t md:hidden"
+        style={{ bottom: isPWA ? '3px' : '0' }}
+      >
+        <div className="grid grid-cols-5 px-safe py-4" style={{ paddingBottom: isPWA ? 'calc(2rem + env(safe-area-inset-bottom))' : 'calc(1rem + env(safe-area-inset-bottom))' }}>
+          {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.url
           
@@ -91,5 +99,6 @@ export function MobileBottomNav() {
         })}
       </div>
     </nav>
+    </>
   )
 }

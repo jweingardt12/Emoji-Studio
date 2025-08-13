@@ -4,9 +4,21 @@ import { useState, useEffect } from "react"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
-import { CreateEmojiDrawer } from "./create-emoji-drawer"
+import dynamic from 'next/dynamic'
 
-export function FloatingCreateButton() {
+const MobileEmojiDrawer = dynamic(
+  () => import('./mobile-emoji-drawer').then(mod => mod.MobileEmojiDrawer),
+  {
+    ssr: false,
+    loading: () => null
+  }
+) as any
+
+interface FloatingCreateButtonProps {
+  isPWA?: boolean
+}
+
+export function FloatingCreateButton({ isPWA = false }: FloatingCreateButtonProps) {
   const pathname = usePathname()
   const [isMobile, setIsMobile] = useState(false)
   
@@ -31,11 +43,12 @@ export function FloatingCreateButton() {
 
   // Mobile-only floating button wrapped in drawer
   return (
-    <CreateEmojiDrawer isMobile={isMobile}>
+    <MobileEmojiDrawer isMobile={isMobile}>
       <button
         className={cn(
           "fixed z-50",
-          "bottom-28 right-4", // Moved up from bottom-24 to bottom-28
+          isPWA ? "bottom-28" : "bottom-24",
+          "right-6",
           "flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
           "shadow-2xl hover:shadow-2xl",
@@ -57,6 +70,6 @@ export function FloatingCreateButton() {
       >
         <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
       </button>
-    </CreateEmojiDrawer>
+    </MobileEmojiDrawer>
   )
 }

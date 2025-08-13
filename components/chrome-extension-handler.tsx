@@ -26,7 +26,7 @@ export function ChromeExtensionHandler() {
   const op = useOpenPanel()
 
   // Function to process synced data from extension storage
-  const processSyncedData = useCallback((data: SyncedEmojiData, meta: SyncedEmojiMeta) => {
+  const processSyncedData = useCallback((data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
     console.log('[ChromeExtensionHandler] Processing synced data:', data, meta)
     
     // Prevent duplicate processing of the same sync
@@ -36,6 +36,10 @@ export function ChromeExtensionHandler() {
       return;
     }
     lastSyncTimeProcessed.current = syncTime;
+    
+    // Check if this is actually new data or just cached data being loaded
+    const existingLastSyncTime = localStorage.getItem('lastSyncTime');
+    const isNewSync = !existingLastSyncTime || syncTime > parseInt(existingLastSyncTime);
     
     try {
       // Update emoji data in the app
@@ -83,11 +87,15 @@ export function ChromeExtensionHandler() {
       // Calculate non-alias emoji count (to match dashboard display)
       const nonAliasCount = (data.emojiData as Emoji[]).filter(emoji => !emoji.is_alias).length
       
-      // Show success toast
-      toast.success(`Synced ${nonAliasCount} emojis from ${data.workspace}`, {
-        description: `Last updated: ${new Date(data.lastFetchTime).toLocaleString()}`,
-        duration: 4000,
-      })
+      // Only show success toast if this is actually a NEW sync (not just loading cached data)
+      if (isNewSync || forceShowToast) {
+        toast.success(`Synced ${nonAliasCount} emojis from ${data.workspace}`, {
+          description: `Last updated: ${new Date(data.lastFetchTime).toLocaleString()}`,
+          duration: 4000,
+        })
+      } else {
+        console.log('[ChromeExtensionHandler] Loaded cached data, not showing toast');
+      }
       
       // Track event
       op.track('chrome_extension_synced_data', {
@@ -383,7 +391,11 @@ export function ChromeExtensionHandler() {
           // Reload to ensure clean state
           window.location.href = "/settings"
         },
-        processSyncedData // Pass the synced data handler
+        (data: SyncedEmojiData, meta: SyncedEmojiMeta) => {
+          // Force show toast when syncStarting=true
+          const forceShow = searchParams.get('syncStarting') === 'true'
+          processSyncedData(data, meta, forceShow)
+        }
       )
     } else {
       // Even if not from extension, listen for synced data
@@ -403,10 +415,14 @@ export function ChromeExtensionHandler() {
           // Reload to ensure clean state
           window.location.href = "/settings"
         },
-        processSyncedData // Pass the synced data handler
+        (data: SyncedEmojiData, meta: SyncedEmojiMeta) => {
+          // Force show toast when syncStarting=true
+          const forceShow = searchParams.get('syncStarting') === 'true'
+          processSyncedData(data, meta, forceShow)
+        }
       )
     }
-  }, [searchParams, processSyncedData])
+  }, [searchParams, processSyncedData, setEmojiData, setWorkspace, setHasRealData])
 
   // Listen for sync progress messages from the extension
   useEffect(() => {

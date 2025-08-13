@@ -12,6 +12,7 @@ import {
   loadDemoStats,
   generateDemoData
 } from "@/lib/demo-data"
+import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
 
 // Define the context type
 interface EmojiDataContextType {
@@ -145,45 +146,41 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [demoTimeRange])
 
-  // Function to load emoji data from localStorage (moved outside useEffect so it can be properly updated)
-  const loadEmojiData = useCallback(() => {
+  // Function to load emoji data from storage (IndexedDB with localStorage fallback)
+  const loadEmojiData = useCallback(async () => {
     console.log('[EmojiDataContext] loadEmojiData called');
     try {
-      const storedData = localStorage.getItem("emojiData")
-      const storedWorkspace = localStorage.getItem("workspace")
-
+      // Load workspace from settings
+      const storedWorkspace = await settingsStorage.loadSetting("workspace") || localStorage.getItem("workspace")
+      
       if (storedWorkspace) {
         console.log('[EmojiDataContext] Setting workspace:', storedWorkspace);
         setWorkspace(storedWorkspace)
       }
 
-      if (storedData) {
-        const parsedData = JSON.parse(storedData)
-        if (Array.isArray(parsedData) && parsedData.length > 0) {
-          console.log(`[EmojiDataContext] Loaded ${parsedData.length} emojis from localStorage`)
-          console.log('[EmojiDataContext] First few emojis:', parsedData.slice(0, 3));
-          setEmojiData(parsedData)
-          
-          // Check if this is demo data by checking the workspace
-          if (storedWorkspace === "demo-workspace") {
-            setHasRealData(false)
-            setUseDemoData(true)
-          } else {
-            setHasRealData(true)
-            setUseDemoData(false)
-          }
-        } else {
-          console.log("No emoji data found in localStorage")
+      // Try to load emoji data from IndexedDB first, with localStorage fallback
+      const emojiData = await emojiStorage.loadEmojis()
+      
+      if (emojiData && Array.isArray(emojiData) && emojiData.length > 0) {
+        console.log(`[EmojiDataContext] Loaded ${emojiData.length} emojis from storage`)
+        console.log('[EmojiDataContext] First few emojis:', emojiData.slice(0, 3));
+        setEmojiData(emojiData)
+        
+        // Check if this is demo data by checking the workspace
+        if (storedWorkspace === "demo-workspace") {
           setHasRealData(false)
+          setUseDemoData(true)
+        } else {
+          setHasRealData(true)
           setUseDemoData(false)
         }
       } else {
-        console.log("No emoji data found in localStorage")
+        console.log("No emoji data found in storage")
         setHasRealData(false)
         setUseDemoData(false)
       }
     } catch (error) {
-      console.error("Error loading emoji data from localStorage:", error)
+      console.error("Error loading emoji data from storage:", error)
       setHasRealData(false)
       setUseDemoData(false)
     } finally {
