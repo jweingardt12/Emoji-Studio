@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
-import { toast } from "sonner"
 
 export function useAutoRefresh() {
   const { hasRealData, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -128,9 +127,6 @@ export function useAutoRefresh() {
         window.dispatchEvent(new CustomEvent("emojiDataUpdated", { 
           detail: { emojiData: sortedData, workspace: workspaceName, timestamp: Date.now() } 
         }))
-        
-        // Show subtle notification for auto-refresh
-        toast.success("Data refreshed automatically", { duration: 2000 })
       }
     } catch (error) {
       // Silent failure for auto-refresh

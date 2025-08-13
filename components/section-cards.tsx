@@ -165,24 +165,25 @@ export function SectionCards() {
 
   return (
     <div className="relative w-full">
-      {/* Left blur effect */}
+      {/* Left blur effect - desktop only */}
       {showLeftBlur && (
-        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+        <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
       )}
       
-      {/* Right blur effect */}
+      {/* Right blur effect - desktop only */}
       {showRightBlur && (
-        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+        <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
       )}
       
       <div 
         ref={scrollContainerRef}
-        className="w-full overflow-x-auto scrollbar-hide"
+        className="w-full overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth"
+        style={{ scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}
         onScroll={handleScroll}
       >
         <div className="flex gap-3 min-w-fit *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         {/* Total Emojis */}
-        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
@@ -256,7 +257,7 @@ export function SectionCards() {
           </InfoDrawerResponsive>
         </div>
         {/* AEU */}
-        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
@@ -323,7 +324,7 @@ export function SectionCards() {
           </InfoDrawerResponsive>
         </div>
         {/* EPU */}
-        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
@@ -392,7 +393,7 @@ export function SectionCards() {
           </InfoDrawerResponsive>
         </div>
         {/* EPW */}
-        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px]">
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">

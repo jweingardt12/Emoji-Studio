@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -14,6 +15,8 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
+import { SparklesText } from "@/src/components/magicui/sparkles-text"
+import { EmojiIntelligenceModal } from "@/components/emoji-intelligence-modal"
 
 interface ProcessingStep {
   id: string
@@ -36,6 +39,7 @@ interface EmojiProcessingModalProps {
   onUpdateName?: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
   onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
+  onUpdateProcessedEmojis?: (emojis: ProcessedEmoji[]) => void
 }
 
 export function EmojiProcessingModal({
@@ -50,7 +54,8 @@ export function EmojiProcessingModal({
   onDownloadAll,
   onUpdateName,
   onEdit,
-  onEditGifFrames
+  onEditGifFrames,
+  onUpdateProcessedEmojis
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -61,6 +66,8 @@ export function EmojiProcessingModal({
   const [uploadingAll, setUploadingAll] = useState(false)
   const [hasSlack, setHasSlack] = useState(false)
   const [uploadStatuses, setUploadStatuses] = useState<Record<number, 'success' | 'failed' | 'pending'>>({})
+  const [showEIModal, setShowEIModal] = useState(false)
+  const [eiAnalyses, setEiAnalyses] = useState<any[] | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -125,6 +132,13 @@ export function EmojiProcessingModal({
 
     setSteps(newSteps)
   }, [files, currentFileIndex, currentStep, error, isOpen])
+
+  const openEIModalThenEdit = () => {
+    setShowEIModal(true)
+    openpanel.track("Emoji Intelligence: Modal Opened (Pre-Edit)", {
+      emojiCount: processedEmojis.length,
+    })
+  }
 
   if (!mounted || !visible) return null
 
@@ -262,11 +276,12 @@ export function EmojiProcessingModal({
       onClick={isProcessingComplete ? onClose : undefined}
     >
       <Card 
-        className={`relative w-full max-w-lg mx-2 sm:mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
+        className={`relative w-full max-w-2xl mx-2 sm:mx-4 border-border/50 shadow-2xl transition-all duration-300 rounded-xl overflow-hidden ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-        } ${processedEmojis.length > 2 ? 'max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col' : ''}`}
+        } max-h-[85vh] sm:max-h-[90vh] flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
+        <ShineBorder borderWidth={2} duration={10} shineColor={["#22d3ee","#34d399","#60a5fa"]} />
         {isProcessingComplete && (
           <Button
             size="icon"
@@ -277,10 +292,10 @@ export function EmojiProcessingModal({
             <X className="h-3.5 w-3.5" />
           </Button>
         )}
-        <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3">
+        <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 sm:p-2 bg-primary/10 rounded-full flex-shrink-0">
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <div className="p-1.5 sm:p-2 rounded-full flex-shrink-0 bg-gradient-to-br from-sky-500/15 to-emerald-500/15">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-sky-400" />
             </div>
             <div className="min-w-0 pr-6">
               <CardTitle className="text-base sm:text-lg truncate">
@@ -305,7 +320,10 @@ export function EmojiProcessingModal({
                   <span className="text-muted-foreground">Overall progress</span>
                   <span className="font-medium">{Math.round(progress)}%</span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] bg-[length:200%_100%]" />
+                  <div className="relative h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all" style={{ width: `${progress}%` }} />
+                </div>
               </div>
 
               {currentFile && (
@@ -361,7 +379,7 @@ export function EmojiProcessingModal({
               <div className="space-y-1.5 sm:space-y-2">
                 {processedEmojis.map((emoji, index) => (
                   <div key={index} className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-colors ${
-                    uploadingAll && uploadingIndex === index ? 'bg-primary/10 ring-1 sm:ring-2 ring-primary/20' : 'bg-muted/50'
+                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' : 'bg-muted/50'
                   }`}>
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
@@ -536,6 +554,7 @@ export function EmojiProcessingModal({
                       <Download className="mr-1.5 h-3.5 w-3.5" />
                       <span className="text-sm">Download All ({processedEmojis.length})</span>
                     </Button>
+                    {/* EI consolidated into the editor; no separate optimize button */}
                     <Button 
                       size="sm"
                       className="flex-1 h-9"
@@ -671,6 +690,8 @@ export function EmojiProcessingModal({
           ) : null}
         </CardContent>
       </Card>
+      
+      {/* EI modal removed; handled inside editor */}
     </div>
   )
 
