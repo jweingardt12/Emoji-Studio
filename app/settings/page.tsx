@@ -32,7 +32,7 @@ import { Monitor, Moon, Sun } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { PairToMobile } from "@/components/pair-to-mobile"
 
-type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions';
+type SettingsSection = 'connection' | 'notifications' | 'preferences' | 'data' | 'actions' | 'pwa';
 
 // Theme Selector Component
 function ThemeSelector() {
