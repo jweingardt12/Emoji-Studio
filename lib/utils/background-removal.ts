@@ -185,16 +185,18 @@ function smoothEdges(imageData: ImageData) {
  */
 export async function removeBackgroundEnhanced(blob: Blob): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    
-    if (!ctx) {
-      reject(new Error('Could not get canvas context'))
-      return
-    }
+    try {
+      const img = new Image()
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'))
+        return
+      }
 
-    img.onload = () => {
+      img.onload = () => {
+        try {
       canvas.width = img.width
       canvas.height = img.height
       
@@ -280,12 +282,20 @@ export async function removeBackgroundEnhanced(blob: Blob): Promise<Blob> {
           reject(new Error('Failed to create blob'))
         }
       }, 'image/png')
+        } catch (error) {
+          console.error('Error processing image in removeBackgroundEnhanced:', error)
+          reject(error)
+        }
+      }
+      
+      img.onerror = () => {
+        reject(new Error('Failed to load image'))
+      }
+      
+      img.src = URL.createObjectURL(blob)
+    } catch (error) {
+      console.error('Error setting up removeBackgroundEnhanced:', error)
+      reject(error)
     }
-    
-    img.onerror = () => {
-      reject(new Error('Failed to load image'))
-    }
-    
-    img.src = URL.createObjectURL(blob)
   })
 }

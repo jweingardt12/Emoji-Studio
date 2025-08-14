@@ -234,7 +234,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
             <div className={`grid grid-cols-3 ${isMobile ? "gap-4" : "gap-3"}`}>
               <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md text-center`}>
                 <div className={`${isMobile ? "text-xs" : "text-xs"} text-muted-foreground font-semibold tracking-widest`}>TOTAL EMOJIS</div>
-                <div className={`${isMobile ? "text-3xl" : "text-2xl"} font-bold`}>{user.emoji_count}</div>
+                <div className={`${isMobile ? "text-2xl" : "text-2xl"} font-bold`}>{user.emoji_count}</div>
               </div>
               <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md text-center`}>
                 <TooltipProvider>
@@ -245,7 +245,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                           EPW
                           <Info className={`ml-1 ${isMobile ? "h-3.5 w-3.5" : "h-3 w-3"} text-muted-foreground opacity-70`} />
                         </div>
-                        <div className={`${isMobile ? "text-3xl" : "text-2xl"} font-bold`}>{user.l4wepw?.toFixed(2) ?? "-"}</div>
+                        <div className={`${isMobile ? "text-2xl" : "text-2xl"} font-bold`}>{user.l4wepw?.toFixed(2) ?? "-"}</div>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs">
@@ -258,7 +258,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
               </div>
               <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md text-center`}>
                 <div className={`${isMobile ? "text-xs" : "text-xs"} text-muted-foreground font-semibold tracking-widest`}>RANK</div>
-                <div className={`${isMobile ? "text-3xl" : "text-2xl"} font-bold`}>
+                <div className={`${isMobile ? "text-2xl" : "text-2xl"} font-bold`}>
                   {user.rank ? 
                     <>#{user.rank}</> : 
                     "-"}
@@ -269,7 +269,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
 
           <div className={`border border-border rounded-lg ${isMobile ? "p-4" : "p-3"}`}>
             <div className={`font-bold ${isMobile ? "text-lg mb-3" : "text-base mb-2"} flex items-center`}>
-              <ImageUp className={`${isMobile ? "h-5 w-5 mr-2" : "h-4 w-4 mr-1"} text-muted-foreground`} />
+              <ImageUp className={`${isMobile ? "h-4 w-4 mr-1" : "h-4 w-4 mr-1"} text-muted-foreground`} />
               Recent Emojis
             </div>
             {globalLoading || isLoading ? (
@@ -566,21 +566,30 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
           onClose()
         }
       }}>
-        <DrawerContent className="h-[90vh]">
+        <DrawerContent className="h-[95vh]">
           {/* Mobile Header */}
           <div className="sticky top-0 z-10 bg-card border-b border-border">
             <div className="flex flex-row items-center justify-between gap-3 p-4">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => setIsDrawerOpen(false)} 
+                onClick={() => {
+                  // Animate the drawer closing
+                  const drawer = document.querySelector('[data-vaul-drawer]')
+                  if (drawer) {
+                    drawer.classList.add('animate-out')
+                  }
+                  setTimeout(() => {
+                    setIsDrawerOpen(false)
+                  }, 150)
+                }} 
                 className="h-10 w-10"
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="sr-only">Back</span>
               </Button>
               <div className="flex-1 text-center">
-                <span className="text-lg font-semibold">{user.user_display_name.split(" ")[0]}'s Emojis</span>
+                <span className="text-base font-semibold">{user.user_display_name.split(" ")[0]}'s Emojis</span>
               </div>
               <Button 
                 variant="ghost" 
@@ -626,7 +635,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                   <img src="/logo.png" alt="Emoji Dashboard Logo" className="h-8 w-8 rounded-lg shadow-md" />
                   <span className="text-lg font-semibold">Emoji Studio</span>
                   <span className="text-2xl font-light text-muted-foreground mx-2">|</span>
-                  <span className="text-lg font-semibold">{user.user_display_name.split(" ")[0]}'s Emojis</span>
+                  <span className="text-base font-semibold">{user.user_display_name.split(" ")[0]}'s Emojis</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -660,7 +669,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
               <div className={`grid grid-cols-3 ${isMobile ? "gap-4" : "gap-3"}`}>
                 <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md text-center`}>
                   <div className={`${isMobile ? "text-xs" : "text-xs"} text-muted-foreground font-semibold tracking-widest`}>TOTAL EMOJIS</div>
-                  <div className={`${isMobile ? "text-3xl" : "text-2xl"} font-bold`}>{user.emoji_count}</div>
+                  <div className={`${isMobile ? "text-2xl" : "text-2xl"} font-bold`}>{user.emoji_count}</div>
                 </div>
                 <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md text-center`}>
                   <TooltipProvider>
@@ -671,7 +680,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                             EPW
                             <Info className={`ml-1 ${isMobile ? "h-3.5 w-3.5" : "h-3 w-3"} text-muted-foreground opacity-70`} />
                           </div>
-                          <div className={`${isMobile ? "text-3xl" : "text-2xl"} font-bold`}>{user.l4wepw?.toFixed(2) ?? "-"}</div>
+                          <div className={`${isMobile ? "text-2xl" : "text-2xl"} font-bold`}>{user.l4wepw?.toFixed(2) ?? "-"}</div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-xs">
@@ -694,8 +703,8 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
             </div>
 
             <div className={`border border-border rounded-lg ${isMobile ? "p-4" : "p-3"}`}>
-              <div className={`font-bold ${isMobile ? "text-lg mb-3" : "text-base mb-2"} flex items-center`}>
-                <ImageUp className={`${isMobile ? "h-5 w-5 mr-2" : "h-4 w-4 mr-1"} text-muted-foreground`} />
+              <div className={`font-bold ${isMobile ? "text-base mb-2" : "text-base mb-2"} flex items-center`}>
+                <ImageUp className={`${isMobile ? "h-4 w-4 mr-1" : "h-4 w-4 mr-1"} text-muted-foreground`} />
                 Recent Emojis
               </div>
               {globalLoading || isLoading ? (
@@ -755,7 +764,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                   </CardTitle>
                   <div className="flex gap-2">
                     <button
-                      className={`${isMobile ? "px-3 py-1.5" : "px-2 py-1"} rounded ${isMobile ? "text-sm" : "text-xs"} font-medium border ${viewMode === "monthly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
+                      className={`${isMobile ? "px-2 py-1" : "px-2 py-1"} rounded ${isMobile ? "text-xs" : "text-xs"} font-medium border ${viewMode === "monthly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
                       onClick={() => {
                         setViewMode("monthly")
                         // Track filter change
@@ -765,7 +774,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                       Monthly
                     </button>
                     <button
-                      className={`${isMobile ? "px-3 py-1.5" : "px-2 py-1"} rounded ${isMobile ? "text-sm" : "text-xs"} font-medium border ${viewMode === "weekly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
+                      className={`${isMobile ? "px-2 py-1" : "px-2 py-1"} rounded ${isMobile ? "text-xs" : "text-xs"} font-medium border ${viewMode === "weekly" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"}`}
                       onClick={() => {
                         setViewMode("weekly")
                         // Track filter change

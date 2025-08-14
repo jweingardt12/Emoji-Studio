@@ -88,17 +88,16 @@ export class EmojiProcessor {
   }
 
   private static async processHDRImage(file: File, name: string): Promise<ProcessedEmoji> {
-    // For HDR images, we MUST resize to 128x128 and compress to meet Slack's requirements
-    // Slack won't accept files over 128KB or larger than 128x128px
+    // For HDR images, resize to 128x128 for Slack
+    // Slack will auto-compress images, so we don't need to enforce 128KB limit
     
-    console.log(`Processing HDR image for Slack compliance: ${file.name} (size: ${file.size} bytes)`)
+    console.log(`Processing HDR image: ${file.name} (size: ${file.size} bytes)`)
     
-    // Check if already meets ALL requirements
+    // Check if already meets size requirements
     const dimensions = await this.getImageDimensions(file)
-    if (file.size <= this.MAX_FILE_SIZE && 
-        dimensions.width <= this.TARGET_SIZE && 
+    if (dimensions.width <= this.TARGET_SIZE && 
         dimensions.height <= this.TARGET_SIZE) {
-      console.log(`Image ${file.name} already meets all Slack requirements`)
+      console.log(`Image ${file.name} already at correct dimensions`)
       const preview = URL.createObjectURL(file)
       const blobUrl = await this.blobToDataURL(file)
       
@@ -112,12 +111,12 @@ export class EmojiProcessor {
         format: file.type.split('/')[1]?.toUpperCase() || 'PNG',
         preview,
         blob: blobUrl,
-        processingNote: 'Already Slack-compliant'
+        processingNote: 'Ready for Slack'
       }
     }
     
-    // Must resize and/or compress to meet Slack requirements
-    console.log(`Resizing/compressing ${file.name} to meet Slack requirements`)
+    // Resize to 128x128
+    console.log(`Resizing ${file.name} to 128x128`)
     
     return new Promise((resolve, reject) => {
       const img = new Image()
@@ -140,25 +139,12 @@ export class EmojiProcessor {
           
           ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
           
-          // Start with high quality PNG
-          let quality = 0.95
-          let blob: Blob | null = await this.canvasToBlob(canvas, 'image/png', quality)
+          // Use high quality PNG - Slack will handle compression
+          let quality = 1.0
           let format = 'image/png'
+          let blob: Blob | null = await this.canvasToBlob(canvas, format, quality)
           
-          // If PNG is too large, try reducing quality or switch to JPEG
-          if (blob && blob.size > this.MAX_FILE_SIZE) {
-            console.log(`PNG too large (${blob.size} bytes), trying JPEG...`)
-            format = 'image/jpeg'
-            quality = 0.9
-            
-            while (quality > 0.3 && (!blob || blob.size > this.MAX_FILE_SIZE)) {
-              blob = await this.canvasToBlob(canvas, format, quality)
-              if (blob && blob.size > this.MAX_FILE_SIZE) {
-                quality -= 0.05
-              }
-            }
-            console.log(`Compressed to JPEG at ${quality.toFixed(2)} quality, size: ${blob?.size} bytes`)
-          }
+          console.log(`Created PNG at full quality, size: ${blob?.size} bytes (Slack will auto-compress)`)
           
           if (!blob) {
             reject(new Error('Failed to process image'))
@@ -178,7 +164,7 @@ export class EmojiProcessor {
             format: format.split('/')[1].toUpperCase(),
             preview,
             blob: blobUrl,
-            processingNote: `Optimized for Slack (${(blob.size / 1024).toFixed(0)}KB)`
+            processingNote: blob.size > 128 * 1024 ? `Resized to 128x128 (${(blob.size / 1024).toFixed(0)}KB)` : 'Resized to 128x128'
           })
         } catch (error) {
           reject(error)
@@ -276,24 +262,12 @@ export class EmojiProcessor {
           // Draw image centered on canvas
           ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
 
-          // Convert to blob with quality adjustment to stay under size limit
-          let quality = 0.95
-          let blob: Blob | null = null
+          // Convert to blob - use PNG for best quality since Slack will handle compression
+          let quality = 1.0  // Maximum quality since Slack will compress
           let format = 'image/png'
-
-          // Try PNG first
-          blob = await this.canvasToBlob(canvas, format, quality)
-          console.log(`[EmojiProcessor] Initial PNG blob size: ${blob?.size}`)
-        
-          // If PNG is too large, try JPEG with decreasing quality
-          if (blob && blob.size > this.MAX_FILE_SIZE) {
-            console.log(`[EmojiProcessor] PNG too large (${blob.size}), trying JPEG`)
-            format = 'image/jpeg'
-            while (quality > 0.1 && (!blob || blob.size > this.MAX_FILE_SIZE)) {
-              blob = await this.canvasToBlob(canvas, format, quality)
-              quality -= 0.1
-            }
-          }
+          
+          let blob = await this.canvasToBlob(canvas, format, quality)
+          console.log(`[EmojiProcessor] PNG blob size: ${blob?.size} (Slack will auto-compress)`)
 
           if (!blob) {
             console.error('[EmojiProcessor] Failed to create blob from canvas')

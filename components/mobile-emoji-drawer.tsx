@@ -21,7 +21,8 @@ import {
   Gauge,
   Maximize2,
   ChevronLeft,
-  X
+  X,
+  Copy
 } from "lucide-react";
 import {
   Drawer,
@@ -79,13 +80,15 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     saturation: 100
   });
   const [shouldRemoveBackground, setShouldRemoveBackground] = useState(false);
+  const [backgroundRemovedPreview, setBackgroundRemovedPreview] = useState<string | null>(null);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
+  const [preserveHDR, setPreserveHDR] = useState(false);
   const [videoAdjustments, setVideoAdjustments] = useState({
     speed: 1.0,
     scaleMode: 'cover' as 'cover' | 'contain' | 'stretch'
   });
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
-  const pendingCloseRef = useRef(false);
 
   // Check for Slack connection
   useEffect(() => {
@@ -110,8 +113,9 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
   const handleClose = (forceClose = false) => {
     if (!forceClose && shouldConfirmClose()) {
       setShowExitConfirmation(true);
-      pendingCloseRef.current = true;
+      // Don't close the drawer, just show the confirmation
     } else {
+      setShowExitConfirmation(false);
       setOpen(false);
       // Reset state after animation
       setTimeout(handleStartOver, 300);
@@ -120,13 +124,14 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
 
   const handleConfirmExit = () => {
     setShowExitConfirmation(false);
-    pendingCloseRef.current = false;
-    handleClose(true);
+    setOpen(false);
+    // Reset state after animation
+    setTimeout(handleStartOver, 300);
   };
 
   const handleCancelExit = () => {
     setShowExitConfirmation(false);
-    pendingCloseRef.current = false;
+    // Drawer stays open, user continues editing
   };
 
   const handleFileInput = async (type: 'upload' | 'camera' | 'video') => {
@@ -134,6 +139,12 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     if ('vibrate' in navigator) {
       navigator.vibrate(10);
     }
+    
+    // Track file input action
+    openpanel.track("Mobile Emoji Drawer: Input Method Selected", {
+      method: type,
+      step: "select"
+    })
 
     const input = document.createElement('input');
     input.type = 'file';
@@ -190,6 +201,25 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
   };
 
   const processFile = async (file: File) => {
+    // If file is pre-edited, skip processing and go straight to preview
+    if ((file as any).isPreEdited) {
+      const previewUrl = URL.createObjectURL(file);
+      setProcessedEmoji({
+        name: emojiName || file.name.replace(/\.[^/.]+$/, '').substring(0, 22),
+        originalFile: file,
+        processedBlob: file,
+        originalSize: file.size,
+        processedSize: file.size,
+        dimensions: { width: 128, height: 128 },
+        format: 'PNG',
+        preview: previewUrl,
+        blob: previewUrl,
+        processingNote: (file as any).backgroundRemoved ? 'Background removed' : 'Edited'
+      });
+      setCurrentStep('preview');
+      return;
+    }
+    
     const isVideo = file.type.startsWith('video/');
     const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
     
@@ -280,8 +310,8 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       setProcessingProgress(85);
       setProcessingStatus('Applying final optimizations...');
       
-      // Process the actual file with options
-      const processed = await EmojiProcessor.processFile(file, options);
+      // Process the actual file with options including HDR setting
+      const processed = await EmojiProcessor.processFile(file, { ...options, preserveHDR });
       
       // Update to 95% after processing
       setProcessingProgress(95);
@@ -366,8 +396,13 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       const result = await uploadEmojiToSlack(processedEmoji, emojiName || processedEmoji.name);
       
       if (result.success) {
-        toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack!`);
+        // Don't show toast, we'll show success screen instead
         setCurrentStep('complete');
+        
+        // Store the successful emoji name for display
+        if (!emojiName) {
+          setEmojiName(result.emojiName || processedEmoji.name);
+        }
         
         openpanel.track("Mobile Emoji Drawer: Slack Upload Success", {
           emojiName: result.emojiName,
@@ -394,6 +429,11 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       saturation: 100
     });
     setShouldRemoveBackground(false);
+    // Clean up background removed preview URL
+    if (backgroundRemovedPreview) {
+      URL.revokeObjectURL(backgroundRemovedPreview);
+      setBackgroundRemovedPreview(null);
+    }
     setVideoAdjustments({
       speed: 1.0,
       scaleMode: 'cover'
@@ -404,6 +444,12 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     if (!processedEmoji || !selectedFile) return;
     
     setIsApplyingEdits(true);
+    
+    // Track video edit application
+    openpanel.track("Mobile Emoji Drawer: Video Edits Applied", {
+      speed: videoAdjustments.speed,
+      scaleMode: videoAdjustments.scaleMode
+    })
     
     try {
       toast.loading('Applying video edits...', { id: 'video-edit' });
@@ -434,74 +480,129 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
   };
   
   const applyImageEdits = async () => {
-    if (!processedEmoji) return;
+    if (!processedEmoji || !selectedFile) return;
     
     setIsApplyingEdits(true);
     
+    // Track image edit application
+    openpanel.track("Mobile Emoji Drawer: Image Edits Applied", {
+      brightness: editAdjustments.brightness,
+      contrast: editAdjustments.contrast,
+      saturation: editAdjustments.saturation,
+      removeBackground: shouldRemoveBackground
+    })
+    
     try {
+      // Start with the appropriate source
       let processedBlob: Blob;
       
-      if (shouldRemoveBackground) {
-        toast.info('Removing background... This may take a moment');
-        
-        const response = await fetch(processedEmoji.preview);
-        const originalBlob = await response.blob();
-        
+      if (shouldRemoveBackground && backgroundRemovedPreview) {
+        // Use the already processed background-removed version
+        const response = await fetch(backgroundRemovedPreview);
+        processedBlob = await response.blob();
+      } else if (shouldRemoveBackground) {
+        // Apply background removal to the original file
         try {
-          toast.loading('Removing background...', { id: 'bg-removal' });
+          // Resize and remove background
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const img = new Image();
+          
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = URL.createObjectURL(selectedFile);
+          });
+          
+          canvas.width = 128;
+          canvas.height = 128;
+          ctx!.drawImage(img, 0, 0, 128, 128);
+          
+          const resizedBlob = await new Promise<Blob>((resolve) => {
+            canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);
+          });
           
           const { removeBackgroundEnhanced } = await import('@/lib/utils/background-removal');
-          processedBlob = await removeBackgroundEnhanced(originalBlob);
-          
-          toast.dismiss('bg-removal');
-          toast.success('Background removed!');
+          processedBlob = await removeBackgroundEnhanced(resizedBlob);
         } catch (bgError) {
           console.error('Background removal failed:', bgError);
           toast.error('Background removal failed, applying other edits only');
-          processedBlob = originalBlob;
+          processedBlob = selectedFile;
         }
       } else {
-        const response = await fetch(processedEmoji.preview);
-        processedBlob = await response.blob();
+        // Use original file
+        processedBlob = selectedFile;
       }
       
-      // Apply brightness/contrast/saturation adjustments
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Could not get canvas context');
+      // Only apply filters if they're not at default values
+      const hasAdjustments = editAdjustments.brightness !== 100 || 
+                            editAdjustments.contrast !== 100 || 
+                            editAdjustments.saturation !== 100;
       
-      const img = new Image();
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = URL.createObjectURL(processedBlob);
-      });
+      if (hasAdjustments) {
+        // Apply brightness/contrast/saturation adjustments
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
+        
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = URL.createObjectURL(processedBlob);
+        });
+        
+        // Use original dimensions, not 128x128
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        // Apply the CSS filters
+        ctx.filter = `
+          brightness(${editAdjustments.brightness}%) 
+          contrast(${editAdjustments.contrast}%) 
+          saturate(${editAdjustments.saturation}%)
+        `;
+        
+        ctx.drawImage(img, 0, 0);
+        
+        processedBlob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((b) => resolve(b!), 'image/png', 1.0); // Use max quality
+        });
+      }
       
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      ctx.filter = `
-        brightness(${editAdjustments.brightness}%) 
-        contrast(${editAdjustments.contrast}%) 
-        saturate(${editAdjustments.saturation}%)
-      `;
-      
-      ctx.drawImage(img, 0, 0);
-      
-      const finalBlob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/png', 0.95);
-      });
-      
+      // Create a new file with the edited blob
       const editedFile = new File(
-        [finalBlob], 
-        processedEmoji.name || 'edited-emoji.png', 
-        { type: 'image/png' }
+        [processedBlob], 
+        processedEmoji?.name || selectedFile.name, // Keep the emoji name
+        { type: 'image/png' } // Always use PNG for edited images to preserve transparency
       );
       
-      setCurrentStep('processing');
-      await processFile(editedFile);
+      // Mark that this file has been edited to preserve edits
+      (editedFile as any).isPreEdited = true; // Flag to skip re-processing
+      (editedFile as any).editAdjustments = { ...editAdjustments };
+      (editedFile as any).backgroundRemoved = shouldRemoveBackground;
+      (editedFile as any).preserveHDR = preserveHDR;
       
-      toast.success(shouldRemoveBackground ? 'Edits applied with background removed!' : 'Edits applied!');
+      // Create a preview URL for the edited image
+      const previewUrl = URL.createObjectURL(processedBlob);
+      
+      // Update the processed emoji directly with the edited version
+      setProcessedEmoji(prev => {
+        if (prev) {
+          return {
+            ...prev,
+            processedBlob,
+            preview: previewUrl,
+            processingNote: shouldRemoveBackground ? 'Background removed' : 'Edited'
+          };
+        }
+        return prev;
+      });
+      
+      setCurrentStep('preview');
+      toast.success('Edits applied successfully!');
+      
+      toast.success('Edits applied successfully!');
       
     } catch (error) {
       console.error('Failed to apply edits:', error);
@@ -516,25 +617,28 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     const canGoBack = currentStep !== 'select' && currentStep !== 'complete';
     
     return (
-      <DrawerHeader className="relative pb-2">
+      <DrawerHeader className="relative py-2 px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           {canGoBack ? (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => {
+                if ('vibrate' in navigator) {
+                  navigator.vibrate(10);
+                }
                 if (currentStep === 'edit') setCurrentStep('preview');
                 else if (currentStep === 'preview') setCurrentStep('select');
               }}
-              className="h-8 w-8"
+              className="h-8 w-8 -ml-1"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
           ) : (
             <div className="w-8" />
           )}
           
-          <DrawerTitle className="text-center flex-1">
+          <DrawerTitle className="text-center flex-1 text-sm font-medium">
             {currentStep === 'select' && 'Create Emoji'}
             {currentStep === 'processing' && 'Processing'}
             {currentStep === 'preview' && 'Preview'}
@@ -545,24 +649,16 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => handleClose()}
-            className="h-8 w-8"
+            onClick={() => {
+              if ('vibrate' in navigator) {
+                navigator.vibrate(10);
+              }
+              handleClose();
+            }}
+            className="h-8 w-8 -mr-1 hover:bg-destructive/10 hover:text-destructive"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </Button>
-        </div>
-        
-        {/* Progress dots */}
-        <div className="flex justify-center gap-1.5 mt-3">
-          {['select', 'processing', 'preview', 'edit', 'complete'].map((step) => (
-            <div
-              key={step}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                currentStep === step ? "w-8 bg-primary" : "w-1.5 bg-muted-foreground/30"
-              )}
-            />
-          ))}
         </div>
       </DrawerHeader>
     );
@@ -578,7 +674,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="px-4 pb-6 space-y-3"
+            className="px-4 pt-4 pb-6 space-y-3"
           >
             <DrawerDescription className="text-center mb-4">
               Choose how to add your content
@@ -639,7 +735,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="px-4 pb-6 space-y-6"
+            className="px-4 pt-4 pb-6 space-y-6"
           >
             <div className="flex justify-center">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
@@ -679,7 +775,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="px-4 pb-6 space-y-4"
+            className="px-4 pt-4 pb-6 space-y-4"
           >
             {/* Emoji Preview */}
             <div className="flex justify-center">
@@ -724,12 +820,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                     {processedEmoji.dimensions.width}×{processedEmoji.dimensions.height}px
                   </span>
                 </div>
-                {processedEmoji.processedSize <= 128 * 1024 && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 pt-2">
-                    <Check className="h-4 w-4" />
-                    <span>Perfect for Slack!</span>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -767,7 +857,18 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
               
               <Button 
                 variant="outline" 
-                onClick={() => setCurrentStep('edit')}
+                onClick={() => {
+                  openpanel.track("Mobile Emoji Drawer: Edit Started", {
+                    format: processedEmoji?.format
+                  })
+                  // Reset edit adjustments when entering edit mode
+                  setEditAdjustments({ brightness: 100, contrast: 100, saturation: 100 })
+                  setShouldRemoveBackground(false)
+                  setBackgroundRemovedPreview(null)
+                  setPreserveHDR(false)
+                  setVideoAdjustments({ speed: 1.0, scaleMode: 'cover' })
+                  setCurrentStep('edit')
+                }}
                 className="w-full"
                 size="lg"
               >
@@ -784,7 +885,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="px-4 pb-6 space-y-4"
+            className="px-4 pt-4 pb-6 space-y-4"
           >
             {/* Determine if it's an image or video/GIF */}
             {(() => {
@@ -796,9 +897,14 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                 <>
                   {/* Preview with filters */}
                   <div className="flex justify-center">
-                    <div className="w-32 h-32 rounded-2xl border-2 border-border bg-muted/50 flex items-center justify-center overflow-hidden">
+                    <div className="w-32 h-32 rounded-2xl border-2 border-border bg-muted/50 flex items-center justify-center overflow-hidden relative">
+                      {isRemovingBackground && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                        </div>
+                      )}
                       <img
-                        src={processedEmoji.preview}
+                        src={backgroundRemovedPreview || processedEmoji.preview}
                         alt="Emoji preview"
                         className="w-full h-full object-contain"
                         style={!isAnimated ? {
@@ -922,22 +1028,90 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                             />
                           </div>
 
-                          <div className="pt-3 border-t space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-sm flex items-center gap-2">
-                                <Scissors className="h-4 w-4" />
-                                Remove Background
-                              </Label>
-                              <Switch
-                                checked={shouldRemoveBackground}
-                                onCheckedChange={setShouldRemoveBackground}
-                              />
+                          <div className="pt-4 border-t space-y-4">
+                            {/* HDR Processing Toggle */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor="hdr-mode" className="text-sm flex items-center gap-2 cursor-pointer flex-1">
+                                  <Sun className="h-4 w-4" />
+                                  <span>Process as HDR</span>
+                                </Label>
+                                <Switch
+                                  id="hdr-mode"
+                                  checked={preserveHDR}
+                                  onCheckedChange={setPreserveHDR}
+                                />
+                              </div>
+                              {preserveHDR && (
+                                <p className="text-xs text-muted-foreground">
+                                  Preserves full color range and quality
+                                </p>
+                              )}
                             </div>
-                            {shouldRemoveBackground && (
-                              <p className="text-xs text-muted-foreground">
-                                AI will remove the background automatically
-                              </p>
-                            )}
+                            
+                            {/* Background Removal Toggle */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor="remove-bg" className="text-sm flex items-center gap-2 cursor-pointer flex-1">
+                                  <Scissors className="h-4 w-4" />
+                                  <span>Remove Background</span>
+                                </Label>
+                                <Switch
+                                  id="remove-bg"
+                                  checked={shouldRemoveBackground}
+                                  onCheckedChange={async (checked) => {
+                                    setShouldRemoveBackground(checked);
+                                    if (checked && selectedFile && !isAnimated) {
+                                      setIsRemovingBackground(true);
+                                      try {
+                                        // Process the original file through background removal
+                                        const { removeBackgroundEnhanced } = await import('@/lib/utils/background-removal');
+                                        
+                                        // First resize the image to 128x128 to match emoji dimensions
+                                        const canvas = document.createElement('canvas');
+                                        const ctx = canvas.getContext('2d');
+                                        const img = new Image();
+                                        
+                                        await new Promise((resolve, reject) => {
+                                          img.onload = resolve;
+                                          img.onerror = reject;
+                                          img.src = URL.createObjectURL(selectedFile);
+                                        });
+                                        
+                                        canvas.width = 128;
+                                        canvas.height = 128;
+                                        ctx!.drawImage(img, 0, 0, 128, 128);
+                                        
+                                        const resizedBlob = await new Promise<Blob>((resolve) => {
+                                          canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);
+                                        });
+                                        
+                                        const result = await removeBackgroundEnhanced(resizedBlob);
+                                        const url = URL.createObjectURL(result);
+                                        setBackgroundRemovedPreview(url);
+                                      } catch (error) {
+                                        console.error('Background removal failed:', error);
+                                        toast.error('Failed to remove background');
+                                        setShouldRemoveBackground(false);
+                                      } finally {
+                                        setIsRemovingBackground(false);
+                                      }
+                                    } else if (!checked) {
+                                      if (backgroundRemovedPreview) {
+                                        URL.revokeObjectURL(backgroundRemovedPreview);
+                                      }
+                                      setBackgroundRemovedPreview(null);
+                                    }
+                                  }}
+                                  disabled={isRemovingBackground}
+                                />
+                              </div>
+                              {(shouldRemoveBackground || isRemovingBackground) && (
+                                <p className="text-xs text-muted-foreground">
+                                  {isRemovingBackground ? 'Removing background...' : 'Background removed from preview'}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </>
                       )}
@@ -951,7 +1125,12 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                           } else {
                             setEditAdjustments({ brightness: 100, contrast: 100, saturation: 100 });
                             setShouldRemoveBackground(false);
+                            setBackgroundRemovedPreview(null);
+                            setPreserveHDR(false);
                           }
+                          openpanel.track("Mobile Emoji Drawer: Reset Edits", {
+                            type: isAnimated ? "video" : "image"
+                          })
                         }}
                         className="w-full"
                       >
@@ -992,40 +1171,158 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="px-4 pb-6 space-y-6"
+            className="px-4 pt-4 pb-6 space-y-6"
           >
+            {/* Success animation */}
             <div className="flex justify-center">
-              <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center">
-                <Check className="h-10 w-10 text-green-500" />
-              </div>
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ 
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 10,
+                  delay: 0.1
+                }}
+                className="relative"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-green-400/20 to-green-600/20 rounded-full flex items-center justify-center">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                  >
+                    <Check className="h-12 w-12 text-green-500" />
+                  </motion.div>
+                </div>
+                {/* Celebration particles */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                  className="absolute inset-0 rounded-full border-4 border-green-500/30"
+                />
+              </motion.div>
             </div>
             
-            <div className="text-center space-y-2">
-              <h3 className="font-semibold text-lg">Success!</h3>
-              <p className="text-sm text-muted-foreground">
-                {hasSlack ? 
-                  `Your emoji ":${emojiName || processedEmoji?.name}:" is now live in Slack!` : 
-                  'Your emoji has been downloaded successfully'
-                }
-              </p>
-            </div>
-
-            {processedEmoji && (
-              <div className="flex justify-center">
-                <div className="w-24 h-24 rounded-xl border-2 border-border bg-muted/50 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={processedEmoji.preview}
-                    alt="Emoji preview"
-                    className="w-full h-full object-contain"
-                  />
+            {/* Success message */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-center space-y-3"
+            >
+              <h3 className="font-bold text-2xl">
+                {hasSlack ? '🎉 Uploaded to Slack!' : '✨ Downloaded!'}
+              </h3>
+              
+              {hasSlack && emojiName && (
+                <div className="space-y-4">
+                  {/* Emoji name display with copy */}
+                  <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                    <p className="text-sm text-muted-foreground">Your new emoji</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <code className="text-lg font-mono bg-background px-3 py-1.5 rounded-lg border">
+                        :{emojiName}:
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`:${emojiName}:`);
+                          toast.success('Copied emoji code!');
+                          if ('vibrate' in navigator) {
+                            navigator.vibrate(10);
+                          }
+                        }}
+                        className="h-8 w-8"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Emoji preview */}
+                  {processedEmoji && (
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="flex justify-center"
+                    >
+                      <div className="relative">
+                        <div className="w-32 h-32 rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center overflow-hidden shadow-lg">
+                          <img
+                            src={processedEmoji.preview}
+                            alt="Emoji preview"
+                            className="w-28 h-28 object-contain"
+                          />
+                        </div>
+                        {/* Size badge */}
+                        <div className="absolute -bottom-2 -right-2 bg-background border rounded-full px-2 py-1 text-xs font-medium shadow-sm">
+                          {(processedEmoji.processedSize / 1024).toFixed(0)}KB
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  <p className="text-sm text-muted-foreground px-4">
+                    Your emoji is now available in Slack! Start typing <strong>:{emojiName}</strong> in any channel to use it.
+                  </p>
                 </div>
-              </div>
-            )}
+              )}
+              
+              {!hasSlack && (
+                <p className="text-sm text-muted-foreground px-4">
+                  Your emoji has been saved to your device.
+                </p>
+              )}
+            </motion.div>
 
-            <Button onClick={handleStartOver} className="w-full" size="lg">
-              <Sparkles className="mr-2 h-5 w-5" />
-              Create Another
-            </Button>
+            {/* Action buttons */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="space-y-3"
+            >
+              <Button 
+                onClick={() => {
+                  openpanel.track("Mobile Emoji Drawer: Create Another", {})
+                  handleStartOver()
+                }} 
+                className="w-full" 
+                size="lg"
+                variant="default"
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                Create Another Emoji
+              </Button>
+              
+              {hasSlack && (
+                <Button 
+                  onClick={() => {
+                    // Open Slack in a new tab/app
+                    window.open(`https://slack.com/app_redirect?channel=general`, '_blank');
+                  }} 
+                  variant="outline" 
+                  className="w-full" 
+                  size="lg"
+                >
+                  <Send className="mr-2 h-5 w-5" />
+                  Open Slack
+                </Button>
+              )}
+              
+              <Button 
+                onClick={() => handleClose(true)} 
+                variant="ghost" 
+                className="w-full" 
+                size="lg"
+              >
+                Done
+              </Button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1037,11 +1334,14 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       <Drawer 
         open={open} 
         onOpenChange={(newOpen) => {
-          if (newOpen) {
-            setOpen(true);
-          } else {
+          if (!newOpen && !showExitConfirmation) {
+            // User is trying to close the drawer, check if we need confirmation
             handleClose();
+          } else if (newOpen) {
+            // User is opening the drawer
+            setOpen(true);
           }
+          // If showExitConfirmation is true, don't change drawer state
         }}
         modal={true}
       >
@@ -1049,18 +1349,35 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
         {children}
       </DrawerTrigger>
       <DrawerContent 
-        className="max-h-[85vh] z-[100]" 
+        className={cn(
+          "z-[100] flex flex-col",
+          // Dynamic height based on step
+          currentStep === 'select' && "h-auto max-h-[65vh]",
+          currentStep === 'processing' && "h-auto max-h-[50vh]",
+          currentStep === 'preview' && "h-auto max-h-[80vh]",
+          currentStep === 'edit' && "h-auto max-h-[85vh]",
+          currentStep === 'complete' && "h-auto max-h-[70vh]"
+        )}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {renderHeader()}
-        <div className="overflow-y-auto overflow-x-hidden">
+        <div className={cn(
+          "overflow-y-auto overflow-x-hidden overscroll-contain",
+          // Add min-height for better UX
+          "min-h-[200px]"
+        )}>
           {renderContent()}
         </div>
       </DrawerContent>
     </Drawer>
 
     {/* Exit Confirmation Dialog */}
-    <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+    <AlertDialog open={showExitConfirmation} onOpenChange={(open) => {
+      if (!open) {
+        // User dismissed the dialog (via escape or clicking outside), keep drawer open
+        handleCancelExit();
+      }
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Discard your emoji?</AlertDialogTitle>

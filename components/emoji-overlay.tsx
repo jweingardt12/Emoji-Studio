@@ -419,21 +419,30 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
           onClose()
         }
       }}>
-        <DrawerContent className="h-[92vh]">
+        <DrawerContent className="h-[95vh]">
           {/* Mobile Header */}
           <div className="sticky top-0 z-10 bg-card border-b border-border">
             <div className="flex items-center justify-between p-4">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                onClick={() => setIsDrawerOpen(false)} 
+                onClick={() => {
+                  // Animate the drawer closing
+                  const drawer = document.querySelector('[data-vaul-drawer]')
+                  if (drawer) {
+                    drawer.classList.add('animate-out')
+                  }
+                  setTimeout(() => {
+                    setIsDrawerOpen(false)
+                  }, 150)
+                }} 
                 className="h-10 w-10"
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="sr-only">Back</span>
               </Button>
               <div className="flex-1 text-center">
-                <span className="text-lg font-semibold font-mono">:{emoji.name}:</span>
+                <span className="text-base font-semibold font-mono">:{emoji.name}:</span>
               </div>
               <div className="w-10" /> {/* Spacer for centering */}
             </div>
@@ -443,8 +452,8 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
             <div className="grid grid-cols-1 gap-4">
               {/* Emoji Preview Card */}
               <div className="border border-border rounded-lg p-4">
-                <div className="font-bold text-lg mb-3 flex items-center">
-                  <Info className="h-5 w-5 mr-2 text-muted-foreground" />
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <Info className="h-4 w-4 mr-1 text-muted-foreground" />
                   Emoji Details
                 </div>
                 <div className="flex flex-col gap-6">
@@ -496,7 +505,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                   <div className="flex-grow space-y-3">
                     <div className="bg-primary/10 p-3 rounded-md">
                       <div className="text-xs text-muted-foreground font-semibold tracking-widest">NAME</div>
-                      <div className="text-2xl font-mono flex items-center gap-2">
+                      <div className="text-xl font-mono flex items-center gap-2">
                         :{emoji.name}:
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -513,7 +522,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
 
                     <div className="bg-primary/10 p-3 rounded-md">
                       <div className="text-xs text-muted-foreground font-semibold tracking-widest">CREATED BY</div>
-                      <div className="text-2xl font-bold flex items-center gap-2">
+                      <div className="text-xl font-bold flex items-center gap-2">
                         {emoji.user_display_name && (
                           <span
                             className={onUserClick ? "cursor-pointer hover:text-primary hover:underline" : ""}
@@ -531,7 +540,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
 
                     <div className="bg-primary/10 p-3 rounded-md">
                       <div className="text-xs text-muted-foreground font-semibold tracking-widest">CREATED ON</div>
-                      <div className="text-2xl font-bold">
+                      <div className="text-xl font-bold">
                         {emoji.created ? format(new Date(emoji.created * 1000), "MMM d, yyyy") : "Unknown date"}
                       </div>
                     </div>
@@ -539,7 +548,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                     {emoji.is_alias === 1 && emoji.alias_for && (
                       <div className="bg-primary/10 p-3 rounded-md">
                         <div className="text-xs text-muted-foreground font-semibold tracking-widest">ALIAS FOR</div>
-                        <div className="text-2xl font-mono">:{emoji.alias_for}:</div>
+                        <div className="text-xl font-mono">:{emoji.alias_for}:</div>
                       </div>
                     )}
                   </div>
@@ -548,8 +557,8 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
 
               {/* Similar Emojis Table */}
               <div className="border border-border rounded-lg p-4">
-                <div className="font-bold text-lg mb-3 flex items-center">
-                  <Search className="h-5 w-5 mr-2 text-muted-foreground" />
+                <div className="font-bold text-base mb-2 flex items-center">
+                  <Search className="h-4 w-4 mr-1 text-muted-foreground" />
                   Similar Emojis
                 </div>
                 <SimilarEmojisTable

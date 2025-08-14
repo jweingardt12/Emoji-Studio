@@ -31,11 +31,11 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/logo-192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/logo-512.png" />
-        <link rel="apple-touch-icon" sizes="1024x1024" href="/app-icon-1024.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon-new.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-new.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/pwa-icon-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/pwa-icon-512.png" />
+        <link rel="apple-touch-icon" sizes="1024x1024" href="/pwa-icon-1024.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
