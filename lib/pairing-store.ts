@@ -11,6 +11,11 @@ type PairingSession = {
 }
 
 // Ensure a global singleton store across HMR/server reloads
+// NOTE: This in-memory store works locally but has limitations on Vercel:
+// - Each serverless function instance has its own memory
+// - Store is not shared between instances
+// - Store is lost when function cold starts
+// For production, consider using Redis, Upstash, or another persistent store
 const g = globalThis as unknown as { __PAIRING_STORE__?: Map<string, PairingSession> }
 if (!g.__PAIRING_STORE__) {
   g.__PAIRING_STORE__ = new Map()

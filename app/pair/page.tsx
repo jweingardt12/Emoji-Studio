@@ -21,11 +21,30 @@ export default function PairPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const sid = params.get("sid")
-    if (sid && !processingPairing) {
+    const encodedCurl = params.get("curl")
+    const sid = params.get("sid") // Fallback for old QR codes
+    
+    if (encodedCurl && !processingPairing) {
+      // Direct curl import - no need for pairing session
       setProcessingPairing(true)
       openpanel.track("Mobile QR Pairing: Started", {
-        source: "url_parameter"
+        source: "direct_curl"
+      })
+      
+      try {
+        // Decode the base64 encoded curl
+        const curl = atob(decodeURIComponent(encodedCurl))
+        handleCurlImport(curl)
+      } catch (error) {
+        console.error("Failed to decode curl:", error)
+        toast.error("Invalid QR code data")
+        router.replace("/settings#connection")
+      }
+    } else if (sid && !processingPairing) {
+      // Old QR code with session ID - try to claim it
+      setProcessingPairing(true)
+      openpanel.track("Mobile QR Pairing: Started", {
+        source: "session_id"
       })
       claimAndImport(sid)
     }
@@ -121,7 +140,7 @@ export default function PairPage() {
       const data = await res.json()
       if (!res.ok) {
         // Don't show "not_found" error as it might be a timing issue
-        if (data.error === "not_found" && !hasImported && !successfulClaim) {
+        if ((data.reason === "not_found" || data.reason === "expired") && !hasImported && !successfulClaim) {
           // Retry once after a delay
           await new Promise(resolve => setTimeout(resolve, 1000))
           const retryRes = await fetch("/api/pair/claim", {
@@ -130,7 +149,10 @@ export default function PairPage() {
             body: JSON.stringify({ code: sid }),
           })
           const retryData = await retryRes.json()
-          if (!retryRes.ok) throw new Error(retryData.error || "Pairing failed")
+          if (!retryRes.ok) {
+            console.error("Pairing claim failed after retry:", retryData)
+            throw new Error(retryData.error || "Pairing failed")
+          }
           successfulClaim = true
           setHasImported(true) // Set immediately to prevent duplicate processing
           
@@ -167,16 +189,35 @@ export default function PairPage() {
   const handleScanDetected = (text: string) => {
     try {
       const url = new URL(text)
-      const sid = url.searchParams.get("sid")
-      if (sid) {
+      const encodedCurl = url.searchParams.get("curl")
+      const sid = url.searchParams.get("sid") // Fallback for old QR codes
+      
+      if (encodedCurl) {
         openpanel.track("Mobile QR Pairing: QR Scanned", {
-          hasSessionId: true
+          type: "direct_curl"
         })
+        
+        try {
+          // Decode the base64 encoded curl
+          const curl = atob(decodeURIComponent(encodedCurl))
+          setScanOpen(false) // Close scanner
+          handleCurlImport(curl)
+        } catch (error) {
+          console.error("Failed to decode curl from QR:", error)
+          toast.error("Invalid QR code data")
+        }
+        return
+      } else if (sid) {
+        openpanel.track("Mobile QR Pairing: QR Scanned", {
+          type: "session_id"
+        })
+        setScanOpen(false) // Close scanner
         claimAndImport(sid)
         return
       }
+      
       openpanel.track("Mobile QR Pairing: Invalid QR", {
-        reason: "no_session_id"
+        reason: "no_data"
       })
       toast.error("QR does not contain pairing data")
     } catch {

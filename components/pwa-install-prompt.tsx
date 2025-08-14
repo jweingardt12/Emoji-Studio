@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Download, Smartphone, Share, Plus } from "lucide-react"
+import { X, Download, Share, Plus, ChevronUp } from "lucide-react"
 import { openpanel } from "@/lib/safe-openpanel"
+import { cn } from "@/lib/utils"
 
 interface PWAInstallPromptProps {
   deferredPrompt: any
@@ -14,6 +15,7 @@ export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAIn
   const [isIOS, setIsIOS] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(false)
 
   useEffect(() => {
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
@@ -55,91 +57,155 @@ export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAIn
 
   return (
     <>
-      <div className="fixed bottom-20 left-4 right-4 z-40 md:hidden animate-in slide-in-from-bottom-5 duration-500">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-4 shadow-2xl">
+      <div 
+        className={cn(
+          "fixed left-2 right-2 z-40 md:hidden transition-all duration-500 ease-out",
+          isMinimized ? "bottom-[88px]" : "bottom-[88px]"
+        )}
+      >
+        <div 
+          className={cn(
+            "relative overflow-hidden rounded-2xl border border-border/50",
+            "bg-background/80 backdrop-blur-xl shadow-2xl",
+            "animate-in slide-in-from-bottom-5 fade-in duration-700"
+          )}
+        >
+          {/* Subtle gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+          
+          {/* Close button */}
           <button
             onClick={handleDismiss}
-            className="absolute top-2 right-2 text-white/80 hover:text-white"
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors z-10"
             aria-label="Dismiss"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
           
-          <div className="flex items-start gap-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-xl p-2">
-              <Smartphone className="h-8 w-8 text-white" />
-            </div>
-            
-            <div className="flex-1">
-              <h3 className="text-white font-semibold text-lg mb-1">
-                Install Emoji Studio
-              </h3>
-              <p className="text-white/90 text-sm mb-3">
-                Get the full app experience with offline access, faster loading, and home screen convenience!
-              </p>
-              
-              <div className="flex gap-2">
-                <button
-                  onClick={handleInstall}
-                  className="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Install App
-                </button>
-                <button
-                  onClick={handleDismiss}
-                  className="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-white/30 transition-colors"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            </div>
+          {/* Content */}
+          <div className={cn(
+            "relative p-4 transition-all duration-300",
+            isMinimized && "pb-2"
+          )}>
+            {!isMinimized ? (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Download className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground text-base mb-1">
+                      Install Emoji Studio
+                    </h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Add to your home screen for the best experience
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={handleInstall}
+                    className={cn(
+                      "flex-1 px-4 py-2.5 rounded-xl font-medium text-sm",
+                      "bg-primary text-primary-foreground",
+                      "hover:bg-primary/90 active:scale-[0.98]",
+                      "transition-all duration-200",
+                      "flex items-center justify-center gap-2"
+                    )}
+                  >
+                    {isIOS ? (
+                      <>
+                        <Share className="h-4 w-4" />
+                        Install App
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Install App
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsMinimized(true)}
+                    className={cn(
+                      "px-4 py-2.5 rounded-xl font-medium text-sm",
+                      "bg-muted/50 text-muted-foreground",
+                      "hover:bg-muted active:scale-[0.98]",
+                      "transition-all duration-200"
+                    )}
+                  >
+                    Not Now
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsMinimized(false)}
+                className="flex items-center justify-between w-full"
+              >
+                <div className="flex items-center gap-2">
+                  <Download className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Install Emoji Studio</span>
+                </div>
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {showInstructions && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-500">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="fixed bottom-0 left-0 right-0 bg-background rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-500 border-t border-border/50">
             <button
               onClick={() => setShowInstructions(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
             
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Install on iOS
+            <h3 className="text-lg font-semibold mb-6 text-foreground">
+              How to Install
             </h3>
             
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-2 mt-1">
-                  <Share className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Share className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">1. Tap the Share button</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Find it in your Safari toolbar at the bottom</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-2 mt-1">
-                  <Plus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">2. Select "Add to Home Screen"</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Scroll down in the share menu to find this option</p>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground text-sm">Tap the Share button</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Located in your Safari toolbar</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-2 mt-1">
-                  <Download className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Plus className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">3. Tap "Add"</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Emoji Studio will be added to your home screen</p>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground text-sm">Add to Home Screen</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Scroll down in the share menu</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Download className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-foreground text-sm">Tap "Add"</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">The app will appear on your home screen</p>
                 </div>
               </div>
             </div>
@@ -149,9 +215,14 @@ export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAIn
                 setShowInstructions(false)
                 handleDismiss()
               }}
-              className="w-full mt-6 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 py-3 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className={cn(
+                "w-full mt-6 py-3 rounded-xl font-medium text-sm",
+                "bg-muted/50 text-foreground",
+                "hover:bg-muted active:scale-[0.98]",
+                "transition-all duration-200"
+              )}
             >
-              Got it!
+              Got it
             </button>
           </div>
         </div>

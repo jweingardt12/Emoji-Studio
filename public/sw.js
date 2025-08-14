@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3'; // Updated for new icon set
+const CACHE_VERSION = 'v4'; // Updated for new default icon set
 const CACHE_NAME = `emoji-studio-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `emoji-studio-data-${CACHE_VERSION}`;
 
@@ -12,11 +12,10 @@ const urlsToCache = [
   '/visualizations',
   '/settings',
   '/create',
-  '/apple-touch-icon.png',
-  '/logo.png',
-  '/logo-192.png',
-  '/logo-512.png',
-  '/app-icon-1024.png',
+  '/apple-touch-icon-new.png',
+  '/pwa-icon-192.png',
+  '/pwa-icon-512.png',
+  '/pwa-icon-1024.png',
   '/favicon.ico',
   '/favicon-16.png',
   '/favicon-32.png',

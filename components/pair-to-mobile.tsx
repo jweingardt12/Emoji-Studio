@@ -55,24 +55,20 @@ export function PairToMobile() {
     return () => window.removeEventListener("slackCurlUpdated", handler)
   }, [isDesktop, qrDataUrl, generating])
 
-  const generateQrSession = async (retryCount = 0) => {
+  const generateQrSession = async () => {
     try {
       setGenerating(true)
       setQrError(null)
       
-      // Get the current curl command in case it changed
+      // Get the current curl command
       const currentCurl = localStorage.getItem("slackCurlCommand") || ""
       if (!currentCurl) {
         throw new Error("No curl command found")
       }
       
-      const res = await fetch("/api/pair/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ curl: currentCurl, mode: "qr" }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to start QR session")
+      // Encode the curl command directly in the QR code
+      // Use base64 encoding to make it URL-safe
+      const encodedCurl = btoa(currentCurl)
       
       // Determine the correct origin based on environment
       let origin = ""
@@ -95,22 +91,16 @@ export function PairToMobile() {
         }
       }
       
-      const url = `${origin}/pair?sid=${encodeURIComponent(data.sid)}`
+      // Create URL with the curl command encoded directly
+      const url = `${origin}/pair?curl=${encodeURIComponent(encodedCurl)}`
       const { default: QRCode } = await import("qrcode")
       const dataUrl = await QRCode.toDataURL(url, { errorCorrectionLevel: 'M', margin: 1, width: 240 })
       setQrDataUrl(dataUrl)
       setQrError(null)
     } catch (e: any) {
-      console.error("Failed generating QR session:", e?.message || e)
-      
-      // Auto-retry once if this is the first attempt
-      if (retryCount === 0 && isDesktop) {
-        console.log("Retrying QR generation...")
-        setTimeout(() => generateQrSession(1), 1000)
-      } else {
-        setQrError("QR generation failed. Click 'Regenerate QR' to retry.")
-        setQrDataUrl("")
-      }
+      console.error("Failed generating QR code:", e?.message || e)
+      setQrError("QR generation failed. Click 'Regenerate QR' to retry.")
+      setQrDataUrl("")
     } finally {
       setGenerating(false)
     }
@@ -119,8 +109,10 @@ export function PairToMobile() {
   const handleScanDetected = (text: string) => {
     try {
       const url = new URL(text)
-      const sid = url.searchParams.get("sid")
-      if (sid) {
+      const encodedCurl = url.searchParams.get("curl")
+      const sid = url.searchParams.get("sid") // Fallback for old QR codes
+      
+      if (encodedCurl || sid) {
         // Close the scanner immediately
         setScanOpen(false)
         // Navigate to the pairing URL which will auto-process
