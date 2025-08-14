@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { decompressCurl } from "@/lib/utils/compress-curl"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
@@ -21,11 +22,29 @@ export default function PairPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const encodedCurl = params.get("curl")
-    const sid = params.get("sid") // Fallback for old QR codes
+    const compressedData = params.get("data")
+    const encodedCurl = params.get("curl") // Fallback for old format
+    const sid = params.get("sid") // Fallback for session-based format
     
-    if (encodedCurl && !processingPairing) {
-      // Direct curl import - no need for pairing session
+    if (compressedData && !processingPairing) {
+      // Compressed curl data - decompress and import
+      setProcessingPairing(true)
+      openpanel.track("Mobile QR Pairing: Started", {
+        source: "compressed_data"
+      })
+      
+      try {
+        // Decompress the curl command from the compressed data
+        const curl = decompressCurl(compressedData)
+        console.log("Decompressed curl command successfully")
+        handleCurlImport(curl)
+      } catch (error) {
+        console.error("Failed to decompress curl:", error)
+        toast.error("Invalid QR code data")
+        router.replace("/settings#connection")
+      }
+    } else if (encodedCurl && !processingPairing) {
+      // Old format - direct base64 encoded curl
       setProcessingPairing(true)
       openpanel.track("Mobile QR Pairing: Started", {
         source: "direct_curl"
@@ -41,7 +60,7 @@ export default function PairPage() {
         router.replace("/settings#connection")
       }
     } else if (sid && !processingPairing) {
-      // Old QR code with session ID - try to claim it
+      // Session-based format - try to claim it
       setProcessingPairing(true)
       openpanel.track("Mobile QR Pairing: Started", {
         source: "session_id"

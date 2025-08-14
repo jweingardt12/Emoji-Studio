@@ -7,6 +7,7 @@ import { RainbowButton } from "@/src/components/magicui/rainbow-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle as AlertCircleIcon, Link2 as LinkIcon, QrCode } from "lucide-react"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { compressCurl } from "@/lib/utils/compress-curl"
 import { toast } from "sonner"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 
@@ -66,35 +67,21 @@ export function PairToMobile() {
         throw new Error("No curl command found")
       }
       
-      // Encode the curl command directly in the QR code
-      // Use base64 encoding to make it URL-safe
-      const encodedCurl = btoa(currentCurl)
+      // Compress the curl command to just essential data
+      const compressed = compressCurl(currentCurl)
+      console.log('Compressed curl data length:', compressed.length, 'vs original:', currentCurl.length)
       
-      // Determine the correct origin based on environment
-      let origin = ""
-      if (typeof window !== "undefined") {
-        const currentOrigin = window.location.origin
-        const hostname = window.location.hostname
-        
-        // Check if we're in production (not localhost/127.0.0.1)
-        if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-          // Production or already using network IP
-          origin = currentOrigin
-        } else {
-          // Development mode - need to use network IP for QR code
-          // First check if there's an environment variable set
-          const devIP = process.env.NEXT_PUBLIC_DEV_IP || '192.168.86.71'
-          const protocol = window.location.protocol
-          const port = window.location.port
-          origin = `${protocol}//${devIP}${port ? ':' + port : ''}`
-          console.log('Development mode - QR Code URL using network IP:', origin)
-        }
-      }
+      // QR code contains ONLY the compressed data
+      console.log('QR Code data length:', compressed.length)
       
-      // Create URL with the curl command encoded directly
-      const url = `${origin}/pair?curl=${encodeURIComponent(encodedCurl)}`
-      const { default: QRCode } = await import("qrcode")
-      const dataUrl = await QRCode.toDataURL(url, { errorCorrectionLevel: 'M', margin: 1, width: 240 })
+      // Import qrcode library
+      const QRCode = await import("qrcode")
+      const dataUrl = await QRCode.toDataURL(compressed, { 
+        errorCorrectionLevel: 'L', // Use low error correction for more data capacity
+        margin: 1, 
+        width: 280, // Slightly larger for better scanning
+        version: undefined // Let it auto-select the best version
+      })
       setQrDataUrl(dataUrl)
       setQrError(null)
     } catch (e: any) {
@@ -108,20 +95,51 @@ export function PairToMobile() {
 
   const handleScanDetected = (text: string) => {
     try {
-      const url = new URL(text)
-      const encodedCurl = url.searchParams.get("curl")
-      const sid = url.searchParams.get("sid") // Fallback for old QR codes
+      // First try to parse as URL (for backwards compatibility)
+      let isUrl = false
+      let url: URL | null = null
       
-      if (encodedCurl || sid) {
-        // Close the scanner immediately
-        setScanOpen(false)
-        // Navigate to the pairing URL which will auto-process
-        window.location.href = url.toString()
-      } else {
-        toast.error("QR does not contain pairing data")
+      try {
+        url = new URL(text)
+        isUrl = true
+      } catch {
+        // Not a URL, might be raw compressed data
+        isUrl = false
       }
-    } catch {
-      toast.error("Invalid QR content")
+      
+      if (isUrl && url) {
+        // Handle URL-based QR codes (old format)
+        const compressedData = url.searchParams.get("data")
+        const encodedCurl = url.searchParams.get("curl")
+        const sid = url.searchParams.get("sid")
+        
+        if (compressedData || encodedCurl || sid) {
+          // Close the scanner immediately
+          setScanOpen(false)
+          // Navigate to the pairing URL which will auto-process
+          window.location.href = url.toString()
+        } else {
+          toast.error("QR does not contain pairing data")
+        }
+      } else {
+        // Handle raw compressed data (new simplified format)
+        // Verify it looks like our compressed format (base64-like string)
+        if (/^[A-Za-z0-9_-]+$/.test(text)) {
+          // Close the scanner immediately
+          setScanOpen(false)
+          
+          // Get the origin for navigation
+          const origin = window.location.origin
+          
+          // Navigate to the pairing page with the compressed data
+          window.location.href = `${origin}/pair?data=${encodeURIComponent(text)}`
+        } else {
+          toast.error("Invalid QR code format")
+        }
+      }
+    } catch (error) {
+      console.error("Error processing QR code:", error)
+      toast.error("Failed to process QR code")
     }
   }
 
@@ -191,12 +209,6 @@ export function PairToMobile() {
                     {qrDataUrl && (
                       <div className="flex flex-col items-center gap-2">
                         <img src={qrDataUrl} alt="Pairing QR" className="rounded border bg-white p-2" />
-                        {/* Show development mode notice if on localhost */}
-                        {typeof window !== "undefined" && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
-                          <p className="text-xs text-muted-foreground text-center max-w-xs">
-                            Development mode: QR code uses network IP {process.env.NEXT_PUBLIC_DEV_IP || '192.168.86.71'}
-                          </p>
-                        )}
                         <Button 
                           variant="outline" 
                           size="sm" 
