@@ -24,24 +24,17 @@ import {
   RotateCcw,
   Download,
   Check,
-  Wand2,
-  Brain
+  Wand2
 } from "lucide-react"
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
-import { EmojiIntelligence } from "@/lib/utils/emoji-intelligence"
-import { EmojiRecommendations, type EmojiRecommendation } from "@/lib/utils/emoji-recommendations"
-import { EmojiAutoEnhance } from "@/lib/utils/emoji-auto-enhance"
 import { openpanel } from "@/lib/safe-openpanel"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
 
 interface EmojiEditorProps {
   emoji: ProcessedEmoji | null
   isOpen: boolean
   onClose: () => void
   onSave: (editedEmoji: ProcessedEmoji) => void
-  initialRecommendations?: any
 }
 
 interface ImageAdjustments {
@@ -62,7 +55,7 @@ const defaultAdjustments: ImageAdjustments = {
   sharpen: 0,
 }
 
-export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendations }: EmojiEditorProps) {
+export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps) {
   const [adjustments, setAdjustments] = useState<ImageAdjustments>(defaultAdjustments)
   const [removeBackground, setRemoveBackground] = useState(false)
   const [makeHDR, setMakeHDR] = useState(false)
@@ -73,11 +66,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
-  // EI
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [recommendations, setRecommendations] = useState<EmojiRecommendation[]>([])
-  const [appliedRecommendations, setAppliedRecommendations] = useState<Set<string>>(new Set())
-  const [currentWorkingFile, setCurrentWorkingFile] = useState<File | null>(null)
   
   const isGif = emoji?.format === "GIF" || emoji?.originalFile.type === "image/gif"
   const isVideo = emoji?.wasVideo === true
@@ -88,12 +76,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
       setAdjustments(defaultAdjustments)
       setRemoveBackground(false)
       setMakeHDR(false)
-      // Seed EI recommendations if provided
-      if (Array.isArray(initialRecommendations) && initialRecommendations.length > 0) {
-        setRecommendations(initialRecommendations)
-      } else {
-        setRecommendations([])
-      }
       // Small delay to ensure canvas elements are mounted
       setTimeout(() => {
         loadOriginalImage()
@@ -142,9 +124,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
       console.error('Failed to load image:', error)
     }
     
-    // Use current working file if present, otherwise processed/original
-    const blobToUse = currentWorkingFile || emoji.processedBlob || emoji.originalFile
-    img.src = URL.createObjectURL(blobToUse)
+    img.src = URL.createObjectURL(emoji.processedBlob || emoji.originalFile)
   }
 
   // Modern HDR enhancement based on Greg Benz's natural HDR approach
@@ -569,78 +549,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
     }
   }
 
-  // Emoji Intelligence
-  const analyzeWithIntelligence = async () => {
-    if (!emoji) return
-    setIsAnalyzing(true)
-    try {
-      const fileToAnalyze = currentWorkingFile || emoji.originalFile
-      const { analysis, details } = await EmojiIntelligence.analyzeImage(fileToAnalyze)
-      const recs = EmojiRecommendations.generateRecommendations(analysis, details)
-      setRecommendations(recs)
-      openpanel.track("Emoji Intelligence: Analysis in Editor", {
-        fileName: emoji.name,
-        recommendationCount: recs.length,
-        overallQuality: analysis.overallQuality,
-        format: emoji.format,
-      })
-      if (recs.length === 0) toast.success("No improvements needed")
-      else toast.success(`Found ${recs.length} suggestions`)
-    } catch (e) {
-      console.error(e)
-      toast.error("Failed to analyze image")
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
-  const applyRecommendation = async (rec: EmojiRecommendation) => {
-    if (!emoji) return
-    setIsProcessing(true)
-    try {
-      const fileToEnhance = currentWorkingFile || emoji.originalFile
-      const result = await EmojiAutoEnhance.applyRecommendation(fileToEnhance, rec)
-      const enhancedFile = new File([result.blob], emoji.originalFile.name, { type: result.blob.type })
-      setCurrentWorkingFile(enhancedFile)
-      setAppliedRecommendations(prev => new Set(prev).add(rec.id))
-      setPreviewUrl(URL.createObjectURL(result.blob))
-      setEditedBlob(result.blob)
-      loadOriginalImage()
-      toast.success(`Applied: ${rec.title}`)
-      openpanel.track("Emoji Intelligence: Applied in Editor", {
-        recommendationType: rec.type,
-        recommendationId: rec.id,
-      })
-    } catch (e) {
-      console.error(e)
-      toast.error("Failed to apply enhancement")
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const applyAllRecommendations = async () => {
-    if (!emoji) return
-    setIsProcessing(true)
-    try {
-      const fileToEnhance = currentWorkingFile || emoji.originalFile
-      const unapplied = recommendations.filter(r => !appliedRecommendations.has(r.id))
-      const result = await EmojiAutoEnhance.applyAllRecommendations(fileToEnhance, unapplied)
-      const enhancedFile = new File([result.blob], emoji.originalFile.name, { type: result.blob.type })
-      setCurrentWorkingFile(enhancedFile)
-      setAppliedRecommendations(new Set(recommendations.map(r => r.id)))
-      setPreviewUrl(URL.createObjectURL(result.blob))
-      setEditedBlob(result.blob)
-      loadOriginalImage()
-      toast.success("Applied all enhancements!")
-      openpanel.track("Emoji Intelligence: Applied All in Editor", { enhancementCount: unapplied.length })
-    } catch (e) {
-      console.error(e)
-      toast.error("Failed to apply enhancements")
-    } finally {
-      setIsProcessing(false)
-    }
-  }
 
   if (!emoji) return null
 
@@ -709,12 +617,8 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
 
           {/* Controls Section */}
           <div className="space-y-4">
-              <Tabs defaultValue="ai" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="ai">
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    Intelligence
-                  </TabsTrigger>
+              <Tabs defaultValue="adjustments" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="adjustments">
                   <Sliders className="h-4 w-4 mr-1" />
                   Adjust
@@ -728,90 +632,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave, initialRecommendat
                   Advanced
                 </TabsTrigger>
               </TabsList>
-
-                <TabsContent value="ai" className="space-y-4 mt-4">
-                  {/* Analyze Button */}
-                  {recommendations.length === 0 && !isAnalyzing && (
-                    <div className="text-center py-6">
-                      <Brain className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                      <h3 className="font-medium mb-2">Emoji Intelligence</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Let AI analyze your emoji and suggest improvements
-                      </p>
-                      <Button
-                        onClick={analyzeWithIntelligence}
-                        disabled={isAnalyzing || isProcessing}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Analyze Emoji
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Loading State */}
-                  {isAnalyzing && (
-                    <div className="text-center py-8">
-                      <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin" />
-                      <p className="text-sm text-muted-foreground">Analyzing your emoji...</p>
-                    </div>
-                  )}
-
-                  {/* Recommendations */}
-                  {recommendations.length > 0 && !isAnalyzing && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium">AI Suggestions</h4>
-                        {recommendations.some(r => !appliedRecommendations.has(r.id)) && (
-                          <Button size="sm" variant="outline" onClick={applyAllRecommendations} disabled={isProcessing}>
-                            Apply All
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {recommendations.map((rec) => (
-                          <Card key={rec.id} className="p-3">
-                            <div className="flex items-start gap-3">
-                              <span className="text-xl mt-0.5">{rec.icon}</span>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <h5 className="font-medium text-sm">{rec.title}</h5>
-                                  {appliedRecommendations.has(rec.id) && (
-                                    <Badge variant="secondary" className="text-xs">Applied</Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground mb-2">{rec.description}</p>
-                                <Button size="sm" variant={appliedRecommendations.has(rec.id) ? 'secondary' : 'default'} onClick={() => applyRecommendation(rec)} disabled={isProcessing || appliedRecommendations.has(rec.id)} className="h-7 px-2 text-xs">
-                                  {isProcessing ? (
-                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                  ) : appliedRecommendations.has(rec.id) ? (
-                                    <Check className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <Wand2 className="h-3 w-3 mr-1" />
-                                  )}
-                                  {appliedRecommendations.has(rec.id) ? 'Applied' : 'Apply'}
-                                </Button>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                      <Button variant="outline" size="sm" onClick={analyzeWithIntelligence} disabled={isAnalyzing || isProcessing} className="w-full">
-                        <Brain className="h-4 w-4 mr-1" />
-                        Re-analyze
-                      </Button>
-                    </div>
-                  )}
-                </TabsContent>
 
               <TabsContent value="adjustments" className="space-y-4 mt-4">
                 <div className="space-y-3">

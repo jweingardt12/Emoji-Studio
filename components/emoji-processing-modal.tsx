@@ -16,7 +16,6 @@ import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { SparklesText } from "@/src/components/magicui/sparkles-text"
-import { EmojiIntelligenceModal } from "@/components/emoji-intelligence-modal"
 
 interface ProcessingStep {
   id: string
@@ -275,14 +274,29 @@ export function EmojiProcessingModal({
       }`}
       onClick={isProcessingComplete ? onClose : undefined}
     >
-      <Card 
-        className={`relative w-full max-w-2xl mx-2 sm:mx-4 border-border/50 shadow-2xl transition-all duration-300 rounded-xl overflow-hidden ${
+      <div 
+        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-        } max-h-[85vh] sm:max-h-[90vh] flex flex-col`}
+        } ${isProcessingComplete ? 'bg-blue-500/30 p-[2px] rounded-xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <ShineBorder borderWidth={2} duration={10} shineColor={["#22d3ee","#34d399","#60a5fa"]} />
         {isProcessingComplete && (
+          <div 
+            className="absolute inset-0 rounded-xl"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(147, 197, 253, 0.5) 20%, rgba(147, 197, 253, 0.8) 50%, rgba(147, 197, 253, 0.5) 80%, transparent 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shine-border 4s linear infinite',
+              maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              maskComposite: 'exclude',
+              WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              padding: '2px'
+            }}
+          />
+        )}
+        <Card className={`relative ${isProcessingComplete ? 'border-0' : 'border-border/50'} shadow-2xl rounded-xl max-h-[85vh] sm:max-h-[90vh] flex flex-col bg-card overflow-hidden`}>
+          {isProcessingComplete && (
           <Button
             size="icon"
             variant="ghost"
@@ -690,6 +704,7 @@ export function EmojiProcessingModal({
           ) : null}
         </CardContent>
       </Card>
+      </div>
       
       {/* EI modal removed; handled inside editor */}
     </div>

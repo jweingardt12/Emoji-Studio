@@ -148,6 +148,7 @@ module.exports = {
         "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
         shine: "shine var(--duration) linear infinite",
         shimmer: "shimmer 2s linear infinite",
+        "spin-slow": "spin 3s linear infinite",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

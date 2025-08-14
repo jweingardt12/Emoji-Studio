@@ -599,6 +599,25 @@ body {
     background-position: 0% 0%;
     }
   }
+  @keyframes gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  @keyframes shine-border {
+    0% {
+      background-position: -100% 50%;
+    }
+    100% {
+      background-position: 200% 50%;
+    }
+  }
   @keyframes shiny-text {
   0%, 90%, 100% {
     background-position: calc(-100% - var(--shiny-width)) 0;

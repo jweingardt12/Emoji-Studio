@@ -9,7 +9,6 @@ import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiEditor } from "@/components/emoji-editor"
-import { EmojiIntelligenceModal } from "@/components/emoji-intelligence-modal"
 import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
 import { MobileEmojiCreator } from "@/components/mobile-emoji-creator"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
@@ -698,13 +697,11 @@ function EmojiCreatorPage() {
     }
   }
 
-  const [preEditEIModalOpen, setPreEditEIModalOpen] = useState(false)
-  const [pendingEditEmoji, setPendingEditEmoji] = useState<{ emoji: ProcessedEmoji, index: number } | null>(null)
 
   const handleEditEmoji = (emoji: ProcessedEmoji, index: number) => {
-    setPendingEditEmoji({ emoji, index })
-    setPreEditEIModalOpen(true)
-    openpanel.track("Emoji Creator: Edit Started (Pre-EI)", { 
+    setEditingEmoji(emoji)
+    setEditingEmojiIndex(index)
+    openpanel.track("Emoji Creator: Edit Started", { 
       emojiName: emoji.name,
       format: emoji.format,
       isGif: emoji.format === "GIF",
@@ -1262,30 +1259,12 @@ function EmojiCreatorPage() {
       />
       
 
-      {/* Pre-Edit EI Modal: analyze first, then open editor */}
-      {pendingEditEmoji && (
-        <EmojiIntelligenceModal
-          isOpen={preEditEIModalOpen}
-          emojis={[pendingEditEmoji.emoji]}
-          onClose={() => setPreEditEIModalOpen(false)}
-          onApplyOptimizations={() => {}}
-          onAnalysisComplete={(analyses) => {
-            setEditingEmoji(pendingEditEmoji.emoji)
-            setEditingEmojiIndex(pendingEditEmoji.index)
-            // Pass initial recs into the editor
-            ;(pendingEditEmoji.emoji as any).__initialRecs = analyses[0]?.recommendations || []
-            setPreEditEIModalOpen(false)
-          }}
-        />
-      )}
-
       {/* Emoji Editor Modal */}
       <EmojiEditor
         emoji={editingEmoji}
         isOpen={editingEmoji !== null}
         onClose={handleCloseEditor}
         onSave={handleSaveEditedEmoji}
-        initialRecommendations={(editingEmoji as any)?.__initialRecs}
       />
 
 
