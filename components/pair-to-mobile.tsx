@@ -77,9 +77,9 @@ export function PairToMobile() {
       // Import qrcode library
       const QRCode = await import("qrcode")
       const dataUrl = await QRCode.toDataURL(compressed, { 
-        errorCorrectionLevel: 'L', // Use low error correction for more data capacity
+        errorCorrectionLevel: 'M', // Medium error correction for better balance
         margin: 1, 
-        width: 280, // Slightly larger for better scanning
+        width: 320, // Larger size for easier scanning
         version: undefined // Let it auto-select the best version
       })
       setQrDataUrl(dataUrl)

@@ -11,15 +11,31 @@ export function compressCurl(curlCommand: string): string {
     throw new Error('Invalid curl command')
   }
   
-  // Extract only the essential data
+  // Extract only the d cookie value from the full cookie string
+  let dValue = ''
+  if (parsed.cookie) {
+    // Extract just the d cookie value
+    const dMatch = parsed.cookie.match(/\bd=([^;]+)/)
+    if (dMatch) {
+      dValue = dMatch[1]
+      console.log('Extracted d cookie value, length:', dValue.length)
+    } else {
+      // Fallback to full cookie if d= not found
+      console.warn('Could not extract d cookie, using full cookie')
+      dValue = parsed.cookie
+    }
+  }
+  
+  // New optimized format: only send d cookie value
   const essentials = {
     t: parsed.token,  // token
-    c: parsed.cookie, // cookie 
+    d: dValue,        // just the d cookie value (not full cookie string)
     w: parsed.workspace, // workspace
   }
   
   // Convert to JSON and compress using base64
   const json = JSON.stringify(essentials)
+  console.log('Compressed JSON length:', json.length, 'vs original curl:', curlCommand.length)
   
   // Use URL-safe base64 encoding
   const encoded = btoa(json)
@@ -27,6 +43,7 @@ export function compressCurl(curlCommand: string): string {
     .replace(/\//g, '_')
     .replace(/=/g, '')
   
+  console.log('Final compressed length:', encoded.length)
   return encoded
 }
 
@@ -48,7 +65,19 @@ export function decompressCurl(compressed: string): string {
     const json = atob(base64)
     const essentials = JSON.parse(json)
     
-    const { t: token, c: cookie, w: workspace } = essentials
+    const { t: token, w: workspace } = essentials
+    
+    // Handle both old format (full cookie in 'c') and new format (d cookie value in 'd')
+    let cookie = ''
+    if (essentials.d) {
+      // New optimized format - just the d cookie value
+      cookie = `d=${essentials.d}`
+      console.log('Decompressing optimized format with d cookie')
+    } else if (essentials.c) {
+      // Old format - full cookie string
+      cookie = essentials.c
+      console.log('Decompressing legacy format with full cookie')
+    }
     
     if (!token || !cookie || !workspace) {
       throw new Error('Missing essential data')
