@@ -44,9 +44,13 @@ export function PairToMobile() {
       setIsValidCurl(valid)
       
       // Generate QR on desktop when we have a valid curl
-      if (valid && isDesktop && !qrDataUrl && !generating) {
-        await generateQrSession()
-      } else if (!valid || !isDesktop) {
+      if (valid && isDesktop) {
+        // Only generate if we don't have a QR yet
+        if (!qrDataUrl) {
+          await generateQrSession()
+        }
+      } else {
+        // Clear QR if invalid or on mobile
         setQrDataUrl("")
       }
     }
@@ -54,7 +58,7 @@ export function PairToMobile() {
     const handler = () => load()
     window.addEventListener("slackCurlUpdated", handler)
     return () => window.removeEventListener("slackCurlUpdated", handler)
-  }, [isDesktop, qrDataUrl, generating])
+  }, [isDesktop]) // Only depend on isDesktop, not qrDataUrl or generating
 
   const generateQrSession = async () => {
     try {
@@ -189,16 +193,16 @@ export function PairToMobile() {
                 {!isValidCurl && (
                   <Alert variant="destructive" className="mt-3">
                     <AlertCircleIcon className="h-4 w-4" />
-                    <AlertTitle className="text-sm">Missing valid curl</AlertTitle>
+                    <AlertTitle className="text-sm">No workspace connected</AlertTitle>
                     <AlertDescription className="text-xs mt-1">
-                      Paste a valid Slack curl command in Manual Setup above first.
+                      In order to connect to Emoji Studio for mobile, connect to your Slack workspace.
                     </AlertDescription>
                   </Alert>
                 )}
 
                 {isValidCurl && (
                   <div className="flex flex-col items-center gap-3 w-full mt-4">
-                    {generating && !qrDataUrl && (
+                    {(generating || (!qrDataUrl && !qrError)) && (
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-60 h-60 rounded border bg-muted animate-pulse flex items-center justify-center">
                           <p className="text-sm text-muted-foreground">Generating QR...</p>
@@ -206,7 +210,7 @@ export function PairToMobile() {
                       </div>
                     )}
                     
-                    {qrDataUrl && (
+                    {qrDataUrl && !generating && (
                       <div className="flex flex-col items-center gap-2">
                         <img src={qrDataUrl} alt="Pairing QR" className="rounded border bg-white p-2" />
                         <Button 

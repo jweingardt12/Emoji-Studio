@@ -82,6 +82,11 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               <span className="truncate">{item.title}</span>
+              {item.badge && (
+                <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
+                  {item.badge}
+                </span>
+              )}
               {/* External link indicator */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"

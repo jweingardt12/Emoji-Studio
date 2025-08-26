@@ -17,6 +17,7 @@ import {
   CirclePlus,
   UserCircle,
   MessageSquareIcon,
+  Smartphone,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -688,6 +689,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // GitHub nav item (separated visually)
   const githubNavItems = [
+    {
+      title: "Get the app",
+      url: "https://www.emojistudio.xyz/mobile",
+      icon: Smartphone,
+      external: true,
+      badge: "NEW",
+    },
     {
       title: "GitHub",
       url: "https://github.com/jweingardt12/Emoji-Studio",
