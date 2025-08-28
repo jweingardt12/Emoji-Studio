@@ -31,3 +31,20 @@ next-env.d.ts
 # windsurf
 .windsurfrules
 @.windsurfrules
+
+# markdown files in root (except README)
+/*.md
+!README.md
+
+# test files in root
+/test-*.html
+/test-*.js
+/test-*.gif
+
+# IDE and system files
+.DS_Store
+*.code-workspace
+
+# package manager lock files (keep only package-lock.json)
+pnpm-lock.yaml
+yarn.lock
