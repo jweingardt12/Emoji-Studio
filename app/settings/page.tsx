@@ -1110,11 +1110,11 @@ export default function SettingsPage() {
                       {/* Mobile: Show Pair to Desktop as primary option */}
                       {isMobile && <PairToMobile />}
                       
-                      {/* Chrome Extension Connection Card - secondary on mobile, collapsible when connected */}
+                      {/* Chrome Extension Connection Card - collapsible when connected */}
                       {isMobile ? (
                         <Card>
                           <CardContent className="p-4">
-                            <Collapsible open={isChromeExtensionOpen}>
+                            <Collapsible open={isChromeExtensionConnectedOpen}>
                               <div className="flex items-start gap-3">
                                 <div className="rounded-lg bg-muted p-2 shrink-0">
                                   <ChromeIcon className="h-5 w-5 text-muted-foreground" />
@@ -1122,7 +1122,7 @@ export default function SettingsPage() {
                                 <div className="flex-1 min-w-0">
                                   <Button
                                     variant="ghost"
-                                    onClick={() => setIsChromeExtensionOpen(!isChromeExtensionOpen)}
+                                    onClick={() => setIsChromeExtensionConnectedOpen(!isChromeExtensionConnectedOpen)}
                                     className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
                                   >
                                     <div className="text-left">
@@ -1132,7 +1132,7 @@ export default function SettingsPage() {
                                       </p>
                                     </div>
                                     <div className="ml-2 shrink-0">
-                                      {isChromeExtensionOpen ? (
+                                      {isChromeExtensionConnectedOpen ? (
                                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
                                       ) : (
                                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -1150,7 +1150,43 @@ export default function SettingsPage() {
                           </CardContent>
                         </Card>
                       ) : (
-                        <ChromeExtensionOption />
+                        <Card>
+                          <CardContent className="p-6">
+                            <Collapsible open={isChromeExtensionConnectedOpen}>
+                              <div className="flex items-start gap-4">
+                                <div className="rounded-lg bg-muted p-3">
+                                  <ChromeIcon className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1">
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => setIsChromeExtensionConnectedOpen(!isChromeExtensionConnectedOpen)}
+                                    className="w-full justify-between p-0 h-auto text-left hover:bg-transparent"
+                                  >
+                                    <div className="text-left">
+                                      <h3 className="font-semibold">Chrome Extension</h3>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        One-click authentication with browser extension
+                                      </p>
+                                    </div>
+                                    <div className="ml-2 shrink-0">
+                                      {isChromeExtensionConnectedOpen ? (
+                                        <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                      ) : (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </Button>
+                                  <CollapsibleContent>
+                                    <div className="mt-4">
+                                      <ChromeExtensionOption />
+                                    </div>
+                                  </CollapsibleContent>
+                                </div>
+                              </div>
+                            </Collapsible>
+                          </CardContent>
+                        </Card>
                       )}
 
                       {/* Manual Setup - always collapsible when connected */}

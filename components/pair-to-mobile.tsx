@@ -5,14 +5,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RainbowButton } from "@/src/components/magicui/rainbow-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle as AlertCircleIcon, Link2 as LinkIcon, QrCode } from "lucide-react"
+import { AlertCircle as AlertCircleIcon, Link2 as LinkIcon, QrCode, ExternalLink, Smartphone } from "lucide-react"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { compressCurl } from "@/lib/utils/compress-curl"
 import { toast } from "sonner"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 
 export function PairToMobile() {
-  const [curl, setCurl] = useState<string>("")
   const [isValidCurl, setIsValidCurl] = useState<boolean>(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [qrError, setQrError] = useState<string | null>(null)
@@ -38,7 +37,6 @@ export function PairToMobile() {
   useEffect(() => {
     const load = async () => {
       const saved = localStorage.getItem("slackCurlCommand") || ""
-      setCurl(saved)
       const parsed = parseSlackCurl(saved)
       const valid = !!saved && parsed.isValid && !parsed.error
       setIsValidCurl(valid)
@@ -82,8 +80,8 @@ export function PairToMobile() {
       const QRCode = await import("qrcode")
       const dataUrl = await QRCode.toDataURL(compressed, { 
         errorCorrectionLevel: 'M', // Medium error correction for better balance
-        margin: 1, 
-        width: 320, // Larger size for easier scanning
+        margin: 2, 
+        width: 400, // Larger size for easier scanning
         version: undefined // Let it auto-select the best version
       })
       setQrDataUrl(dataUrl)
@@ -168,6 +166,30 @@ export function PairToMobile() {
               Scan this QR with your phone to import your Slack connection.
             </p>
             
+            {/* iOS TestFlight link for desktop */}
+            <div className="hidden md:block">
+              <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-start gap-2">
+                  <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Have an iPhone or iPad?</strong> Join the Emoji Studio TestFlight beta for the native iOS app experience!
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                    >
+                      <a href="https://emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
+                        Join iOS TestFlight
+                        <ExternalLink className="ml-2 h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {/* Mobile description */}
             <p className="text-sm text-muted-foreground md:hidden">
               Scan the QR displayed on your desktop to import your Slack connection.
@@ -184,6 +206,29 @@ export function PairToMobile() {
                 Scan Desktop QR Code
               </RainbowButton>
               <QrScanDrawer open={scanOpen} onOpenChange={setScanOpen} onDetected={handleScanDetected} />
+              
+              {/* iOS TestFlight link */}
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-start gap-2">
+                  <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Want the native iOS app? Join the TestFlight beta!
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      asChild
+                    >
+                      <a href="https://emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
+                        Join iOS TestFlight
+                        <ExternalLink className="ml-2 h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Desktop: Show QR or error based on curl validity */}
@@ -204,7 +249,7 @@ export function PairToMobile() {
                   <div className="flex flex-col items-center gap-3 w-full mt-4">
                     {(generating || (!qrDataUrl && !qrError)) && (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-60 h-60 rounded border bg-muted animate-pulse flex items-center justify-center">
+                        <div className="w-80 h-80 rounded border bg-muted animate-pulse flex items-center justify-center">
                           <p className="text-sm text-muted-foreground">Generating QR...</p>
                         </div>
                       </div>
@@ -213,14 +258,6 @@ export function PairToMobile() {
                     {qrDataUrl && !generating && (
                       <div className="flex flex-col items-center gap-2">
                         <img src={qrDataUrl} alt="Pairing QR" className="rounded border bg-white p-2" />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => generateQrSession()} 
-                          disabled={generating}
-                        >
-                          Regenerate QR
-                        </Button>
                       </div>
                     )}
                     

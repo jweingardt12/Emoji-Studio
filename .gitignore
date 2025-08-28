@@ -31,3 +31,28 @@ next-env.d.ts
 # windsurf
 .windsurfrules
 @.windsurfrules
+
+# macOS
+.DS_Store
+
+# SWC cache
+/.swc/
+
+# Editor/AI configs (keep local)
+/.vscode/
+/.claude/
+*.code-workspace
+
+# Local templates not tracked
+/startup-template/
+
+# Test files and debugging
+test-*.html
+test-*.js
+**/test-*
+**/debug-*
+placeholder-*
+*.test.html
+*.debug.*
+/app/pwa-test/
+/app/test-*/
