@@ -17,6 +17,8 @@ yarn-error.log*
 .pnpm-debug.log*
 /scripts
 /tests
+/certificates
+/__tests__
 
 # env files
 .env*
@@ -32,19 +34,27 @@ next-env.d.ts
 .windsurfrules
 @.windsurfrules
 
-# markdown files in root (except README)
-/*.md
-!README.md
-
-# test files in root
-/test-*.html
-/test-*.js
-/test-*.gif
-
-# IDE and system files
+# macOS
 .DS_Store
+
+# SWC cache
+/.swc/
+
+# Editor/AI configs (keep local)
+/.vscode/
+/.claude/
 *.code-workspace
 
-# package manager lock files (keep only package-lock.json)
-pnpm-lock.yaml
-yarn.lock
+# Local templates not tracked
+/startup-template/
+
+# Test files and debugging
+test-*.html
+test-*.js
+**/test-*
+**/debug-*
+placeholder-*
+*.test.html
+*.debug.*
+/app/pwa-test/
+/app/test-*/
