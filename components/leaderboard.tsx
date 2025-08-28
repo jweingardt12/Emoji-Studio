@@ -1,21 +1,22 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, Calendar, Info, Search, Trophy } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Info, Search, Trophy, Check } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import React, { useState, useMemo, useEffect, useCallback } from "react"
 import { format, subYears } from "date-fns"
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip"
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import EmojiOverlay from "@/components/emoji-overlay"; 
 import type { Emoji } from "@/lib/services/emoji-service";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; 
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useIsMobile } from "@/hooks/use-mobile"; 
 
 // Remove this import and define a fallback type below if @shared/schema.js is missing
 // import { UserWithEmojiCount } from "@shared/schema.js";
@@ -74,6 +75,7 @@ const Leaderboard = ({
   setShowInactiveUsers,
   searchQuery: externalSearchQuery,
 }: LeaderboardProps) => {
+  const isMobile = useIsMobile()
   // Hydration-safe now/oneYearAgo for client-only date logic
   const [now, setNow] = useState<Date | null>(null)
   const [oneYearAgo, setOneYearAgo] = useState<Date | null>(null)
@@ -230,8 +232,9 @@ const Leaderboard = ({
     <div className="flex flex-col gap-4"> {/* Main component wrapper */}
       {/* Header with Search and Filters */}
       {variant === "expanded" && (
-        <div className="flex flex-col md:flex-row items-center gap-4 px-1 pt-1 pb-2 md:pb-4 border-b border-border/60">
-          <div className="relative w-full md:flex-1">
+        <div className={`flex flex-col gap-3 ${isMobile ? 'px-3' : 'px-1'} pt-1 pb-2 md:pb-4 border-b border-border/60`}>
+          {/* Search Bar */}
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
@@ -241,31 +244,13 @@ const Leaderboard = ({
               className="w-full pl-9"
             />
           </div>
-          <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end">
-            <div className="flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip delayDuration={100}>
-                  <TooltipTrigger asChild>
-                    <Label htmlFor="inactive-toggle" className="text-sm cursor-pointer border-b border-dotted border-muted-foreground">
-                      Show Inactive
-                    </Label>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Users inactive for 3+ months. <a href="/settings" className="underline">Configure threshold</a>.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Switch
-                id="inactive-toggle"
-                checked={showInactiveUsers}
-                onCheckedChange={setShowInactiveUsers}
-                aria-label="Show inactive users toggle"
-              />
-            </div>
-            <Separator orientation="vertical" className="h-6 hidden md:block" />
+          
+          {/* Filters Row - Mobile Optimized */}
+          <div className="flex items-center gap-2">
+            {/* Date Range Selector */}
             <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
-              <SelectTrigger className="w-auto md:w-[130px] text-sm">
-                <SelectValue placeholder="Select date range" />
+              <SelectTrigger className="flex-1 h-8 text-xs sm:text-sm">
+                <SelectValue placeholder="Date range" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="7days">Last 7 Days</SelectItem>
@@ -275,6 +260,30 @@ const Leaderboard = ({
                 <SelectItem value="all">All Time</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Show Inactive Toggle - Ultra Compact for Mobile */}
+            <button
+              onClick={() => setShowInactiveUsers?.(!showInactiveUsers)}
+              className={cn(
+                "flex items-center gap-1 px-2 py-1 h-8 rounded-md transition-colors text-xs whitespace-nowrap",
+                showInactiveUsers 
+                  ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted/70"
+              )}
+              aria-label="Toggle inactive users"
+            >
+              <div className={cn(
+                "h-3 w-3 rounded-sm border transition-colors flex items-center justify-center",
+                showInactiveUsers 
+                  ? "bg-primary border-primary" 
+                  : "bg-background border-input"
+              )}>
+                {showInactiveUsers && (
+                  <Check className="h-2 w-2 text-primary-foreground" />
+                )}
+              </div>
+              <span>Inactive</span>
+            </button>
           </div>
         </div>
       )}
@@ -322,13 +331,16 @@ const Leaderboard = ({
           <Table className="min-w-full">
             <TableHeader className="[&_tr]:border-b-0 bg-muted/20 dark:bg-black/10">
               <TableRow>
-                <TableHead className="w-[50px] text-center">Rank</TableHead>
-                <TableHead className="text-left">User</TableHead>
+                <TableHead className="w-[40px] sm:w-[50px] text-center text-xs sm:text-sm p-2 sm:p-3">
+                  <span className="sm:hidden">#</span>
+                  <span className="hidden sm:inline">Rank</span>
+                </TableHead>
+                <TableHead className="text-left text-xs sm:text-sm p-2 sm:p-3">User</TableHead>
                 {variant === "expanded" && (
-                  <TableHead className="w-[150px] text-left">Emoji Samples</TableHead>
+                  <TableHead className="hidden md:table-cell w-[150px] text-left">Emoji Samples</TableHead>
                 )}
                 {dateRange === "all" && (
-                  <TableHead className="w-[100px] text-right">
+                  <TableHead className="w-[50px] sm:w-[100px] text-right text-xs sm:text-sm p-2 sm:p-3">
                     <TooltipProvider>
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger className="cursor-help border-b border-dotted border-muted-foreground">
@@ -342,7 +354,7 @@ const Leaderboard = ({
                   </TableHead>
                 )}
                 <TableHead
-                  className="w-[120px] text-right cursor-pointer hover:text-primary transition-colors"
+                  className="w-[60px] sm:w-[120px] text-right text-xs sm:text-sm cursor-pointer hover:text-primary transition-colors p-2 sm:p-3"
                   onClick={() => handleSort("emoji_count")}
                 >
                   Total
@@ -373,47 +385,97 @@ const Leaderboard = ({
                 return (
                   <TableRow
                     key={user.user_id}
-                    className="transition-colors hover:bg-muted cursor-pointer border-b border-border last:border-0"
-                    onClick={() => onViewUser && onViewUser(user)}
+                    className={`transition-colors hover:bg-muted cursor-pointer border-b border-border last:border-0 active:bg-muted/80 ${
+                      variant === "compact" ? "h-14 sm:h-auto" : ""
+                    }`}
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
+                    onClick={() => {
+                      if (onViewUser) {
+                        onViewUser(user)
+                      }
+                    }}
                   >
-                    <TableCell className="text-center w-[80px] font-medium">
+                    <TableCell className={`text-center font-medium ${
+                      variant === "compact" 
+                        ? "w-[50px] sm:w-[80px] p-3 sm:p-4" 
+                        : "w-[40px] sm:w-[80px] p-2 sm:p-4"
+                    }`}>
                       {userIndex === 0 ? (
                         <div
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-yellow-400 text-white font-bold"
+                          className={`inline-flex items-center justify-center rounded-full bg-yellow-400 text-white font-bold ${
+                            variant === "compact"
+                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
+                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
+                          }`}
                           title="1st Place"
                         >
                           1
                         </div>
                       ) : userIndex === 1 ? (
                         <div
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-300 text-white font-bold"
+                          className={`inline-flex items-center justify-center rounded-full bg-gray-300 text-white font-bold ${
+                            variant === "compact"
+                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
+                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
+                          }`}
                           title="2nd Place"
                         >
                           2
                         </div>
                       ) : userIndex === 2 ? (
                         <div
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-amber-700 text-white font-bold"
+                          className={`inline-flex items-center justify-center rounded-full bg-amber-700 text-white font-bold ${
+                            variant === "compact"
+                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
+                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
+                          }`}
                           title="3rd Place"
                         >
                           3
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">{userIndex + 1}</span>
+                        <span className={`text-muted-foreground ${
+                          variant === "compact" ? "text-sm" : "text-xs sm:text-sm"
+                        }`}>{userIndex + 1}</span>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium text-left">
-                      <div className="flex items-center">
-                        <span
-                          className="truncate hover:underline cursor-pointer"
-                          onClick={() => onViewUser && onViewUser(user)}
-                        >
-                          {displayName}
-                        </span>
+                    <TableCell className={`font-medium text-left ${
+                      variant === "compact"
+                        ? "p-3 sm:p-4"
+                        : "p-2 sm:p-4"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                      <span
+                        className={`truncate text-left ${
+                          variant === "compact"
+                            ? "text-sm sm:text-sm max-w-[140px] sm:max-w-none"
+                            : "text-xs sm:text-sm max-w-[120px] sm:max-w-none"
+                        }`}
+                      >
+                        {displayName}
+                      </span>
+                        {/* Show emoji count inline on mobile when samples are hidden */}
+                        {variant === "expanded" && user.recent_emojis && user.recent_emojis.length > 0 && (
+                          <div className="flex md:hidden items-center -space-x-2">
+                            {user.recent_emojis.slice(0, 2).map((sampleEmoji) => (
+                              <img
+                                key={sampleEmoji.name + sampleEmoji.created}
+                                src={sampleEmoji.url}
+                                alt={sampleEmoji.name}
+                                className="h-5 w-5 rounded-full border border-background"
+                                loading="lazy"
+                                onClick={(e) => { 
+                                  e.stopPropagation();
+                                  setSelectedEmoji(sampleEmoji); 
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     {variant === "expanded" && (
-                      <TableCell className="text-left"> 
+                      <TableCell className="hidden md:table-cell text-left p-4"> 
                         {user.recent_emojis && user.recent_emojis.length > 0 ? (
                           <div className="flex items-center space-x-1">
                             {user.recent_emojis.slice(0, 5).map((sampleEmoji) => (
@@ -424,9 +486,9 @@ const Leaderboard = ({
                                       src={sampleEmoji.url}
                                       alt={sampleEmoji.name}
                                       className="h-6 w-6 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                                      loading="lazy" // Add lazy loading attribute
+                                      loading="lazy"
                                       onClick={(e) => { 
-                                        e.stopPropagation(); // Prevent row click when clicking emoji
+                                        e.stopPropagation();
                                         setSelectedEmoji(sampleEmoji); 
                                       }}
                                     />
@@ -444,12 +506,16 @@ const Leaderboard = ({
                       </TableCell>
                     )}
                     {dateRange === "all" && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-right p-2 sm:p-4 text-xs sm:text-sm">
                         {typeof user.l4wepw === "number" ? user.l4wepw.toFixed(1) : "-"}
                       </TableCell>
                     )}
                     <TableCell
-                      className="text-right cursor-pointer hover:text-primary transition-colors"
+                      className={`text-right cursor-pointer hover:text-primary transition-colors font-semibold ${
+                        variant === "compact"
+                          ? "p-3 sm:p-4 text-sm sm:text-sm"
+                          : "p-2 sm:p-4 text-xs sm:text-sm"
+                      }`}
                       onClick={() => handleSort("emoji_count")}
                     >
                       {user.emoji_count}

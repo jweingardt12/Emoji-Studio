@@ -23,10 +23,12 @@ import {
   Loader2,
   RotateCcw,
   Download,
-  Check
+  Check,
+  Wand2
 } from "lucide-react"
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
+import { openpanel } from "@/lib/safe-openpanel"
 
 interface EmojiEditorProps {
   emoji: ProcessedEmoji | null
@@ -122,9 +124,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       console.error('Failed to load image:', error)
     }
     
-    // Try to use processedBlob first, fall back to originalFile
-    const blobToUse = emoji.processedBlob || emoji.originalFile
-    img.src = URL.createObjectURL(blobToUse)
+    img.src = URL.createObjectURL(emoji.processedBlob || emoji.originalFile)
   }
 
   // Modern HDR enhancement based on Greg Benz's natural HDR approach
@@ -549,6 +549,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     }
   }
 
+
   if (!emoji) return null
 
   return (
@@ -616,8 +617,8 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
           {/* Controls Section */}
           <div className="space-y-4">
-            <Tabs defaultValue="adjustments" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <Tabs defaultValue="adjustments" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="adjustments">
                   <Sliders className="h-4 w-4 mr-1" />
                   Adjust

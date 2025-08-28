@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -14,6 +15,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
+import { SparklesText } from "@/src/components/magicui/sparkles-text"
 
 interface ProcessingStep {
   id: string
@@ -36,6 +38,7 @@ interface EmojiProcessingModalProps {
   onUpdateName?: (index: number, newName: string) => void
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
   onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
+  onUpdateProcessedEmojis?: (emojis: ProcessedEmoji[]) => void
 }
 
 export function EmojiProcessingModal({
@@ -50,7 +53,8 @@ export function EmojiProcessingModal({
   onDownloadAll,
   onUpdateName,
   onEdit,
-  onEditGifFrames
+  onEditGifFrames,
+  onUpdateProcessedEmojis
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -61,6 +65,8 @@ export function EmojiProcessingModal({
   const [uploadingAll, setUploadingAll] = useState(false)
   const [hasSlack, setHasSlack] = useState(false)
   const [uploadStatuses, setUploadStatuses] = useState<Record<number, 'success' | 'failed' | 'pending'>>({})
+  const [showEIModal, setShowEIModal] = useState(false)
+  const [eiAnalyses, setEiAnalyses] = useState<any[] | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -125,6 +131,13 @@ export function EmojiProcessingModal({
 
     setSteps(newSteps)
   }, [files, currentFileIndex, currentStep, error, isOpen])
+
+  const openEIModalThenEdit = () => {
+    setShowEIModal(true)
+    openpanel.track("Emoji Intelligence: Modal Opened (Pre-Edit)", {
+      emojiCount: processedEmojis.length,
+    })
+  }
 
   if (!mounted || !visible) return null
 
@@ -261,43 +274,59 @@ export function EmojiProcessingModal({
       }`}
       onClick={isProcessingComplete ? onClose : undefined}
     >
-      <Card 
-        className={`relative w-full max-w-lg mx-4 border-border/50 shadow-2xl transition-all duration-300 ${
+      <div 
+        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-        } ${processedEmojis.length > 3 ? 'max-h-[90vh] overflow-hidden flex flex-col' : ''}`}
+        } ${isProcessingComplete ? 'bg-blue-500/30 p-[2px] rounded-xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         {isProcessingComplete && (
+          <div 
+            className="absolute inset-0 rounded-xl"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(147, 197, 253, 0.5) 20%, rgba(147, 197, 253, 0.8) 50%, rgba(147, 197, 253, 0.5) 80%, transparent 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'shine-border 4s linear infinite',
+              maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              maskComposite: 'exclude',
+              WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              padding: '2px'
+            }}
+          />
+        )}
+        <Card className={`relative ${isProcessingComplete ? 'border-0' : 'border-border/50'} shadow-2xl rounded-xl max-h-[85vh] sm:max-h-[90vh] flex flex-col bg-card overflow-hidden`}>
+          {isProcessingComplete && (
           <Button
             size="icon"
             variant="ghost"
-            className="absolute right-2 top-2 h-8 w-8 z-10"
+            className="absolute right-1 top-1 h-7 w-7 z-10"
             onClick={onClose}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         )}
-        <CardHeader className="space-y-1 pb-4">
+        <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Sparkles className="h-5 w-5 text-primary" />
+            <div className="p-1.5 sm:p-2 rounded-full flex-shrink-0 bg-gradient-to-br from-sky-500/15 to-emerald-500/15">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-sky-400" />
             </div>
-            <div>
-              <CardTitle className="text-lg">
-                {isProcessingComplete ? 'Processing Complete!' : 'Creating Slack Emojis'}
+            <div className="min-w-0 pr-6">
+              <CardTitle className="text-base sm:text-lg truncate">
+                {isProcessingComplete ? 'Complete!' : 'Creating Emojis'}
               </CardTitle>
-              <CardDescription className="text-xs">
+              <CardDescription className="text-xs truncate">
                 {isProcessingComplete 
-                  ? `Successfully processed ${processedEmojis.length} emoji${processedEmojis.length > 1 ? 's' : ''}`
-                  : files.length > 0 ? `Processing ${currentFileIndex + 1} of ${files.length} file${files.length > 1 ? 's' : ''}`
-                  : 'Preparing to process files...'
+                  ? `${processedEmojis.length} emoji${processedEmojis.length > 1 ? 's' : ''} ready`
+                  : files.length > 0 ? `${currentFileIndex + 1} of ${files.length}`
+                  : 'Preparing...'
                 }
               </CardDescription>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className={`space-y-4 ${processedEmojis.length > 3 ? 'overflow-y-auto flex-1' : ''}`}>
+        <CardContent className={`p-3 sm:p-4 pt-2 sm:pt-3 space-y-3 ${processedEmojis.length > 2 ? 'overflow-y-auto flex-1' : ''}`}>
           {!isProcessingComplete && (
             <>
               <div className="space-y-2">
@@ -305,7 +334,10 @@ export function EmojiProcessingModal({
                   <span className="text-muted-foreground">Overall progress</span>
                   <span className="font-medium">{Math.round(progress)}%</span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] bg-[length:200%_100%]" />
+                  <div className="relative h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all" style={{ width: `${progress}%` }} />
+                </div>
               </div>
 
               {currentFile && (
@@ -357,13 +389,13 @@ export function EmojiProcessingModal({
           )}
 
           {isProcessingComplete && processedEmojis.length > 0 ? (
-            <div className="space-y-3">
-              <div className="space-y-2">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-1.5 sm:space-y-2">
                 {processedEmojis.map((emoji, index) => (
-                  <div key={index} className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                    uploadingAll && uploadingIndex === index ? 'bg-primary/10 ring-2 ring-primary/20' : 'bg-muted/50'
+                  <div key={index} className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-colors ${
+                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' : 'bg-muted/50'
                   }`}>
-                    <div className="relative w-12 h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
                         src={emoji.blob || emoji.preview} 
                         alt={emoji.name}
@@ -422,42 +454,42 @@ export function EmojiProcessingModal({
                       ) : (
                         <>
                           <button
-                            className="text-left flex items-center gap-1 group"
+                            className="text-left flex items-center gap-0.5 group"
                             onClick={() => handleStartEdit(index, emoji.name)}
                           >
-                            <p className="text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
-                            <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <p className="text-xs sm:text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
+                            <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                           </button>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
                             {emoji.format} • {formatBytes(emoji.processedSize)}
                             {uploadStatuses[index] === 'failed' && (
-                              <span className="text-red-500 ml-2">• Failed to upload</span>
+                              <span className="text-red-500 ml-1">• Failed</span>
                             )}
                           </p>
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
                       {onEdit && emoji.format !== 'GIF' && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7"
+                          className="h-6 w-6 sm:h-7 sm:w-7"
                           onClick={() => onEdit(emoji, index)}
                           title="Edit emoji"
                         >
-                          <Sliders className="h-3.5 w-3.5" />
+                          <Sliders className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
                       )}
                       {onEditGifFrames && emoji.format === 'GIF' && (
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-7 w-7"
+                          className="h-6 w-6 sm:h-7 sm:w-7"
                           onClick={() => onEditGifFrames(emoji, index)}
                           title="Edit GIF frames"
                         >
-                          <Sliders className="h-3.5 w-3.5" />
+                          <Sliders className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                         </Button>
                       )}
                     </div>
@@ -465,75 +497,81 @@ export function EmojiProcessingModal({
                 ))}
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2 pt-1 sm:pt-2">
                 {processedEmojis.length === 1 ? (
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      {onEdit && processedEmojis[0].format !== 'GIF' && (
+                  <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex gap-2">
+                        {onEdit && processedEmojis[0].format !== 'GIF' && (
+                          <Button 
+                            size="sm"
+                            className="flex-1 h-9" 
+                            onClick={() => onEdit(processedEmojis[0], 0)}
+                            variant="outline"
+                          >
+                            <Sliders className="mr-1 h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Edit</span>
+                            <span className="sm:hidden">Edit</span>
+                          </Button>
+                        )}
+                        {onEditGifFrames && processedEmojis[0].format === 'GIF' && (
+                          <Button 
+                            size="sm"
+                            className="flex-1 h-9" 
+                            onClick={() => onEditGifFrames(processedEmojis[0], 0)}
+                            variant="outline"
+                          >
+                            <Sliders className="mr-1 h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Edit Frames</span>
+                            <span className="sm:hidden">Edit</span>
+                          </Button>
+                        )}
                         <Button 
                           size="sm"
-                          className="flex-1" 
-                          onClick={() => onEdit(processedEmojis[0], 0)}
+                          className="flex-1 h-9" 
+                          onClick={() => onDownload(processedEmojis[0])}
                           variant="outline"
                         >
-                          <Sliders className="mr-1.5 h-4 w-4" />
-                          Edit
+                          <Download className="mr-1 h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Download</span>
+                          <span className="sm:hidden">Save</span>
                         </Button>
-                      )}
-                      {onEditGifFrames && processedEmojis[0].format === 'GIF' && (
-                        <Button 
-                          size="sm"
-                          className="flex-1" 
-                          onClick={() => onEditGifFrames(processedEmojis[0], 0)}
-                          variant="outline"
-                        >
-                          <Sliders className="mr-1.5 h-4 w-4" />
-                          Edit Frames
-                        </Button>
-                      )}
+                      </div>
                       <Button 
                         size="sm"
-                        className="flex-1" 
-                        onClick={() => onDownload(processedEmojis[0])}
-                        variant="outline"
-                      >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        Download
-                      </Button>
-                      <Button 
-                        size="sm"
-                        className="flex-1" 
+                        className="flex-1 h-9" 
                         onClick={() => hasSlack ? handleSlackUpload(processedEmojis[0], 0) : undefined}
                         disabled={!hasSlack || uploadingIndex !== null}
                       >
                         {uploadingIndex !== null ? (
                           <>
-                            <div className="mr-1.5 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                            Uploading...
+                            <div className="mr-1 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            <span className="text-sm">Uploading...</span>
                           </>
                         ) : (
                           <>
-                            <Send className="mr-1.5 h-4 w-4" />
-                            Send to Slack
+                            <Send className="mr-1 h-3.5 w-3.5" />
+                            <span className="text-sm">Send to Slack</span>
                           </>
                         )}
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button 
                       size="sm"
-                      className="flex-1" 
+                      className="flex-1 h-9" 
                       onClick={onDownloadAll}
                       variant="outline"
                     >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download All ({processedEmojis.length})
+                      <Download className="mr-1.5 h-3.5 w-3.5" />
+                      <span className="text-sm">Download All ({processedEmojis.length})</span>
                     </Button>
+                    {/* EI consolidated into the editor; no separate optimize button */}
                     <Button 
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 h-9"
                       onClick={async () => {
                         if (hasSlack) {
                           setUploadingAll(true)
@@ -615,33 +653,37 @@ export function EmojiProcessingModal({
                     >
                       {uploadingAll ? (
                         <>
-                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                          {uploadingIndex !== null ? `Uploading ${uploadingIndex + 1}/${processedEmojis.length}...` : 'Uploading...'}
+                          <div className="mr-1.5 h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          <span className="text-sm">
+                            {uploadingIndex !== null ? `${uploadingIndex + 1}/${processedEmojis.length}` : 'Uploading...'}
+                          </span>
                         </>
                       ) : (
                         <>
-                          <Send className="mr-2 h-4 w-4" />
-                          {Object.values(uploadStatuses).some(status => status === 'failed') ? 'Retry Failed Uploads' : 
-                           Object.values(uploadStatuses).some(status => status === 'success') ? 'Send Remaining to Slack' : 
-                           'Send All to Slack'}
+                          <Send className="mr-1.5 h-3.5 w-3.5" />
+                          <span className="text-sm">
+                            {Object.values(uploadStatuses).some(status => status === 'failed') ? 'Retry Failed' : 
+                             Object.values(uploadStatuses).some(status => status === 'success') ? 'Send Rest' : 
+                             'Send All'}
+                          </span>
                         </>
                       )}
                     </Button>
                   </div>
                 )}
                 {!hasSlack && (
-                  <div className="space-y-3 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Want to send emojis directly to Slack? Install our Chrome extension to easily import emojis from any website!
+                  <div className="space-y-2 text-center px-2">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Want to send directly to Slack? Get our Chrome extension!
                     </p>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => window.open('https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa', '_blank')}
-                      className="inline-flex items-center gap-2"
+                      className="inline-flex items-center gap-2 h-8 text-xs sm:text-sm"
                     >
-                      <ChromeIcon className="h-4 w-4 text-blue-500" />
-                      Get Chrome Extension
+                      <ChromeIcon className="h-3.5 w-3.5 text-blue-500" />
+                      Get Extension
                     </Button>
                   </div>
                 )}
@@ -662,6 +704,9 @@ export function EmojiProcessingModal({
           ) : null}
         </CardContent>
       </Card>
+      </div>
+      
+      {/* EI modal removed; handled inside editor */}
     </div>
   )
 

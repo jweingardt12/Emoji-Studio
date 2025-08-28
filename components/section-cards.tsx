@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { useEmojiData } from "@/lib/hooks/use-emoji-data";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InfoDrawer } from "@/components/info-drawer";
+import { InfoDrawerResponsive } from "@/components/info-drawer-responsive";
 import {
   ChartContainer,
   ChartTooltip,
@@ -17,17 +17,14 @@ import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftBlur, setShowLeftBlur] = useState(false);
+  const [showRightBlur, setShowRightBlur] = useState(true);
+  const [now, setNow] = useState<number | null>(null);
   
-  console.log('SectionCards render:', { 
-    hasStats: !!stats, 
-    emojiDataLength: emojiData.length, 
-    useDemoData, 
-    hasRealData,
-    loading 
-  });
+
 
   // Calculate time boundaries (hydration-safe)
-  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Math.floor(Date.now() / 1000));
   }, []);
@@ -35,11 +32,6 @@ export function SectionCards() {
   // Force re-render when emoji data is updated
   useEffect(() => {
     const handleEmojiDataUpdated = (event: Event) => {
-      console.log('SectionCards: emojiDataUpdated event received, forcing re-render');
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.emojiData) {
-        console.log(`SectionCards: Event contains ${customEvent.detail.emojiData.length} emojis`);
-      }
       setNow(Math.floor(Date.now() / 1000)); // Update the timestamp to force recalculation
     };
     
@@ -48,6 +40,22 @@ export function SectionCards() {
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     };
+  }, []);
+
+  // Handle scroll to show/hide blur effects
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setShowLeftBlur(scrollLeft > 10);
+      setShowRightBlur(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  // Check scroll position on mount and resize
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
   }, []);
   
   if (now === null) {
@@ -123,9 +131,9 @@ export function SectionCards() {
 
   if (loading && !useDemoData) {
     return (
-      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 xs:grid-cols-2 gap-3 xs:gap-4 px-2 xs:px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide min-w-fit *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="@container/card">
+          <Card key={i} className="@container/card flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1">
             <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
               <Skeleton className="h-3 xs:h-4 w-16 xs:w-24" />
               <Skeleton className="h-6 xs:h-8 w-24 xs:w-32" />
@@ -142,8 +150,8 @@ export function SectionCards() {
 
   if (!stats && !useDemoData) {
     return (
-      <div className="*:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 xs:grid-cols-2 gap-3 xs:gap-4 px-2 xs:px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card lg:px-6">
-        <Card className="@container/card col-span-full">
+      <div className="*:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+        <Card className="@container/card">
           <CardHeader className="text-center py-4 xs:py-6">
             <CardTitle className="text-base xs:text-lg sm:text-xl">No Emoji Data Yet</CardTitle>
             <CardDescription className="text-xs xs:text-sm">Use the form above to fetch emoji data from your Slack workspace</CardDescription>
@@ -156,25 +164,41 @@ export function SectionCards() {
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
   return (
-    <div>
-      <div className="flex w-full overflow-x-auto snap-x snap-mandatory space-x-4 sm:grid sm:gap-4 sm:space-x-0 grid-cols-2 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+    <div className="relative w-full">
+      {/* Left blur effect - desktop only */}
+      {showLeftBlur && (
+        <div className="hidden sm:block absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+      )}
+      
+      {/* Right blur effect - desktop only */}
+      {showRightBlur && (
+        <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+      )}
+      
+      <div 
+        ref={scrollContainerRef}
+        className="w-full overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth"
+        style={{ scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}
+        onScroll={handleScroll}
+      >
+        <div className="flex gap-3 min-w-fit *:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
         {/* Total Emojis */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">Total Emojis</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">All Unique Emojis</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">Total Emojis</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">All Unique Emojis</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {totalNonAliasEmojis.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-[10px] xs:text-xs ${
+                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-xs xs:text-sm ${
                         emojisLastYear.length > 0
                           ? totalNonAliasEmojis > emojisLastYear.length
                             ? "text-green-600 dark:text-green-400"
@@ -201,13 +225,13 @@ export function SectionCards() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-[10px] xs:text-xs md:text-sm">
-                  <div className="flex gap-0.5 xs:gap-1 font-medium text-[10px] xs:text-xs">
+                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs xs:text-sm md:text-base">
+                  <div className="flex gap-0.5 xs:gap-1 font-medium text-xs xs:text-sm">
                     {totalNonAliasEmojis > emojisLastYear.length
                       ? "Year-over-year growth"
                       : "Year-over-year decline"}
                   </div>
-                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-[10px] xs:text-xs">
+                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs xs:text-sm">
                     {emojisLastYear.length.toLocaleString()} emojis this time last year
                   </div>
                 </CardFooter>
@@ -230,33 +254,33 @@ export function SectionCards() {
               <p><strong>What:</strong> Total number of unique emojis.</p>
               <p><strong>Why:</strong> Reflects team creativity and engagement.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* AEU */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">AEU</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Active Emoji Uploaders</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">AEU</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Active Emoji Uploaders</div>
                   </div>
                   <div className="flex items-center justify-between mt-1 xs:mt-2">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {aeu.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-[10px] xs:text-xs ${aeuChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-0.5 xs:gap-1 rounded-lg text-xs xs:text-sm ${aeuChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />}
                       {Math.abs(aeuChange).toFixed(1)}% W/W
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-[10px] xs:text-xs md:text-sm">
-                  <div className="flex gap-0.5 xs:gap-1 font-medium text-[10px] xs:text-xs">
+                <CardFooter className="px-2 xs:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs xs:text-sm md:text-base">
+                  <div className="flex gap-0.5 xs:gap-1 font-medium text-xs xs:text-sm">
                     {aeu === 0 
                       ? "No active uploaders" 
                       : aeuChange >= 0 
@@ -264,7 +288,7 @@ export function SectionCards() {
                         : "Stagnant participation"} 
                     {aeu > 0 && (aeuChange >= 0 ? <TrendingUpIcon className="size-2.5 xs:size-3" /> : <TrendingDownIcon className="size-2.5 xs:size-3" />)}
                   </div>
-                  <div className="text-muted-foreground text-[10px] xs:text-xs">
+                  <div className="text-muted-foreground text-xs xs:text-sm">
                     {aeu === 0 
                       ? "No uploads this week" 
                       : aeuChange > 10
@@ -297,25 +321,25 @@ export function SectionCards() {
               <p><strong>What:</strong> Number of unique users who have added emojis in the last 7 days.</p>
               <p><strong>Why:</strong> Shows team's engagement and participation.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* EPU */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPU</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Emojis Per User</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPU</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Emojis Per User</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {emojisPerUser.toFixed(2)}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-1 rounded-lg text-xs ${activeUsersCount === 0 ? "text-muted-foreground" : emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-1 rounded-lg text-xs xs:text-sm ${activeUsersCount === 0 ? "text-muted-foreground" : emojisPerUser > 10 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {activeUsersCount === 0 ? (
                         "N/A"
@@ -328,8 +352,8 @@ export function SectionCards() {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
-                  <div className="flex gap-1 font-medium text-xs">
+                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-sm md:text-base">
+                  <div className="flex gap-1 font-medium text-xs xs:text-sm">
                     {activeUsersCount === 0 
                       ? "No active users"
                       : emojisPerUser > 10 
@@ -337,7 +361,7 @@ export function SectionCards() {
                         : "Low engagement"} 
                     {activeUsersCount > 0 && (emojisPerUser > 10 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
-                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs">
+                  <div className="text-muted-foreground truncate whitespace-nowrap overflow-hidden text-xs xs:text-sm">
                     {activeUsersCount === 0
                       ? "No activity this week"
                       : emojisPerUser > 15
@@ -366,33 +390,33 @@ export function SectionCards() {
               <p><strong>What:</strong> Avg. emojis per active user in 7 days.</p>
               <p><strong>Why:</strong> Shows how prolific your emoji creators are.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
         {/* EPW */}
-        <div className="flex-none w-72 snap-start sm:flex-auto sm:w-auto min-h-[128px]">
-          <InfoDrawer
+        <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
+          <InfoDrawerResponsive
             trigger={
               <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm xs:text-base md:text-lg font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPW</span></CardTitle>
-                    <div className="text-xs text-muted-foreground">Emojis Per Week</div>
+                    <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPW</span></CardTitle>
+                    <div className="text-sm text-muted-foreground">Emojis Per Week</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base xs:text-lg sm:text-xl md:text-2xl xl:text-3xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
                       {epw.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
-                      className={`flex gap-1 rounded-lg text-xs ${epwChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`flex gap-1 rounded-lg text-xs xs:text-sm ${epwChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                     >
                       {epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
                       {Math.abs(epwChange).toFixed(1)}% W/W
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-xs md:text-sm">
-                  <div className="flex gap-1 font-medium text-xs">
+                <CardFooter className="px-2 sm:px-2 md:px-3 flex flex-col items-start gap-0.5 text-xs sm:text-sm md:text-base">
+                  <div className="flex gap-1 font-medium text-xs xs:text-sm">
                     {epw === 0 
                       ? "No weekly activity"
                       : epwChange >= 0 
@@ -400,7 +424,7 @@ export function SectionCards() {
                         : "Declining"} 
                     {epw > 0 && (epwChange >= 0 ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />)}
                   </div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-muted-foreground text-xs xs:text-sm">
                     {epw === 0
                       ? "No emojis created"
                       : epwChange >= 0 
@@ -427,9 +451,10 @@ export function SectionCards() {
               <p><strong>What:</strong> Avg. emojis per week in 4 weeks.</p>
               <p><strong>Why:</strong> Shows team's emoji creation pace.</p>
             </div>
-          </InfoDrawer>
+          </InfoDrawerResponsive>
         </div>
       </div>
     </div>
+  </div>
   );
 }

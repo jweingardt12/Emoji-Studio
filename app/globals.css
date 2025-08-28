@@ -2,14 +2,134 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Responsive Sonner toast positioning */
+[data-sonner-toaster] {
+  bottom: 20px !important; /* Desktop: close to bottom */
+}
+
+@media (max-width: 768px) {
+  [data-sonner-toaster] {
+    bottom: calc(env(safe-area-inset-bottom) + 80px) !important; /* Mobile: above bottom nav */
+  }
+}
+
 :root {
   --font-sans: "GeistSans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "GeistMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
 }
 
+/* Prevent pull-to-refresh and elastic scrolling on mobile */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  /* Prevent zooming */
+  touch-action: manipulation;
+}
+
 body {
   font-family: var(--font-sans);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  width: 100%;
+  height: 100%;
+}
+
+/* Lock the viewport only on mobile and when drawer is not open */
+@media (max-width: 768px) {
+  body {
+    position: fixed;
+    overflow: hidden;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  /* Allow normal positioning when drawer is open */
+  body[data-vaul-drawer-wrapper] {
+    position: static !important;
+    overflow: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+  }
+}
+
+/* Native app-like scrolling */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Prevent double-tap zoom */
+  touch-action: manipulation;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+  /* Lock app frame for native feel */
+  .app-frame-locked {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for specific class */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sparkline scan animation */
+@keyframes scan {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(calc(100% + 100vw));
+  }
+  100% {
+    transform: translateX(calc(100% + 100vw));
+  }
+}
+
+/* Smooth momentum scrolling for all scrollable containers */
+.native-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Prevent text selection on mobile for app-like feel */
+@media (max-width: 768px) {
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection only for specific elements */
+  input, textarea, [contenteditable], .selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @layer utilities {
@@ -20,6 +140,163 @@ body {
   }
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Mobile PWA adjustments */
+  @media (max-width: 768px) {
+    /* Prevent zooming on inputs - iOS requires 16px minimum */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px !important;
+      touch-action: manipulation;
+    }
+
+    /* Add padding bottom for mobile nav with more space */
+    .mobile-nav-padding {
+      padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
+      padding-top: env(safe-area-inset-top);
+    }
+
+    /* Hide desktop sidebar on mobile */
+    .sidebar-hidden-mobile {
+      display: none;
+    }
+
+    /* Native app-like touch targets (minimum 44px) */
+    button, a, [role="button"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Larger tap targets for interactive elements */
+    .touch-target {
+      position: relative;
+    }
+
+    .touch-target::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      bottom: -8px;
+      left: -8px;
+    }
+
+    /* Snap scrolling for horizontal lists */
+    .snap-x {
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 1rem;
+    }
+
+    .snap-center {
+      scroll-snap-align: center;
+    }
+
+    .snap-start {
+      scroll-snap-align: start;
+    }
+
+    /* Prevent accidental horizontal scrolling */
+    .no-horizontal-scroll {
+      overflow-x: hidden;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    /* Native-style active states */
+    button:active, a:active, [role="button"]:active {
+      transform: scale(0.97);
+      transition: transform 0.1s ease;
+    }
+
+    /* Disable hover effects on touch devices */
+    @media (hover: none) {
+      button:hover, a:hover {
+        background-color: inherit;
+      }
+    }
+  }
+
+  /* PWA safe area adjustments for iOS */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Safe area utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .py-safe {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mr-safe {
+    margin-right: env(safe-area-inset-right);
+  }
+
+  /* iOS Safari viewport fixes */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    .ios-viewport-fix {
+      height: -webkit-fill-available;
+    }
+
+    /* Use custom viewport height when available */
+    html {
+      height: calc(var(--vh, 1vh) * 100);
+    }
+
+    body {
+      height: calc(var(--vh, 1vh) * 100);
+    }
+  }
+
+  /* Additional iOS Safari bottom nav fixes */
+  @media screen and (max-width: 768px) {
+    /* Ensure bottom nav is always visible above Safari UI */
+    .mobile-bottom-nav {
+      bottom: 0;
+      /* Padding is handled inline in the component */
+    }
+
+    /* Adjust floating button position */
+    .floating-create-btn {
+      bottom: calc(9rem + env(safe-area-inset-bottom));
+    }
+    
+    /* Toast position on mobile */
+    .toast-responsive-position {
+      bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
+    }
   }
 
   /* Ensure main element has rounded corners */
@@ -60,11 +337,11 @@ body {
 
 @layer base {
   :root {
-    --color-1: 330 100% 40%; /* Dark Neon Pink */
-    --color-2: 140 100% 55%; /* Bright Electric Green */
-    --color-3: 210 100% 30%; /* Deep Neon Blue */
-    --color-4: 60 100% 70%; /* Light Neon Yellow */
-    --color-5: 295 100% 45%; /* Dark Neon Purple */
+    --color-1: oklch(66.2% 0.225 25.9); /* Dark Neon Pink */
+    --color-2: oklch(60.4% 0.26 302); /* Bright Electric Green */
+    --color-3: oklch(69.6% 0.165 251); /* Deep Neon Blue */
+    --color-4: oklch(80.2% 0.134 225); /* Light Neon Yellow */
+    --color-5: oklch(90.7% 0.231 133); /* Dark Neon Purple */
     --brand: 50 100% 50%; /* Bright, punchy yellow */
 
     --background: 0 0% 100%;
@@ -102,11 +379,11 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --color-1: 330 100% 40%; /* Dark Neon Pink */
-    --color-2: 140 100% 55%; /* Bright Electric Green */
-    --color-3: 210 100% 30%; /* Deep Neon Blue */
-    --color-4: 60 100% 70%; /* Light Neon Yellow */
-    --color-5: 295 100% 45%; /* Dark Neon Purple */
+    --color-1: oklch(66.2% 0.225 25.9); /* Dark Neon Pink */
+    --color-2: oklch(60.4% 0.26 302); /* Bright Electric Green */
+    --color-3: oklch(69.6% 0.165 251); /* Deep Neon Blue */
+    --color-4: oklch(80.2% 0.134 225); /* Light Neon Yellow */
+    --color-5: oklch(90.7% 0.231 133); /* Dark Neon Purple */
     --brand: 50 100% 50%; /* Bright, punchy yellow */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -144,6 +421,8 @@ body {
   .theme {
     --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
     --animate-shine: shine var(--duration) infinite linear;
+    --animate-shiny-text: shiny-text 8s infinite;
+    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
   }
 }
 
@@ -320,4 +599,71 @@ body {
     background-position: 0% 0%;
     }
   }
+  @keyframes gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  @keyframes shine-border {
+    0% {
+      background-position: -100% 50%;
+    }
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+  @keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+  @keyframes rainbow {
+  0% {
+    background-position: 0%;
+    }
+  100% {
+    background-position: 200%;
+    }
+  }
+  @keyframes ripple {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+}
+
+/* Ensure rainbow animation utility exists for RainbowButton */
+.animate-rainbow {
+  animation: rainbow var(--speed, 2s) linear infinite;
+}
+
+/* Checkerboard pattern for transparent backgrounds */
+.bg-checkerboard {
+  background-image: 
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+}
+
+.dark .bg-checkerboard {
+  background-image: 
+    linear-gradient(45deg, #374151 25%, transparent 25%), 
+    linear-gradient(-45deg, #374151 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #374151 75%), 
+    linear-gradient(-45deg, transparent 75%, #374151 75%);
 }

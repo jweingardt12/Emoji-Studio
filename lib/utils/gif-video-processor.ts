@@ -1,23 +1,58 @@
 import GIF from 'gif.js'
 
+export interface VideoProcessingOptions {
+  speed?: number // Speed multiplier (0.5 = slow, 2.0 = fast)
+  scaleMode?: 'cover' | 'contain' | 'stretch' // How to fit the video in the frame
+}
+
 export class GifVideoProcessor {
   static async videoToAnimatedGif(
     file: File,
     targetSize: number = 128,
     maxFrames: number = 50,
-    maxFileSize: number = 128 * 1024
+    maxFileSize: number = 128 * 1024,
+    options?: VideoProcessingOptions
   ): Promise<Blob> {
+    console.log('[GifVideoProcessor] Starting video to GIF conversion:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      targetSize,
+      maxFrames,
+      maxFileSize
+    })
+    
     return new Promise((resolve, reject) => {
       const video = document.createElement('video')
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!
       
+      // Set video attributes for mobile compatibility
+      video.setAttribute('playsinline', 'true')
+      video.setAttribute('webkit-playsinline', 'true')
+      video.muted = true
+      video.autoplay = false
+      video.preload = 'metadata'
+      
       canvas.width = targetSize
       canvas.height = targetSize
 
       video.onloadedmetadata = async () => {
+        console.log('[GifVideoProcessor] Video metadata loaded:', {
+          duration: video.duration,
+          videoWidth: video.videoWidth,
+          videoHeight: video.videoHeight,
+          options
+        })
         try {
-          const duration = video.duration
+          // Apply options
+          const speed = options?.speed || 1
+          const scaleMode = options?.scaleMode || 'cover'
+          
+          const fullDuration = video.duration
+          const startTime = 0
+          const endTime = fullDuration
+          const duration = fullDuration
           
           // Calculate settings to include entire video, always maximizing frame usage
           const getOptimalSettings = (duration: number, maxFrames: number) => {
@@ -70,12 +105,16 @@ export class GifVideoProcessor {
               video, 
               canvas, 
               ctx, 
-              settings.fps, 
+              settings.fps, // Keep base FPS
               settings.quality, 
               settings.frames,
               scaledSize,
-              settings.speedup || 1.0,
-              settings.captureInterval
+              settings.speedup || 1.0, // Keep base speedup
+              settings.captureInterval,
+              startTime,
+              endTime,
+              scaleMode,
+              speed // Pass speed as separate parameter
             )
             
             if (result && result.size <= maxFileSize) {
@@ -97,7 +136,11 @@ export class GifVideoProcessor {
             maxFrames, // Still use all 50 frames
             48, // Very small size
             speedup,
-            duration / maxFrames
+            duration / maxFrames,
+            startTime,
+            endTime,
+            scaleMode,
+            speed // Pass speed as separate parameter
           )
           
           if (minimalResult) {
@@ -111,8 +154,15 @@ export class GifVideoProcessor {
         }
       }
 
-      video.onerror = () => reject(new Error('Failed to load video'))
-      video.src = URL.createObjectURL(file)
+      video.onerror = (e) => {
+        console.error('[GifVideoProcessor] Video loading error:', e)
+        reject(new Error(`Failed to load video: ${file.name}`))
+      }
+      
+      // Set up video source
+      const videoUrl = URL.createObjectURL(file)
+      console.log('[GifVideoProcessor] Setting video source:', videoUrl)
+      video.src = videoUrl
     })
   }
 
@@ -125,7 +175,11 @@ export class GifVideoProcessor {
     totalFrames: number,
     targetSize: number,
     speedup: number = 1.0,
-    captureInterval?: number
+    captureInterval?: number,
+    startTime: number = 0,
+    endTime?: number,
+    scaleMode: 'cover' | 'contain' | 'stretch' = 'cover',
+    userSpeed: number = 1.0 // User-specified speed adjustment
   ): Promise<Blob | null> {
     return new Promise((resolve) => {
       const gif = new GIF({
@@ -134,11 +188,12 @@ export class GifVideoProcessor {
         width: targetSize,
         height: targetSize,
         workerScript: '/gif.worker.js',
+        repeat: 0, // Always loop (Slack doesn't respect loop setting anyway)
         debug: true // Enable debug mode to see what's happening
       })
 
-      // Calculate frame interval to cover entire video duration
-      const videoDuration = video.duration
+      // Calculate frame interval to cover the trimmed duration
+      const videoDuration = (endTime || video.duration) - startTime
       const frameInterval = captureInterval || (videoDuration / totalFrames)
       let framesAdded = 0
 
@@ -149,8 +204,9 @@ export class GifVideoProcessor {
           return
         }
 
-        // Spread frames evenly across the entire video duration
-        video.currentTime = Math.min(frameIndex * frameInterval, videoDuration - 0.01)
+        // Spread frames evenly across the trimmed video duration
+        const captureTime = startTime + Math.min(frameIndex * frameInterval, videoDuration - 0.01)
+        video.currentTime = captureTime
         
         await new Promise(resolve => {
           video.onseeked = resolve
@@ -159,20 +215,38 @@ export class GifVideoProcessor {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         
-        // Calculate scaling
-        const scale = Math.min(targetSize / video.videoWidth, targetSize / video.videoHeight)
-        const scaledWidth = video.videoWidth * scale
-        const scaledHeight = video.videoHeight * scale
-        const offsetX = (targetSize - scaledWidth) / 2
-        const offsetY = (targetSize - scaledHeight) / 2
+        // Calculate scaling based on scale mode
+        let scaledWidth: number, scaledHeight: number, offsetX: number, offsetY: number
+        
+        if (scaleMode === 'stretch') {
+          // Stretch to fill exactly
+          scaledWidth = targetSize
+          scaledHeight = targetSize
+          offsetX = 0
+          offsetY = 0
+        } else if (scaleMode === 'contain') {
+          // Fit entire image, may add padding
+          const scale = Math.min(targetSize / video.videoWidth, targetSize / video.videoHeight)
+          scaledWidth = video.videoWidth * scale
+          scaledHeight = video.videoHeight * scale
+          offsetX = (targetSize - scaledWidth) / 2
+          offsetY = (targetSize - scaledHeight) / 2
+        } else { // cover
+          // Fill the frame, may crop edges
+          const scale = Math.max(targetSize / video.videoWidth, targetSize / video.videoHeight)
+          scaledWidth = video.videoWidth * scale
+          scaledHeight = video.videoHeight * scale
+          offsetX = (targetSize - scaledWidth) / 2
+          offsetY = (targetSize - scaledHeight) / 2
+        }
         
         // Draw frame
         ctx.drawImage(video, offsetX, offsetY, scaledWidth, scaledHeight)
         
         // Add frame to GIF with correct delay
-        // Apply speedup to make the GIF play faster if needed
+        // Apply both speedup and user speed to make the GIF play at desired speed
         const baseDelay = 1000 / fps // Normal delay based on fps
-        const adjustedDelay = baseDelay / speedup // Speed up the playback
+        const adjustedDelay = baseDelay / (speedup * userSpeed) // Apply both speedup factors
         gif.addFrame(ctx, { copy: true, delay: Math.max(20, Math.round(adjustedDelay)) }) // Min 20ms delay
         framesAdded++
         
@@ -181,7 +255,7 @@ export class GifVideoProcessor {
       }
 
       gif.on('finished', (blob: Blob) => {
-        console.log(`GIF created: ${framesAdded} frames, ${blob.size} bytes`)
+        console.log(`GIF created: ${framesAdded} frames, ${blob.size} bytes, user speed: ${userSpeed}x`)
         resolve(blob)
       })
 
