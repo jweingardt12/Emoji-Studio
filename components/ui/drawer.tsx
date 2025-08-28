@@ -43,12 +43,15 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-[10px] border bg-background max-h-[60vh] overflow-hidden",
         className
       )}
       {...props}
     >
-      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      {/* Sticky handle container */}
+      <div className="sticky top-0 z-10 bg-background rounded-t-[10px] pb-2">
+        <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+      </div>
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

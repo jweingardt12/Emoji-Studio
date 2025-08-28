@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useMemo } from "react"
-import Link from "next/link"
-import { Rss } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,26 +13,23 @@ import { useAnalytics } from "@/lib/analytics"
 import { format } from "date-fns"
 
 export default function EmojiGrid() {
-  const { emojiData, loading, useDemoData } = useEmojiData()
+  const { emojiData, loading } = useEmojiData()
   const analytics = useAnalytics()
   const [dataRefreshKey, setDataRefreshKey] = React.useState(0)
   const [localEmojiData, setLocalEmojiData] = React.useState<Emoji[]>([])
   
   // Update local emoji data when context data changes
   React.useEffect(() => {
-    console.log('[EmojiGrid] Context emojiData changed:', emojiData.length, 'emojis');
     setLocalEmojiData(emojiData)
   }, [emojiData])
   
   // Listen for emoji data updates to force re-render
   React.useEffect(() => {
     const handleEmojiDataUpdated = (event: CustomEvent) => {
-      console.log('EmojiGrid: emojiDataUpdated event received, forcing re-render')
       setDataRefreshKey(prev => prev + 1)
       
       // Use data from event if available
       if (event.detail && event.detail.emojiData) {
-        console.log(`EmojiGrid: Using data from event, ${event.detail.emojiData.length} emojis`);
         setLocalEmojiData(event.detail.emojiData);
       } else {
         // Fallback to localStorage
@@ -43,12 +39,11 @@ export default function EmojiGrid() {
             if (storedData) {
               const parsedData = JSON.parse(storedData)
               if (Array.isArray(parsedData) && parsedData.length > 0) {
-                console.log(`EmojiGrid: Loaded ${parsedData.length} emojis from localStorage directly`)
                 setLocalEmojiData(parsedData)
               }
             }
           } catch (error) {
-            console.error("EmojiGrid: Error loading emoji data from localStorage:", error)
+            // Silent error handling
           }
         }, 150) // Slightly longer delay than the context update
       }
@@ -71,25 +66,14 @@ export default function EmojiGrid() {
   const [selectedUser, setSelectedUser] = React.useState<UserWithEmojiCount | null>(null)
   const [imageErrors, setImageErrors] = React.useState<Record<string, boolean>>({})
 
-  // Log emoji data for debugging
-  React.useEffect(() => {
-    if (localEmojiData && localEmojiData.length > 0) {
-      console.log(`EmojiGrid: Displaying ${localEmojiData.length} emojis`)
-      console.log("First few emojis:", localEmojiData.slice(0, 3))
-    }
-  }, [localEmojiData])
+
 
   // Sort emojis by created descending (newest first) and filter out aliases
   const sorted = React.useMemo(() => {
-    console.log('[EmojiGrid] Computing sorted array with localEmojiData:', localEmojiData.length, 'emojis');
     if (!localEmojiData || localEmojiData.length === 0) return []
     const result = [...localEmojiData]
       .filter((emoji) => !emoji.is_alias) // Filter out aliases
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
-    console.log('[EmojiGrid] Sorted array has', result.length, 'non-alias emojis');
-    if (result.length > 0) {
-      console.log('[EmojiGrid] Newest emoji:', result[0]);
-    }
     return result;
   }, [localEmojiData, dataRefreshKey])
 
@@ -98,7 +82,6 @@ export default function EmojiGrid() {
   const showSeeMore = sorted.length > 20
 
   if (loading) {
-    console.log('[EmojiGrid] Showing loading state');
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
         {Array.from({ length: 12 }).map((_, i) => (
@@ -116,24 +99,12 @@ export default function EmojiGrid() {
 
   // Handle image error
   const handleImageError = (emojiName: string) => {
-    console.log(`Image error for emoji: ${emojiName}`)
     setImageErrors((prev) => ({ ...prev, [emojiName]: true }))
   }
 
   return (
     <>
-      <div className="px-6 pt-6 pb-2 flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Rss className="h-5 w-5" />
-          <Link href="/explorer" className="focus:outline-none cursor-pointer hover:opacity-80">
-            <span className="border-b border-dotted border-muted-foreground">Newest Emojis</span>
-          </Link>
-        </h2>
-        <div className="text-muted-foreground text-sm mt-1">
-          A list of the most recently created emojis. Click an emoji for details.
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-2">
         {sorted.slice(0, displayCount).map((emoji) => (
           <div
             key={`${emoji.name}-${emoji.url}`}

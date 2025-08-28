@@ -23,9 +23,13 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useOpenPanel } from '@openpanel/nextjs';
 import { LoadingOverlay } from "@/components/loading-overlay";
 import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension";
+import { toast } from "sonner"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function SlackCurlInput() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [curlCommand, setCurlCommand] = useState("")
   const [isValid, setIsValid] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -59,6 +63,7 @@ export function SlackCurlInput() {
       validateCurl(curlFromExtension);
       // Store the curl command
       localStorage.setItem("slackCurlCommand", curlFromExtension);
+      try { window.dispatchEvent(new CustomEvent("slackCurlUpdated")) } catch {}
       // Set a flag to auto-submit
       setSuccess('Data received from Chrome extension! Processing...');
       setTimeout(() => {
@@ -282,6 +287,7 @@ export function SlackCurlInput() {
       const workspace = extractWorkspaceName(curlCommand)
       localStorage.setItem("slackCurlCommand", curlCommand)
       localStorage.setItem("workspace", workspace)
+      try { window.dispatchEvent(new CustomEvent("slackCurlUpdated")) } catch {}
       
       setWorkspace(workspace)
 
@@ -400,6 +406,19 @@ export function SlackCurlInput() {
     setIsInstructionsOpen(!isInstructionsOpen);
   };
 
+  const handleClearCurl = () => {
+    setCurlCommand("")
+    setIsValid(null)
+    setIsMasked(false)
+    setError(null)
+    setSuccess(null)
+    localStorage.removeItem("slackCurlCommand")
+    // Focus textarea if available
+    if (textAreaRef.current) {
+      textAreaRef.current.focus()
+    }
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -417,11 +436,11 @@ export function SlackCurlInput() {
                       ref={textAreaRef}
                       value={generateMaskedCurl(curlCommand)}
                       readOnly
-                      className="min-h-[200px] font-mono text-xs opacity-60"
-                      placeholder="curl 'https://your-workspace.slack.com/api/emoji.list...' \"
+                      className="w-full min-h-[160px] sm:min-h-[200px] font-mono text-[13px] sm:text-xs opacity-60"
+                      placeholder="curl 'https://your-workspace.slack.com/api/emoji.list...' \\\" 
                     />
-                    <div className="absolute top-2 right-2 flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                    <div className="absolute top-2 right-2 hidden sm:flex items-center gap-2">
+                      <span className="hidden sm:inline text-xs text-muted-foreground bg-background px-2 py-1 rounded">
                         Sensitive data masked
                       </span>
                       <TooltipProvider delayDuration={0}>
@@ -443,19 +462,55 @@ export function SlackCurlInput() {
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
+                      <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={handleClearCurl}
+                            >
+                              {/* X icon via SVG to avoid extra import */}
+                              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                              <span className="sr-only">Clear curl</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="left">
+                            <p>Clear curl</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="mt-2 flex sm:hidden justify-end gap-2">
+                      <Button type="button" variant="outline" size="sm" onClick={handleCopyToClipboard}>
+                        Copy
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={handleClearCurl}>
+                        Clear
+                      </Button>
                     </div>
                   </>
                 ) : (
                   <Textarea
+                    ref={textAreaRef}
                     value={curlCommand}
                     onChange={handleChange}
-                    className={`min-h-[200px] font-mono text-xs ${
+                    className={`w-full min-h-[160px] sm:min-h-[200px] font-mono text-[13px] sm:text-xs ${
                       isValid === false ? "border-destructive" : ""
                     }`}
-                    placeholder="curl 'https://your-workspace.slack.com/api/emoji.list...' \"
+                    placeholder="curl 'https://your-workspace.slack.com/api/emoji.list...' \\\" 
                   />
                 )}
               </div>
+              {!isMasked && (
+                <div className="flex justify-end gap-2 -mt-1 sm:-mt-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleClearCurl}>
+                    Clear
+                  </Button>
+                </div>
+              )}
               
               {isValid === false && curlCommand && (
                 <Alert variant="destructive">
@@ -483,7 +538,12 @@ export function SlackCurlInput() {
                 <Alert variant="destructive">
                   <AlertCircleIcon className="h-4 w-4" />
                   <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {error}
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" variant="outline" type="button" onClick={handleClearCurl}>Clear curl</Button>
+                    </div>
+                  </AlertDescription>
                 </Alert>
               )}
               

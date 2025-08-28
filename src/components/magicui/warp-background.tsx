@@ -40,8 +40,8 @@ const Beam = ({
         } as React.CSSProperties
       }
       className={`absolute left-[var(--x)] top-0 [aspect-ratio:1/var(--aspect-ratio)] [background:var(--background)] [width:var(--width)]`}
-      initial={{ y: "100cqmax", x: "-50%" }}
-      animate={{ y: "-100%", x: "-50%" }}
+      initial={{ y: `${Math.floor(Math.random() * 200 - 100)}cqmax`, x: "-50%" }}
+      animate={{ y: "-150cqmax", x: "-50%" }}
       transition={{
         duration,
         delay,
@@ -78,10 +78,11 @@ export const WarpBackground: React.FC<WarpBackgroundProps> = ({
     return beams;
   }, [beamsPerSide, beamSize, beamDelayMax, beamDelayMin]);
 
-  const topBeams = useMemo(() => generateBeams(), [generateBeams]);
-  const rightBeams = useMemo(() => generateBeams(), [generateBeams]);
-  const bottomBeams = useMemo(() => generateBeams(), [generateBeams]);
-  const leftBeams = useMemo(() => generateBeams(), [generateBeams]);
+  // vary beams per edge to avoid visible sync and restarts
+  const topBeams = useMemo(() => generateBeams().map(b => ({ ...b, delay: b.delay * 0.7 })), [generateBeams]);
+  const rightBeams = useMemo(() => generateBeams().map(b => ({ ...b, delay: b.delay * 1.1 })), [generateBeams]);
+  const bottomBeams = useMemo(() => generateBeams().map(b => ({ ...b, delay: b.delay * 1.3 })), [generateBeams]);
+  const leftBeams = useMemo(() => generateBeams().map(b => ({ ...b, delay: b.delay * 0.9 })), [generateBeams]);
 
   return (
     <div className={cn("relative rounded border p-20", className)} {...props}>

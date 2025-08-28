@@ -1,31 +1,79 @@
 {
   "name": "Emoji Studio",
-  "short_name": "EmojiStudio",
+  "short_name": "Emoji Studio",
   "description": "Professional analytics dashboard for any company's custom Slack emojis.",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "orientation": "portrait",
+  "background_color": "#0f0f0f",
+  "theme_color": "#1a1a1a",
+  "categories": ["productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "/assets/screenshots/main-dashboard-view.png",
+      "type": "image/png",
+      "sizes": "1920x1080",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/assets/screenshots/explorer-view.png",
+      "type": "image/png",
+      "sizes": "1920x1080",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
     {
-      "src": "/logo-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/pwa-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/logo-192.png",
+      "src": "/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/apple-touch-icon-new.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Emoji",
+      "short_name": "Create",
+      "description": "Create a new emoji",
+      "url": "/create",
+      "icons": [{ "src": "/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Emojis",
+      "short_name": "My Emojis",
+      "description": "View your emojis",
+      "url": "/my-emojis",
+      "icons": [{ "src": "/pwa-icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

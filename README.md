@@ -1,6 +1,7 @@
 # Emoji Studio: Analytics Platform for Slack Custom Emojis
 
 [![Product Hunt](https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=969390&theme=light&t=1748379392664)](https://www.producthunt.com/posts/emoji-studio-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-emoji&#0045;studio&#0045;2)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-FFDD00?logo=buymeacoffee&logoColor=000&labelColor=555&style=for-the-badge)](https://www.buymeacoffee.com/jasonw)
 
 ![Emoji Studio Dashboard](/assets/screenshots/og-image.png)
 

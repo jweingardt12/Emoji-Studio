@@ -202,10 +202,42 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   /*  Handle click → open modal                                           */
   /* -------------------------------------------------------------------- */
+  // Handle chart clicks - full functionality on desktop, dots only on mobile
   const handleDataPointClick = (d: any) => {
-    if (!d?.activePayload?.length || !emojiData.length) return;
-    const payload = d.activePayload[0].payload;
-    if (!payload?.date) return;
+    console.log('Chart clicked:', d);
+    
+    // Handle the new event structure (chart area clicks)
+    if (d && d.activeLabel && typeof d.activeIndex !== 'undefined') {
+      const index = parseInt(d.activeIndex);
+      if (chartData && chartData[index]) {
+        const payload = chartData[index];
+        console.log('Processing data point:', payload);
+        processDataPoint(payload);
+        return;
+      }
+    }
+    
+    // Handle direct dot click (when d is the data point itself)
+    if (d && d.payload && d.payload.date) {
+      const payload = d.payload;
+      console.log('Direct dot click detected, payload:', payload);
+      processDataPoint(payload);
+      return;
+    }
+    
+    // Handle chart area click (when d has activePayload) - legacy support
+    if (d?.activePayload?.length && emojiData.length) {
+      const payload = d.activePayload[0].payload;
+      if (payload?.date) {
+        console.log('Chart area click detected, payload:', payload);
+        processDataPoint(payload);
+      }
+    }
+  };
+
+  const processDataPoint = (payload: any) => {
+    if (!payload?.date || !emojiData.length) return;
+    console.log('Processing payload:', payload);
 
     try {
       const monthly =
@@ -276,12 +308,7 @@ export function ChartAreaInteractive() {
             <span className="border-b border-dotted border-muted-foreground">Emoji Trends</span>
           </Link>
         </h2>
-        <CardDescription className="text-xs xs:text-sm">
-          <span className="@[540px]/card:block hidden">
-            Click a point to see that day’s emojis.
-          </span>
-          <span className="@[540px]/card:hidden">Tap a point to see that day’s emojis.</span>
-        </CardDescription>
+
 
         {/* time-range controls */}
         <div className="absolute right-2 xs:right-3 sm:right-4 top-3 xs:top-4 flex items-center gap-1 xs:gap-2">
@@ -330,8 +357,8 @@ export function ChartAreaInteractive() {
         >
           <AreaChart
             data={chartData}
-            onClick={handleDataPointClick}
-            style={{ cursor: "pointer" }}
+            onClick={!isMobile ? handleDataPointClick : undefined}
+            style={{ cursor: !isMobile ? "pointer" : "default" }}
             margin={{ top: 10, right: 5, left: 5, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -502,14 +529,16 @@ export function ChartAreaInteractive() {
               strokeWidth={2}
               fill="url(#createdGradient)"
               fillOpacity={0.3}
-              activeDot={{
-                r: isMobile ? 4 : 6,
+              dot={chartData.length <= 31 ? {
+                r: isMobile ? 2 : 3,
                 fill: "var(--color-created)",
-                stroke: "#fff",
-                strokeWidth: isMobile ? 1.5 : 2,
-              }}
+                stroke: "var(--color-created)",
+                strokeWidth: isMobile ? 1 : 2,
+                style: { cursor: isMobile ? "default" : "pointer" },
+              } : false}
               connectNulls
               isAnimationActive={false}
+              onClick={handleDataPointClick}
             />
             <Area
               type="monotone"
@@ -519,14 +548,16 @@ export function ChartAreaInteractive() {
               strokeWidth={2}
               fill="url(#contributorsGradient)"
               fillOpacity={0.3}
-              activeDot={{
-                r: isMobile ? 4 : 6,
+              dot={chartData.length <= 31 ? {
+                r: isMobile ? 2 : 3,
                 fill: "#FF00B8",
-                stroke: "#fff",
-                strokeWidth: isMobile ? 1.5 : 2,
-              }}
+                stroke: "#FF00B8",
+                strokeWidth: isMobile ? 1 : 2,
+                style: { cursor: isMobile ? "default" : "pointer" },
+              } : false}
               connectNulls
               isAnimationActive={false}
+              onClick={handleDataPointClick}
             />
 
             <Legend verticalAlign="bottom" height={isMobile ? 28 : 36} iconType="plainline" />
