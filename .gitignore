@@ -72,8 +72,6 @@ setup-ios-https.md
 
 # Config files (keep local)
 middleware.ts
-postcss.config.mjs
-tsconfig.json
 
 # Package manager files (only track package-lock.json)
 pnpm-lock.yaml
