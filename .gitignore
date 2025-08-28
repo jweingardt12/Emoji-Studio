@@ -58,3 +58,27 @@ placeholder-*
 *.debug.*
 /app/pwa-test/
 /app/test-*/
+jest.config.js
+jest.setup.js
+TESTING_GUIDE.md
+
+# HTTPS/server setup files
+https-*.sh
+https-*.mjs
+https-*.js
+server-https.js
+start-https.*
+setup-ios-https.md
+
+# Config files (keep local)
+middleware.ts
+postcss.config.mjs
+tsconfig.json
+
+# Package manager files (only track package-lock.json)
+pnpm-lock.yaml
+yarn.lock
+
+# Documentation files in root (except README)
+/*.md
+!README.md
