@@ -79,7 +79,7 @@
     "libgif": "^0.0.3",
     "lucide-react": "^0.454.0",
     "motion": "^12.17.3",
-    "next": "15.2.4",
+    "next": "15.5.2",
     "next-themes": "^0.4.4",
     "omggif": "^1.0.10",
     "onnxruntime-web": "1.21.0",
