@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { decompressCurl } from "@/lib/utils/compress-curl"
+import { decryptCurlCode } from "@/lib/utils/pairing-crypto"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
@@ -27,22 +28,31 @@ export default function PairPage() {
     const sid = params.get("sid") // Fallback for session-based format
     
     if (compressedData && !processingPairing) {
-      // Compressed curl data - decompress and import
       setProcessingPairing(true)
       openpanel.track("Mobile QR Pairing: Started", {
         source: "compressed_data"
       })
-      
-      try {
-        // Decompress the curl command from the compressed data
-        const curl = decompressCurl(compressedData)
-        console.log("Decompressed curl command successfully")
-        handleCurlImport(curl)
-      } catch (error) {
-        console.error("Failed to decompress curl:", error)
-        toast.error("Invalid QR code data")
-        router.replace("/settings#connection")
-      }
+
+      ;(async () => {
+        try {
+          let curl: string
+          try {
+            curl = await decryptCurlCode(compressedData)
+            console.log("Decrypted curl command successfully")
+          } catch (decryptError) {
+            console.warn("Failed to decrypt pairing code, attempting legacy decode:", decryptError)
+            curl = decompressCurl(compressedData)
+            console.log("Decompressed legacy curl command successfully")
+          }
+          await handleCurlImport(curl)
+        } catch (error) {
+          console.error("Failed to process pairing data:", error)
+          toast.error("Invalid QR code data")
+          router.replace("/settings#connection")
+        } finally {
+          setProcessingPairing(false)
+        }
+      })()
     } else if (encodedCurl && !processingPairing) {
       // Old format - direct base64 encoded curl
       setProcessingPairing(true)
@@ -240,8 +250,17 @@ export default function PairPage() {
       })
       toast.error("QR does not contain pairing data")
     } catch {
+      if (/^[A-Za-z0-9_-]+$/.test(text)) {
+        openpanel.track("Mobile QR Pairing: QR Scanned", {
+          type: "encrypted_code"
+        })
+        setScanOpen(false)
+        router.push(`/pair?data=${encodeURIComponent(text)}`)
+        return
+      }
+
       openpanel.track("Mobile QR Pairing: Invalid QR", {
-        reason: "invalid_url"
+        reason: "invalid_content"
       })
       toast.error("Invalid QR content")
     }

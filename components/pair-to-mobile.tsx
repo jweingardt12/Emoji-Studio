@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { RainbowButton } from "@/src/components/magicui/rainbow-button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle as AlertCircleIcon, Link2 as LinkIcon, QrCode, ExternalLink, Smartphone } from "lucide-react"
+import { AlertCircle as AlertCircleIcon, Link2 as LinkIcon, QrCode, ExternalLink, Smartphone, Copy } from "lucide-react"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { compressCurl } from "@/lib/utils/compress-curl"
 import { toast } from "sonner"
@@ -17,6 +17,9 @@ export function PairToMobile() {
   const [qrError, setQrError] = useState<string | null>(null)
   const [scanOpen, setScanOpen] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [copying, setCopying] = useState(false)
+  const [compressedCode, setCompressedCode] = useState<string>("")
+  const [codeSourceCurl, setCodeSourceCurl] = useState<string | null>(null)
   const [isDesktop, setIsDesktop] = useState(true) // Default to true to avoid SSR mismatch
 
   // Check if we're on desktop/mobile
@@ -40,58 +43,87 @@ export function PairToMobile() {
       const parsed = parseSlackCurl(saved)
       const valid = !!saved && parsed.isValid && !parsed.error
       setIsValidCurl(valid)
-      
-      // Generate QR on desktop when we have a valid curl
-      if (valid && isDesktop) {
-        // Only generate if we don't have a QR yet
-        if (!qrDataUrl) {
-          await generateQrSession()
-        }
-      } else {
-        // Clear QR if invalid or on mobile
+
+      if (!valid || !isDesktop) {
         setQrDataUrl("")
+        setCompressedCode("")
+        setCodeSourceCurl(null)
+        return
+      }
+
+      try {
+        await generateQrPayload(false, saved)
+      } catch (error) {
+        console.error("Auto QR generation failed:", (error as Error)?.message || error)
       }
     }
+
     load()
     const handler = () => load()
     window.addEventListener("slackCurlUpdated", handler)
     return () => window.removeEventListener("slackCurlUpdated", handler)
-  }, [isDesktop]) // Only depend on isDesktop, not qrDataUrl or generating
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop])
 
-  const generateQrSession = async () => {
+  const ensureCompressedCode = (currentCurl?: string, forceNew = false) => {
+    const storedCurl = currentCurl ?? localStorage.getItem("slackCurlCommand") ?? ""
+
+    if (!storedCurl) {
+      throw new Error("No workspace info found")
+    }
+
+    if (!forceNew && compressedCode && codeSourceCurl === storedCurl) {
+      return compressedCode
+    }
+
+    const code = compressCurl(storedCurl)
+    setCompressedCode(code)
+    setCodeSourceCurl(storedCurl)
+    return code
+  }
+
+  const generateQrPayload = async (forceNew = false, presetCurl?: string) => {
     try {
       setGenerating(true)
       setQrError(null)
-      
-      // Get the current curl command
-      const currentCurl = localStorage.getItem("slackCurlCommand") || ""
-      if (!currentCurl) {
-        throw new Error("No curl command found")
-      }
-      
-      // Compress the curl command to just essential data
-      const compressed = compressCurl(currentCurl)
-      console.log('Compressed curl data length:', compressed.length, 'vs original:', currentCurl.length)
-      
-      // QR code contains ONLY the compressed data
-      console.log('QR Code data length:', compressed.length)
-      
-      // Import qrcode library
+
+      const code = ensureCompressedCode(presetCurl, forceNew)
       const QRCode = await import("qrcode")
-      const dataUrl = await QRCode.toDataURL(compressed, { 
-        errorCorrectionLevel: 'M', // Medium error correction for better balance
-        margin: 2, 
-        width: 400, // Larger size for easier scanning
-        version: undefined // Let it auto-select the best version
+      const dataUrl = await QRCode.toDataURL(code, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 360,
+        version: undefined,
       })
       setQrDataUrl(dataUrl)
       setQrError(null)
     } catch (e: any) {
       console.error("Failed generating QR code:", e?.message || e)
-      setQrError("QR generation failed. Click 'Regenerate QR' to retry.")
+      setQrError(e?.message || "QR generation failed. Click 'Regenerate QR' to retry.")
       setQrDataUrl("")
+      setCompressedCode("")
+      setCodeSourceCurl(null)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const copyWorkspaceInfo = async () => {
+    if (!("clipboard" in navigator) || typeof navigator.clipboard?.writeText !== "function") {
+      toast.error("Clipboard not supported in this browser")
+      return
+    }
+
+    try {
+      setCopying(true)
+      const code = ensureCompressedCode()
+      await navigator.clipboard.writeText(code)
+      toast.success("Workspace payload copied")
+    } catch (error: any) {
+      console.error("Failed to copy workspace info:", error?.message || error)
+      toast.error(error?.message || "Failed to copy workspace info")
+    } finally {
+      setCopying(false)
     }
   }
 
@@ -124,17 +156,21 @@ export function PairToMobile() {
           toast.error("QR does not contain pairing data")
         }
       } else {
-        // Handle raw compressed data (new simplified format)
-        // Verify it looks like our compressed format (base64-like string)
-        if (/^[A-Za-z0-9_-]+$/.test(text)) {
-          // Close the scanner immediately
+        const trimmed = text.trim()
+
+        // Handle session codes (hex encoded, 8-48 chars)
+        if (/^[a-fA-F0-9]{8,48}$/.test(trimmed)) {
           setScanOpen(false)
-          
-          // Get the origin for navigation
           const origin = window.location.origin
-          
-          // Navigate to the pairing page with the compressed data
-          window.location.href = `${origin}/pair?data=${encodeURIComponent(text)}`
+          window.location.href = `${origin}/pair?sid=${encodeURIComponent(trimmed)}`
+          return
+        }
+
+        // Handle encrypted code (base64-url string)
+        if (/^[A-Za-z0-9_-]+$/.test(trimmed)) {
+          setScanOpen(false)
+          const origin = window.location.origin
+          window.location.href = `${origin}/pair?data=${encodeURIComponent(trimmed)}`
         } else {
           toast.error("Invalid QR code format")
         }
@@ -206,6 +242,16 @@ export function PairToMobile() {
                 Scan Desktop QR Code
               </RainbowButton>
               <QrScanDrawer open={scanOpen} onOpenChange={setScanOpen} onDetected={handleScanDetected} />
+              <Button
+                variant="outline"
+                size="lg"
+                className="mt-3 w-full"
+                onClick={copyWorkspaceInfo}
+                disabled={copying || !isValidCurl}
+              >
+                <Copy className="mr-2 h-5 w-5" />
+                {copying ? "Copying..." : "Copy Workspace Info to Clipboard"}
+              </Button>
               
               {/* iOS TestFlight link */}
               <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
@@ -271,13 +317,22 @@ export function PairToMobile() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => generateQrSession()} 
+                          onClick={() => generateQrPayload(true)} 
                           disabled={generating}
                         >
                           Retry Generation
                         </Button>
                       </>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyWorkspaceInfo}
+                      disabled={copying || !isValidCurl}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      {copying ? "Copying..." : "Copy Workspace Info to Clipboard"}
+                    </Button>
                   </div>
                 )}
               </>
