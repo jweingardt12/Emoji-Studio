@@ -202,22 +202,22 @@ export function PairToMobile() {
               Scan this QR with your phone to import your Slack connection.
             </p>
             
-            {/* iOS TestFlight link for desktop */}
+            {/* iOS app link for desktop */}
             <div className="hidden md:block">
               <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-border">
                 <div className="flex items-start gap-2">
                   <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex-1 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      <strong>Have an iPhone or iPad?</strong> Join the Emoji Studio TestFlight beta for the native iOS app experience!
+                      <strong>Have an iPhone or iPad?</strong> Download the Emoji Studio iOS app for the full native experience!
                     </p>
                     <Button
                       variant="outline"
                       size="sm"
                       asChild
                     >
-                      <a href="https://emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
-                        Join iOS TestFlight
+                      <a href="https://www.emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
+                        Get Emoji Studio for iOS
                         <ExternalLink className="ml-2 h-3 w-3" />
                       </a>
                     </Button>
@@ -253,13 +253,13 @@ export function PairToMobile() {
                 {copying ? "Copying..." : "Copy Workspace Info to Clipboard"}
               </Button>
               
-              {/* iOS TestFlight link */}
+              {/* iOS app link */}
               <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-border">
                 <div className="flex items-start gap-2">
                   <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex-1 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Want the native iOS app? Join the TestFlight beta!
+                      Want the native iOS app? Download it for free on the App Store!
                     </p>
                     <Button
                       variant="outline"
@@ -267,8 +267,8 @@ export function PairToMobile() {
                       className="w-full"
                       asChild
                     >
-                      <a href="https://emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
-                        Join iOS TestFlight
+                      <a href="https://www.emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
+                        Get Emoji Studio for iOS
                         <ExternalLink className="ml-2 h-3 w-3" />
                       </a>
                     </Button>

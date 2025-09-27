@@ -27,6 +27,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Emoji Studio" />
+        <meta name="apple-itunes-app" content="app-id=6504168150, app-argument=https://app.emojistudio.xyz" />
         <meta name="theme-color" content="#1a1a1a" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
