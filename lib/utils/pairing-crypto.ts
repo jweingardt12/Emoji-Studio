@@ -2,14 +2,17 @@ const SHARED_SECRET = process.env.NEXT_PUBLIC_PAIRING_SECRET || "emoji-studio-sh
 
 let cachedKey: CryptoKey | null = null
 let cachedKeyPromise: Promise<CryptoKey> | null = null
-let cryptoRef: Crypto | typeof import("crypto").webcrypto | null = null
+let cryptoRef: Crypto | null = null
 
-function getCrypto(): Crypto | typeof import("crypto").webcrypto {
+function getCrypto(): Crypto {
   if (cryptoRef) return cryptoRef
-  if (typeof globalThis.crypto !== "undefined") {
-    cryptoRef = globalThis.crypto
+
+  const runtimeCrypto = globalThis.crypto
+  if (runtimeCrypto && typeof runtimeCrypto.getRandomValues === "function") {
+    cryptoRef = runtimeCrypto as Crypto
     return cryptoRef
   }
+
   throw new Error("Web Crypto API is not available in this environment")
 }
 
