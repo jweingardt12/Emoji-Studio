@@ -202,7 +202,6 @@ class UploadQueueManager {
     for (const item of this.ratelimitedQueue) {
       if (this.cancelRequested) break
 
-      item.status = "pending"
       item.attempts = 0
       await this.uploadWithRetry(item)
 

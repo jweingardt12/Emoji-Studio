@@ -1352,7 +1352,7 @@ function EmojiCreatorPage() {
               }
 
               // Dismiss loading toast
-              toast.dismiss(loadingToast.id)
+              loadingToast.dismiss()
 
               if (files.length > 0) {
                 setSelectedFiles(files)
