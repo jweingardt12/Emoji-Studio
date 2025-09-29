@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders, ListChecks, Save } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -67,6 +67,8 @@ export function EmojiProcessingModal({
   const [uploadStatuses, setUploadStatuses] = useState<Record<number, 'success' | 'failed' | 'pending'>>({})
   const [showEIModal, setShowEIModal] = useState(false)
   const [eiAnalyses, setEiAnalyses] = useState<any[] | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     setMounted(true)
@@ -391,10 +393,33 @@ export function EmojiProcessingModal({
           {isProcessingComplete && processedEmojis.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
               <div className="space-y-1.5 sm:space-y-2">
-                {processedEmojis.map((emoji, index) => (
+                {processedEmojis.map((emoji, index) => {
+                  const isSelected = selectedIndices.has(index)
+                  return (
                   <div key={index} className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-colors ${
-                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' : 'bg-muted/50'
+                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' :
+                    isSelected ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/50'
                   }`}>
+                    {selectionMode && (
+                      <button
+                        onClick={() => {
+                          setSelectedIndices(prev => {
+                            const next = new Set(prev)
+                            if (next.has(index)) {
+                              next.delete(index)
+                            } else {
+                              next.add(index)
+                            }
+                            return next
+                          })
+                        }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </button>
+                    )}
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
                         src={emoji.blob || emoji.preview} 
@@ -494,10 +519,54 @@ export function EmojiProcessingModal({
                       )}
                     </div>
                   </div>
-                ))}
+                )})}
+
               </div>
 
               <div className="space-y-2 pt-1 sm:pt-2">
+                {/* Selection controls for multiple emojis */}
+                {processedEmojis.length > 1 && (
+                  <div className="flex items-center justify-between px-1 pb-1 border-b">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectionMode(!selectionMode)}
+                        className="h-8"
+                      >
+                        <ListChecks className={`h-4 w-4 mr-1.5 ${selectionMode ? 'text-primary' : ''}`} />
+                        <span className="text-xs">Select</span>
+                      </Button>
+                      {selectionMode && selectedIndices.size > 0 && (
+                        <>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedIndices.size} selected
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedIndices(new Set())}
+                            className="h-7 text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        // Save as pack functionality (placeholder)
+                        toast.success("Pack feature coming soon!")
+                      }}
+                      className="h-8"
+                    >
+                      <Save className="h-4 w-4 mr-1.5" />
+                      <span className="text-xs">Save as Pack</span>
+                    </Button>
+                  </div>
+                )}
                 {processedEmojis.length === 1 ? (
                   <div className="space-y-2">
                     <div className="flex flex-col sm:flex-row gap-2">

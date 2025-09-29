@@ -11,6 +11,8 @@ import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiEditor } from "@/components/emoji-editor"
 import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
 import { MobileEmojiCreator } from "@/components/mobile-emoji-creator"
+import { PackBrowser } from "@/components/pack-browser"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -80,6 +82,7 @@ function EmojiCreatorPage() {
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
   const [pendingMobileFile, setPendingMobileFile] = useState<File | null>(null)
+  const [showPackBrowser, setShowPackBrowser] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -1000,13 +1003,21 @@ function EmojiCreatorPage() {
                         accept="image/*,video/*,.gif,.webp"
                         onChange={handleFileSelect}
                       />
-                      <Button asChild variant="outline">
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                          Choose Files
-                        </label>
-                      </Button>
+                      <div className="flex gap-2 justify-center">
+                        <Button asChild variant="outline">
+                          <label htmlFor="file-upload" className="cursor-pointer">
+                            Choose Files
+                          </label>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowPackBrowser(true)}
+                        >
+                          Browse Packs
+                        </Button>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-4">
-                        Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM
+                        Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM • Or browse emoji packs
                       </p>
                     </div>
 
@@ -1307,6 +1318,61 @@ function EmojiCreatorPage() {
           onExport={handleGifExport}
         />
       )}
+
+      {/* Pack Browser Sheet */}
+      <Sheet open={showPackBrowser} onOpenChange={setShowPackBrowser}>
+        <SheetContent side="bottom" className="h-[85vh] p-6">
+          <PackBrowser
+            onSelectEmojis={async (emojis) => {
+              // Show loading toast
+              const loadingToast = toast({
+                title: "Loading emojis...",
+                description: `Downloading ${emojis.length} emojis`,
+                duration: Infinity,
+              })
+
+              // Convert pack emojis to Files for processing
+              const files: File[] = []
+
+              for (const emoji of emojis) {
+                try {
+                  const response = await fetch(emoji.imageURL)
+                  const blob = await response.blob()
+                  const ext = emoji.isAnimated ? 'gif' : 'png'
+                  const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
+                  files.push(file)
+                } catch (error) {
+                  console.error(`Failed to load emoji ${emoji.name}:`, error)
+                  toast({
+                    title: "Failed to load emoji",
+                    description: `Could not download ${emoji.name}`,
+                    variant: "destructive",
+                  })
+                }
+              }
+
+              // Dismiss loading toast
+              toast.dismiss(loadingToast.id)
+
+              if (files.length > 0) {
+                setSelectedFiles(files)
+                setShowPackBrowser(false)
+                toast({
+                  title: "Emojis loaded",
+                  description: `${files.length} emojis ready for processing. Click "Process Files" to continue.`,
+                })
+              } else {
+                toast({
+                  title: "No emojis loaded",
+                  description: "All emojis failed to download",
+                  variant: "destructive",
+                })
+              }
+            }}
+            maxSelection={20}
+          />
+        </SheetContent>
+      </Sheet>
     </>
   )
 }
