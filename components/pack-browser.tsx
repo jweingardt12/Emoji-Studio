@@ -66,32 +66,50 @@ export function PackBrowser({
   useEffect(() => {
     const selectedEmojis = getSelectedEmojis()
 
-    // Clear statuses for deselected emojis
-    const newStatuses = new Map<string, NameStatus>()
+    // Create a set of current selection keys
+    const currentKeys = new Set(selectedEmojis.map((e) => `${e.id}|${e.name}`))
 
-    // Check each selected emoji
-    selectedEmojis.forEach(async (emoji) => {
-      const key = `${emoji.id}|${emoji.name}`
+    // Clear statuses for deselected emojis and initialize checking for new ones
+    setNameStatuses((prev) => {
+      const next = new Map<string, NameStatus>()
 
-      // Set to checking initially
-      setNameStatuses((prev) => new Map(prev).set(key, "checking"))
+      // Only keep statuses for currently selected emojis
+      currentKeys.forEach((key) => {
+        // If we already have a status, keep it; otherwise set to checking
+        next.set(key, prev.get(key) || "checking")
+      })
 
-      try {
-        const available = await isEmojiNameAvailable(emoji.name)
-        setNameStatuses((prev) => {
-          const next = new Map(prev)
-          next.set(key, available ? "available" : "taken")
-          return next
-        })
-      } catch (error) {
-        console.error(`Failed to check ${emoji.name}:`, error)
-        setNameStatuses((prev) => {
-          const next = new Map(prev)
-          next.set(key, "available") // Default to available on error
-          return next
-        })
-      }
+      return next
     })
+
+    // Check each selected emoji (use Promise.all to avoid forEach + async)
+    Promise.all(
+      selectedEmojis.map(async (emoji) => {
+        const key = `${emoji.id}|${emoji.name}`
+
+        try {
+          const available = await isEmojiNameAvailable(emoji.name)
+          setNameStatuses((prev) => {
+            // Only update if this emoji is still selected (avoid race conditions)
+            if (!currentKeys.has(key)) return prev
+
+            const next = new Map(prev)
+            next.set(key, available ? "available" : "taken")
+            return next
+          })
+        } catch (error) {
+          console.error(`Failed to check ${emoji.name}:`, error)
+          setNameStatuses((prev) => {
+            // Only update if this emoji is still selected
+            if (!currentKeys.has(key)) return prev
+
+            const next = new Map(prev)
+            next.set(key, "available") // Default to available on error
+            return next
+          })
+        }
+      })
+    )
   }, [selectedIds])
 
   // Debounced search
