@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress"
 import type { Emoji } from "@/lib/services/emoji-service"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useOpenPanel } from '@openpanel/nextjs';
-import { LoadingOverlay } from "@/components/loading-overlay";
+import { EmojiImportStatus } from "@/components/emoji-import-status"
 import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension";
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -39,7 +40,6 @@ export function SlackCurlInput() {
   const [isMasked, setIsMasked] = useState(false);
   const [loadingStage, setLoadingStage] = useState("");
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
-  const [showSuccessState, setShowSuccessState] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const op = useOpenPanel();
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -208,7 +208,7 @@ export function SlackCurlInput() {
       setProgress(70)
       setEmojiData(demoData)
 
-      localStorage.setItem("emojiData", JSON.stringify(demoData))
+      safePersistEmojiDataToLocalStorage(demoData, { source: "slack-curl-input-demo" })
       localStorage.setItem("workspace", "demo-workspace")
       setWorkspace("demo-workspace")
       setHasRealData(true)
@@ -224,8 +224,8 @@ export function SlackCurlInput() {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       setSuccess(`Successfully loaded demo emojis`)
-      setShowSuccessState(true)
       setLoadingStage("")
+      setIsLoading(false)
 
       op.track('demo_mode_loaded', {
         emojiCount: demoData.length,
@@ -235,7 +235,6 @@ export function SlackCurlInput() {
       await new Promise((resolve) => setTimeout(resolve, 1500))
       
       // Start fade out and redirect
-      setIsLoading(false)
       
       // Redirect after a short delay to ensure smooth transition
       setTimeout(() => {
@@ -360,7 +359,7 @@ export function SlackCurlInput() {
 
       setEmojiData(typedEmojis)
       setHasRealData(true)
-      localStorage.setItem("emojiData", JSON.stringify(typedEmojis))
+      safePersistEmojiDataToLocalStorage(typedEmojis, { source: "slack-curl-input" })
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
 
@@ -372,8 +371,8 @@ export function SlackCurlInput() {
       await new Promise((resolve) => setTimeout(resolve, 800))
 
       setSuccess(`Successfully synced emojis from ${workspace}`)
-      setShowSuccessState(true)
       setLoadingStage("")
+      setIsLoading(false)
 
       op.track('slack_emojis_fetched', {
         emojiCount: typedEmojis.length,
@@ -381,12 +380,9 @@ export function SlackCurlInput() {
         hasAliases: data.emojis.some((e: any) => e.is_alias),
       });
 
-      // Show success state for a moment
+      // Show success state for a moment before redirecting
       await new Promise((resolve) => setTimeout(resolve, 1500))
-      
-      // Start fade out and redirect
-      setIsLoading(false)
-      
+
       // Redirect after a short delay to ensure smooth transition
       setTimeout(() => {
         router.push('/dashboard')
@@ -554,6 +550,17 @@ export function SlackCurlInput() {
                   <AlertDescription>{success}</AlertDescription>
                 </Alert>
               )}
+
+              {(isLoading || progress > 0) && (
+                <EmojiImportStatus
+                  isActive={isLoading}
+                  progress={progress}
+                  stage={loadingStage || (isLoading ? "Syncing emojis..." : undefined)}
+                  description={isLoading ? "Hang tight while we fetch your Slack emoji library." : undefined}
+                  isSuccess={!isLoading && progress >= 100}
+                  className="mt-4"
+                />
+              )}
             </div>
             
             <div className="pt-4">
@@ -629,13 +636,6 @@ export function SlackCurlInput() {
           </Collapsible>
         </div>
       </div>
-
-      <LoadingOverlay
-        isOpen={isLoading || showSuccessState}
-        progress={progress}
-        loadingStage={loadingStage}
-        isSuccess={progress === 100}
-      />
     </>
   )
 }

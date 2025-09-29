@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
@@ -746,7 +747,7 @@ export default function SettingsPage() {
         const workspaceName = parsed.workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
-        localStorage.setItem("emojiData", JSON.stringify(sortedData))
+        safePersistEmojiDataToLocalStorage(sortedData, { source: "settings-page" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())

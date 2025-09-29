@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 
 export function useAutoRefresh() {
   const { hasRealData, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -119,7 +120,7 @@ export function useAutoRefresh() {
         const workspaceName = parsed.workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
-        localStorage.setItem("emojiData", JSON.stringify(sortedData))
+        safePersistEmojiDataToLocalStorage(sortedData, { source: "use-auto-refresh" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
