@@ -7,7 +7,8 @@ const CACHE = new Map<
 const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
 
 // Regex pattern to extract emoji data from HTML (same as iOS)
-const EMOJI_PATTERN = /<a\s+class="downloader"[^>]*data-emoji-id-name="([0-9]+)-([^"]+)"[^>]*>.*?<img[^>]*src="([^"]+)"[^>]*>/gs
+// Note: Using [\s\S] instead of . with s flag for broader ES compatibility
+const EMOJI_PATTERN = /<a\s+class="downloader"[^>]*data-emoji-id-name="([0-9]+)-([^"]+)"[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*>/g
 
 function sanitizeEmojiName(name: string): string {
   let sanitized = name
