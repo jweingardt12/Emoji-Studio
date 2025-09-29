@@ -444,16 +444,42 @@ const Leaderboard = ({
                         ? "p-3 sm:p-4"
                         : "p-2 sm:p-4"
                     }`}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between gap-2 sm:gap-3">
                       <span
                         className={`truncate text-left ${
                           variant === "compact"
-                            ? "text-sm sm:text-sm max-w-[140px] sm:max-w-none"
+                            ? "text-sm sm:text-sm max-w-[100px] sm:max-w-[140px]"
                             : "text-xs sm:text-sm max-w-[120px] sm:max-w-none"
                         }`}
                       >
                         {displayName}
                       </span>
+                        {/* Show emoji samples inline for compact variant */}
+                        {variant === "compact" && user.recent_emojis && user.recent_emojis.length > 0 && (
+                          <div className="flex items-center gap-0.5 sm:gap-1 ml-auto">
+                            {user.recent_emojis.slice(0, 10).map((sampleEmoji) => (
+                              <TooltipProvider key={sampleEmoji.name + sampleEmoji.created}>
+                                <Tooltip delayDuration={100}>
+                                  <TooltipTrigger asChild>
+                                    <img
+                                      src={sampleEmoji.url}
+                                      alt={sampleEmoji.name}
+                                      className="h-6 w-6 sm:h-7 sm:w-7 rounded cursor-pointer hover:opacity-80 transition-opacity hover:scale-110"
+                                      loading="lazy"
+                                      onClick={(e) => { 
+                                        e.stopPropagation();
+                                        setSelectedEmoji(sampleEmoji); 
+                                      }}
+                                    />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>:{sampleEmoji.name}:</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ))}
+                          </div>
+                        )}
                         {/* Show emoji count inline on mobile when samples are hidden */}
                         {variant === "expanded" && user.recent_emojis && user.recent_emojis.length > 0 && (
                           <div className="flex md:hidden items-center -space-x-2">
@@ -549,6 +575,7 @@ const Leaderboard = ({
             asChild
             variant="default"
             size="default"
+            className="min-w-[140px]"
           >
             <a href="/leaderboard">See More</a>
           </Button>
@@ -617,7 +644,7 @@ const Leaderboard = ({
       {/* See More CTA for compact mode */}
       {variant === "compact" && (
         <div className="w-full flex justify-center mt-4 mb-2">
-          <Button asChild variant="default" size="default">
+          <Button asChild variant="default" size="default" className="min-w-[140px]">
             <a href="/leaderboard">See More</a>
           </Button>
         </div>

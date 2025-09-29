@@ -131,10 +131,10 @@ export default function EmojiGrid() {
               />
             )}
             <span
-              className="mt-2 text-xs text-muted-foreground text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
+              className="mt-2 text-sm font-medium text-muted-foreground text-center w-full max-w-[160px] truncate overflow-hidden whitespace-nowrap block"
               title={":" + emoji.name + ":"}
             >
-              :{emoji.name && emoji.name.length > 10 ? emoji.name.slice(0, 10) + "…" : emoji.name}:
+              :{emoji.name && emoji.name.length > 20 ? emoji.name.slice(0, 20) + "…" : emoji.name}:
             </span>
             <span
               className="mt-1 text-xs text-slate-400 text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
