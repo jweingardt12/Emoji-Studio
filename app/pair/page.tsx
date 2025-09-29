@@ -11,6 +11,7 @@ import { decryptCurlCode } from "@/lib/utils/pairing-crypto"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { openpanel } from "@/lib/safe-openpanel"
 
 export default function PairPage() {
@@ -128,7 +129,7 @@ export default function PairPage() {
       await settingsStorage.saveSetting("lastFetchTime", new Date().toISOString())
       
       // Keep localStorage for backwards compatibility
-      localStorage.setItem("emojiData", JSON.stringify(emojis))
+      safePersistEmojiDataToLocalStorage(emojis, { source: "pair-page" })
       localStorage.setItem("emojiCount", String(emojis.length))
       localStorage.setItem("lastFetchTime", new Date().toISOString())
       

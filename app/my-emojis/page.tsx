@@ -24,6 +24,7 @@ import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 
 interface Emoji {
   name: string
@@ -198,7 +199,7 @@ function MyEmojisPage() {
         const workspaceName = workspaceUrl || workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
-        localStorage.setItem("emojiData", JSON.stringify(recentData))
+        safePersistEmojiDataToLocalStorage(recentData, { source: "my-emojis-refresh" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", recentData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
@@ -525,7 +526,7 @@ function MyEmojisPage() {
         })
         
         // Update localStorage with the optimistic data
-        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-rename" })
         return updatedData
       })
       
@@ -693,7 +694,7 @@ function MyEmojisPage() {
         })
         
         // Update localStorage with the optimistic data
-        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-replace" })
         return updatedData
       })
       
@@ -864,7 +865,7 @@ function MyEmojisPage() {
         const updatedData = [...prevData, newAliasEmoji]
         
         // Update localStorage with the optimistic data
-        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-add-alias" })
         return updatedData
       })
       
@@ -998,7 +999,7 @@ function MyEmojisPage() {
         })
         
         // Update localStorage with the optimistic data
-        localStorage.setItem("emojiData", JSON.stringify(updatedData))
+        safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-delete" })
         return updatedData
       })
       

@@ -1,17 +1,17 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { initializeExtensionListener, type SlackAuthData, type SyncedEmojiData, type SyncedEmojiMeta } from "@/lib/chrome-extension"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { Emoji } from "@/lib/services/emoji-service"
-import { LoadingOverlay } from "@/components/loading-overlay"
+import { EmojiImportStatus } from "@/components/emoji-import-status"
 import { useOpenPanel } from '@openpanel/nextjs'
 import { toast } from "sonner"
 
 export function ChromeExtensionHandler() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const [isLoading, setIsLoading] = useState(false)
@@ -19,8 +19,6 @@ export function ChromeExtensionHandler() {
   const [loadingStage, setLoadingStage] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [redirectPending, setRedirectPending] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
   const hasProcessed = useRef(false)
   const lastSyncTimeProcessed = useRef(0)
   const op = useOpenPanel()
@@ -48,7 +46,7 @@ export function ChromeExtensionHandler() {
       setHasRealData(true)
       
       // Store in localStorage for persistence
-      localStorage.setItem('emojiData', JSON.stringify(data.emojiData))
+      safePersistEmojiDataToLocalStorage(data.emojiData, { source: 'chrome-extension-handler' })
       localStorage.setItem('workspace', data.workspace)
       localStorage.setItem('emojiCount', data.emojiCount.toString())
       localStorage.setItem('lastFetchTime', data.lastFetchTime)
@@ -272,39 +270,32 @@ export function ChromeExtensionHandler() {
       setHasRealData(true)
       
       // Store in localStorage
-      localStorage.setItem("emojiData", JSON.stringify(typedEmojis))
+      safePersistEmojiDataToLocalStorage(typedEmojis, { source: "chrome-extension-handler-fetch" })
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
       
       setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      
       setSuccess(`Successfully synced emojis from ${workspace}`)
-      
-      // Show success state
-      setShowSuccess(true)
-      
-      // Wait briefly to show success message
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      
-      // Hide overlay
       setIsLoading(false)
-      setShowSuccess(false)
-      setLoadingStage("")
-      setProgress(0)
-      
+
       op.track('chrome_extension_emojis_fetched', {
         emojiCount: typedEmojis.length,
         workspace: workspace,
         hasAliases: responseData.emojis.some((e: any) => e.is_alias),
       })
-      
+
       // Remove the extension parameter from the URL
       const newUrl = new URL(window.location.href)
       newUrl.searchParams.delete('extension')
       window.history.replaceState({}, '', newUrl.toString())
-      
+
+      setTimeout(() => {
+        setProgress(0)
+        setLoadingStage("")
+        setSuccess(null)
+      }, 2000)
+
     } catch (error) {
       console.error('[ChromeExtensionHandler] Error processing extension data:', error)
       setError(error instanceof Error ? error.message : "Unknown error occurred")
@@ -461,11 +452,13 @@ export function ChromeExtensionHandler() {
 
   return (
     <>
-      <LoadingOverlay
-        isOpen={isLoading}
+      <EmojiImportStatus
+        isActive={isLoading}
         progress={progress}
-        loadingStage={loadingStage}
-        isSuccess={showSuccess}
+        stage={loadingStage}
+        description={isLoading ? "Syncing emojis via the Chrome extension." : undefined}
+        isSuccess={Boolean(success) && progress >= 100}
+        className="fixed bottom-6 right-6 z-[9999] w-80"
       />
       {error && !isLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">

@@ -1,4 +1,6 @@
 // IndexedDB wrapper for persistent storage of large data
+import { safePersistEmojiDataToLocalStorage } from "./safe-emoji-local-storage";
+
 const DB_NAME = 'EmojiStudioDB';
 const DB_VERSION = 1;
 
@@ -205,13 +207,21 @@ export const idb = new IndexedDBStorage();
 // Helper functions for emoji data specifically
 export const emojiStorage = {
   async saveEmojis(emojis: any[]): Promise<void> {
+    let storedInIndexedDb = false;
+
     try {
       await idb.setItem('emojis', 'emoji_data', emojis);
+      storedInIndexedDb = true;
       console.log(`Saved ${emojis.length} emojis to IndexedDB`);
     } catch (error) {
       console.error('Failed to save emojis to IndexedDB:', error);
-      // Fallback to localStorage
-      localStorage.setItem('emojiData', JSON.stringify(emojis));
+    }
+
+    if (!storedInIndexedDb) {
+      const result = safePersistEmojiDataToLocalStorage(emojis as any, { source: 'indexedDB-fallback' });
+      if (!result.saved && result.reason) {
+        console.warn(`[EmojiStorage] Emoji data could not be persisted to localStorage fallback: ${result.reason}`);
+      }
     }
   },
 

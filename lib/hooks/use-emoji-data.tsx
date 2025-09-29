@@ -1,7 +1,9 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { toast } from "sonner"
+import { StorageWarningDetail } from "@/lib/storage/safe-emoji-local-storage"
 import { type Emoji, getUserLeaderboard, calculateEmojiStats } from "@/lib/services/emoji-service"
 import { 
   generateDemoChartData, 
@@ -44,6 +46,7 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [demoTimeRange, setDemoTimeRange] = useState("90d")
   const [hasRealData, setHasRealData] = useState(false)
   const [workspace, setWorkspace] = useState<string>("")
+  const hasShownStorageWarningRef = useRef(false)
   
   // Wrapper for setEmojiData to add logging
   const setEmojiData = useCallback((data: Emoji[] | ((prev: Emoji[]) => Emoji[])) => {
@@ -232,6 +235,35 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       window.removeEventListener("emojiDataUpdated", handleEmojiDataUpdated)
     }
   }, [loadEmojiData])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const handleEmojiStorageWarning = (event: Event) => {
+      const detail = (event as CustomEvent<StorageWarningDetail>).detail
+      if (!detail) return
+
+      const { reason, byteSize, limit, source } = detail
+      const payloadMb = byteSize ? (byteSize / (1024 * 1024)).toFixed(1) : null
+      const limitMb = limit ? (limit / (1024 * 1024)).toFixed(1) : null
+      const description = payloadMb && limitMb
+        ? `We fetched about ${payloadMb} MB of emoji data, but browsers typically allow roughly ${limitMb} MB per site. We'll keep your emoji list in memory for this session. Refresh to re-sync when needed.`
+        : `${reason} We'll keep your emoji list in memory for this session. Refresh to re-sync when needed.`
+
+      if (!hasShownStorageWarningRef.current) {
+        toast.warning("Large emoji library detected", {
+          description,
+          duration: 6000,
+        })
+        hasShownStorageWarningRef.current = true
+      } else {
+        console.warn(`[EmojiDataContext] Storage warning repeated from ${source ?? "unknown"}: ${reason}`)
+      }
+    }
+
+    window.addEventListener("emojiStorageWarning", handleEmojiStorageWarning as EventListener)
+    return () => window.removeEventListener("emojiStorageWarning", handleEmojiStorageWarning as EventListener)
+  }, [])
 
   // Filter emojis by date range
   const filterByDateRange = useCallback(

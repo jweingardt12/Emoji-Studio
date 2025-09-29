@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { fetchSlackEmojis } from "@/lib/services/emoji-service"
@@ -587,7 +588,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         setHasRealData(true)
         setSlackLoaded(true)
         console.log('Saving to localStorage...');
-        localStorage.setItem("emojiData", JSON.stringify(sortedData))
+        safePersistEmojiDataToLocalStorage(sortedData, { source: "app-sidebar" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())

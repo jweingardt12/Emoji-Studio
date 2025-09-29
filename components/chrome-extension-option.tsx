@@ -6,10 +6,11 @@ import { CheckCircle as CheckCircleIcon, Download as DownloadIcon, Monitor as Ch
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { initializeExtensionListener, type SlackAuthData, validateSlackAuthData } from "@/lib/chrome-extension"
+import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { useOpenPanel } from '@openpanel/nextjs'
-import { LoadingOverlay } from "@/components/loading-overlay"
+import { EmojiImportStatus } from "@/components/emoji-import-status"
 
 export function ChromeExtensionOption() {
   const router = useRouter()
@@ -19,7 +20,6 @@ export function ChromeExtensionOption() {
   const [success, setSuccess] = useState<string | null>(null)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [loadingStage, setLoadingStage] = useState("")
-  const [showLoadingOverlay, setShowLoadingOverlay] = useState(false)
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const op = useOpenPanel()
   const isConnectingRef = useRef(false)
@@ -117,8 +117,6 @@ export function ChromeExtensionOption() {
     try {
       const workspace = data.workspace || 'slack-workspace'
       
-      // Show loading overlay
-      setShowLoadingOverlay(true)
       setLoadingProgress(10)
       setLoadingStage('Connecting to Slack workspace...')
       
@@ -177,7 +175,7 @@ export function ChromeExtensionOption() {
 
       setEmojiData(responseData.emojis)
       setHasRealData(true)
-      localStorage.setItem("emojiData", JSON.stringify(responseData.emojis))
+      safePersistEmojiDataToLocalStorage(responseData.emojis, { source: "chrome-extension-option" })
       localStorage.setItem("emojiCount", responseData.emojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
 
@@ -190,23 +188,21 @@ export function ChromeExtensionOption() {
       })
 
       setLoadingProgress(100)
-      setLoadingStage('')
+      setLoadingStage('Emoji import complete')
       setSuccess(`Successfully synced emojis from ${workspace}`)
       setIsConnecting(false)
       isConnectingRef.current = false
 
-      // Show success state briefly before starting fade out
       setTimeout(() => {
-        // Start fade out by setting isOpen to false
-        setShowLoadingOverlay(false)
-      }, 1500)
+        router.push('/dashboard')
+      }, 800)
 
     } catch (err) {
       console.error("Error processing extension data:", err)
       setError(err instanceof Error ? err.message : "Failed to process extension data")
       setIsConnecting(false)
       isConnectingRef.current = false
-      setShowLoadingOverlay(false)
+      setLoadingProgress(0)
     }
   }
 
@@ -316,27 +312,27 @@ export function ChromeExtensionOption() {
             </Alert>
           )}
 
-          {success && !showLoadingOverlay && (
+          {success && (
             <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
               <CheckCircleIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertTitle>Success!</AlertTitle>
               <AlertDescription>{success}</AlertDescription>
             </Alert>
           )}
+
+          {(isConnecting || loadingProgress > 0) && (
+            <EmojiImportStatus
+              isActive={isConnecting}
+              progress={loadingProgress}
+              stage={loadingStage || (isConnecting ? "Syncing your Slack emojis..." : undefined)}
+              description={isConnecting ? "Hang tight while we bring your workspace data into Emoji Studio." : undefined}
+              isSuccess={!isConnecting && loadingProgress >= 100}
+              className="mt-4"
+            />
+          )}
         </CardContent>
       </Card>
-      
-      <LoadingOverlay
-        isOpen={showLoadingOverlay}
-        progress={loadingProgress}
-        loadingStage={loadingStage}
-        isSuccess={loadingProgress === 100}
-        onTransitionComplete={() => {
-          if (loadingProgress === 100) {
-            router.push('/dashboard')
-          }
-        }}
-      />
+
     </>
   )
 }

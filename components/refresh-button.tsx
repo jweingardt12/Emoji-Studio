@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { toast } from "sonner"
 import { useState } from "react"
 
@@ -163,7 +164,7 @@ export function RefreshButton() {
         const workspaceName = parsed.workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
-        localStorage.setItem("emojiData", JSON.stringify(sortedData))
+        safePersistEmojiDataToLocalStorage(sortedData, { source: "refresh-button" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { createPortal } from "react-dom"
 import { generateDemoData } from "@/lib/demo-data"
 import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download, Sparkles } from "lucide-react"
@@ -194,7 +195,7 @@ export function DashboardOverlay() {
       await new Promise(resolve => setTimeout(resolve, 3000))
       
       // Store demo data in localStorage
-      localStorage.setItem("emojiData", JSON.stringify(demoData))
+      safePersistEmojiDataToLocalStorage(demoData, { source: "dashboard-overlay" })
       localStorage.setItem("workspace", "Slack Emoji Collection")
       
       // Track successful demo data import
