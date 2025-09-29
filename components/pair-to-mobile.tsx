@@ -209,7 +209,7 @@ export function PairToMobile() {
                   <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex-1 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      <strong>Have an iPhone or iPad?</strong> Join the Emoji Studio TestFlight beta for the native iOS app experience!
+                      <strong>Have an iPhone?</strong> Download the iOS app and elevate your Slack emoji experience.
                     </p>
                     <Button
                       variant="outline"
@@ -217,7 +217,7 @@ export function PairToMobile() {
                       asChild
                     >
                       <a href="https://emojistudio.xyz/mobile" target="_blank" rel="noopener noreferrer">
-                        Join iOS TestFlight
+                        Download the iOS app
                         <ExternalLink className="ml-2 h-3 w-3" />
                       </a>
                     </Button>
@@ -259,7 +259,7 @@ export function PairToMobile() {
                   <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="flex-1 space-y-2">
                     <p className="text-xs text-muted-foreground">
-                      Want the native iOS app? Join the TestFlight beta!
+                      Want a native iOS app? Download the app!
                     </p>
                     <Button
                       variant="outline"
