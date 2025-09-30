@@ -4,6 +4,8 @@
  * Pack Browser Component
  * Browse and select emojis from external packs (Slackmojis, etc.)
  * Based on iOS SlackmojisPickerView patterns
+ *
+ * Now refactored for composability - can be embedded directly into pages
  */
 
 import { useState, useEffect, useMemo } from "react"
@@ -17,23 +19,14 @@ import type { PackEmoji } from "@/lib/types/emoji-pack"
 import { cn } from "@/lib/utils"
 import { isEmojiNameAvailable } from "@/lib/services/emoji-service"
 
-interface PackBrowserProps {
-  onSelectEmojis?: (emojis: PackEmoji[]) => void
-  maxSelection?: number
-  isDemoMode?: boolean
-}
-
 type Tab = "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
+type NameStatus = "checking" | "available" | "taken"
 
-export function PackBrowser({
-  onSelectEmojis,
-  maxSelection = 20,
-  isDemoMode = false,
-}: PackBrowserProps) {
+// Custom hook for pack browser state management
+export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] = []) {
   const [selectedTab, setSelectedTab] = useState<Tab>("popular")
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [selectionMode, setSelectionMode] = useState(true) // Always on
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   // Pack data
@@ -47,7 +40,6 @@ export function PackBrowser({
   const [loading, setLoading] = useState(false)
 
   // Name availability status for selected emojis
-  type NameStatus = "checking" | "available" | "taken"
   const [nameStatuses, setNameStatuses] = useState<Map<string, NameStatus>>(new Map())
   const [editingName, setEditingName] = useState<string | null>(null)
   const [editingValue, setEditingValue] = useState("")
@@ -65,34 +57,23 @@ export function PackBrowser({
   // Check name availability for selected emojis
   useEffect(() => {
     const selectedEmojis = getSelectedEmojis()
-
-    // Create a set of current selection keys
     const currentKeys = new Set(selectedEmojis.map((e) => `${e.id}|${e.name}`))
 
-    // Clear statuses for deselected emojis and initialize checking for new ones
     setNameStatuses((prev) => {
       const next = new Map<string, NameStatus>()
-
-      // Only keep statuses for currently selected emojis
       currentKeys.forEach((key) => {
-        // If we already have a status, keep it; otherwise set to checking
         next.set(key, prev.get(key) || "checking")
       })
-
       return next
     })
 
-    // Check each selected emoji (use Promise.all to avoid forEach + async)
     Promise.all(
       selectedEmojis.map(async (emoji) => {
         const key = `${emoji.id}|${emoji.name}`
-
         try {
-          const available = await isEmojiNameAvailable(emoji.name)
+          const available = await isEmojiNameAvailable(emoji.name, existingEmojis)
           setNameStatuses((prev) => {
-            // Only update if this emoji is still selected (avoid race conditions)
             if (!currentKeys.has(key)) return prev
-
             const next = new Map(prev)
             next.set(key, available ? "available" : "taken")
             return next
@@ -100,17 +81,15 @@ export function PackBrowser({
         } catch (error) {
           console.error(`Failed to check ${emoji.name}:`, error)
           setNameStatuses((prev) => {
-            // Only update if this emoji is still selected
             if (!currentKeys.has(key)) return prev
-
             const next = new Map(prev)
-            next.set(key, "available") // Default to available on error
+            next.set(key, "available")
             return next
           })
         }
       })
     )
-  }, [selectedIds])
+  }, [selectedIds, existingEmojis])
 
   // Debounced search
   useEffect(() => {
@@ -121,7 +100,7 @@ export function PackBrowser({
 
     const timer = setTimeout(() => {
       performSearch(searchQuery)
-    }, 150) // 150ms debounce like iOS
+    }, 150)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
@@ -129,7 +108,6 @@ export function PackBrowser({
   const loadPacks = async () => {
     setLoading(true)
     try {
-      // Load popular first (default tab)
       const popular = await packDiscovery.fetchSlackmojisPopular()
       setPopularEmojis(popular)
     } catch (error) {
@@ -141,7 +119,6 @@ export function PackBrowser({
   }
 
   const loadPackForTab = async (tab: Tab) => {
-    // Skip if already loaded
     if (tab === "popular" && popularEmojis.length > 0) return
     if (tab === "recent" && recentEmojis.length > 0) return
     if (tab === "memes" && memesEmojis.length > 0) return
@@ -190,10 +167,11 @@ export function PackBrowser({
     setLoading(true)
     try {
       const results = await packDiscovery.searchSlackmojis(query)
-      setSearchResults(results)
+      setSearchResults(results || [])
     } catch (error) {
       toast.error("Search failed")
       console.error(error)
+      setSearchResults([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -217,7 +195,7 @@ export function PackBrowser({
       if (next.has(key)) {
         next.delete(key)
       } else {
-        if (!isDemoMode && next.size >= maxSelection) {
+        if (next.size >= maxSelection) {
           toast.error(`Maximum ${maxSelection} emojis per selection`)
           return prev
         }
@@ -229,25 +207,10 @@ export function PackBrowser({
 
   const clearSelection = () => {
     setSelectedIds(new Set())
-  }
-
-  const handleExport = () => {
-    const selected = getSelectedEmojis()
-    if (selected.length === 0) {
-      toast.error("No emojis selected")
-      return
-    }
-
-    // All names are available (checked in sidebar), proceed with export
-    onSelectEmojis?.(selected)
-
-    // Clear selection
-    setSelectedIds(new Set())
     setNameStatuses(new Map())
   }
 
   const getSelectedEmojis = (): PackEmoji[] => {
-    // Get all emojis from all packs
     const allEmojis = [
       ...popularEmojis,
       ...recentEmojis,
@@ -257,7 +220,6 @@ export function PackBrowser({
       ...bufoEmojis,
       ...searchResults,
     ]
-
     return allEmojis.filter((e) => selectedIds.has(`${e.id}|${e.name}`))
   }
 
@@ -270,7 +232,416 @@ export function PackBrowser({
     })
   }
 
-  const selectedEmojis = getSelectedEmojis()
+  return {
+    // State
+    selectedTab,
+    setSelectedTab,
+    searchQuery,
+    setSearchQuery,
+    viewMode,
+    setViewMode,
+    selectedIds,
+    currentEmojis,
+    loading,
+    nameStatuses,
+    editingName,
+    setEditingName,
+    editingValue,
+    setEditingValue,
+
+    // Computed
+    selectedEmojis: getSelectedEmojis(),
+
+    // Actions
+    toggleSelection,
+    clearSelection,
+    removeFromSelection,
+    getSelectedEmojis,
+  }
+}
+
+// Composable components
+
+interface PackBrowserTabsProps {
+  selectedTab: Tab
+  onSelectTab: (tab: Tab) => void
+  searchQuery: string
+}
+
+export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackBrowserTabsProps) {
+  if (searchQuery) return null
+
+  return (
+    <ScrollArea className="w-full whitespace-nowrap">
+      <div className="flex gap-2 pb-2">
+        <Button
+          variant={selectedTab === "popular" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("popular")}
+          className="rounded-full"
+        >
+          Popular
+        </Button>
+        <Button
+          variant={selectedTab === "recent" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("recent")}
+          className="rounded-full"
+        >
+          Recent
+        </Button>
+        <Button
+          variant={selectedTab === "memes" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("memes")}
+          className="rounded-full"
+        >
+          Memes
+        </Button>
+        <Button
+          variant={selectedTab === "blobcats" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("blobcats")}
+          className="rounded-full"
+        >
+          Blob Cats
+        </Button>
+        <Button
+          variant={selectedTab === "partyparrots" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("partyparrots")}
+          className="rounded-full"
+        >
+          Party Parrots
+        </Button>
+        <Button
+          variant={selectedTab === "bufo" ? "default" : "secondary"}
+          size="sm"
+          onClick={() => onSelectTab("bufo")}
+          className="rounded-full"
+        >
+          Bufo
+        </Button>
+      </div>
+    </ScrollArea>
+  )
+}
+
+interface PackEmojiGridProps {
+  emojis: PackEmoji[]
+  loading: boolean
+  viewMode: "grid" | "list"
+  selectedIds: Set<string>
+  onToggleSelection: (emoji: PackEmoji) => void
+}
+
+export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
+  if (loading && emojis.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (emojis.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-48 text-muted-foreground">
+        No emojis found
+      </div>
+    )
+  }
+
+  if (viewMode === "grid") {
+    return (
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+        {emojis.map((emoji) => {
+          const key = `${emoji.id}|${emoji.name}`
+          const isSelected = selectedIds.has(key)
+
+          return (
+            <button
+              key={key}
+              onClick={() => onToggleSelection(emoji)}
+              className={cn(
+                "relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all hover:border-primary/50 hover:bg-accent/50",
+                isSelected
+                  ? "border-primary bg-primary/10"
+                  : "border-transparent bg-muted/30"
+              )}
+            >
+              <div className="relative w-12 h-12 flex-shrink-0">
+                <img
+                  src={emoji.imageURL}
+                  alt={emoji.name}
+                  className="w-full h-full object-contain"
+                  loading="lazy"
+                />
+                <div
+                  className={cn(
+                    "absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background border-muted-foreground/30"
+                  )}
+                >
+                  {isSelected && "✓"}
+                </div>
+              </div>
+              <span className="text-[10px] text-center text-muted-foreground line-clamp-2 w-full leading-tight">
+                {emoji.name}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // List view
+  return (
+    <div className="space-y-2">
+      {emojis.map((emoji) => {
+        const key = `${emoji.id}|${emoji.name}`
+        const isSelected = selectedIds.has(key)
+
+        return (
+          <button
+            key={key}
+            onClick={() => onToggleSelection(emoji)}
+            className={cn(
+              "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50",
+              isSelected
+                ? "border-primary bg-primary/10"
+                : "border-transparent bg-muted"
+            )}
+          >
+            <img
+              src={emoji.imageURL}
+              alt={emoji.name}
+              className="w-12 h-12 object-contain"
+              loading="lazy"
+            />
+            <span className="flex-1 text-left font-medium">
+              :{emoji.name}:
+            </span>
+            {isSelected && (
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+interface PackSelectionSidebarProps {
+  selectedEmojis: PackEmoji[]
+  maxSelection: number
+  nameStatuses: Map<string, NameStatus>
+  editingName: string | null
+  editingValue: string
+  onSetEditingName: (name: string | null) => void
+  onSetEditingValue: (value: string) => void
+  onRemove: (emoji: PackEmoji) => void
+  onClear: () => void
+  onExport: () => void
+  isDemoMode?: boolean
+}
+
+export function PackSelectionSidebar({
+  selectedEmojis,
+  maxSelection,
+  nameStatuses,
+  editingName,
+  editingValue,
+  onSetEditingName,
+  onSetEditingValue,
+  onRemove,
+  onClear,
+  onExport,
+  isDemoMode = false,
+}: PackSelectionSidebarProps) {
+  const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
+  const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
+  const canExport = selectedEmojis.length > 0 && takenCount === 0 && checkingCount === 0
+
+  return (
+    <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
+      <div className="p-4 border-b bg-background">
+        <h3 className="font-semibold text-sm flex items-center justify-between">
+          <span>Selected Emojis</span>
+          <span className="text-muted-foreground">
+            {selectedEmojis.length}/{maxSelection}
+          </span>
+        </h3>
+      </div>
+
+      <ScrollArea className="flex-1 p-3">
+        {selectedEmojis.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
+            <Download className="h-12 w-12 mb-2 opacity-20" />
+            <p className="text-sm">No emojis selected</p>
+            <p className="text-xs">Click emojis to add them here</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {selectedEmojis.map((emoji) => {
+              const key = `${emoji.id}|${emoji.name}`
+              const status = nameStatuses.get(key) || "checking"
+              const isEditing = editingName === key
+
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg bg-background border transition-all group",
+                    status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
+                    status === "available" && "border-green-500/30"
+                  )}
+                >
+                  <img
+                    src={emoji.imageURL}
+                    alt={emoji.name}
+                    className="w-10 h-10 object-contain flex-shrink-0"
+                    loading="lazy"
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    {isEditing ? (
+                      <Input
+                        autoFocus
+                        value={editingValue}
+                        onChange={(e) => {
+                          const sanitized = e.target.value
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")
+                            .replace(/_/g, "-")
+                            .replace(/[^a-z0-9-]/g, "")
+                          onSetEditingValue(sanitized)
+                        }}
+                        onBlur={() => {
+                          onSetEditingName(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            onSetEditingName(null)
+                          }
+                          if (e.key === "Escape") {
+                            onSetEditingName(null)
+                            onSetEditingValue("")
+                          }
+                        }}
+                        className="h-6 text-xs font-mono"
+                      />
+                    ) : (
+                      <button
+                        onClick={() => {
+                          onSetEditingName(key)
+                          onSetEditingValue(emoji.name)
+                        }}
+                        className="flex items-center gap-1 text-left group/name w-full"
+                      >
+                        <span className="text-xs font-mono truncate">
+                          :{emoji.name}:
+                        </span>
+                        <Edit2 className="h-3 w-3 opacity-0 group-hover/name:opacity-50 transition-opacity flex-shrink-0" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {status === "checking" && (
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    )}
+                    {status === "available" && (
+                      <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                    )}
+                    {status === "taken" && (
+                      <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                    )}
+
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => onRemove(emoji)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </ScrollArea>
+
+      <div className="p-4 border-t bg-background space-y-2">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={onClear}
+            disabled={selectedEmojis.length === 0}
+            className="flex-1"
+          >
+            Clear All
+          </Button>
+          <Button
+            onClick={onExport}
+            disabled={!canExport}
+            className="flex-1"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+        </div>
+
+        {checkingCount > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            Checking {checkingCount} name{checkingCount > 1 ? "s" : ""}...
+          </p>
+        )}
+        {takenCount > 0 && (
+          <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
+            {takenCount} name{takenCount > 1 ? "s" : ""} taken - edit to continue
+          </p>
+        )}
+        {!isDemoMode && selectedEmojis.length > maxSelection && (
+          <p className="text-xs text-destructive text-center">
+            Please select max {maxSelection} emojis
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Original full component (kept for backwards compatibility with existing usage)
+interface PackBrowserProps {
+  onSelectEmojis?: (emojis: PackEmoji[]) => void
+  maxSelection?: number
+  isDemoMode?: boolean
+}
+
+export function PackBrowser({
+  onSelectEmojis,
+  maxSelection = 20,
+  isDemoMode = false,
+}: PackBrowserProps) {
+  const packBrowser = usePackBrowser(maxSelection)
+
+  const handleExport = () => {
+    const selected = packBrowser.getSelectedEmojis()
+    if (selected.length === 0) {
+      toast.error("No emojis selected")
+      return
+    }
+    onSelectEmojis?.(selected)
+    packBrowser.clearSelection()
+  }
 
   return (
     <div className="flex h-full gap-4">
@@ -280,346 +651,62 @@ export function PackBrowser({
         <div className="flex-none space-y-3 pb-4">
           {/* Search and view controls */}
           <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search packs..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search packs..."
+                value={packBrowser.searchQuery}
+                onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => packBrowser.setViewMode(packBrowser.viewMode === "grid" ? "list" : "grid")}
+            >
+              {packBrowser.viewMode === "grid" ? (
+                <List className="h-4 w-4" />
+              ) : (
+                <Grid3x3 className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-          >
-            {viewMode === "grid" ? (
-              <List className="h-4 w-4" />
-            ) : (
-              <Grid3x3 className="h-4 w-4" />
-            )}
-          </Button>
+
+          {/* Tab chips */}
+          <PackBrowserTabs
+            selectedTab={packBrowser.selectedTab}
+            onSelectTab={packBrowser.setSelectedTab}
+            searchQuery={packBrowser.searchQuery}
+          />
         </div>
 
-        {/* Tab chips */}
-        {!searchQuery && (
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex gap-2 pb-2">
-              <Button
-                variant={selectedTab === "popular" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("popular")}
-                className="rounded-full"
-              >
-                Popular
-              </Button>
-              <Button
-                variant={selectedTab === "recent" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("recent")}
-                className="rounded-full"
-              >
-                Recent
-              </Button>
-              <Button
-                variant={selectedTab === "memes" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("memes")}
-                className="rounded-full"
-              >
-                Memes
-              </Button>
-              <Button
-                variant={selectedTab === "blobcats" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("blobcats")}
-                className="rounded-full"
-              >
-                Blob Cats
-              </Button>
-              <Button
-                variant={selectedTab === "partyparrots" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("partyparrots")}
-                className="rounded-full"
-              >
-                Party Parrots
-              </Button>
-              <Button
-                variant={selectedTab === "bufo" ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedTab("bufo")}
-                className="rounded-full"
-              >
-                Bufo
-              </Button>
-            </div>
-          </ScrollArea>
-        )}
-      </div>
-
-      {/* Emoji grid/list */}
-      <ScrollArea className="flex-1">
-        {loading && currentEmojis.length === 0 ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : currentEmojis.length === 0 ? (
-          <div className="flex items-center justify-center h-48 text-muted-foreground">
-            No emojis found
-          </div>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
-            {currentEmojis.map((emoji) => {
-              const key = `${emoji.id}|${emoji.name}`
-              const isSelected = selectedIds.has(key)
-
-              return (
-                <button
-                  key={key}
-                  onClick={() => toggleSelection(emoji)}
-                  className={cn(
-                    "relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all hover:border-primary/50 hover:bg-accent/50",
-                    isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-muted/30"
-                  )}
-                >
-                  {/* Emoji image */}
-                  <div className="relative w-12 h-12 flex-shrink-0">
-                    <img
-                      src={emoji.imageURL}
-                      alt={emoji.name}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
-                    />
-                    {/* Selection checkmark */}
-                    {(selectionMode || isSelected) && (
-                      <div
-                        className={cn(
-                          "absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
-                          isSelected
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background border-muted-foreground/30"
-                        )}
-                      >
-                        {isSelected && "✓"}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Emoji name */}
-                  <span className="text-[10px] text-center text-muted-foreground line-clamp-2 w-full leading-tight">
-                    {emoji.name}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {currentEmojis.map((emoji) => {
-              const key = `${emoji.id}|${emoji.name}`
-              const isSelected = selectedIds.has(key)
-
-              return (
-                <button
-                  key={key}
-                  onClick={() => toggleSelection(emoji)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50",
-                    isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-muted"
-                  )}
-                >
-                  <img
-                    src={emoji.imageURL}
-                    alt={emoji.name}
-                    className="w-12 h-12 object-contain"
-                    loading="lazy"
-                  />
-                  <span className="flex-1 text-left font-medium">
-                    :{emoji.name}:
-                  </span>
-                  {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                      ✓
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {/* Emoji grid/list */}
+        <ScrollArea className="flex-1">
+          <PackEmojiGrid
+            emojis={packBrowser.currentEmojis}
+            loading={packBrowser.loading}
+            viewMode={packBrowser.viewMode}
+            selectedIds={packBrowser.selectedIds}
+            onToggleSelection={packBrowser.toggleSelection}
+          />
         </ScrollArea>
       </div>
 
       {/* Selected emojis sidebar (shopping cart) */}
-      <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
-        <div className="p-4 border-b bg-background">
-          <h3 className="font-semibold text-sm flex items-center justify-between">
-            <span>Selected Emojis</span>
-            <span className="text-muted-foreground">
-              {selectedEmojis.length}/{maxSelection}
-            </span>
-          </h3>
-        </div>
-
-        <ScrollArea className="flex-1 p-3">
-          {selectedEmojis.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
-              <Download className="h-12 w-12 mb-2 opacity-20" />
-              <p className="text-sm">No emojis selected</p>
-              <p className="text-xs">Click emojis to add them here</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {selectedEmojis.map((emoji) => {
-                const key = `${emoji.id}|${emoji.name}`
-                const status = nameStatuses.get(key) || "checking"
-                const isEditing = editingName === key
-
-                return (
-                  <div
-                    key={key}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg bg-background border transition-all group",
-                      status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
-                      status === "available" && "border-green-500/30"
-                    )}
-                  >
-                    <img
-                      src={emoji.imageURL}
-                      alt={emoji.name}
-                      className="w-10 h-10 object-contain flex-shrink-0"
-                      loading="lazy"
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      {isEditing ? (
-                        <Input
-                          autoFocus
-                          value={editingValue}
-                          onChange={(e) => {
-                            const sanitized = e.target.value
-                              .toLowerCase()
-                              .replace(/\s+/g, "-")
-                              .replace(/_/g, "-")
-                              .replace(/[^a-z0-9-]/g, "")
-                            setEditingValue(sanitized)
-                          }}
-                          onBlur={() => {
-                            // TODO: Update emoji name and recheck
-                            setEditingName(null)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              setEditingName(null)
-                            }
-                            if (e.key === "Escape") {
-                              setEditingName(null)
-                              setEditingValue("")
-                            }
-                          }}
-                          className="h-6 text-xs font-mono"
-                        />
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingName(key)
-                            setEditingValue(emoji.name)
-                          }}
-                          className="flex items-center gap-1 text-left group/name w-full"
-                        >
-                          <span className="text-xs font-mono truncate">
-                            :{emoji.name}:
-                          </span>
-                          <Edit2 className="h-3 w-3 opacity-0 group-hover/name:opacity-50 transition-opacity flex-shrink-0" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Status indicator */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {status === "checking" && (
-                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                      )}
-                      {status === "available" && (
-                        <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
-                      )}
-                      {status === "taken" && (
-                        <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                      )}
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeFromSelection(emoji)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Footer with actions */}
-        <div className="p-4 border-t bg-background space-y-2">
-          {(() => {
-            const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
-            const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
-            const availableCount = Array.from(nameStatuses.values()).filter((s) => s === "available").length
-            const canExport = selectedEmojis.length > 0 && takenCount === 0 && checkingCount === 0
-
-            return (
-              <>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={clearSelection}
-                    disabled={selectedEmojis.length === 0}
-                    className="flex-1"
-                  >
-                    Clear All
-                  </Button>
-                  <Button
-                    onClick={handleExport}
-                    disabled={!canExport}
-                    className="flex-1"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
-                </div>
-
-                {/* Status messages */}
-                {checkingCount > 0 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Checking {checkingCount} name{checkingCount > 1 ? "s" : ""}...
-                  </p>
-                )}
-                {takenCount > 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-                    {takenCount} name{takenCount > 1 ? "s" : ""} taken - edit to continue
-                  </p>
-                )}
-                {!isDemoMode && selectedEmojis.length > maxSelection && (
-                  <p className="text-xs text-destructive text-center">
-                    Please select max {maxSelection} emojis
-                  </p>
-                )}
-              </>
-            )
-          })()}
-        </div>
-      </div>
-
+      <PackSelectionSidebar
+        selectedEmojis={packBrowser.selectedEmojis}
+        maxSelection={maxSelection}
+        nameStatuses={packBrowser.nameStatuses}
+        editingName={packBrowser.editingName}
+        editingValue={packBrowser.editingValue}
+        onSetEditingName={packBrowser.setEditingName}
+        onSetEditingValue={packBrowser.setEditingValue}
+        onRemove={packBrowser.removeFromSelection}
+        onClear={packBrowser.clearSelection}
+        onExport={handleExport}
+        isDemoMode={isDemoMode}
+      />
     </div>
   )
 }

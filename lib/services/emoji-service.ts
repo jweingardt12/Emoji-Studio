@@ -325,11 +325,17 @@ export function filterNonAliasEmojis(emojis: Emoji[]): Emoji[] {
  * Check if an emoji name is available (not already taken)
  * Returns true if name is available, false if taken
  */
-export async function isEmojiNameAvailable(name: string): Promise<boolean> {
-  // This function needs access to the emoji list
-  // For now, we'll assume it's available and let the actual upload handle conflicts
-  // TODO: Implement proper checking once we have emoji data access
-  return true
+export async function isEmojiNameAvailable(name: string, emojiList: Emoji[] = []): Promise<boolean> {
+  // Normalize the name for comparison (lowercase, no colons)
+  const normalizedName = name.toLowerCase().replace(/:/g, '').trim()
+
+  // Check if any emoji in the list has this name
+  const isTaken = emojiList.some(emoji => {
+    const emojiName = emoji.name.toLowerCase().replace(/:/g, '').trim()
+    return emojiName === normalizedName
+  })
+
+  return !isTaken
 }
 
 export function calculateEmojiStats(emojis: Emoji[], now: number): EmojiStats {

@@ -136,11 +136,22 @@ export async function GET(request: NextRequest) {
     if (category === "bufo") {
       // Special handling for Bufo - use GitHub API
       emojis = await fetchBufoFromGitHub()
+    } else if (query) {
+      // For search queries, try Slackmojis search
+      // If that fails or returns nothing, fall back to searching locally loaded packs
+      try {
+        const url = `https://slackmojis.com/emojis/search?query=${encodeURIComponent(query)}`
+        emojis = await scrapeEmojis(url)
+      } catch (error) {
+        console.error("Slackmojis search failed:", error)
+        // Return empty array instead of erroring - the client will handle it
+        emojis = []
+      }
     } else {
       let url: string
 
-      if (query) {
-        url = `https://slackmojis.com/emojis/search?query=${encodeURIComponent(query)}`
+      if (false) {
+        // This branch is now handled above
       } else {
         switch (category) {
           case "popular":

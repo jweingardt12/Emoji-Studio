@@ -4,15 +4,17 @@ import { useState, useEffect, useCallback } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon } from "lucide-react"
+import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, Package } from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { EmojiEditor } from "@/components/emoji-editor"
 import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
 import { MobileEmojiCreator } from "@/components/mobile-emoji-creator"
-import { PackBrowser } from "@/components/pack-browser"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } from "@/components/pack-browser"
+import type { PackEmoji } from "@/lib/types/emoji-pack"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -63,8 +65,9 @@ const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
 };
 
 function EmojiCreatorPage() {
-  const { hasRealData, loading } = useEmojiData()
+  const { hasRealData, loading, emojiData } = useEmojiData()
   const isMobile = useIsMobile()
+  const [creationMode, setCreationMode] = useState<"upload" | "browse">("upload")
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [processedEmojis, setProcessedEmojis] = useState<ProcessedEmoji[]>([])
   const [processingFiles, setProcessingFiles] = useState<File[]>([])
@@ -82,8 +85,10 @@ function EmojiCreatorPage() {
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
   const [pendingMobileFile, setPendingMobileFile] = useState<File | null>(null)
-  const [showPackBrowser, setShowPackBrowser] = useState(false)
   const { toast } = useToast()
+
+  // Pack browser state
+  const packBrowser = usePackBrowser(20, emojiData)
 
   useEffect(() => {
     setHasSlack(hasSlackConnection())
@@ -946,145 +951,279 @@ function EmojiCreatorPage() {
         <div className="px-3 sm:px-4 lg:px-6">
           <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
             <div className={`${isMobile ? 'pt-2 pb-3' : 'mb-4 sm:mb-6'}`}>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                <span>Create Slack Emojis</span>
-              </h1>
-              {!isMobile && (
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  Upload images, videos, or GIFs to create perfectly formatted Slack emojis.
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    <span>Create Slack Emojis</span>
+                  </h1>
+                  {!isMobile && (
+                    <p className="text-muted-foreground text-sm sm:text-base">
+                      Upload files or browse emoji packs to create perfectly formatted Slack emojis.
+                    </p>
+                  )}
+                </div>
+                {/* Mode Toggle */}
+                <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                  <Button
+                    variant={creationMode === "upload" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setCreationMode("upload")}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload
+                  </Button>
+                  <Button
+                    variant={creationMode === "browse" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setCreationMode("browse")}
+                    className="gap-2"
+                  >
+                    <Package className="h-4 w-4" />
+                    Browse Packs
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Main content grid with sidebar layout */}
+            <div className="flex gap-4">
+              {/* Main content area */}
+              <div className="flex-1 min-w-0">
+                {/* Upload Mode */}
+                {creationMode === "upload" && (
+                  loading ? (
+                    <Card>
+                      <CardHeader>
+                        <Skeleton className="h-5 w-32 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                          <Skeleton className="mx-auto h-12 w-12 mb-4" />
+                          <Skeleton className="h-4 w-48 mx-auto mb-2" />
+                          <Skeleton className="h-8 w-28 mx-auto" />
+                          <Skeleton className="h-3 w-40 mx-auto mt-4" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Upload Files</CardTitle>
+                        <CardDescription>
+                          Drag and drop or click to upload images, videos, or GIFs
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div
+                          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                            isDragging
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Drag and drop your files here, or click to select
+                          </p>
+                          <input
+                            type="file"
+                            id="file-upload"
+                            className="hidden"
+                            multiple
+                            accept="image/*,video/*,.gif,.webp"
+                            onChange={handleFileSelect}
+                          />
+                          <Button asChild variant="outline">
+                            <label htmlFor="file-upload" className="cursor-pointer">
+                              Choose Files
+                            </label>
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-4">
+                            Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM
+                          </p>
+                        </div>
+
+                        {selectedFiles.length > 0 && (
+                          <>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-sm">Selected Files ({selectedFiles.length})</h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const fileCount = selectedFiles.length
+                                    const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
+                                    setSelectedFiles([])
+                                    openpanel.track("Emoji Creator: All Files Cleared", {
+                                      fileCount: fileCount,
+                                      totalSize: totalSize
+                                    })
+                                  }}
+                                  disabled={isProcessing}
+                                >
+                                  Clear All
+                                </Button>
+                              </div>
+                              {selectedFiles.map((file, index) => {
+                                const Icon = getFileIcon(file)
+                                return (
+                                  <div
+                                    key={index}
+                                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <Icon className="h-5 w-5 text-muted-foreground" />
+                                      <div>
+                                        <p className="font-medium text-sm">{file.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {(file.size / 1024).toFixed(1)} KB
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleRemoveFile(index)}
+                                      className="h-8 w-8"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            <Button
+                              onClick={() => processFiles()}
+                              className="w-full"
+                              disabled={isProcessing}
+                              size="lg"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Process {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'}
+                            </Button>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                )}
+
+                {/* Browse Mode */}
+                {creationMode === "browse" && (
+                  <Card className="h-[600px] flex flex-col">
+                    <CardHeader className="flex-none">
+                      <div className="flex gap-2 items-center">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search emoji packs..."
+                            value={packBrowser.searchQuery}
+                            onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => packBrowser.setViewMode(packBrowser.viewMode === "grid" ? "list" : "grid")}
+                        >
+                          {packBrowser.viewMode === "grid" ? (
+                            <List className="h-4 w-4" />
+                          ) : (
+                            <Grid3x3 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <PackBrowserTabs
+                        selectedTab={packBrowser.selectedTab}
+                        onSelectTab={packBrowser.setSelectedTab}
+                        searchQuery={packBrowser.searchQuery}
+                      />
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full">
+                        <PackEmojiGrid
+                          emojis={packBrowser.currentEmojis}
+                          loading={packBrowser.loading}
+                          viewMode={packBrowser.viewMode}
+                          selectedIds={packBrowser.selectedIds}
+                          onToggleSelection={packBrowser.toggleSelection}
+                        />
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Sidebar - only visible in browse mode */}
+              {creationMode === "browse" && (
+                <PackSelectionSidebar
+                  selectedEmojis={packBrowser.selectedEmojis}
+                  maxSelection={20}
+                  nameStatuses={packBrowser.nameStatuses}
+                  editingName={packBrowser.editingName}
+                  editingValue={packBrowser.editingValue}
+                  onSetEditingName={packBrowser.setEditingName}
+                  onSetEditingValue={packBrowser.setEditingValue}
+                  onRemove={packBrowser.removeFromSelection}
+                  onClear={packBrowser.clearSelection}
+                  onExport={async () => {
+                    const selected = packBrowser.getSelectedEmojis()
+                    if (selected.length === 0) return
+
+                    // Show loading toast
+                    const loadingToast = toast({
+                      title: "Loading emojis...",
+                      description: `Downloading ${selected.length} emojis`,
+                      duration: Infinity,
+                    })
+
+                    // Convert pack emojis to Files for processing
+                    const files: File[] = []
+                    for (const emoji of selected) {
+                      try {
+                        const response = await fetch(emoji.imageURL)
+                        const blob = await response.blob()
+                        const ext = emoji.isAnimated ? 'gif' : 'png'
+                        const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
+                        files.push(file)
+                      } catch (error) {
+                        console.error(`Failed to load emoji ${emoji.name}:`, error)
+                        toast({
+                          title: "Failed to load emoji",
+                          description: `Could not download ${emoji.name}`,
+                          variant: "destructive",
+                        })
+                      }
+                    }
+
+                    loadingToast.dismiss()
+
+                    if (files.length > 0) {
+                      setSelectedFiles(files)
+                      setCreationMode("upload")
+                      packBrowser.clearSelection()
+                      toast({
+                        title: "Emojis loaded",
+                        description: `${files.length} emojis ready for processing. Click "Process Files" to continue.`,
+                      })
+                    } else {
+                      toast({
+                        title: "No emojis loaded",
+                        description: "All emojis failed to download",
+                        variant: "destructive",
+                      })
+                    }
+                  }}
+                />
               )}
             </div>
 
-            {/* Main content grid */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-6">
-              {/* Upload Files Card */}
-              {loading ? (
-                <Card>
-                  <CardHeader>
-                    <Skeleton className="h-5 w-32 mb-2" />
-                    <Skeleton className="h-4 w-64" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                      <Skeleton className="mx-auto h-12 w-12 mb-4" />
-                      <Skeleton className="h-4 w-48 mx-auto mb-2" />
-                      <Skeleton className="h-8 w-28 mx-auto" />
-                      <Skeleton className="h-3 w-40 mx-auto mt-4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Upload Files</CardTitle>
-                    <CardDescription>
-                      Drag and drop or click to upload images, videos, or GIFs
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div
-                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                        isDragging 
-                          ? 'border-primary bg-primary/10' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Drag and drop your files here, or click to select
-                      </p>
-                      <input
-                        type="file"
-                        id="file-upload"
-                        className="hidden"
-                        multiple
-                        accept="image/*,video/*,.gif,.webp"
-                        onChange={handleFileSelect}
-                      />
-                      <div className="flex gap-2 justify-center">
-                        <Button asChild variant="outline">
-                          <label htmlFor="file-upload" className="cursor-pointer">
-                            Choose Files
-                          </label>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowPackBrowser(true)}
-                        >
-                          Browse Packs
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-4">
-                        Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM • Or browse emoji packs
-                      </p>
-                    </div>
-
-                    {selectedFiles.length > 0 && (
-                      <>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-sm">Selected Files ({selectedFiles.length})</h4>
-                            <Button 
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const fileCount = selectedFiles.length
-                                const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
-                                setSelectedFiles([])
-                                openpanel.track("Emoji Creator: All Files Cleared", { 
-                                  fileCount: fileCount,
-                                  totalSize: totalSize
-                                })
-                              }}
-                              disabled={isProcessing}
-                            >
-                              Clear All
-                            </Button>
-                          </div>
-                          {selectedFiles.map((file, index) => {
-                            const Icon = getFileIcon(file)
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <Icon className="h-5 w-5 text-muted-foreground" />
-                                  <div>
-                                    <p className="font-medium text-sm">{file.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {(file.size / 1024).toFixed(1)} KB
-                                    </p>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveFile(index)}
-                                  className="h-8 w-8"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )
-                          })}
-                        </div>
-                        <Button 
-                          onClick={() => processFiles()} 
-                          className="w-full"
-                          disabled={isProcessing}
-                          size="lg"
-                        >
-                          <Sparkles className="mr-2 h-4 w-4" />
-                          Process {selectedFiles.length} {selectedFiles.length === 1 ? 'File' : 'Files'}
-                        </Button>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+            <div className="space-y-4 sm:space-y-6">
 
               {/* Chrome Extension Hero Section */}
               {!hasSlack && !loading && (
@@ -1319,60 +1458,6 @@ function EmojiCreatorPage() {
         />
       )}
 
-      {/* Pack Browser Sheet */}
-      <Sheet open={showPackBrowser} onOpenChange={setShowPackBrowser}>
-        <SheetContent side="bottom" className="h-[85vh] p-6">
-          <PackBrowser
-            onSelectEmojis={async (emojis) => {
-              // Show loading toast
-              const loadingToast = toast({
-                title: "Loading emojis...",
-                description: `Downloading ${emojis.length} emojis`,
-                duration: Infinity,
-              })
-
-              // Convert pack emojis to Files for processing
-              const files: File[] = []
-
-              for (const emoji of emojis) {
-                try {
-                  const response = await fetch(emoji.imageURL)
-                  const blob = await response.blob()
-                  const ext = emoji.isAnimated ? 'gif' : 'png'
-                  const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
-                  files.push(file)
-                } catch (error) {
-                  console.error(`Failed to load emoji ${emoji.name}:`, error)
-                  toast({
-                    title: "Failed to load emoji",
-                    description: `Could not download ${emoji.name}`,
-                    variant: "destructive",
-                  })
-                }
-              }
-
-              // Dismiss loading toast
-              loadingToast.dismiss()
-
-              if (files.length > 0) {
-                setSelectedFiles(files)
-                setShowPackBrowser(false)
-                toast({
-                  title: "Emojis loaded",
-                  description: `${files.length} emojis ready for processing. Click "Process Files" to continue.`,
-                })
-              } else {
-                toast({
-                  title: "No emojis loaded",
-                  description: "All emojis failed to download",
-                  variant: "destructive",
-                })
-              }
-            }}
-            maxSelection={20}
-          />
-        </SheetContent>
-      </Sheet>
     </>
   )
 }
