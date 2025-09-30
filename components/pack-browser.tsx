@@ -342,7 +342,17 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       ...bufoEmojis,
       ...searchResults,
     ]
-    return allEmojis.filter((e) => selectedIds.has(`${e.id}|${e.name}`))
+
+    const seen = new Set<string>()
+
+    return allEmojis.filter((emoji) => {
+      const key = `${emoji.id}|${emoji.name}`
+      if (!selectedIds.has(key) || seen.has(key)) {
+        return false
+      }
+      seen.add(key)
+      return true
+    })
   }
 
   const removeFromSelection = (emoji: PackEmoji) => {
