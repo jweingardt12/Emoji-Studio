@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,64 @@ import { isEmojiNameAvailable } from "@/lib/services/emoji-service"
 
 type Tab = "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
 type NameStatus = "checking" | "available" | "taken"
+
+const gridContainerVariants = {
+  initial: { opacity: 0, y: 8 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: 'easeOut' },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    transition: { duration: 0.18, ease: 'easeIn' },
+  },
+}
+
+const gridItemVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 12 },
+  enter: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.22, ease: 'easeOut' },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.9,
+    y: -12,
+    transition: { duration: 0.18, ease: 'easeIn' },
+  },
+}
+
+const listContainerVariants = {
+  initial: { opacity: 0, y: 6 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, ease: 'easeOut' },
+  },
+  exit: {
+    opacity: 0,
+    y: -6,
+    transition: { duration: 0.16, ease: 'easeIn' },
+  },
+}
+
+const listItemVariants = {
+  hidden: { opacity: 0, x: 12 },
+  enter: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.2, ease: 'easeOut' },
+  },
+  exit: {
+    opacity: 0,
+    x: -12,
+    transition: { duration: 0.16, ease: 'easeIn' },
+  },
+}
 
 // Custom hook for pack browser state management
 export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] = []) {
@@ -452,88 +511,127 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
     )
   }
 
-  if (viewMode === "grid") {
-    return (
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-4">
-        {emojis.map((emoji) => {
-          const key = `${emoji.id}|${emoji.name}`
-          const isSelected = selectedIds.has(key)
+  const isGridView = viewMode === "grid"
 
-          return (
-            <button
-              key={key}
-              onClick={() => onToggleSelection(emoji)}
-              className={cn(
-                "relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all hover:border-primary/50 hover:bg-accent/50",
-                isSelected
-                  ? "border-primary bg-primary/10"
-                  : "border-transparent bg-muted/30"
-              )}
-            >
-              <div className="relative w-16 h-16 flex-shrink-0">
-                <img
-                  src={emoji.imageURL}
-                  alt={emoji.name}
-                  className="w-full h-full object-contain"
-                  loading="lazy"
-                />
-                <div
+  return (
+    <AnimatePresence mode="wait">
+      {isGridView ? (
+        <motion.div
+          key="grid"
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-4"
+          variants={gridContainerVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          layout
+        >
+          <AnimatePresence mode="popLayout">
+            {emojis.map((emoji, index) => {
+              const key = `${emoji.id}|${emoji.name}`
+              const isSelected = selectedIds.has(key)
+
+              return (
+                <motion.button
+                  type="button"
+                  layout
+                  key={key}
+                  variants={gridItemVariants}
+                  initial="hidden"
+                  animate="enter"
+                  exit="exit"
+                  transition={{ delay: Math.min(index * 0.025, 0.25) }}
+                  onClick={() => onToggleSelection(emoji)}
                   className={cn(
-                    "absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                    "relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all hover:border-primary/50 hover:bg-accent/50",
                     isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background border-muted-foreground/30"
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent bg-muted/30"
                   )}
                 >
-                  {isSelected && "✓"}
-                </div>
-              </div>
-              <span className="text-[10px] text-center text-muted-foreground line-clamp-2 w-full leading-tight">
-                {emoji.name}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    )
-  }
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <img
+                      src={emoji.imageURL}
+                      alt={emoji.name}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                    <motion.div
+                      layout
+                      className={cn(
+                        "absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-muted-foreground/30"
+                      )}
+                    >
+                      {isSelected && "✓"}
+                    </motion.div>
+                  </div>
+                  <span className="text-[10px] text-center text-muted-foreground line-clamp-2 w-full leading-tight">
+                    {emoji.name}
+                  </span>
+                </motion.button>
+              )
+            })}
+          </AnimatePresence>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="list"
+          className="space-y-2"
+          variants={listContainerVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          layout
+        >
+          <AnimatePresence mode="popLayout">
+            {emojis.map((emoji, index) => {
+              const key = `${emoji.id}|${emoji.name}`
+              const isSelected = selectedIds.has(key)
 
-  // List view
-  return (
-    <div className="space-y-2">
-      {emojis.map((emoji) => {
-        const key = `${emoji.id}|${emoji.name}`
-        const isSelected = selectedIds.has(key)
-
-        return (
-          <button
-            key={key}
-            onClick={() => onToggleSelection(emoji)}
-            className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50",
-              isSelected
-                ? "border-primary bg-primary/10"
-                : "border-transparent bg-muted"
-            )}
-          >
-            <img
-              src={emoji.imageURL}
-              alt={emoji.name}
-              className="w-12 h-12 object-contain"
-              loading="lazy"
-            />
-            <span className="flex-1 text-left font-medium">
-              :{emoji.name}:
-            </span>
-            {isSelected && (
-              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                ✓
-              </div>
-            )}
-          </button>
-        )
-      })}
-    </div>
+              return (
+                <motion.button
+                  type="button"
+                  layout
+                  key={key}
+                  variants={listItemVariants}
+                  initial="hidden"
+                  animate="enter"
+                  exit="exit"
+                  transition={{ delay: Math.min(index * 0.02, 0.18) }}
+                  onClick={() => onToggleSelection(emoji)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50",
+                    isSelected
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent bg-muted"
+                  )}
+                >
+                  <img
+                    src={emoji.imageURL}
+                    alt={emoji.name}
+                    className="w-12 h-12 object-contain"
+                    loading="lazy"
+                  />
+                  <span className="flex-1 text-left font-medium">
+                    :{emoji.name}:
+                  </span>
+                  {isSelected && (
+                    <motion.div
+                      layout
+                      className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold"
+                    >
+                      ✓
+                    </motion.div>
+                  )}
+                </motion.button>
+              )
+            })}
+          </AnimatePresence>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -594,7 +692,7 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-full flex-shrink-0 flex flex-col xl:h-[600px] xl:rounded-xl xl:border xl:shadow bg-card">
+    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:shadow bg-card">
       <div className="p-4 sm:p-5 border-b">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-sm">Selected Emojis</h3>
@@ -614,7 +712,7 @@ export function PackSelectionSidebar({
         </p>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 min-h-0 p-4">
         {selectedEmojis.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
             <Download className="h-12 w-12 mb-2 opacity-20" />
@@ -622,115 +720,123 @@ export function PackSelectionSidebar({
             <p className="text-xs">Click emojis to add them here</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {selectedEmojis.map((emoji) => {
-              const key = `${emoji.id}|${emoji.name}`
-              const status = nameStatuses.get(key)
-              const isEditing = editingName === key
-              const hasNameChecking = nameStatuses.size > 0
+          <AnimatePresence mode="popLayout">
+            <div className="space-y-2">
+              {selectedEmojis.map((emoji, index) => {
+                const key = `${emoji.id}|${emoji.name}`
+                const status = nameStatuses.get(key)
+                const isEditing = editingName === key
+                const hasNameChecking = nameStatuses.size > 0
 
-              return (
-                <div
-                  key={key}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-3 py-2 rounded-lg bg-background border transition-all group min-w-0 overflow-hidden",
-                    hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
-                    hasNameChecking && status === "available" && "border-green-500/30"
-                  )}
-                >
-                  <img
-                    src={emoji.imageURL}
-                    alt={emoji.name}
-                    className="w-12 h-12 object-contain flex-shrink-0"
-                    loading="lazy"
-                  />
+                return (
+                  <motion.div
+                    layout
+                    key={key}
+                    variants={listItemVariants}
+                    initial="hidden"
+                    animate="enter"
+                    exit="exit"
+                    transition={{ delay: Math.min(index * 0.03, 0.2) }}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-3 py-2 rounded-lg bg-background border transition-all group min-w-0 overflow-hidden",
+                      hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
+                      hasNameChecking && status === "available" && "border-green-500/30"
+                    )}
+                  >
+                    <img
+                      src={emoji.imageURL}
+                      alt={emoji.name}
+                      className="w-12 h-12 object-contain flex-shrink-0"
+                      loading="lazy"
+                    />
 
-                  <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
-                    {isEditing ? (
-                      <Input
-                        autoFocus
-                        value={editingValue}
-                        onChange={(e) => {
-                          const sanitized = e.target.value
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")
-                            .replace(/_/g, "-")
-                            .replace(/[^a-z0-9-]/g, "")
-                          onSetEditingValue(sanitized)
-                        }}
-                        onBlur={() => {
-                          if (editingValue && onSaveCustomName) {
-                            onSaveCustomName(key, editingValue)
-                          }
-                          onSetEditingName(null)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
+                    <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+                      {isEditing ? (
+                        <Input
+                          autoFocus
+                          value={editingValue}
+                          onChange={(e) => {
+                            const sanitized = e.target.value
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")
+                              .replace(/_/g, "-")
+                              .replace(/[^a-z0-9-]/g, "")
+                            onSetEditingValue(sanitized)
+                          }}
+                          onBlur={() => {
                             if (editingValue && onSaveCustomName) {
                               onSaveCustomName(key, editingValue)
                             }
                             onSetEditingName(null)
-                          }
-                          if (e.key === "Escape") {
-                            onSetEditingName(null)
-                            onSetEditingValue("")
-                          }
-                        }}
-                        className="h-6 w-full min-w-0 max-w-[220px] sm:max-w-[260px] xl:max-w-[300px] text-xs font-mono"
-                      />
-                    ) : (
-                      <>
-                        <span
-                          className="flex-1 min-w-0 truncate text-xs font-mono max-w-[220px] sm:max-w-[260px] xl:max-w-[300px]"
-                          title={customNames?.get(key) || emoji.name}
-                        >
-                          :{customNames?.get(key) || emoji.name}:
-                        </span>
-                        <button
-                          onClick={() => {
-                            const displayName = customNames?.get(key) || emoji.name
-                            onSetEditingName(key)
-                            onSetEditingValue(displayName)
                           }}
-                          className="group/name flex-shrink-0"
-                        >
-                          <Edit2 className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
-                        </button>
-                      </>
-                    )}
-                  </div>
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              if (editingValue && onSaveCustomName) {
+                                onSaveCustomName(key, editingValue)
+                              }
+                              onSetEditingName(null)
+                            }
+                            if (e.key === "Escape") {
+                              onSetEditingName(null)
+                              onSetEditingValue("")
+                            }
+                          }}
+                          className="h-6 w-full min-w-0 max-w-full text-xs font-mono"
+                        />
+                      ) : (
+                        <>
+                          <span
+                            className="flex-1 min-w-0 break-all text-xs font-mono leading-snug"
+                            title={customNames?.get(key) || emoji.name}
+                          >
+                            :{customNames?.get(key) || emoji.name}:
+                          </span>
+                          <button
+                            onClick={() => {
+                              const displayName = customNames?.get(key) || emoji.name
+                              onSetEditingName(key)
+                              onSetEditingValue(displayName)
+                            }}
+                            className="group/name flex-shrink-0"
+                          >
+                            <Edit2 className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
+                          </button>
+                        </>
+                      )}
+                    </div>
 
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {hasNameChecking && status === "checking" && (
-                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                    )}
-                    {hasNameChecking && status === "available" && (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    )}
-                    {hasNameChecking && status === "taken" && (
-                      <HoverCard openDelay={200} closeDelay={100}>
-                        <HoverCardTrigger asChild>
-                          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-64 text-xs">
-                          This name is already taken in your workspace. Click the pencil to edit it before continuing.
-                        </HoverCardContent>
-                      </HoverCard>
-                    )}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {hasNameChecking && status === "checking" && (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      )}
+                      {hasNameChecking && status === "available" && (
+                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      )}
+                      {hasNameChecking && status === "taken" && (
+                        <HoverCard openDelay={200} closeDelay={100}>
+                          <HoverCardTrigger asChild>
+                            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-64 text-xs">
+                            This name is already taken in your workspace. Click the pencil to edit it before continuing.
+                          </HoverCardContent>
+                        </HoverCard>
+                      )}
 
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onRemove(emoji)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => onRemove(emoji)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </AnimatePresence>
         )}
       </ScrollArea>
 

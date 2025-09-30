@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, ShoppingCart } from "lucide-react"
+import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus } from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
@@ -98,8 +98,53 @@ function EmojiCreatorPage() {
   const [showUploadOverlay, setShowUploadOverlay] = useState(false)
   const { toast } = useToast()
 
+  const desktopLayoutRef = useRef<HTMLDivElement | null>(null)
+  const [availableLayoutHeight, setAvailableLayoutHeight] = useState<number | null>(null)
+  const lastTrackedSearchQuery = useRef<string>("")
+
+  const updateLayoutHeight = useCallback(() => {
+    if (typeof window === "undefined") return
+    const container = desktopLayoutRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const parent = container.parentElement
+    const parentStyles = parent ? window.getComputedStyle(parent) : null
+    const parentPaddingBottom = parentStyles ? parseFloat(parentStyles.paddingBottom || "0") : 0
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+    const calculatedHeight = viewportHeight - rect.top - parentPaddingBottom
+
+    if (!Number.isFinite(calculatedHeight)) return
+
+    const nextHeight = Math.max(0, calculatedHeight)
+
+    setAvailableLayoutHeight((prev) => {
+      if (!Number.isFinite(nextHeight) || nextHeight <= 0) {
+        return prev ?? null
+      }
+      if (prev === null || Math.abs(prev - nextHeight) > 1) {
+        return nextHeight
+      }
+      return prev
+    })
+  }, [])
+
   // Pack browser state
   const packBrowser = usePackBrowser(20, emojiData)
+
+  const updateCartOpen = useCallback(
+    (open: boolean, source: 'toolbar' | 'sheet' | 'sheet-action') => {
+      setIsCartOpen(open)
+      openpanel.track(
+        open ? 'Emoji Creator: Selection Drawer Opened' : 'Emoji Creator: Selection Drawer Closed',
+        {
+          source,
+          selectedCount: packBrowser.selectedEmojis.length,
+        }
+      )
+    },
+    [packBrowser.selectedEmojis.length]
+  )
 
   useEffect(() => {
     setHasSlack(hasSlackConnection())
@@ -935,6 +980,63 @@ function EmojiCreatorPage() {
     return FileIcon
   }
 
+  useEffect(() => {
+    if (isMobile) return
+
+    let rafId = 0
+
+    const handleResize = () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = window.requestAnimationFrame(() => {
+        updateLayoutHeight()
+      })
+    }
+
+    handleResize()
+
+    window.addEventListener("resize", handleResize)
+    window.addEventListener("orientationchange", handleResize)
+    const visualViewport = window.visualViewport
+    visualViewport?.addEventListener("resize", handleResize)
+
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      window.removeEventListener("orientationchange", handleResize)
+      visualViewport?.removeEventListener("resize", handleResize)
+      if (rafId) {
+        cancelAnimationFrame(rafId)
+      }
+    }
+  }, [isMobile, updateLayoutHeight])
+
+  useEffect(() => {
+    const trimmed = packBrowser.searchQuery.trim()
+
+    if (trimmed === "") {
+      if (lastTrackedSearchQuery.current !== "") {
+        openpanel.track('Emoji Creator: Pack Search Cleared', {
+          previousQuery: lastTrackedSearchQuery.current,
+        })
+        lastTrackedSearchQuery.current = ""
+      }
+      return
+    }
+
+    const handler = window.setTimeout(() => {
+      if (trimmed !== lastTrackedSearchQuery.current) {
+        openpanel.track('Emoji Creator: Pack Search', {
+          query: trimmed,
+          length: trimmed.length,
+        })
+        lastTrackedSearchQuery.current = trimmed
+      }
+    }, 600)
+
+    return () => {
+      window.clearTimeout(handler)
+    }
+  }, [packBrowser.searchQuery])
+
   // Only render when client-side to avoid hydration mismatches
 
   // Show mobile-optimized flow on mobile devices
@@ -951,16 +1053,18 @@ function EmojiCreatorPage() {
 
   return (
     <>
-      <div 
-        className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6 min-h-screen"
+      <div
+        ref={desktopLayoutRef}
+        className="flex flex-col overflow-hidden min-h-0"
+        style={availableLayoutHeight ? { height: availableLayoutHeight, maxHeight: availableLayoutHeight } : undefined}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <div className="px-3 sm:px-4 lg:px-6">
-          <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
-            <div className={`${isMobile ? 'pt-2 pb-3' : 'mb-6'} flex items-start justify-between gap-4`}>
+        <div className="flex-1 flex flex-col min-h-0 px-3 sm:px-4 lg:px-6 py-2 sm:py-4 md:py-6">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow p-2 sm:p-4">
+            <div className="flex-none pb-3 sm:pb-4 flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
@@ -984,11 +1088,11 @@ function EmojiCreatorPage() {
             </div>
 
             {/* Pack Browser - always visible as main content */}
-            <div className="mb-6">
-              <div className="flex flex-col xl:grid xl:grid-cols-[1fr_480px] gap-6 min-w-0">
-                <Card className="h-[600px] flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)] gap-6 min-w-0 min-h-0">
+                <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                   <CardHeader className="flex-none">
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-2 items-center pb-3">
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -998,27 +1102,57 @@ function EmojiCreatorPage() {
                           className="pl-9"
                         />
                       </div>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => packBrowser.setViewMode(packBrowser.viewMode === "grid" ? "list" : "grid")}
-                      >
-                        {packBrowser.viewMode === "grid" ? (
-                          <List className="h-4 w-4" />
-                        ) : (
-                          <Grid3x3 className="h-4 w-4" />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const nextView = packBrowser.viewMode === "grid" ? "list" : "grid"
+                            packBrowser.setViewMode(nextView)
+                            openpanel.track('Emoji Creator: Pack View Changed', {
+                              view: nextView,
+                            })
+                          }}
+                        >
+                          {packBrowser.viewMode === "grid" ? (
+                            <List className="h-4 w-4" />
+                          ) : (
+                            <Grid3x3 className="h-4 w-4" />
+                          )}
+                        </Button>
+                        {packBrowser.selectedEmojis.length > 0 && (
+                          <Button
+                            onClick={() => updateCartOpen(true, 'toolbar')}
+                            className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
+                            size="icon"
+                          >
+                            <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
+                              <SmilePlus className="h-5 w-5 text-primary" />
+                            </div>
+                            <Badge
+                              variant="destructive"
+                              className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                            >
+                              {packBrowser.selectedEmojis.length}
+                            </Badge>
+                          </Button>
                         )}
-                      </Button>
+                      </div>
                     </div>
-                    <div className="mt-4">
+                    <div className="mt-6">
                       <PackBrowserTabs
                         selectedTab={packBrowser.selectedTab}
-                        onSelectTab={packBrowser.setSelectedTab}
+                        onSelectTab={(tab) => {
+                          packBrowser.setSelectedTab(tab)
+                          openpanel.track('Emoji Creator: Pack Tab Selected', {
+                            tab,
+                          })
+                        }}
                         searchQuery={packBrowser.searchQuery}
                       />
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-1 overflow-hidden pt-4">
+                  <CardContent className="flex-1 overflow-hidden pt-4 min-h-0">
                     <ScrollArea className="h-full">
                       <PackEmojiGrid
                         emojis={packBrowser.currentEmojis}
@@ -1032,7 +1166,7 @@ function EmojiCreatorPage() {
                 </Card>
 
                 {/* Desktop sidebar - only show on xl screens */}
-                <div className="hidden xl:block">
+                <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
                   <PackSelectionSidebar
                     selectedEmojis={packBrowser.selectedEmojis}
                     maxSelection={20}
@@ -1043,11 +1177,23 @@ function EmojiCreatorPage() {
                     onSetEditingValue={packBrowser.setEditingValue}
                     onSaveCustomName={packBrowser.saveCustomName}
                     customNames={packBrowser.customNames}
-                    onRemove={packBrowser.removeFromSelection}
+                    onRemove={(emoji) => {
+                      const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
+                      packBrowser.removeFromSelection(emoji)
+                      openpanel.track('Emoji Creator: Selection Item Removed', {
+                        id: emoji.id,
+                        name: emoji.name,
+                        remainingCount,
+                      })
+                    }}
                     onClear={() => {
+                      const previousCount = packBrowser.selectedEmojis.length
                       setDownloadProgress(null)
                       setUploadProgress(null)
                       packBrowser.clearSelection()
+                      openpanel.track('Emoji Creator: Selection Cleared', {
+                        previousCount,
+                      })
                     }}
                     hasSlackConnection={hasSlack}
                     downloadProgress={downloadProgress}
@@ -1258,27 +1404,8 @@ function EmojiCreatorPage() {
                   />
                 </div>
 
-                {/* Mobile cart button - show on screens < xl */}
-                {packBrowser.selectedEmojis.length > 0 && (
-                  <Button
-                    onClick={() => setIsCartOpen(true)}
-                    className="xl:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-                    size="icon"
-                  >
-                    <div className="relative">
-                      <ShoppingCart className="h-6 w-6" />
-                      <Badge
-                        variant="destructive"
-                        className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                      >
-                        {packBrowser.selectedEmojis.length}
-                      </Badge>
-                    </div>
-                  </Button>
-                )}
-
                 {/* Mobile sheet */}
-                <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
                   <SheetContent side="right" className="w-full sm:max-w-md p-0">
                     <PackSelectionSidebar
                         selectedEmojis={packBrowser.selectedEmojis}
@@ -1290,17 +1417,29 @@ function EmojiCreatorPage() {
                         onSetEditingValue={packBrowser.setEditingValue}
                         onSaveCustomName={packBrowser.saveCustomName}
                         customNames={packBrowser.customNames}
-                        onRemove={packBrowser.removeFromSelection}
+                        onRemove={(emoji) => {
+                          const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
+                          packBrowser.removeFromSelection(emoji)
+                          openpanel.track('Emoji Creator: Selection Item Removed', {
+                            id: emoji.id,
+                            name: emoji.name,
+                            remainingCount,
+                          })
+                        }}
                         onClear={() => {
+                          const previousCount = packBrowser.selectedEmojis.length
                           setDownloadProgress(null)
                           setUploadProgress(null)
                           packBrowser.clearSelection()
+                          openpanel.track('Emoji Creator: Selection Cleared', {
+                            previousCount,
+                          })
                         }}
                         hasSlackConnection={hasSlack}
                         downloadProgress={downloadProgress}
                         uploadProgress={uploadProgress}
                         onDownload={async () => {
-                          setIsCartOpen(false)
+                          updateCartOpen(false, 'sheet-action')
                           // Reuse the same download logic
                           const selected = packBrowser.getSelectedEmojis()
                           if (selected.length === 0) return
@@ -1404,7 +1543,7 @@ function EmojiCreatorPage() {
                           }
                         }}
                         onSendToSlack={async () => {
-                          setIsCartOpen(false)
+                          updateCartOpen(false, 'sheet-action')
                           // Reuse the same upload logic
                           const selected = packBrowser.getSelectedEmojis()
                           if (selected.length === 0) return
@@ -1497,97 +1636,101 @@ function EmojiCreatorPage() {
               </div>
             </div>
 
-            <div className="space-y-4 sm:space-y-6">
-
-              {/* Chrome Extension Hero Section */}
-              {!hasSlack && !loading && (
-                <div className="relative overflow-hidden rounded-xl">
-                  {/* Scrolling emoji background */}
-                  <div className="absolute inset-0 flex w-full flex-col items-center justify-center overflow-hidden">
-                    <Marquee
-                      pauseOnHover
-                      className="[--duration:20s]"
-                      repeat={3}
-                    >
-                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
-                        <EmojiCard key={idx} emoji={emoji} />
-                      ))}
-                    </Marquee>
-                    <Marquee
-                      reverse
-                      pauseOnHover
-                      className="[--duration:30s]"
-                      repeat={3}
-                    >
-                      {emojiTiles.slice(10, 20).map((emoji, idx) => (
-                        <EmojiCard key={idx} emoji={emoji} />
-                      ))}
-                    </Marquee>
-                    <Marquee
-                      pauseOnHover
-                      className="[--duration:25s]"
-                      repeat={3}
-                    >
-                      {emojiTiles.slice(0, 10).map((emoji, idx) => (
-                        <EmojiCard key={idx} emoji={emoji} />
-                      ))}
-                    </Marquee>
-                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="relative px-6 py-16 sm:px-10 sm:py-24 lg:py-32 backdrop-blur-[2px]">
-                    <div className="mx-auto max-w-2xl text-center">
-                      <div className="mb-6 inline-flex items-center rounded-full bg-blue-500/10 backdrop-blur-sm px-3 py-1 text-sm">
-                        <Sparkles className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
-                        <span className="font-medium text-blue-600 dark:text-blue-400">New!</span>
-                      </div>
-                      
-                      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                        Import Emojis from Any Website
-                      </h2>
-                      
-                      <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-8">
-                        Connect to your Slack in one click. Add any image, GIF, or video as a perfectly formatted emoji. 
-                      </p>
-                      
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                        <Button
-                          size="lg"
-                          className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
-                          asChild
-                        >
-                          <a 
-                            href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2"
-                          >
-                            <ChromeIcon className="h-5 w-5 text-blue-500" />
-                            Get Chrome Extension
-                          </a>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Processed Emojis */}
-              {processedEmojis.length > 0 && (
-                <EmojiProcessorPreview
-                  emojis={processedEmojis}
-                  onRemove={handleRemoveProcessed}
-                  onDownload={handleDownloadEmoji}
-                  onDownloadAll={handleDownloadAll}
-                  onUpdateName={handleUpdateEmojiName}
-                  onEdit={handleEditEmoji}
-                />
-              )}
-            </div>
           </div>
         </div>
       </div>
+
+      {((!hasSlack && !loading) || processedEmojis.length > 0) && (
+        <div className="px-3 sm:px-4 lg:px-6 mt-4 sm:mt-6">
+          <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4 space-y-4 sm:space-y-6">
+            {/* Chrome Extension Hero Section */}
+            {!hasSlack && !loading && (
+              <div className="relative overflow-hidden rounded-xl">
+                {/* Scrolling emoji background */}
+                <div className="absolute inset-0 flex w-full flex-col items-center justify-center overflow-hidden">
+                  <Marquee
+                    pauseOnHover
+                    className="[--duration:20s]"
+                    repeat={3}
+                  >
+                    {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                      <EmojiCard key={idx} emoji={emoji} />
+                    ))}
+                  </Marquee>
+                  <Marquee
+                    reverse
+                    pauseOnHover
+                    className="[--duration:30s]"
+                    repeat={3}
+                  >
+                    {emojiTiles.slice(10, 20).map((emoji, idx) => (
+                      <EmojiCard key={idx} emoji={emoji} />
+                    ))}
+                  </Marquee>
+                  <Marquee
+                    pauseOnHover
+                    className="[--duration:25s]"
+                    repeat={3}
+                  >
+                    {emojiTiles.slice(0, 10).map((emoji, idx) => (
+                      <EmojiCard key={idx} emoji={emoji} />
+                    ))}
+                  </Marquee>
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                </div>
+
+                {/* Content */}
+                <div className="relative px-6 py-16 sm:px-10 sm:py-24 lg:py-32 backdrop-blur-[2px]">
+                  <div className="mx-auto max-w-2xl text-center">
+                    <div className="mb-6 inline-flex items-center rounded-full bg-blue-500/10 backdrop-blur-sm px-3 py-1 text-sm">
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
+                      <span className="font-medium text-blue-600 dark:text-blue-400">New!</span>
+                    </div>
+                    
+                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Import Emojis from Any Website
+                    </h2>
+                    
+                    <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-8">
+                      Connect to your Slack in one click. Add any image, GIF, or video as a perfectly formatted emoji. 
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                      <Button
+                        size="lg"
+                        className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
+                        asChild
+                      >
+                        <a 
+                          href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2"
+                        >
+                          <ChromeIcon className="h-5 w-5 text-blue-500" />
+                          Get Chrome Extension
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Processed Emojis */}
+            {processedEmojis.length > 0 && (
+              <EmojiProcessorPreview
+                emojis={processedEmojis}
+                onRemove={handleRemoveProcessed}
+                onDownload={handleDownloadEmoji}
+                onDownloadAll={handleDownloadAll}
+                onUpdateName={handleUpdateEmojiName}
+                onEdit={handleEditEmoji}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       <EmojiProcessingModal
         isOpen={isProcessing}

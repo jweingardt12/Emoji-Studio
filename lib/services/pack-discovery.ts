@@ -107,7 +107,33 @@ class PackDiscoveryService {
     if (!query.trim()) return []
 
     const normalizedQuery = query.toLowerCase().trim()
-    const cacheKey = `all-packs-search-${normalizedQuery}`
+    const terms = normalizedQuery.split(/\s+/).filter(Boolean)
+    if (terms.length === 0) return []
+
+    const cacheKey = `all-packs-search-${[...terms].sort().join('-')}`
+
+    const escapeRegex = (value: string) =>
+      value.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+
+    const fuzzyMatchScore = (term: string, target: string): number | null => {
+      if (!term) return 0
+
+      const directIndex = target.indexOf(term)
+      if (directIndex >= 0) {
+        return directIndex // lower is better
+      }
+
+      const pattern = escapeRegex(term)
+        .split('')
+        .join('.*?')
+      const regex = new RegExp(pattern, 'i')
+      const match = target.match(regex)
+      if (!match || match.index === undefined) {
+        return null
+      }
+      const spanLength = match[0].length
+      return match.index + (spanLength - term.length)
+    }
 
     return this.getCachedOrFetch(cacheKey, async () => {
       // Fetch all packs in parallel
@@ -141,10 +167,26 @@ class PackDiscoveryService {
         }
       }
 
-      // Filter by query
-      return unique.filter(emoji =>
-        emoji.name.toLowerCase().includes(normalizedQuery)
-      )
+      // Filter by fuzzy multi-term query and rank results
+      const scored = unique
+        .map((emoji) => {
+          const normalizedName = emoji.name.toLowerCase().replace(/[_-]/g, ' ')
+          let totalScore = 0
+
+          for (const term of terms) {
+            const score = fuzzyMatchScore(term, normalizedName)
+            if (score === null) {
+              return null
+            }
+            totalScore += score
+          }
+
+          return { emoji, score: totalScore }
+        })
+        .filter((entry): entry is { emoji: PackEmoji; score: number } => entry !== null)
+        .sort((a, b) => a.score - b.score || a.emoji.name.localeCompare(b.emoji.name))
+
+      return scored.map((entry) => entry.emoji)
     })
   }
 
