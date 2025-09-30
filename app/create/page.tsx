@@ -1171,13 +1171,14 @@ function EmojiCreatorPage() {
                   onSetEditingValue={packBrowser.setEditingValue}
                   onRemove={packBrowser.removeFromSelection}
                   onClear={packBrowser.clearSelection}
-                  onExport={async () => {
+                  hasSlackConnection={hasSlack}
+                  onDownload={async () => {
                     const selected = packBrowser.getSelectedEmojis()
                     if (selected.length === 0) return
 
                     // Show loading toast
                     const loadingToast = toast({
-                      title: "Loading emojis...",
+                      title: "Downloading emojis...",
                       description: `Downloading ${selected.length} emojis`,
                       duration: Infinity,
                     })
@@ -1208,13 +1209,54 @@ function EmojiCreatorPage() {
                       setCreationMode("upload")
                       packBrowser.clearSelection()
                       toast({
-                        title: "Emojis loaded",
+                        title: "Emojis downloaded",
                         description: `${files.length} emojis ready for processing. Click "Process Files" to continue.`,
                       })
                     } else {
                       toast({
-                        title: "No emojis loaded",
+                        title: "No emojis downloaded",
                         description: "All emojis failed to download",
+                        variant: "destructive",
+                      })
+                    }
+                  }}
+                  onSendToSlack={async () => {
+                    const selected = packBrowser.getSelectedEmojis()
+                    if (selected.length === 0) return
+
+                    // Download and process emojis, then open modal for upload
+                    const loadingToast = toast({
+                      title: "Preparing emojis...",
+                      description: `Downloading and processing ${selected.length} emojis`,
+                      duration: Infinity,
+                    })
+
+                    const files: File[] = []
+                    for (const emoji of selected) {
+                      try {
+                        const response = await fetch(emoji.imageURL)
+                        const blob = await response.blob()
+                        const ext = emoji.isAnimated ? 'gif' : 'png'
+                        const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
+                        files.push(file)
+                      } catch (error) {
+                        console.error(`Failed to load emoji ${emoji.name}:`, error)
+                      }
+                    }
+
+                    if (files.length > 0) {
+                      // Process files and trigger upload
+                      setSelectedFiles(files)
+                      packBrowser.clearSelection()
+                      loadingToast.dismiss()
+
+                      // Trigger processing
+                      await processFiles()
+                    } else {
+                      loadingToast.dismiss()
+                      toast({
+                        title: "Failed to prepare emojis",
+                        description: "Could not download emojis",
                         variant: "destructive",
                       })
                     }

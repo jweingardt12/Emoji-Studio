@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2 } from "lucide-react"
+import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -453,7 +453,9 @@ interface PackSelectionSidebarProps {
   onSetEditingValue: (value: string) => void
   onRemove: (emoji: PackEmoji) => void
   onClear: () => void
-  onExport: () => void
+  onDownload: () => void
+  onSendToSlack?: () => void
+  hasSlackConnection?: boolean
   isDemoMode?: boolean
 }
 
@@ -467,14 +469,18 @@ export function PackSelectionSidebar({
   onSetEditingValue,
   onRemove,
   onClear,
-  onExport,
+  onDownload,
+  onSendToSlack,
+  hasSlackConnection = false,
   isDemoMode = false,
 }: PackSelectionSidebarProps) {
   const hasNameChecking = nameStatuses.size > 0
   const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
   const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
-  // Allow export if: has emojis AND (no name checking OR all names are available)
-  const canExport = selectedEmojis.length > 0 && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
+  // Allow download if: has emojis
+  const canDownload = selectedEmojis.length > 0
+  // Allow send to Slack if: has emojis AND has connection AND (no name checking OR all names are available)
+  const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
@@ -589,25 +595,48 @@ export function PackSelectionSidebar({
       </ScrollArea>
 
       <div className="p-4 border-t bg-background space-y-2">
-        <div className="flex gap-2">
+        {/* Action buttons */}
+        <div className="space-y-2">
           <Button
+            onClick={onDownload}
+            disabled={!canDownload}
+            className="w-full"
             variant="outline"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download
+          </Button>
+
+          <Button
+            onClick={onSendToSlack}
+            disabled={!canSendToSlack}
+            className="w-full"
+          >
+            <Send className="mr-2 h-4 w-4" />
+            Send to Slack
+          </Button>
+
+          <Button
+            variant="ghost"
             onClick={onClear}
             disabled={selectedEmojis.length === 0}
-            className="flex-1"
+            className="w-full"
+            size="sm"
           >
             Clear All
           </Button>
-          <Button
-            onClick={onExport}
-            disabled={!canExport}
-            className="flex-1"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
         </div>
 
+        {/* Status messages */}
+        {!hasSlackConnection && selectedEmojis.length > 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            Connect Slack in{" "}
+            <a href="/settings" className="underline hover:text-foreground">
+              Settings
+            </a>{" "}
+            to upload
+          </p>
+        )}
         {hasNameChecking && checkingCount > 0 && (
           <p className="text-xs text-muted-foreground text-center">
             Checking {checkingCount} name{checkingCount > 1 ? "s" : ""}...
@@ -713,7 +742,8 @@ export function PackBrowser({
         onSetEditingValue={packBrowser.setEditingValue}
         onRemove={packBrowser.removeFromSelection}
         onClear={packBrowser.clearSelection}
-        onExport={handleExport}
+        onDownload={handleExport}
+        hasSlackConnection={false}
         isDemoMode={isDemoMode}
       />
     </div>
