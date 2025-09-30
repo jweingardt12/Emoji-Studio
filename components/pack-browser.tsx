@@ -561,6 +561,7 @@ interface PackSelectionSidebarProps {
     completed: number
     failed: number
     total: number
+    stage: "uploading" | "complete"
   } | null
   isDemoMode?: boolean
 }

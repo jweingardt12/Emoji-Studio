@@ -1073,6 +1073,7 @@ function EmojiCreatorPage() {
 
                       const updateProgressToast = (message: string) => {
                         progressToast.update({
+                          id: progressToast.id,
                           title: "Creating zip file...",
                           description: message,
                           duration: Infinity,
@@ -1186,6 +1187,7 @@ function EmojiCreatorPage() {
 
                       const updateUploadToast = (message: string) => {
                         uploadToast.update({
+                          id: uploadToast.id,
                           title: "Uploading to Slack...",
                           description: message,
                           duration: Infinity,
@@ -1319,6 +1321,7 @@ function EmojiCreatorPage() {
 
                           const updateProgressToast = (message: string) => {
                             progressToast.update({
+                              id: progressToast.id,
                               title: "Creating zip file...",
                               description: message,
                               duration: Infinity,
@@ -1423,6 +1426,7 @@ function EmojiCreatorPage() {
 
                           const updateUploadToast = (message: string) => {
                             uploadToast.update({
+                              id: uploadToast.id,
                               title: "Uploading to Slack...",
                               description: message,
                               duration: Infinity,
