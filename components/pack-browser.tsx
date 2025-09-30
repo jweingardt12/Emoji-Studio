@@ -485,12 +485,22 @@ export function PackSelectionSidebar({
   return (
     <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
       <div className="p-4 border-b bg-background">
-        <h3 className="font-semibold text-sm flex items-center justify-between">
-          <span>Selected Emojis</span>
-          <span className="text-muted-foreground">
-            {selectedEmojis.length}/{maxSelection}
-          </span>
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-sm">Selected Emojis</h3>
+          {selectedEmojis.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClear}
+              className="h-7 text-xs"
+            >
+              Clear All
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {selectedEmojis.length}/{maxSelection} selected
+        </p>
       </div>
 
       <ScrollArea className="flex-1 p-3">
@@ -614,16 +624,6 @@ export function PackSelectionSidebar({
           >
             <Send className="mr-2 h-4 w-4" />
             Send to Slack
-          </Button>
-
-          <Button
-            variant="ghost"
-            onClick={onClear}
-            disabled={selectedEmojis.length === 0}
-            className="w-full"
-            size="sm"
-          >
-            Clear All
           </Button>
         </div>
 

@@ -1176,46 +1176,100 @@ function EmojiCreatorPage() {
                     const selected = packBrowser.getSelectedEmojis()
                     if (selected.length === 0) return
 
-                    // Show loading toast
-                    const loadingToast = toast({
-                      title: "Downloading emojis...",
-                      description: `Downloading ${selected.length} emojis`,
+                    const JSZip = (await import('jszip')).default
+                    const zip = new JSZip()
+
+                    let completed = 0
+                    const total = selected.length
+
+                    // Show initial progress toast
+                    let progressToast = toast({
+                      title: "Creating zip file...",
+                      description: `Starting download...`,
                       duration: Infinity,
                     })
 
-                    // Convert pack emojis to Files for processing
-                    const files: File[] = []
+                    // Download and add emojis to zip
                     for (const emoji of selected) {
                       try {
-                        const response = await fetch(emoji.imageURL)
+                        console.log(`[Download] Fetching emoji: ${emoji.name} from ${emoji.imageURL}`)
+
+                        // Use image proxy to avoid CORS issues
+                        const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.imageURL)}`
+                        const response = await fetch(proxyUrl)
+
+                        if (!response.ok) {
+                          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+                        }
+
                         const blob = await response.blob()
+                        console.log(`[Download] Downloaded ${emoji.name}: ${blob.size} bytes`)
+
                         const ext = emoji.isAnimated ? 'gif' : 'png'
-                        const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
-                        files.push(file)
+                        const fileName = `${emoji.name}.${ext}`
+
+                        zip.file(fileName, blob)
+                        completed++
+
+                        // Update progress every 5 emojis or on last emoji
+                        if (completed % 5 === 0 || completed === total) {
+                          progressToast.dismiss()
+                          progressToast = toast({
+                            title: "Creating zip file...",
+                            description: `Downloaded ${completed}/${total} emojis`,
+                            duration: Infinity,
+                          })
+                        }
                       } catch (error) {
-                        console.error(`Failed to load emoji ${emoji.name}:`, error)
-                        toast({
-                          title: "Failed to load emoji",
-                          description: `Could not download ${emoji.name}`,
-                          variant: "destructive",
-                        })
+                        console.error(`[Download] Failed to download emoji ${emoji.name}:`, error)
+                        console.error(`[Download] URL was: ${emoji.imageURL}`)
                       }
                     }
 
-                    loadingToast.dismiss()
-
-                    if (files.length > 0) {
-                      setSelectedFiles(files)
-                      setCreationMode("upload")
-                      packBrowser.clearSelection()
+                    if (completed === 0) {
+                      progressToast.dismiss()
                       toast({
-                        title: "Emojis downloaded",
-                        description: `${files.length} emojis ready for processing. Click "Process Files" to continue.`,
+                        title: "Download failed",
+                        description: "Could not download any emojis",
+                        variant: "destructive",
                       })
-                    } else {
+                      return
+                    }
+
+                    // Generate zip file
+                    progressToast.dismiss()
+                    progressToast = toast({
+                      title: "Creating zip file...",
+                      description: "Finalizing download...",
+                      duration: Infinity,
+                    })
+
+                    try {
+                      const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+                      // Create download link
+                      const url = URL.createObjectURL(zipBlob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `emoji-pack-${Date.now()}.zip`
+                      document.body.appendChild(a)
+                      a.click()
+                      document.body.removeChild(a)
+                      URL.revokeObjectURL(url)
+
+                      progressToast.dismiss()
+                      packBrowser.clearSelection()
+
                       toast({
-                        title: "No emojis downloaded",
-                        description: "All emojis failed to download",
+                        title: "Download complete",
+                        description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
+                      })
+                    } catch (error) {
+                      console.error('Failed to create zip:', error)
+                      progressToast.dismiss()
+                      toast({
+                        title: "Failed to create zip",
+                        description: "Could not create zip file",
                         variant: "destructive",
                       })
                     }
