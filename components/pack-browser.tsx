@@ -361,7 +361,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
 
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-4">
         {emojis.map((emoji) => {
           const key = `${emoji.id}|${emoji.name}`
           const isSelected = selectedIds.has(key)
@@ -484,8 +484,8 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
-      <div className="p-4 border-b bg-background">
+    <div className="w-full xl:w-[360px] flex-shrink-0 flex flex-col xl:border-l bg-muted/20 xl:max-h-[600px]">
+      <div className="p-4 sm:p-5 border-b bg-background">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-sm">Selected Emojis</h3>
           {selectedEmojis.length > 0 && (
@@ -504,7 +504,7 @@ export function PackSelectionSidebar({
         </p>
       </div>
 
-      <ScrollArea className="flex-1 p-3">
+      <ScrollArea className="flex-1 p-4">
         {selectedEmojis.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
             <Download className="h-12 w-12 mb-2 opacity-20" />
@@ -605,7 +605,7 @@ export function PackSelectionSidebar({
         )}
       </ScrollArea>
 
-      <div className="p-4 border-t bg-background space-y-2">
+      <div className="p-4 sm:p-5 border-t bg-background space-y-2">
         {/* Action buttons */}
         <div className="space-y-2">
           <Button

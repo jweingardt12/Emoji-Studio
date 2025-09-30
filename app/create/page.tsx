@@ -1119,8 +1119,8 @@ function EmojiCreatorPage() {
                     Back to Upload
                   </Button>
                 </div>
-                <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-                  <Card className="h-[600px] flex flex-col">
+                <div className="flex flex-col xl:grid xl:grid-cols-[1fr_360px] gap-6 min-w-0">
+                  <Card className="h-[600px] flex flex-col min-w-0">
                     <CardHeader className="flex-none">
                       <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
