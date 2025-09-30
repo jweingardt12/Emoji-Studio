@@ -5,7 +5,7 @@ import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders, ListChecks, Save } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { SparklesText } from "@/src/components/magicui/sparkles-text"
+import { isEmojiNameAvailable, type Emoji } from "@/lib/services/emoji-service"
 
 interface ProcessingStep {
   id: string
@@ -39,6 +40,7 @@ interface EmojiProcessingModalProps {
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
   onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
   onUpdateProcessedEmojis?: (emojis: ProcessedEmoji[]) => void
+  emojiData?: Emoji[] // Optional workspace emoji data for name checking
 }
 
 export function EmojiProcessingModal({
@@ -54,7 +56,8 @@ export function EmojiProcessingModal({
   onUpdateName,
   onEdit,
   onEditGifFrames,
-  onUpdateProcessedEmojis
+  onUpdateProcessedEmojis,
+  emojiData
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -67,12 +70,36 @@ export function EmojiProcessingModal({
   const [uploadStatuses, setUploadStatuses] = useState<Record<number, 'success' | 'failed' | 'pending'>>({})
   const [showEIModal, setShowEIModal] = useState(false)
   const [eiAnalyses, setEiAnalyses] = useState<any[] | null>(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const [nameStatuses, setNameStatuses] = useState<Record<number, 'checking' | 'available' | 'taken'>>({})
 
   useEffect(() => {
     setMounted(true)
     setHasSlack(hasSlackConnection())
     return () => setMounted(false)
   }, [])
+
+  // Check name availability when processing completes
+  useEffect(() => {
+    const isComplete = currentStep === 'completed'
+    if (!isComplete || processedEmojis.length === 0 || !hasSlack || !emojiData) return
+
+    const checkNames = async () => {
+      for (let i = 0; i < processedEmojis.length; i++) {
+        setNameStatuses(prev => ({ ...prev, [i]: 'checking' }))
+
+        const isAvailable = await isEmojiNameAvailable(processedEmojis[i].name, emojiData)
+
+        setNameStatuses(prev => ({
+          ...prev,
+          [i]: isAvailable ? 'available' : 'taken'
+        }))
+      }
+    }
+
+    checkNames()
+  }, [currentStep, processedEmojis, hasSlack, emojiData])
 
   useEffect(() => {
     if (isOpen) {
@@ -150,9 +177,19 @@ export function EmojiProcessingModal({
     setEditingName(currentName)
   }
 
-  const handleSaveEdit = (index: number) => {
+  const handleSaveEdit = async (index: number) => {
     if (editingName.trim() && onUpdateName) {
       onUpdateName(index, editingName.trim())
+
+      // Re-check name availability after edit
+      if (hasSlack && emojiData) {
+        setNameStatuses(prev => ({ ...prev, [index]: 'checking' }))
+        const isAvailable = await isEmojiNameAvailable(editingName.trim(), emojiData)
+        setNameStatuses(prev => ({
+          ...prev,
+          [index]: isAvailable ? 'available' : 'taken'
+        }))
+      }
     }
     setEditingIndex(null)
     setEditingName("")
@@ -164,8 +201,9 @@ export function EmojiProcessingModal({
   }
 
   const handleSlackUpload = async (emoji: ProcessedEmoji, index: number, customName?: string) => {
+    console.log("[handleSlackUpload] Starting upload for emoji at index:", index, "name:", customName || emoji.name)
     setUploadingIndex(index)
-    
+
     openpanel.track("Slack Upload: Started", {
       emojiName: customName || emoji.name,
       format: emoji.format,
@@ -173,9 +211,11 @@ export function EmojiProcessingModal({
       wasVideo: emoji.wasVideo || false,
       isBulkUpload: uploadingAll
     })
-    
+
     try {
+      console.log("[handleSlackUpload] Calling uploadEmojiToSlack...")
       const result = await uploadEmojiToSlack(emoji, customName)
+      console.log("[handleSlackUpload] Upload result:", result)
       
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
@@ -391,10 +431,33 @@ export function EmojiProcessingModal({
           {isProcessingComplete && processedEmojis.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
               <div className="space-y-1.5 sm:space-y-2">
-                {processedEmojis.map((emoji, index) => (
+                {processedEmojis.map((emoji, index) => {
+                  const isSelected = selectedIndices.has(index)
+                  return (
                   <div key={index} className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-colors ${
-                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' : 'bg-muted/50'
+                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' :
+                    isSelected ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/50'
                   }`}>
+                    {selectionMode && (
+                      <button
+                        onClick={() => {
+                          setSelectedIndices(prev => {
+                            const next = new Set(prev)
+                            if (next.has(index)) {
+                              next.delete(index)
+                            } else {
+                              next.add(index)
+                            }
+                            return next
+                          })
+                        }}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isSelected ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                        }`}
+                      >
+                        {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                      </button>
+                    )}
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
                       <img 
                         src={emoji.blob || emoji.preview} 
@@ -460,12 +523,29 @@ export function EmojiProcessingModal({
                             <p className="text-xs sm:text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
                             <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                           </button>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground">
-                            {emoji.format} • {formatBytes(emoji.processedSize)}
-                            {uploadStatuses[index] === 'failed' && (
-                              <span className="text-red-500 ml-1">• Failed</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              {emoji.format} • {formatBytes(emoji.processedSize)}
+                              {uploadStatuses[index] === 'failed' && (
+                                <span className="text-red-500 ml-1">• Failed</span>
+                              )}
+                            </p>
+                            {hasSlack && nameStatuses[index] === 'checking' && (
+                              <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
+                                • <Loader2 className="h-2.5 w-2.5 animate-spin" /> Checking name
+                              </span>
                             )}
-                          </p>
+                            {hasSlack && nameStatuses[index] === 'taken' && (
+                              <span className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                • <AlertCircle className="h-2.5 w-2.5" /> Name already taken
+                              </span>
+                            )}
+                            {hasSlack && nameStatuses[index] === 'available' && (
+                              <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                                • <CheckCircle2 className="h-2.5 w-2.5" /> Available
+                              </span>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
@@ -494,10 +574,54 @@ export function EmojiProcessingModal({
                       )}
                     </div>
                   </div>
-                ))}
+                )})}
+
               </div>
 
               <div className="space-y-2 pt-1 sm:pt-2">
+                {/* Selection controls for multiple emojis */}
+                {processedEmojis.length > 1 && (
+                  <div className="flex items-center justify-between px-1 pb-1 border-b">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectionMode(!selectionMode)}
+                        className="h-8"
+                      >
+                        <ListChecks className={`h-4 w-4 mr-1.5 ${selectionMode ? 'text-primary' : ''}`} />
+                        <span className="text-xs">Select</span>
+                      </Button>
+                      {selectionMode && selectedIndices.size > 0 && (
+                        <>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedIndices.size} selected
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedIndices(new Set())}
+                            className="h-7 text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        // Save as pack functionality (placeholder)
+                        toast.success("Pack feature coming soon!")
+                      }}
+                      className="h-8"
+                    >
+                      <Save className="h-4 w-4 mr-1.5" />
+                      <span className="text-xs">Save as Pack</span>
+                    </Button>
+                  </div>
+                )}
                 {processedEmojis.length === 1 ? (
                   <div className="space-y-2">
                     <div className="flex flex-col sm:flex-row gap-2">

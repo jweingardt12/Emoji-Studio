@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Trophy, Clock } from "lucide-react";
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Leaderboard from "@/components/leaderboard";
 import EmojiGrid from "@/components/emoji-grid";
@@ -113,11 +114,30 @@ export function DashboardTabbedContent({
         </Tabs>
       </div>
       
-      {/* Desktop layout - keep existing side-by-side */}
-      <div className="hidden md:grid md:grid-cols-2 gap-4 lg:gap-6">
+      {/* Desktop layout - full-width stacked */}
+      <div className="hidden md:flex md:flex-col gap-4 lg:gap-6">
         <div className="rounded-xl bg-card border border-border shadow">
           <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">Leaderboard</h3>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              <Link href="/my-emojis" className="focus:outline-none cursor-pointer hover:opacity-80">
+                <span className="border-b border-dotted border-muted-foreground">Recent Emojis</span>
+              </Link>
+            </h2>
+          </div>
+          <div className="p-4">
+            <EmojiGrid />
+          </div>
+        </div>
+        
+        <div className="rounded-xl bg-card border border-border shadow">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Trophy className="h-5 w-5" />
+              <Link href="/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80">
+                <span className="border-b border-dotted border-muted-foreground">Leaderboard</span>
+              </Link>
+            </h2>
           </div>
           <div className="p-4">
             <Leaderboard
@@ -130,15 +150,6 @@ export function DashboardTabbedContent({
               onViewUser={onViewUser}
               variant="compact"
             />
-          </div>
-        </div>
-        
-        <div className="rounded-xl bg-card border border-border shadow">
-          <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">Recent Emojis</h3>
-          </div>
-          <div className="p-4">
-            <EmojiGrid />
           </div>
         </div>
       </div>
