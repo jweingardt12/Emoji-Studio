@@ -9,10 +9,11 @@
  */
 
 import { useState, useEffect, useMemo } from "react"
-import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send } from "lucide-react"
+import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { toast } from "sonner"
 import { packDiscovery } from "@/lib/services/pack-discovery"
 import type { PackEmoji } from "@/lib/types/emoji-pack"
@@ -84,9 +85,15 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     loadPackForTab(selectedTab)
   }, [selectedTab])
 
-  // Check name availability for selected emojis
+  // Check name availability for selected emojis, including edits
   useEffect(() => {
     const selectedEmojis = getSelectedEmojis()
+
+    if (selectedEmojis.length === 0) {
+      setNameStatuses(new Map())
+      return
+    }
+
     const currentKeys = new Set(selectedEmojis.map((e) => `${e.id}|${e.name}`))
 
     // Skip name checking if no workspace/emojis are connected
@@ -95,37 +102,55 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       return
     }
 
-    setNameStatuses((prev) => {
+    // Reset to checking while we validate (ensures re-check after edits)
+    setNameStatuses(() => {
       const next = new Map<string, NameStatus>()
-      currentKeys.forEach((key) => {
-        next.set(key, prev.get(key) || "checking")
+      selectedEmojis.forEach((emoji) => {
+        const key = `${emoji.id}|${emoji.name}`
+        next.set(key, "checking")
       })
       return next
     })
 
-    Promise.all(
-      selectedEmojis.map(async (emoji) => {
-        const key = `${emoji.id}|${emoji.name}`
-        try {
-          const available = await isEmojiNameAvailable(emoji.name, existingEmojis)
-          setNameStatuses((prev) => {
-            if (!currentKeys.has(key)) return prev
-            const next = new Map(prev)
-            next.set(key, available ? "available" : "taken")
-            return next
-          })
-        } catch (error) {
-          console.error(`Failed to check ${emoji.name}:`, error)
-          setNameStatuses((prev) => {
-            if (!currentKeys.has(key)) return prev
-            const next = new Map(prev)
-            next.set(key, "available")
-            return next
-          })
-        }
-      })
-    )
-  }, [selectedIds, existingEmojis])
+    let cancelled = false
+
+    const checkNames = async () => {
+      await Promise.all(
+        selectedEmojis.map(async (emoji) => {
+          const key = `${emoji.id}|${emoji.name}`
+          const displayName = customNames.get(key) || emoji.name
+
+          try {
+            const available = await isEmojiNameAvailable(displayName, existingEmojis)
+            if (cancelled) return
+
+            setNameStatuses((prev) => {
+              if (!currentKeys.has(key)) return prev
+              const next = new Map(prev)
+              next.set(key, available ? "available" : "taken")
+              return next
+            })
+          } catch (error) {
+            console.error(`Failed to check ${displayName}:`, error)
+            if (cancelled) return
+
+            setNameStatuses((prev) => {
+              if (!currentKeys.has(key)) return prev
+              const next = new Map(prev)
+              next.set(key, "available")
+              return next
+            })
+          }
+        })
+      )
+    }
+
+    checkNames()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedIds, existingEmojis, customNames])
 
   // Debounced search
   useEffect(() => {
@@ -349,7 +374,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("popular")}
           className="rounded-full"
         >
-          Popular
+          <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+          Popular · Slackmojis
         </Button>
         <Button
           variant={selectedTab === "recent" ? "default" : "secondary"}
@@ -357,7 +383,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("recent")}
           className="rounded-full"
         >
-          Recent
+          <Clock className="h-3.5 w-3.5 mr-1.5" />
+          Recent · Slackmojis
         </Button>
         <Button
           variant={selectedTab === "memes" ? "default" : "secondary"}
@@ -365,6 +392,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("memes")}
           className="rounded-full"
         >
+          <Laugh className="h-3.5 w-3.5 mr-1.5" />
           Memes
         </Button>
         <Button
@@ -373,6 +401,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("blobcats")}
           className="rounded-full"
         >
+          <Cat className="h-3.5 w-3.5 mr-1.5" />
           Blob Cats
         </Button>
         <Button
@@ -381,6 +410,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("partyparrots")}
           className="rounded-full"
         >
+          <Bird className="h-3.5 w-3.5 mr-1.5" />
           Party Parrots
         </Button>
         <Button
@@ -389,6 +419,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           onClick={() => onSelectTab("bufo")}
           className="rounded-full"
         >
+          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
           Bufo
         </Button>
       </div>
@@ -521,6 +552,16 @@ interface PackSelectionSidebarProps {
   onDownload: () => void
   onSendToSlack?: () => void
   hasSlackConnection?: boolean
+  downloadProgress?: {
+    stage: "downloading" | "finalizing"
+    completed: number
+    total: number
+  } | null
+  uploadProgress?: {
+    completed: number
+    failed: number
+    total: number
+  } | null
   isDemoMode?: boolean
 }
 
@@ -539,6 +580,8 @@ export function PackSelectionSidebar({
   onDownload,
   onSendToSlack,
   hasSlackConnection = false,
+  downloadProgress,
+  uploadProgress,
   isDemoMode = false,
 }: PackSelectionSidebarProps) {
   const hasNameChecking = nameStatuses.size > 0
@@ -550,8 +593,8 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-full xl:w-[360px] flex-shrink-0 flex flex-col xl:border-l bg-muted/20 xl:max-h-[600px]">
-      <div className="p-4 sm:p-5 border-b bg-background">
+    <div className="w-full flex-shrink-0 flex flex-col xl:h-[600px] xl:rounded-xl xl:border xl:shadow bg-card">
+      <div className="p-4 sm:p-5 border-b">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-sm">Selected Emojis</h3>
           {selectedEmojis.length > 0 && (
@@ -589,7 +632,7 @@ export function PackSelectionSidebar({
                 <div
                   key={key}
                   className={cn(
-                    "flex items-center gap-2 p-2 rounded-lg bg-background border transition-all group",
+                    "flex w-full items-center gap-3 px-3 py-2 rounded-lg bg-background border transition-all group min-w-0 overflow-hidden",
                     hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
                     hasNameChecking && status === "available" && "border-green-500/30"
                   )}
@@ -597,11 +640,11 @@ export function PackSelectionSidebar({
                   <img
                     src={emoji.imageURL}
                     alt={emoji.name}
-                    className="w-10 h-10 object-contain flex-shrink-0"
+                    className="w-12 h-12 object-contain flex-shrink-0"
                     loading="lazy"
                   />
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
                     {isEditing ? (
                       <Input
                         autoFocus
@@ -632,43 +675,55 @@ export function PackSelectionSidebar({
                             onSetEditingValue("")
                           }
                         }}
-                        className="h-6 text-xs font-mono"
+                        className="h-6 w-full min-w-0 max-w-[220px] sm:max-w-[260px] xl:max-w-[300px] text-xs font-mono"
                       />
                     ) : (
-                      <button
-                        onClick={() => {
-                          const displayName = customNames?.get(key) || emoji.name
-                          onSetEditingName(key)
-                          onSetEditingValue(displayName)
-                        }}
-                        className="flex items-center gap-1 text-left group/name w-full"
-                      >
-                        <span className="text-xs font-mono truncate">
+                      <>
+                        <span
+                          className="flex-1 min-w-0 truncate text-xs font-mono max-w-[220px] sm:max-w-[260px] xl:max-w-[300px]"
+                          title={customNames?.get(key) || emoji.name}
+                        >
                           :{customNames?.get(key) || emoji.name}:
                         </span>
-                        <Edit2 className="h-3 w-3 opacity-0 group-hover/name:opacity-50 transition-opacity flex-shrink-0" />
-                      </button>
+                        <button
+                          onClick={() => {
+                            const displayName = customNames?.get(key) || emoji.name
+                            onSetEditingName(key)
+                            onSetEditingValue(displayName)
+                          }}
+                          className="group/name flex-shrink-0"
+                        >
+                          <Edit2 className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
+                        </button>
+                      </>
                     )}
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {hasNameChecking && status === "checking" && (
-                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     )}
                     {hasNameChecking && status === "available" && (
-                      <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     )}
                     {hasNameChecking && status === "taken" && (
-                      <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                      <HoverCard openDelay={200} closeDelay={100}>
+                        <HoverCardTrigger asChild>
+                          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-64 text-xs">
+                          This name is already taken in your workspace. Click the pencil to edit it before continuing.
+                        </HoverCardContent>
+                      </HoverCard>
                     )}
 
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => onRemove(emoji)}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -678,12 +733,12 @@ export function PackSelectionSidebar({
         )}
       </ScrollArea>
 
-      <div className="p-4 sm:p-5 border-t bg-background space-y-2">
+      <div className="p-4 sm:p-5 border-t space-y-2">
         {/* Action buttons */}
         <div className="space-y-2">
           <Button
             onClick={onDownload}
-            disabled={!canDownload}
+            disabled={!canDownload || !!downloadProgress}
             className="w-full"
             variant="outline"
           >
@@ -693,7 +748,7 @@ export function PackSelectionSidebar({
 
           <Button
             onClick={onSendToSlack}
-            disabled={!canSendToSlack}
+            disabled={!canSendToSlack || !!uploadProgress}
             className="w-full"
           >
             <Send className="mr-2 h-4 w-4" />
@@ -702,6 +757,31 @@ export function PackSelectionSidebar({
         </div>
 
         {/* Status messages */}
+        {downloadProgress && (
+          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {downloadProgress.stage === "downloading"
+              ? `Downloading ${downloadProgress.completed}/${downloadProgress.total} emojis...`
+              : "Finalizing download..."}
+          </p>
+        )}
+        {uploadProgress && (
+          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+            {uploadProgress.stage === "complete" ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-green-500" />
+                {`Upload complete! ${uploadProgress.completed}/${uploadProgress.total} emojis`}
+                {uploadProgress.failed > 0 && ` (${uploadProgress.failed} failed)`}
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {`Uploading ${uploadProgress.completed}/${uploadProgress.total} emojis`}
+                {uploadProgress.failed > 0 && ` (${uploadProgress.failed} failed)`}
+              </>
+            )}
+          </p>
+        )}
         {!hasSlackConnection && selectedEmojis.length > 0 && (
           <p className="text-xs text-muted-foreground text-center">
             Connect Slack in{" "}

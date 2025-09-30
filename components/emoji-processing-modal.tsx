@@ -16,6 +16,7 @@ import Link from "next/link"
 import { openpanel } from "@/lib/safe-openpanel"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { SparklesText } from "@/src/components/magicui/sparkles-text"
+import { isEmojiNameAvailable, type Emoji } from "@/lib/services/emoji-service"
 
 interface ProcessingStep {
   id: string
@@ -39,6 +40,7 @@ interface EmojiProcessingModalProps {
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
   onEditGifFrames?: (emoji: ProcessedEmoji, index: number) => void
   onUpdateProcessedEmojis?: (emojis: ProcessedEmoji[]) => void
+  emojiData?: Emoji[] // Optional workspace emoji data for name checking
 }
 
 export function EmojiProcessingModal({
@@ -54,7 +56,8 @@ export function EmojiProcessingModal({
   onUpdateName,
   onEdit,
   onEditGifFrames,
-  onUpdateProcessedEmojis
+  onUpdateProcessedEmojis,
+  emojiData
 }: EmojiProcessingModalProps) {
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
@@ -69,12 +72,34 @@ export function EmojiProcessingModal({
   const [eiAnalyses, setEiAnalyses] = useState<any[] | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const [nameStatuses, setNameStatuses] = useState<Record<number, 'checking' | 'available' | 'taken'>>({})
 
   useEffect(() => {
     setMounted(true)
     setHasSlack(hasSlackConnection())
     return () => setMounted(false)
   }, [])
+
+  // Check name availability when processing completes
+  useEffect(() => {
+    const isComplete = currentStep === 'completed'
+    if (!isComplete || processedEmojis.length === 0 || !hasSlack || !emojiData) return
+
+    const checkNames = async () => {
+      for (let i = 0; i < processedEmojis.length; i++) {
+        setNameStatuses(prev => ({ ...prev, [i]: 'checking' }))
+
+        const isAvailable = await isEmojiNameAvailable(processedEmojis[i].name, emojiData)
+
+        setNameStatuses(prev => ({
+          ...prev,
+          [i]: isAvailable ? 'available' : 'taken'
+        }))
+      }
+    }
+
+    checkNames()
+  }, [currentStep, processedEmojis, hasSlack, emojiData])
 
   useEffect(() => {
     if (isOpen) {
@@ -152,9 +177,19 @@ export function EmojiProcessingModal({
     setEditingName(currentName)
   }
 
-  const handleSaveEdit = (index: number) => {
+  const handleSaveEdit = async (index: number) => {
     if (editingName.trim() && onUpdateName) {
       onUpdateName(index, editingName.trim())
+
+      // Re-check name availability after edit
+      if (hasSlack && emojiData) {
+        setNameStatuses(prev => ({ ...prev, [index]: 'checking' }))
+        const isAvailable = await isEmojiNameAvailable(editingName.trim(), emojiData)
+        setNameStatuses(prev => ({
+          ...prev,
+          [index]: isAvailable ? 'available' : 'taken'
+        }))
+      }
     }
     setEditingIndex(null)
     setEditingName("")
@@ -488,12 +523,29 @@ export function EmojiProcessingModal({
                             <p className="text-xs sm:text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
                             <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                           </button>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground">
-                            {emoji.format} • {formatBytes(emoji.processedSize)}
-                            {uploadStatuses[index] === 'failed' && (
-                              <span className="text-red-500 ml-1">• Failed</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              {emoji.format} • {formatBytes(emoji.processedSize)}
+                              {uploadStatuses[index] === 'failed' && (
+                                <span className="text-red-500 ml-1">• Failed</span>
+                              )}
+                            </p>
+                            {hasSlack && nameStatuses[index] === 'checking' && (
+                              <span className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
+                                • <Loader2 className="h-2.5 w-2.5 animate-spin" /> Checking name
+                              </span>
                             )}
-                          </p>
+                            {hasSlack && nameStatuses[index] === 'taken' && (
+                              <span className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                • <AlertCircle className="h-2.5 w-2.5" /> Name already taken
+                              </span>
+                            )}
+                            {hasSlack && nameStatuses[index] === 'available' && (
+                              <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                                • <CheckCircle2 className="h-2.5 w-2.5" /> Available
+                              </span>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
