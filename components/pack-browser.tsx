@@ -172,7 +172,8 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   const performSearch = async (query: string) => {
     setLoading(true)
     try {
-      const results = await packDiscovery.searchSlackmojis(query)
+      // Search across all packs instead of just Slackmojis
+      const results = await packDiscovery.searchAllPacks(query)
       setSearchResults(results || [])
     } catch (error) {
       toast.error("Search failed")
@@ -360,7 +361,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
 
   if (viewMode === "grid") {
     return (
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
         {emojis.map((emoji) => {
           const key = `${emoji.id}|${emoji.name}`
           const isSelected = selectedIds.has(key)
@@ -376,7 +377,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   : "border-transparent bg-muted/30"
               )}
             >
-              <div className="relative w-12 h-12 flex-shrink-0">
+              <div className="relative w-16 h-16 flex-shrink-0">
                 <img
                   src={emoji.imageURL}
                   alt={emoji.name}

@@ -99,6 +99,55 @@ class PackDiscoveryService {
     })
   }
 
+  /**
+   * Search across ALL packs (Slackmojis + Bufo)
+   * Performs client-side filtering on cached/fetched packs
+   */
+  async searchAllPacks(query: string): Promise<PackEmoji[]> {
+    if (!query.trim()) return []
+
+    const normalizedQuery = query.toLowerCase().trim()
+    const cacheKey = `all-packs-search-${normalizedQuery}`
+
+    return this.getCachedOrFetch(cacheKey, async () => {
+      // Fetch all packs in parallel
+      const [popular, recent, memes, blobcats, partyparrots, bufo] = await Promise.all([
+        this.fetchSlackmojisPopular(),
+        this.fetchSlackmojisRecent(),
+        this.fetchSlackmojisMemes(),
+        this.fetchSlackmojisBlobCats(),
+        this.fetchSlackmojisPartyParrots(),
+        this.fetchBufo(),
+      ])
+
+      // Combine all emojis
+      const allEmojis = [
+        ...popular,
+        ...recent,
+        ...memes,
+        ...blobcats,
+        ...partyparrots,
+        ...bufo,
+      ]
+
+      // Deduplicate by id|name
+      const seen = new Set<string>()
+      const unique: PackEmoji[] = []
+      for (const emoji of allEmojis) {
+        const key = `${emoji.id}|${emoji.name}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          unique.push(emoji)
+        }
+      }
+
+      // Filter by query
+      return unique.filter(emoji =>
+        emoji.name.toLowerCase().includes(normalizedQuery)
+      )
+    })
+  }
+
   clearCache(): void {
     this.cache.clear()
   }
