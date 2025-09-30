@@ -59,6 +59,12 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     const selectedEmojis = getSelectedEmojis()
     const currentKeys = new Set(selectedEmojis.map((e) => `${e.id}|${e.name}`))
 
+    // Skip name checking if no workspace/emojis are connected
+    if (!existingEmojis || existingEmojis.length === 0) {
+      setNameStatuses(new Map())
+      return
+    }
+
     setNameStatuses((prev) => {
       const next = new Map<string, NameStatus>()
       currentKeys.forEach((key) => {
@@ -464,9 +470,11 @@ export function PackSelectionSidebar({
   onExport,
   isDemoMode = false,
 }: PackSelectionSidebarProps) {
+  const hasNameChecking = nameStatuses.size > 0
   const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
   const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
-  const canExport = selectedEmojis.length > 0 && takenCount === 0 && checkingCount === 0
+  // Allow export if: has emojis AND (no name checking OR all names are available)
+  const canExport = selectedEmojis.length > 0 && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
     <div className="w-80 flex-shrink-0 flex flex-col border-l bg-muted/20">
@@ -490,16 +498,17 @@ export function PackSelectionSidebar({
           <div className="space-y-2">
             {selectedEmojis.map((emoji) => {
               const key = `${emoji.id}|${emoji.name}`
-              const status = nameStatuses.get(key) || "checking"
+              const status = nameStatuses.get(key)
               const isEditing = editingName === key
+              const hasNameChecking = nameStatuses.size > 0
 
               return (
                 <div
                   key={key}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-lg bg-background border transition-all group",
-                    status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
-                    status === "available" && "border-green-500/30"
+                    hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
+                    hasNameChecking && status === "available" && "border-green-500/30"
                   )}
                 >
                   <img
@@ -553,13 +562,13 @@ export function PackSelectionSidebar({
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    {status === "checking" && (
+                    {hasNameChecking && status === "checking" && (
                       <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                     )}
-                    {status === "available" && (
+                    {hasNameChecking && status === "available" && (
                       <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400" />
                     )}
-                    {status === "taken" && (
+                    {hasNameChecking && status === "taken" && (
                       <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
                     )}
 
@@ -599,12 +608,12 @@ export function PackSelectionSidebar({
           </Button>
         </div>
 
-        {checkingCount > 0 && (
+        {hasNameChecking && checkingCount > 0 && (
           <p className="text-xs text-muted-foreground text-center">
             Checking {checkingCount} name{checkingCount > 1 ? "s" : ""}...
           </p>
         )}
-        {takenCount > 0 && (
+        {hasNameChecking && takenCount > 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
             {takenCount} name{takenCount > 1 ? "s" : ""} taken - edit to continue
           </p>
