@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, Package } from "lucide-react"
+import { Upload, Sparkles, Download, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, Package, ShoppingCart } from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
@@ -15,6 +15,8 @@ import { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } 
 import type { PackEmoji } from "@/lib/types/emoji-pack"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Badge } from "@/components/ui/badge"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -85,6 +87,7 @@ function EmojiCreatorPage() {
   const [isReEditingFromModal, setIsReEditingFromModal] = useState(false)
   const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
   const [pendingMobileFile, setPendingMobileFile] = useState<File | null>(null)
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const { toast } = useToast()
 
   // Pack browser state
@@ -1163,14 +1166,18 @@ function EmojiCreatorPage() {
                     </CardContent>
                   </Card>
 
-                  <PackSelectionSidebar
-                    selectedEmojis={packBrowser.selectedEmojis}
+                  {/* Desktop sidebar - only show on xl screens */}
+                  <div className="hidden xl:block">
+                    <PackSelectionSidebar
+                      selectedEmojis={packBrowser.selectedEmojis}
                     maxSelection={20}
                     nameStatuses={packBrowser.nameStatuses}
                     editingName={packBrowser.editingName}
                     editingValue={packBrowser.editingValue}
                     onSetEditingName={packBrowser.setEditingName}
                     onSetEditingValue={packBrowser.setEditingValue}
+                    onSaveCustomName={packBrowser.saveCustomName}
+                    customNames={packBrowser.customNames}
                     onRemove={packBrowser.removeFromSelection}
                     onClear={packBrowser.clearSelection}
                     hasSlackConnection={hasSlack}
@@ -1260,7 +1267,7 @@ function EmojiCreatorPage() {
                         URL.revokeObjectURL(url)
 
                         progressToast.dismiss()
-                        packBrowser.clearSelection()
+                        packBrowser.clearSelectionsAndStorage()
 
                         toast({
                           title: "Download complete",
@@ -1280,45 +1287,280 @@ function EmojiCreatorPage() {
                       const selected = packBrowser.getSelectedEmojis()
                       if (selected.length === 0) return
 
-                      // Download and process emojis, then open modal for upload
-                      const loadingToast = toast({
-                        title: "Preparing emojis...",
-                        description: `Downloading and processing ${selected.length} emojis`,
+                      // Upload pack emojis directly to Slack without processing
+                      const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
+
+                      let successCount = 0
+                      let failedCount = 0
+                      const errors: string[] = []
+                      const total = selected.length
+
+                      let uploadToast = toast({
+                        title: "Uploading to Slack...",
+                        description: `0/${total} (0%)`,
                         duration: Infinity,
                       })
 
-                      const files: File[] = []
-                      for (const emoji of selected) {
+                      for (let i = 0; i < selected.length; i++) {
+                        const emoji = selected[i]
                         try {
-                          const response = await fetch(emoji.imageURL)
-                          const blob = await response.blob()
-                          const ext = emoji.isAnimated ? 'gif' : 'png'
-                          const file = new File([blob], `${emoji.name}.${ext}`, { type: blob.type })
-                          files.push(file)
+                          // Use custom name if available
+                          const effectiveName = packBrowser.getEffectiveName(emoji)
+                          const result = await uploadPackEmojiToSlack(
+                            emoji.imageURL,
+                            effectiveName,
+                            emoji.isAnimated
+                          )
+
+                          if (result.success) {
+                            successCount++
+                          } else {
+                            failedCount++
+                            errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
+                          }
+
+                          // Update progress - show completed count and percentage
+                          const completed = successCount + failedCount
+                          const percentage = Math.round((completed / total) * 100)
+                          uploadToast.dismiss()
+                          uploadToast = toast({
+                            title: "Uploading to Slack...",
+                            description: `${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+                            duration: Infinity,
+                          })
                         } catch (error) {
-                          console.error(`Failed to load emoji ${emoji.name}:`, error)
+                          const effectiveName = packBrowser.getEffectiveName(emoji)
+                          console.error(`Failed to upload ${effectiveName}:`, error)
+                          failedCount++
+                          errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
                         }
                       }
 
-                      if (files.length > 0) {
-                        // Process files and trigger upload
-                        setSelectedFiles(files)
-                        packBrowser.clearSelection()
-                        setCreationMode("upload")
-                        loadingToast.dismiss()
+                      uploadToast.dismiss()
 
-                        // Trigger processing
-                        await processFiles()
-                      } else {
-                        loadingToast.dismiss()
+                      // Show final result
+                      if (successCount > 0) {
+                        packBrowser.clearSelectionsAndStorage()
                         toast({
-                          title: "Failed to prepare emojis",
-                          description: "Could not download emojis",
+                          title: "Upload complete",
+                          description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
+                        })
+                      }
+
+                      if (failedCount > 0) {
+                        console.error('Upload errors:', errors)
+                        toast({
+                          title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
+                          description: errors[0] || 'Unknown error',
                           variant: "destructive",
                         })
                       }
                     }}
                   />
+                  </div>
+
+                  {/* Mobile cart button - show on screens < xl */}
+                  {packBrowser.selectedEmojis.length > 0 && (
+                    <Button
+                      onClick={() => setIsCartOpen(true)}
+                      className="xl:hidden fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
+                      size="icon"
+                    >
+                      <div className="relative">
+                        <ShoppingCart className="h-6 w-6" />
+                        <Badge
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                        >
+                          {packBrowser.selectedEmojis.length}
+                        </Badge>
+                      </div>
+                    </Button>
+                  )}
+
+                  {/* Mobile sheet */}
+                  <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+                    <SheetContent side="right" className="w-full sm:max-w-md p-0">
+                      <PackSelectionSidebar
+                        selectedEmojis={packBrowser.selectedEmojis}
+                        maxSelection={20}
+                        nameStatuses={packBrowser.nameStatuses}
+                        editingName={packBrowser.editingName}
+                        editingValue={packBrowser.editingValue}
+                        onSetEditingName={packBrowser.setEditingName}
+                        onSetEditingValue={packBrowser.setEditingValue}
+                        onSaveCustomName={packBrowser.saveCustomName}
+                        customNames={packBrowser.customNames}
+                        onRemove={packBrowser.removeFromSelection}
+                        onClear={packBrowser.clearSelection}
+                        hasSlackConnection={hasSlack}
+                        onDownload={async () => {
+                          setIsCartOpen(false)
+                          // Reuse the same download logic
+                          const selected = packBrowser.getSelectedEmojis()
+                          if (selected.length === 0) return
+
+                          const JSZip = (await import('jszip')).default
+                          const zip = new JSZip()
+
+                          let completed = 0
+                          const total = selected.length
+
+                          let progressToast = toast({
+                            title: "Creating zip file...",
+                            description: `Starting download...`,
+                            duration: Infinity,
+                          })
+
+                          for (const emoji of selected) {
+                            try {
+                              const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.imageURL)}`
+                              const response = await fetch(proxyUrl)
+
+                              if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+                              }
+
+                              const blob = await response.blob()
+                              const ext = emoji.isAnimated ? 'gif' : 'png'
+                              const fileName = `${emoji.name}.${ext}`
+
+                              zip.file(fileName, blob)
+                              completed++
+
+                              if (completed % 5 === 0 || completed === total) {
+                                progressToast.dismiss()
+                                progressToast = toast({
+                                  title: "Creating zip file...",
+                                  description: `Downloaded ${completed}/${total} emojis`,
+                                  duration: Infinity,
+                                })
+                              }
+                            } catch (error) {
+                              console.error(`[Download] Failed to download emoji ${emoji.name}:`, error)
+                            }
+                          }
+
+                          if (completed === 0) {
+                            progressToast.dismiss()
+                            toast({
+                              title: "Download failed",
+                              description: "Could not download any emojis",
+                              variant: "destructive",
+                            })
+                            return
+                          }
+
+                          progressToast.dismiss()
+                          progressToast = toast({
+                            title: "Creating zip file...",
+                            description: "Finalizing download...",
+                            duration: Infinity,
+                          })
+
+                          try {
+                            const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+                            const url = URL.createObjectURL(zipBlob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = `emoji-pack-${Date.now()}.zip`
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                            URL.revokeObjectURL(url)
+
+                            progressToast.dismiss()
+                            packBrowser.clearSelectionsAndStorage()
+
+                            toast({
+                              title: "Download complete",
+                              description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
+                            })
+                          } catch (error) {
+                            console.error('Failed to create zip:', error)
+                            progressToast.dismiss()
+                            toast({
+                              title: "Failed to create zip",
+                              description: "Could not create zip file",
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                        onSendToSlack={async () => {
+                          setIsCartOpen(false)
+                          // Reuse the same upload logic
+                          const selected = packBrowser.getSelectedEmojis()
+                          if (selected.length === 0) return
+
+                          const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
+
+                          let successCount = 0
+                          let failedCount = 0
+                          const errors: string[] = []
+                          const total = selected.length
+
+                          let uploadToast = toast({
+                            title: "Uploading to Slack...",
+                            description: `0/${total} (0%)`,
+                            duration: Infinity,
+                          })
+
+                          for (let i = 0; i < selected.length; i++) {
+                            const emoji = selected[i]
+                            try {
+                              const effectiveName = packBrowser.getEffectiveName(emoji)
+                              const result = await uploadPackEmojiToSlack(
+                                emoji.imageURL,
+                                effectiveName,
+                                emoji.isAnimated
+                              )
+
+                              if (result.success) {
+                                successCount++
+                              } else {
+                                failedCount++
+                                errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
+                              }
+
+                              const completed = successCount + failedCount
+                              const percentage = Math.round((completed / total) * 100)
+                              uploadToast.dismiss()
+                              uploadToast = toast({
+                                title: "Uploading to Slack...",
+                                description: `${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+                                duration: Infinity,
+                              })
+                            } catch (error) {
+                              const effectiveName = packBrowser.getEffectiveName(emoji)
+                              console.error(`Failed to upload ${effectiveName}:`, error)
+                              failedCount++
+                              errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                            }
+                          }
+
+                          uploadToast.dismiss()
+
+                          if (successCount > 0) {
+                            packBrowser.clearSelectionsAndStorage()
+                            toast({
+                              title: "Upload complete",
+                              description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
+                            })
+                          }
+
+                          if (failedCount > 0) {
+                            console.error('Upload errors:', errors)
+                            toast({
+                              title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
+                              description: errors[0] || 'Unknown error',
+                              variant: "destructive",
+                            })
+                          }
+                        }}
+                      />
+                    </SheetContent>
+                  </Sheet>
                 </div>
               </div>
             )}

@@ -43,11 +43,41 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   const [nameStatuses, setNameStatuses] = useState<Map<string, NameStatus>>(new Map())
   const [editingName, setEditingName] = useState<string | null>(null)
   const [editingValue, setEditingValue] = useState("")
+  const [customNames, setCustomNames] = useState<Map<string, string>>(new Map()) // Track edited names
 
-  // Load initial packs
+  // Load initial packs and restore selections
   useEffect(() => {
     loadPacks()
+
+    // Restore selections from localStorage
+    try {
+      const savedSelections = localStorage.getItem('pack-browser-selections')
+      if (savedSelections) {
+        const { ids, customNames: savedCustomNames } = JSON.parse(savedSelections)
+        if (ids && Array.isArray(ids)) {
+          setSelectedIds(new Set(ids))
+        }
+        if (savedCustomNames) {
+          setCustomNames(new Map(Object.entries(savedCustomNames)))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore selections:', error)
+    }
   }, [])
+
+  // Save selections to localStorage whenever they change
+  useEffect(() => {
+    try {
+      const data = {
+        ids: Array.from(selectedIds),
+        customNames: Object.fromEntries(customNames)
+      }
+      localStorage.setItem('pack-browser-selections', JSON.stringify(data))
+    } catch (error) {
+      console.error('Failed to save selections:', error)
+    }
+  }, [selectedIds, customNames])
 
   // Load pack when tab changes
   useEffect(() => {
@@ -239,6 +269,34 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     })
   }
 
+  // Function to save a custom name
+  const saveCustomName = (key: string, newName: string) => {
+    if (newName && newName !== key.split('|')[1]) {
+      setCustomNames(prev => {
+        const next = new Map(prev)
+        next.set(key, newName)
+        return next
+      })
+    }
+  }
+
+  // Function to get the effective name (custom or original)
+  const getEffectiveName = (emoji: PackEmoji): string => {
+    const key = `${emoji.id}|${emoji.name}`
+    return customNames.get(key) || emoji.name
+  }
+
+  // Clear selections and localStorage
+  const clearSelectionsAndStorage = () => {
+    setSelectedIds(new Set())
+    setCustomNames(new Map())
+    try {
+      localStorage.removeItem('pack-browser-selections')
+    } catch (error) {
+      console.error('Failed to clear selections from localStorage:', error)
+    }
+  }
+
   return {
     // State
     selectedTab,
@@ -255,6 +313,10 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     setEditingName,
     editingValue,
     setEditingValue,
+    customNames,
+    saveCustomName,
+    getEffectiveName,
+    clearSelectionsAndStorage,
 
     // Computed
     selectedEmojis: getSelectedEmojis(),
@@ -452,6 +514,8 @@ interface PackSelectionSidebarProps {
   editingValue: string
   onSetEditingName: (name: string | null) => void
   onSetEditingValue: (value: string) => void
+  onSaveCustomName?: (key: string, newName: string) => void
+  customNames?: Map<string, string>
   onRemove: (emoji: PackEmoji) => void
   onClear: () => void
   onDownload: () => void
@@ -468,6 +532,8 @@ export function PackSelectionSidebar({
   editingValue,
   onSetEditingName,
   onSetEditingValue,
+  onSaveCustomName,
+  customNames,
   onRemove,
   onClear,
   onDownload,
@@ -549,10 +615,16 @@ export function PackSelectionSidebar({
                           onSetEditingValue(sanitized)
                         }}
                         onBlur={() => {
+                          if (editingValue && onSaveCustomName) {
+                            onSaveCustomName(key, editingValue)
+                          }
                           onSetEditingName(null)
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
+                            if (editingValue && onSaveCustomName) {
+                              onSaveCustomName(key, editingValue)
+                            }
                             onSetEditingName(null)
                           }
                           if (e.key === "Escape") {
@@ -565,13 +637,14 @@ export function PackSelectionSidebar({
                     ) : (
                       <button
                         onClick={() => {
+                          const displayName = customNames?.get(key) || emoji.name
                           onSetEditingName(key)
-                          onSetEditingValue(emoji.name)
+                          onSetEditingValue(displayName)
                         }}
                         className="flex items-center gap-1 text-left group/name w-full"
                       >
                         <span className="text-xs font-mono truncate">
-                          :{emoji.name}:
+                          :{customNames?.get(key) || emoji.name}:
                         </span>
                         <Edit2 className="h-3 w-3 opacity-0 group-hover/name:opacity-50 transition-opacity flex-shrink-0" />
                       </button>

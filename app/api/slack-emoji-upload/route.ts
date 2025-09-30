@@ -14,8 +14,17 @@ export async function POST(request: Request) {
 
     console.log("Slack upload request:", { url, formData, fileName, mimeType })
 
-    // Convert the base64 blob back to binary
-    const blobData = await fetch(blob).then(res => res.blob())
+    // Convert the data URL back to binary
+    let blobData: Blob
+    if (blob.startsWith('data:')) {
+      // Handle data URL (base64)
+      const base64Data = blob.split(',')[1]
+      const binaryData = Buffer.from(base64Data, 'base64')
+      blobData = new Blob([binaryData], { type: mimeType })
+    } else {
+      // Handle blob URL (legacy path)
+      blobData = await fetch(blob).then(res => res.blob())
+    }
 
     // Create a proper FormData object
     const form = new FormData()

@@ -166,11 +166,158 @@ export async function uploadEmojiToSlack(
   }
 }
 
+/**
+ * Upload a pack emoji directly to Slack without processing
+ * Pack emojis are already optimized and don't need the emoji processor
+ */
+export async function uploadPackEmojiToSlack(
+  imageUrl: string,
+  emojiName: string,
+  isAnimated: boolean = false
+): Promise<SlackUploadResult> {
+  console.log("[uploadPackEmojiToSlack] Starting upload for:", emojiName)
+
+  try {
+    // Get the stored curl command from localStorage
+    const storedCurl = localStorage.getItem("slackCurlCommand")
+    if (!storedCurl) {
+      return {
+        success: false,
+        error: "No Slack connection found. Please connect to Slack in Settings first."
+      }
+    }
+
+    // Parse the curl command
+    const parsed = parseSlackCurl(storedCurl)
+    if (!parsed.isValid || !parsed.url) {
+      return {
+        success: false,
+        error: "Invalid Slack connection. Please reconnect in Settings."
+      }
+    }
+
+    // Extract workspace URL
+    const workspaceMatch = parsed.url.match(/https:\/\/([^.]+)\.slack\.com/)
+    if (!workspaceMatch) {
+      return {
+        success: false,
+        error: "Could not extract workspace from Slack connection."
+      }
+    }
+    const workspace = workspaceMatch[1]
+
+    // Fetch the image from the pack using proxy to avoid CORS issues
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(imageUrl)}`
+    const response = await fetch(proxyUrl)
+    const blob = await response.blob()
+
+    // Create FormData for multipart upload
+    const formData = new FormData()
+    if (parsed.token) {
+      formData.append("token", parsed.token)
+    }
+
+    const formattedName = formatEmojiName(emojiName)
+    formData.append("name", formattedName)
+    formData.append("mode", "data")
+    formData.append("search_args", "{}")
+
+    // Add the image file
+    const fileName = `${formattedName}.${isAnimated ? 'gif' : 'png'}`
+    const file = new File([blob], fileName, {
+      type: isAnimated ? 'image/gif' : 'image/png'
+    })
+    formData.append("image", file)
+
+    formData.append("_x_reason", "add-custom-emoji-dialog-content")
+    formData.append("_x_mode", "online")
+
+    // Extract _x_id and other parameters from the URL
+    const urlParams = new URL(parsed.url).searchParams
+    const xId = urlParams.get("_x_id") || parsed.xId || ""
+    const slackRoute = urlParams.get("slack_route") || parsed.teamId || ""
+
+    // Construct the upload URL
+    const uploadUrl = `https://${workspace}.slack.com/api/emoji.add?_x_id=${xId}&slack_route=${slackRoute}&_x_version_ts=noversion&fp=5c&_x_num_retries=0`
+
+    // Prepare headers
+    const headers: Record<string, string> = {
+      "Accept": "*/*",
+      "Origin": `https://${workspace}.slack.com`,
+      "Referer": `https://${workspace}.slack.com/`,
+    }
+
+    if (parsed.cookie) {
+      headers["Cookie"] = parsed.cookie
+    }
+
+    // Convert FormData to a plain object
+    const formDataObj: Record<string, any> = {}
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        continue
+      }
+      formDataObj[key] = value
+    }
+
+    // Convert blob to base64 for transfer to API
+    const arrayBuffer = await blob.arrayBuffer()
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+    const blobDataUrl = `data:${file.type};base64,${base64}`
+
+    // Make the request through our API proxy
+    const apiResponse = await fetch("/api/slack-emoji-upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: uploadUrl,
+        formData: formDataObj,
+        headers: headers,
+        blob: blobDataUrl,
+        fileName: fileName,
+        mimeType: file.type
+      })
+    })
+
+    const result = await apiResponse.json()
+
+    if (!apiResponse.ok || result.error || result.details?.error) {
+      let errorMessage = "Failed to upload emoji to Slack"
+
+      if (result.error === "error_name_taken" || result.details?.error === "error_name_taken") {
+        errorMessage = `The emoji name ":${formattedName}:" is already taken. Please choose a different name.`
+      } else if (result.error) {
+        errorMessage = result.error
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        emojiName: formattedName
+      }
+    }
+
+    return {
+      success: true,
+      emojiName: formattedName
+    }
+
+  } catch (error) {
+    console.error("[uploadPackEmojiToSlack] Exception during upload:", error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to upload emoji"
+    }
+  }
+}
+
 // Check if user has a valid Slack connection
 export function hasSlackConnection(): boolean {
   const storedCurl = localStorage.getItem("slackCurlCommand")
   if (!storedCurl) return false
-  
+
   const parsed = parseSlackCurl(storedCurl)
   return parsed.isValid && !!parsed.url
 }
