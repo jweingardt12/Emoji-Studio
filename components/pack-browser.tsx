@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import type { Variants } from "framer-motion"
 import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,61 +25,61 @@ import { isEmojiNameAvailable } from "@/lib/services/emoji-service"
 type Tab = "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
 type NameStatus = "checking" | "available" | "taken"
 
-const gridContainerVariants = {
+const gridContainerVariants: Variants = {
   initial: { opacity: 0, y: 8 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' },
+    transition: { duration: 0.25, ease: 'easeOut' as const },
   },
   exit: {
     opacity: 0,
     y: -8,
-    transition: { duration: 0.18, ease: 'easeIn' },
+    transition: { duration: 0.18, ease: 'easeIn' as const },
   },
 }
 
-const gridItemVariants = {
+const gridItemVariants: Variants = {
   hidden: { opacity: 0, scale: 0.9, y: 12 },
   enter: {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { duration: 0.22, ease: 'easeOut' },
+    transition: { duration: 0.22, ease: 'easeOut' as const },
   },
   exit: {
     opacity: 0,
     scale: 0.9,
     y: -12,
-    transition: { duration: 0.18, ease: 'easeIn' },
+    transition: { duration: 0.18, ease: 'easeIn' as const },
   },
 }
 
-const listContainerVariants = {
+const listContainerVariants: Variants = {
   initial: { opacity: 0, y: 6 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.2, ease: 'easeOut' },
+    transition: { duration: 0.2, ease: 'easeOut' as const },
   },
   exit: {
     opacity: 0,
     y: -6,
-    transition: { duration: 0.16, ease: 'easeIn' },
+    transition: { duration: 0.16, ease: 'easeIn' as const },
   },
 }
 
-const listItemVariants = {
+const listItemVariants: Variants = {
   hidden: { opacity: 0, x: 12 },
   enter: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.2, ease: 'easeOut' },
+    transition: { duration: 0.2, ease: 'easeOut' as const },
   },
   exit: {
     opacity: 0,
     x: -12,
-    transition: { duration: 0.16, ease: 'easeIn' },
+    transition: { duration: 0.16, ease: 'easeIn' as const },
   },
 }
 
