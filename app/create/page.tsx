@@ -4,7 +4,20 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus } from "lucide-react"
+import {
+  Upload,
+  Sparkles,
+  X,
+  FileVideo,
+  FileImage,
+  File as FileIcon,
+  Grid3x3,
+  List,
+  Search,
+  SmilePlus,
+  CheckSquare,
+  Eraser,
+} from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
@@ -16,7 +29,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { useToast } from "@/components/ui/use-toast"
@@ -95,6 +115,10 @@ function EmojiCreatorPage() {
     total: number
     stage: "uploading" | "complete"
   } | null>(null)
+  const [isRateLimitDialogOpen, setIsRateLimitDialogOpen] = useState(false)
+  const [pendingSlackUploadSource, setPendingSlackUploadSource] = useState<
+    "desktop" | "sheet" | null
+  >(null)
   const [showUploadOverlay, setShowUploadOverlay] = useState(false)
   const { toast } = useToast()
 
@@ -130,7 +154,14 @@ function EmojiCreatorPage() {
   }, [])
 
   // Pack browser state
-  const packBrowser = usePackBrowser(20, emojiData)
+  const packBrowser = usePackBrowser(Number.POSITIVE_INFINITY, emojiData)
+  const hasDesktopSelection = packBrowser.selectedEmojis.length > 0
+  const allCurrentSelected =
+    packBrowser.currentEmojis.length > 0 &&
+    packBrowser.currentEmojis.every((emoji) =>
+      packBrowser.selectedIds.has(`${emoji.id}|${emoji.name}`)
+    )
+  const hasSelection = packBrowser.selectedIds.size > 0
 
   const updateCartOpen = useCallback(
     (open: boolean, source: 'toolbar' | 'sheet' | 'sheet-action') => {
@@ -144,6 +175,133 @@ function EmojiCreatorPage() {
       )
     },
     [packBrowser.selectedEmojis.length]
+  )
+
+  const handleRateLimitCancel = useCallback(() => {
+    setIsRateLimitDialogOpen(false)
+    setPendingSlackUploadSource(null)
+  }, [])
+
+  const performSlackUpload = useCallback(
+    async (_source: 'desktop' | 'sheet') => {
+      const selected = packBrowser.getSelectedEmojis()
+      if (selected.length === 0) return
+
+      const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
+
+      let successCount = 0
+      let failedCount = 0
+      const errors: string[] = []
+      const total = selected.length
+
+      setUploadProgress({ completed: 0, failed: 0, total, stage: 'uploading' })
+
+      const uploadToast = toast({
+        title: 'Uploading to Slack...',
+        description: `0/${total} (0%)`,
+        duration: Infinity,
+      })
+
+      const updateUploadToast = (message: string) => {
+        uploadToast.update({
+          id: uploadToast.id,
+          title: 'Uploading to Slack...',
+          description: message,
+          duration: Infinity,
+        })
+      }
+
+      for (let i = 0; i < selected.length; i++) {
+        const emoji = selected[i]
+        try {
+          const effectiveName = packBrowser.getEffectiveName(emoji)
+          const result = await uploadPackEmojiToSlack(
+            emoji.imageURL,
+            effectiveName,
+            emoji.isAnimated
+          )
+
+          if (result.success) {
+            successCount++
+          } else {
+            failedCount++
+            errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
+          }
+        } catch (error) {
+          const effectiveName = packBrowser.getEffectiveName(emoji)
+          console.error(`Failed to upload ${effectiveName}:`, error)
+          failedCount++
+          errors.push(
+            `${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          )
+        }
+
+        const completed = successCount + failedCount
+        const percentage = Math.round((completed / total) * 100)
+        setUploadProgress((prev) =>
+          prev ? { ...prev, completed, failed: failedCount } : prev
+        )
+        updateUploadToast(
+          `${completed}/${total} (${percentage}%) - ${successCount} succeeded${
+            failedCount > 0 ? `, ${failedCount} failed` : ''
+          }`
+        )
+      }
+
+      uploadToast.dismiss()
+      setUploadProgress((prev) => (prev ? { ...prev, stage: 'complete' } : prev))
+
+      if (successCount > 0) {
+        packBrowser.clearSelectionsAndStorage()
+        toast({
+          title: 'Upload complete',
+          description: `Successfully uploaded ${successCount} emoji${
+            successCount > 1 ? 's' : ''
+          } to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
+          duration: 8000,
+        })
+      }
+
+      if (failedCount > 0) {
+        console.error('Upload errors:', errors)
+        toast({
+          title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
+          description: errors[0] || 'Unknown error',
+          variant: 'destructive',
+        })
+      }
+
+      if (successCount > 0) {
+        setTimeout(() => setUploadProgress(null), 3000)
+      } else {
+        setUploadProgress(null)
+      }
+    },
+    [packBrowser, toast]
+  )
+
+  const handleRateLimitConfirm = useCallback(async () => {
+    const source = pendingSlackUploadSource
+    handleRateLimitCancel()
+    if (source) {
+      await performSlackUpload(source)
+    }
+  }, [handleRateLimitCancel, pendingSlackUploadSource, performSlackUpload])
+
+  const requestSlackUpload = useCallback(
+    async (source: 'desktop' | 'sheet') => {
+      const selected = packBrowser.getSelectedEmojis()
+      if (selected.length === 0) return
+
+      if (selected.length > 20) {
+        setPendingSlackUploadSource(source)
+        setIsRateLimitDialogOpen(true)
+        return
+      }
+
+      await performSlackUpload(source)
+    },
+    [packBrowser, performSlackUpload]
   )
 
   useEffect(() => {
@@ -1089,7 +1247,14 @@ function EmojiCreatorPage() {
 
             {/* Pack Browser - always visible as main content */}
             <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)] gap-6 min-w-0 min-h-0">
+              <div
+                className={cn(
+                  "flex-1 flex flex-col gap-6 min-w-0 min-h-0",
+                  hasDesktopSelection
+                    ? "xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)]"
+                    : "xl:flex xl:flex-col"
+                )}
+              >
                 <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                   <CardHeader className="flex-none">
                     <div className="flex gap-2 items-center pb-3">
@@ -1120,6 +1285,41 @@ function EmojiCreatorPage() {
                             <Grid3x3 className="h-4 w-4" />
                           )}
                         </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="hidden sm:inline-flex"
+                          disabled={
+                            packBrowser.currentEmojis.length === 0 || allCurrentSelected
+                          }
+                          onClick={() => {
+                            packBrowser.selectAllCurrent()
+                            openpanel.track("Emoji Creator: Pack Select All", {
+                              currentCount: packBrowser.currentEmojis.length,
+                              previouslySelected: packBrowser.selectedEmojis.length,
+                              searchQuery: packBrowser.searchQuery,
+                            })
+                          }}
+                        >
+                          <CheckSquare className="mr-2 h-3.5 w-3.5" />
+                          Select All
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="hidden sm:inline-flex"
+                          disabled={!hasSelection}
+                          onClick={() => {
+                            const previousCount = packBrowser.selectedEmojis.length
+                            packBrowser.clearSelection()
+                            openpanel.track("Emoji Creator: Pack Selection Cleared", {
+                              previousCount,
+                            })
+                          }}
+                        >
+                          <Eraser className="mr-2 h-3.5 w-3.5" />
+                          Clear Selection
+                        </Button>
                         {packBrowser.selectedEmojis.length > 0 && (
                           <Button
                             onClick={() => updateCartOpen(true, 'toolbar')}
@@ -1137,6 +1337,43 @@ function EmojiCreatorPage() {
                             </Badge>
                           </Button>
                         )}
+                      </div>
+                      <div className="flex w-full gap-2 sm:hidden">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1"
+                          disabled={
+                            packBrowser.currentEmojis.length === 0 || allCurrentSelected
+                          }
+                          onClick={() => {
+                            packBrowser.selectAllCurrent()
+                            openpanel.track("Emoji Creator: Pack Select All", {
+                              currentCount: packBrowser.currentEmojis.length,
+                              previouslySelected: packBrowser.selectedEmojis.length,
+                              searchQuery: packBrowser.searchQuery,
+                            })
+                          }}
+                        >
+                          <CheckSquare className="mr-2 h-3.5 w-3.5" />
+                          Select All
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          disabled={!hasSelection}
+                          onClick={() => {
+                            const previousCount = packBrowser.selectedEmojis.length
+                            packBrowser.clearSelection()
+                            openpanel.track("Emoji Creator: Pack Selection Cleared", {
+                              previousCount,
+                            })
+                          }}
+                        >
+                          <Eraser className="mr-2 h-3.5 w-3.5" />
+                          Clear Selection
+                        </Button>
                       </div>
                     </div>
                     <div className="mt-6">
@@ -1166,39 +1403,40 @@ function EmojiCreatorPage() {
                 </Card>
 
                 {/* Desktop sidebar - only show on xl screens */}
-                <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
-                  <PackSelectionSidebar
-                    selectedEmojis={packBrowser.selectedEmojis}
-                    maxSelection={20}
-                    nameStatuses={packBrowser.nameStatuses}
-                    editingName={packBrowser.editingName}
-                    editingValue={packBrowser.editingValue}
-                    onSetEditingName={packBrowser.setEditingName}
-                    onSetEditingValue={packBrowser.setEditingValue}
-                    onSaveCustomName={packBrowser.saveCustomName}
-                    customNames={packBrowser.customNames}
-                    onRemove={(emoji) => {
-                      const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
-                      packBrowser.removeFromSelection(emoji)
-                      openpanel.track('Emoji Creator: Selection Item Removed', {
-                        id: emoji.id,
-                        name: emoji.name,
-                        remainingCount,
-                      })
-                    }}
-                    onClear={() => {
-                      const previousCount = packBrowser.selectedEmojis.length
-                      setDownloadProgress(null)
-                      setUploadProgress(null)
-                      packBrowser.clearSelection()
-                      openpanel.track('Emoji Creator: Selection Cleared', {
-                        previousCount,
-                      })
-                    }}
-                    hasSlackConnection={hasSlack}
-                    downloadProgress={downloadProgress}
-                    uploadProgress={uploadProgress}
-                    onDownload={async () => {
+                {hasDesktopSelection && (
+                  <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
+                    <PackSelectionSidebar
+                      selectedEmojis={packBrowser.selectedEmojis}
+                      maxSelection={packBrowser.maxSelection}
+                      nameStatuses={packBrowser.nameStatuses}
+                      editingName={packBrowser.editingName}
+                      editingValue={packBrowser.editingValue}
+                      onSetEditingName={packBrowser.setEditingName}
+                      onSetEditingValue={packBrowser.setEditingValue}
+                      onSaveCustomName={packBrowser.saveCustomName}
+                      customNames={packBrowser.customNames}
+                      onRemove={(emoji) => {
+                        const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
+                        packBrowser.removeFromSelection(emoji)
+                        openpanel.track('Emoji Creator: Selection Item Removed', {
+                          id: emoji.id,
+                          name: emoji.name,
+                          remainingCount,
+                        })
+                      }}
+                      onClear={() => {
+                        const previousCount = packBrowser.selectedEmojis.length
+                        setDownloadProgress(null)
+                        setUploadProgress(null)
+                        packBrowser.clearSelection()
+                        openpanel.track('Emoji Creator: Selection Cleared', {
+                          previousCount,
+                        })
+                      }}
+                      hasSlackConnection={hasSlack}
+                      downloadProgress={downloadProgress}
+                      uploadProgress={uploadProgress}
+                      onDownload={async () => {
                       const selected = packBrowser.getSelectedEmojis()
                       if (selected.length === 0) return
 
@@ -1312,133 +1550,47 @@ function EmojiCreatorPage() {
                       }
                     }}
                     onSendToSlack={async () => {
-                      const selected = packBrowser.getSelectedEmojis()
-                      if (selected.length === 0) return
-
-                      // Upload pack emojis directly to Slack without processing
-                      const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
-
-                      let successCount = 0
-                      let failedCount = 0
-                      const errors: string[] = []
-                      const total = selected.length
-
-                      setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
-
-                      const uploadToast = toast({
-                        title: "Uploading to Slack...",
-                        description: `0/${total} (0%)`,
-                        duration: Infinity,
-                      })
-
-                      const updateUploadToast = (message: string) => {
-                        uploadToast.update({
-                          id: uploadToast.id,
-                          title: "Uploading to Slack...",
-                          description: message,
-                          duration: Infinity,
-                        })
-                      }
-
-                      for (let i = 0; i < selected.length; i++) {
-                        const emoji = selected[i]
-                        try {
-                          // Use custom name if available
-                          const effectiveName = packBrowser.getEffectiveName(emoji)
-                          const result = await uploadPackEmojiToSlack(
-                            emoji.imageURL,
-                            effectiveName,
-                            emoji.isAnimated
-                          )
-
-                          if (result.success) {
-                            successCount++
-                          } else {
-                            failedCount++
-                            errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
-                          }
-
-                          // Update progress - show completed count and percentage
-                          const completed = successCount + failedCount
-                          const percentage = Math.round((completed / total) * 100)
-                          setUploadProgress((prev) =>
-                            prev ? { ...prev, completed, failed: failedCount } : prev
-                          )
-                          updateUploadToast(`${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`)
-                        } catch (error) {
-                          const effectiveName = packBrowser.getEffectiveName(emoji)
-                          console.error(`Failed to upload ${effectiveName}:`, error)
-                          failedCount++
-                          errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                        }
-                      }
-
-                      uploadToast.dismiss()
-                      setUploadProgress((prev) => (prev ? { ...prev, stage: "complete" } : prev))
-
-                      // Show final result
-                      if (successCount > 0) {
-                        packBrowser.clearSelectionsAndStorage()
-                        toast({
-                          title: "Upload complete",
-                          description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
-                          duration: 8000,
-                        })
-                      }
-
-                      if (failedCount > 0) {
-                        console.error('Upload errors:', errors)
-                        toast({
-                          title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
-                          description: errors[0] || 'Unknown error',
-                          variant: "destructive",
-                        })
-                      }
-
-                      if (successCount > 0) {
-                        setTimeout(() => setUploadProgress(null), 3000)
-                      } else {
-                        setUploadProgress(null)
-                      }
+                      await requestSlackUpload('desktop')
                     }}
                   />
                 </div>
+                )}
 
                 {/* Mobile sheet */}
                 <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
                   <SheetContent side="right" className="w-full sm:max-w-md p-0">
                     <PackSelectionSidebar
-                        selectedEmojis={packBrowser.selectedEmojis}
-                        maxSelection={20}
-                        nameStatuses={packBrowser.nameStatuses}
-                        editingName={packBrowser.editingName}
-                        editingValue={packBrowser.editingValue}
-                        onSetEditingName={packBrowser.setEditingName}
-                        onSetEditingValue={packBrowser.setEditingValue}
-                        onSaveCustomName={packBrowser.saveCustomName}
-                        customNames={packBrowser.customNames}
-                        onRemove={(emoji) => {
-                          const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
-                          packBrowser.removeFromSelection(emoji)
-                          openpanel.track('Emoji Creator: Selection Item Removed', {
-                            id: emoji.id,
-                            name: emoji.name,
-                            remainingCount,
-                          })
-                        }}
-                        onClear={() => {
-                          const previousCount = packBrowser.selectedEmojis.length
-                          setDownloadProgress(null)
-                          setUploadProgress(null)
-                          packBrowser.clearSelection()
-                          openpanel.track('Emoji Creator: Selection Cleared', {
-                            previousCount,
-                          })
-                        }}
-                        hasSlackConnection={hasSlack}
-                        downloadProgress={downloadProgress}
-                        uploadProgress={uploadProgress}
-                        onDownload={async () => {
+                      selectedEmojis={packBrowser.selectedEmojis}
+                      maxSelection={packBrowser.maxSelection}
+                      nameStatuses={packBrowser.nameStatuses}
+                      editingName={packBrowser.editingName}
+                      editingValue={packBrowser.editingValue}
+                      onSetEditingName={packBrowser.setEditingName}
+                      onSetEditingValue={packBrowser.setEditingValue}
+                      onSaveCustomName={packBrowser.saveCustomName}
+                      customNames={packBrowser.customNames}
+                      onRemove={(emoji) => {
+                        const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
+                        packBrowser.removeFromSelection(emoji)
+                        openpanel.track('Emoji Creator: Selection Item Removed', {
+                          id: emoji.id,
+                          name: emoji.name,
+                          remainingCount,
+                        })
+                      }}
+                      onClear={() => {
+                        const previousCount = packBrowser.selectedEmojis.length
+                        setDownloadProgress(null)
+                        setUploadProgress(null)
+                        packBrowser.clearSelection()
+                        openpanel.track('Emoji Creator: Selection Cleared', {
+                          previousCount,
+                        })
+                      }}
+                      hasSlackConnection={hasSlack}
+                      downloadProgress={downloadProgress}
+                      uploadProgress={uploadProgress}
+                      onDownload={async () => {
                           updateCartOpen(false, 'sheet-action')
                           // Reuse the same download logic
                           const selected = packBrowser.getSelectedEmojis()
@@ -1543,92 +1695,7 @@ function EmojiCreatorPage() {
                           }
                         }}
                         onSendToSlack={async () => {
-                          updateCartOpen(false, 'sheet-action')
-                          // Reuse the same upload logic
-                          const selected = packBrowser.getSelectedEmojis()
-                          if (selected.length === 0) return
-
-                          const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
-
-                          let successCount = 0
-                          let failedCount = 0
-                          const errors: string[] = []
-                          const total = selected.length
-
-                          setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
-
-                          const uploadToast = toast({
-                            title: "Uploading to Slack...",
-                            description: `0/${total} (0%)`,
-                            duration: Infinity,
-                          })
-
-                          const updateUploadToast = (message: string) => {
-                            uploadToast.update({
-                              id: uploadToast.id,
-                              title: "Uploading to Slack...",
-                              description: message,
-                              duration: Infinity,
-                            })
-                          }
-
-                          for (let i = 0; i < selected.length; i++) {
-                            const emoji = selected[i]
-                            try {
-                              const effectiveName = packBrowser.getEffectiveName(emoji)
-                              const result = await uploadPackEmojiToSlack(
-                                emoji.imageURL,
-                                effectiveName,
-                                emoji.isAnimated
-                              )
-
-                              if (result.success) {
-                                successCount++
-                              } else {
-                                failedCount++
-                                errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
-                              }
-
-                              const completed = successCount + failedCount
-                              const percentage = Math.round((completed / total) * 100)
-                              setUploadProgress((prev) =>
-                                prev ? { ...prev, completed, failed: failedCount } : prev
-                              )
-                              updateUploadToast(`${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`)
-                            } catch (error) {
-                              const effectiveName = packBrowser.getEffectiveName(emoji)
-                              console.error(`Failed to upload ${effectiveName}:`, error)
-                              failedCount++
-                              errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                            }
-                          }
-
-                          uploadToast.dismiss()
-                          setUploadProgress((prev) => (prev ? { ...prev, stage: "complete" } : prev))
-
-                          if (successCount > 0) {
-                            packBrowser.clearSelectionsAndStorage()
-                            toast({
-                              title: "Upload complete",
-                              description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
-                              duration: 8000,
-                            })
-                          }
-
-                          if (failedCount > 0) {
-                            console.error('Upload errors:', errors)
-                            toast({
-                              title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
-                              description: errors[0] || 'Unknown error',
-                              variant: "destructive",
-                            })
-                          }
-
-                          if (successCount > 0) {
-                            setTimeout(() => setUploadProgress(null), 3000)
-                          } else {
-                            setUploadProgress(null)
-                          }
+                          await requestSlackUpload('sheet')
                         }}
                     />
                   </SheetContent>
@@ -1798,6 +1865,35 @@ function EmojiCreatorPage() {
           onExport={handleGifExport}
         />
       )}
+
+      <Dialog
+        open={isRateLimitDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleRateLimitCancel()
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Large upload warning</DialogTitle>
+            <DialogDescription>
+              Uploading more than 20 emojis per minute may cause Slack to temporarily rate limit your workspace. Do you want to
+              continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+            <Button variant="outline" onClick={handleRateLimitCancel}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              void handleRateLimitConfirm()
+            }}>
+              Continue upload
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upload Overlay Dialog */}
       <Dialog open={showUploadOverlay} onOpenChange={setShowUploadOverlay}>

@@ -11,10 +11,10 @@
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
-import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
+import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles, CheckSquare, Eraser } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { toast } from "sonner"
 import { packDiscovery } from "@/lib/services/pack-discovery"
@@ -84,7 +84,11 @@ const listItemVariants: Variants = {
 }
 
 // Custom hook for pack browser state management
-export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] = []) {
+export function usePackBrowser(
+  maxSelection: number = Number.POSITIVE_INFINITY,
+  existingEmojis: any[] = []
+) {
+  const selectionLimit = Number.isFinite(maxSelection) ? maxSelection : null
   const [selectedTab, setSelectedTab] = useState<Tab>("popular")
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -317,8 +321,8 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       if (next.has(key)) {
         next.delete(key)
       } else {
-        if (next.size >= maxSelection) {
-          toast.error(`Maximum ${maxSelection} emojis per selection`)
+        if (selectionLimit !== null && next.size >= selectionLimit) {
+          toast.error(`Maximum ${selectionLimit} emojis per selection`)
           return prev
         }
         next.add(key)
@@ -330,6 +334,34 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   const clearSelection = () => {
     setSelectedIds(new Set())
     setNameStatuses(new Map())
+    setCustomNames(new Map())
+  }
+
+  const selectAllCurrent = () => {
+    let hitLimit = false
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+
+      for (const emoji of currentEmojis) {
+        const key = `${emoji.id}|${emoji.name}`
+
+        if (next.has(key)) continue
+
+        if (selectionLimit !== null && next.size >= selectionLimit) {
+          hitLimit = true
+          break
+        }
+
+        next.add(key)
+      }
+
+      return next
+    })
+
+    if (hitLimit && selectionLimit !== null) {
+      toast.error(`Maximum ${selectionLimit} emojis per selection`)
+    }
   }
 
   const getSelectedEmojis = (): PackEmoji[] => {
@@ -343,16 +375,25 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       ...searchResults,
     ]
 
-    const seen = new Set<string>()
-
-    return allEmojis.filter((emoji) => {
+    const emojiMap = new Map<string, PackEmoji>()
+    for (const emoji of allEmojis) {
       const key = `${emoji.id}|${emoji.name}`
-      if (!selectedIds.has(key) || seen.has(key)) {
-        return false
+      if (!emojiMap.has(key)) {
+        emojiMap.set(key, emoji)
       }
-      seen.add(key)
-      return true
-    })
+    }
+
+    const orderedKeys = Array.from(selectedIds)
+    const orderedEmojis: PackEmoji[] = []
+
+    for (const key of orderedKeys) {
+      const emoji = emojiMap.get(key)
+      if (emoji) {
+        orderedEmojis.push(emoji)
+      }
+    }
+
+    return orderedEmojis
   }
 
   const removeFromSelection = (emoji: PackEmoji) => {
@@ -413,11 +454,14 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     getEffectiveName,
     clearSelectionsAndStorage,
 
+    maxSelection: selectionLimit,
+
     // Computed
     selectedEmojis: getSelectedEmojis(),
 
     // Actions
     toggleSelection,
+    selectAllCurrent,
     clearSelection,
     removeFromSelection,
     getSelectedEmojis,
@@ -436,8 +480,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
   if (searchQuery) return null
 
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex gap-2 pb-2">
+    <ScrollArea type="scroll" className="w-full">
+      <div className="flex min-w-max gap-2 pb-2 pr-4 whitespace-nowrap">
         <Button
           variant={selectedTab === "popular" ? "default" : "secondary"}
           size="sm"
@@ -493,6 +537,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           Bufo
         </Button>
       </div>
+      <ScrollBar orientation="horizontal" className="mt-1" />
     </ScrollArea>
   )
 }
@@ -648,7 +693,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
 
 interface PackSelectionSidebarProps {
   selectedEmojis: PackEmoji[]
-  maxSelection: number
+  maxSelection?: number | null
   nameStatuses: Map<string, NameStatus>
   editingName: string | null
   editingValue: string
@@ -694,6 +739,8 @@ export function PackSelectionSidebar({
   uploadProgress,
   isDemoMode = false,
 }: PackSelectionSidebarProps) {
+  const selectionLimit =
+    typeof maxSelection === "number" && Number.isFinite(maxSelection) ? maxSelection : null
   const hasNameChecking = nameStatuses.size > 0
   const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
   const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
@@ -718,9 +765,11 @@ export function PackSelectionSidebar({
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {selectedEmojis.length}/{maxSelection} selected
-        </p>
+          <p className="text-xs text-muted-foreground">
+            {selectionLimit !== null
+              ? `${selectedEmojis.length}/${selectionLimit} selected`
+              : `${selectedEmojis.length} selected`}
+          </p>
       </div>
 
       <ScrollArea className="flex-1 min-h-0 p-4">
@@ -731,23 +780,16 @@ export function PackSelectionSidebar({
             <p className="text-xs">Click emojis to add them here</p>
           </div>
         ) : (
-          <AnimatePresence mode="popLayout">
-            <div className="space-y-2">
-              {selectedEmojis.map((emoji, index) => {
+          <div className="space-y-2">
+            {selectedEmojis.map((emoji) => {
                 const key = `${emoji.id}|${emoji.name}`
                 const status = nameStatuses.get(key)
                 const isEditing = editingName === key
                 const hasNameChecking = nameStatuses.size > 0
 
                 return (
-                  <motion.div
-                    layout
+                  <div
                     key={key}
-                    variants={listItemVariants}
-                    initial="hidden"
-                    animate="enter"
-                    exit="exit"
-                    transition={{ delay: Math.min(index * 0.03, 0.2) }}
                     className={cn(
                       "flex w-full items-center gap-3 px-3 py-2 rounded-lg bg-background border transition-all group min-w-0 overflow-hidden",
                       hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
@@ -843,11 +885,10 @@ export function PackSelectionSidebar({
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                  </motion.div>
+                    </div>
                 )
               })}
-            </div>
-          </AnimatePresence>
+          </div>
         )}
       </ScrollArea>
 
@@ -919,9 +960,9 @@ export function PackSelectionSidebar({
             {takenCount} name{takenCount > 1 ? "s" : ""} taken - edit to continue
           </p>
         )}
-        {!isDemoMode && selectedEmojis.length > maxSelection && (
+        {!isDemoMode && selectionLimit !== null && selectedEmojis.length > selectionLimit && (
           <p className="text-xs text-destructive text-center">
-            Please select max {maxSelection} emojis
+            Please select max {selectionLimit} emojis
           </p>
         )}
       </div>
@@ -953,6 +994,12 @@ export function PackBrowser({
     packBrowser.clearSelection()
   }
 
+  const selectionSet = packBrowser.selectedIds
+  const allCurrentSelected =
+    packBrowser.currentEmojis.length > 0 &&
+    packBrowser.currentEmojis.every((emoji) => selectionSet.has(`${emoji.id}|${emoji.name}`))
+  const hasSelection = selectionSet.size > 0
+
   return (
     <div className="flex h-full gap-4">
       {/* Main content area */}
@@ -960,8 +1007,8 @@ export function PackBrowser({
         {/* Header */}
         <div className="flex-none space-y-3 pb-4">
           {/* Search and view controls */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search packs..."
@@ -970,17 +1017,38 @@ export function PackBrowser({
                 className="pl-9"
               />
             </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => packBrowser.setViewMode(packBrowser.viewMode === "grid" ? "list" : "grid")}
-            >
-              {packBrowser.viewMode === "grid" ? (
-                <List className="h-4 w-4" />
-              ) : (
-                <Grid3x3 className="h-4 w-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => packBrowser.setViewMode(packBrowser.viewMode === "grid" ? "list" : "grid")}
+                aria-label={packBrowser.viewMode === "grid" ? "Switch to list view" : "Switch to grid view"}
+              >
+                {packBrowser.viewMode === "grid" ? (
+                  <List className="h-4 w-4" />
+                ) : (
+                  <Grid3x3 className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={packBrowser.selectAllCurrent}
+                disabled={packBrowser.currentEmojis.length === 0 || allCurrentSelected}
+              >
+                <CheckSquare className="mr-2 h-3.5 w-3.5" />
+                Select All
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={packBrowser.clearSelection}
+                disabled={!hasSelection}
+              >
+                <Eraser className="mr-2 h-3.5 w-3.5" />
+                Clear Selection
+              </Button>
+            </div>
           </div>
 
           {/* Tab chips */}
