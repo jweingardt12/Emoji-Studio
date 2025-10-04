@@ -14,7 +14,7 @@ import type { Variants } from "framer-motion"
 import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { toast } from "sonner"
 import { packDiscovery } from "@/lib/services/pack-discovery"
@@ -84,7 +84,11 @@ const listItemVariants: Variants = {
 }
 
 // Custom hook for pack browser state management
-export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] = []) {
+export function usePackBrowser(
+  maxSelection: number = Number.POSITIVE_INFINITY,
+  existingEmojis: any[] = []
+) {
+  const selectionLimit = Number.isFinite(maxSelection) ? maxSelection : null
   const [selectedTab, setSelectedTab] = useState<Tab>("popular")
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -317,8 +321,8 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       if (next.has(key)) {
         next.delete(key)
       } else {
-        if (next.size >= maxSelection) {
-          toast.error(`Maximum ${maxSelection} emojis per selection`)
+        if (selectionLimit !== null && next.size >= selectionLimit) {
+          toast.error(`Maximum ${selectionLimit} emojis per selection`)
           return prev
         }
         next.add(key)
@@ -413,6 +417,8 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     getEffectiveName,
     clearSelectionsAndStorage,
 
+    maxSelection: selectionLimit,
+
     // Computed
     selectedEmojis: getSelectedEmojis(),
 
@@ -436,8 +442,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
   if (searchQuery) return null
 
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex gap-2 pb-2">
+    <ScrollArea type="scroll" className="w-full">
+      <div className="flex min-w-max gap-2 pb-2 pr-4 whitespace-nowrap">
         <Button
           variant={selectedTab === "popular" ? "default" : "secondary"}
           size="sm"
@@ -493,6 +499,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           Bufo
         </Button>
       </div>
+      <ScrollBar orientation="horizontal" className="mt-1" />
     </ScrollArea>
   )
 }
@@ -648,7 +655,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
 
 interface PackSelectionSidebarProps {
   selectedEmojis: PackEmoji[]
-  maxSelection: number
+  maxSelection?: number | null
   nameStatuses: Map<string, NameStatus>
   editingName: string | null
   editingValue: string
@@ -694,6 +701,8 @@ export function PackSelectionSidebar({
   uploadProgress,
   isDemoMode = false,
 }: PackSelectionSidebarProps) {
+  const selectionLimit =
+    typeof maxSelection === "number" && Number.isFinite(maxSelection) ? maxSelection : null
   const hasNameChecking = nameStatuses.size > 0
   const takenCount = Array.from(nameStatuses.values()).filter((s) => s === "taken").length
   const checkingCount = Array.from(nameStatuses.values()).filter((s) => s === "checking").length
@@ -718,9 +727,11 @@ export function PackSelectionSidebar({
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {selectedEmojis.length}/{maxSelection} selected
-        </p>
+          <p className="text-xs text-muted-foreground">
+            {selectionLimit !== null
+              ? `${selectedEmojis.length}/${selectionLimit} selected`
+              : `${selectedEmojis.length} selected`}
+          </p>
       </div>
 
       <ScrollArea className="flex-1 min-h-0 p-4">
@@ -919,9 +930,9 @@ export function PackSelectionSidebar({
             {takenCount} name{takenCount > 1 ? "s" : ""} taken - edit to continue
           </p>
         )}
-        {!isDemoMode && selectedEmojis.length > maxSelection && (
+        {!isDemoMode && selectionLimit !== null && selectedEmojis.length > selectionLimit && (
           <p className="text-xs text-destructive text-center">
-            Please select max {maxSelection} emojis
+            Please select max {selectionLimit} emojis
           </p>
         )}
       </div>
