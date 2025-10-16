@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus } from "lucide-react"
+import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus, PanelRightClose, PanelRightOpen } from "lucide-react"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
@@ -84,6 +84,7 @@ function EmojiCreatorPage() {
   const [failedFrameExtraction, setFailedFrameExtraction] = useState<Set<string>>(new Set())
   const [pendingMobileFile, setPendingMobileFile] = useState<File | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true)
   const [downloadProgress, setDownloadProgress] = useState<{
     stage: "downloading" | "finalizing"
     completed: number
@@ -1089,7 +1090,12 @@ function EmojiCreatorPage() {
 
             {/* Pack Browser - always visible as main content */}
             <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)] gap-6 min-w-0 min-h-0">
+              <div className={cn(
+                "flex-1 flex flex-col gap-6 min-w-0 min-h-0",
+                packBrowser.selectedEmojis.length > 0 && isSidebarVisible 
+                  ? "xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)]"
+                  : ""
+              )}>
                 <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                   <CardHeader className="flex-none">
                     <div className="flex gap-2 items-center pb-3">
@@ -1121,21 +1127,42 @@ function EmojiCreatorPage() {
                           )}
                         </Button>
                         {packBrowser.selectedEmojis.length > 0 && (
-                          <Button
-                            onClick={() => updateCartOpen(true, 'toolbar')}
-                            className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
-                            size="icon"
-                          >
-                            <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
-                              <SmilePlus className="h-5 w-5 text-primary" />
-                            </div>
-                            <Badge
-                              variant="destructive"
-                              className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                          <>
+                            {/* Desktop sidebar toggle */}
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                setIsSidebarVisible(!isSidebarVisible)
+                                openpanel.track('Emoji Creator: Sidebar Toggled', {
+                                  visible: !isSidebarVisible,
+                                })
+                              }}
+                              className="hidden xl:flex"
                             >
-                              {packBrowser.selectedEmojis.length}
-                            </Badge>
-                          </Button>
+                              {isSidebarVisible ? (
+                                <PanelRightClose className="h-4 w-4" />
+                              ) : (
+                                <PanelRightOpen className="h-4 w-4" />
+                              )}
+                            </Button>
+                            {/* Mobile cart button */}
+                            <Button
+                              onClick={() => updateCartOpen(true, 'toolbar')}
+                              className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
+                              size="icon"
+                            >
+                              <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
+                                <SmilePlus className="h-5 w-5 text-primary" />
+                              </div>
+                              <Badge
+                                variant="destructive"
+                                className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                              >
+                                {packBrowser.selectedEmojis.length}
+                              </Badge>
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1165,9 +1192,10 @@ function EmojiCreatorPage() {
                   </CardContent>
                 </Card>
 
-                {/* Desktop sidebar - only show on xl screens */}
-                <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
-                  <PackSelectionSidebar
+                {/* Desktop sidebar - only show on xl screens when emojis are selected and sidebar is visible */}
+                {packBrowser.selectedEmojis.length > 0 && isSidebarVisible && (
+                  <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
+                    <PackSelectionSidebar
                     selectedEmojis={packBrowser.selectedEmojis}
                     maxSelection={20}
                     nameStatuses={packBrowser.nameStatuses}
@@ -1402,7 +1430,8 @@ function EmojiCreatorPage() {
                       }
                     }}
                   />
-                </div>
+                  </div>
+                )}
 
                 {/* Mobile sheet */}
                 <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>

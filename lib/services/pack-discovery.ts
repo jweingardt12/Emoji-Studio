@@ -101,7 +101,7 @@ class PackDiscoveryService {
 
   /**
    * Search across ALL packs (Slackmojis + Bufo)
-   * Performs client-side filtering on cached/fetched packs
+   * Performs client-side filtering on cached/fetched packs with refined matching logic
    */
   async searchAllPacks(query: string): Promise<PackEmoji[]> {
     if (!query.trim()) return []
@@ -115,24 +115,54 @@ class PackDiscoveryService {
     const escapeRegex = (value: string) =>
       value.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
 
-    const fuzzyMatchScore = (term: string, target: string): number | null => {
+    /**
+     * Refined matching score calculation
+     * Returns null if term doesn't match, or a score (lower is better) if it does
+     * Scoring prioritizes:
+     * 1. Exact full match (score: 0)
+     * 2. Starts with term (score: 10)
+     * 3. Word boundary match (score: 100 + position)
+     * 4. Contains term (score: 1000 + position)
+     * 5. Fuzzy character sequence match (score: 10000 + span length)
+     */
+    const refinedMatchScore = (term: string, target: string): number | null => {
       if (!term) return 0
 
-      const directIndex = target.indexOf(term)
-      if (directIndex >= 0) {
-        return directIndex // lower is better
+      // Exact match - highest priority
+      if (target === term) {
+        return 0
       }
 
+      // Starts with term
+      if (target.startsWith(term)) {
+        return 10
+      }
+
+      // Word boundary match (term appears at start of word)
+      const wordBoundaryRegex = new RegExp(`(^|[\\s_-])${escapeRegex(term)}`, 'i')
+      const wordMatch = target.match(wordBoundaryRegex)
+      if (wordMatch && wordMatch.index !== undefined) {
+        return 100 + wordMatch.index
+      }
+
+      // Contains term as substring
+      const directIndex = target.indexOf(term)
+      if (directIndex >= 0) {
+        return 1000 + directIndex
+      }
+
+      // Fuzzy character sequence match (all characters of term appear in order)
       const pattern = escapeRegex(term)
         .split('')
         .join('.*?')
       const regex = new RegExp(pattern, 'i')
       const match = target.match(regex)
       if (!match || match.index === undefined) {
-        return null
+        return null // No match at all
       }
       const spanLength = match[0].length
-      return match.index + (spanLength - term.length)
+      // Penalize longer spans (characters more spread out)
+      return 10000 + match.index + (spanLength - term.length) * 10
     }
 
     return this.getCachedOrFetch(cacheKey, async () => {
@@ -167,24 +197,39 @@ class PackDiscoveryService {
         }
       }
 
-      // Filter by fuzzy multi-term query and rank results
+      // Filter with refined multi-term matching and rank results
       const scored = unique
         .map((emoji) => {
+          // Normalize name: convert underscores and hyphens to spaces for better word matching
           const normalizedName = emoji.name.toLowerCase().replace(/[_-]/g, ' ')
           let totalScore = 0
+          let matchedTerms = 0
 
+          // All terms must match for emoji to be included
           for (const term of terms) {
-            const score = fuzzyMatchScore(term, normalizedName)
+            const score = refinedMatchScore(term, normalizedName)
             if (score === null) {
-              return null
+              return null // Skip if any term doesn't match
             }
             totalScore += score
+            matchedTerms++
+          }
+
+          // Only include if all terms matched
+          if (matchedTerms !== terms.length) {
+            return null
           }
 
           return { emoji, score: totalScore }
         })
         .filter((entry): entry is { emoji: PackEmoji; score: number } => entry !== null)
-        .sort((a, b) => a.score - b.score || a.emoji.name.localeCompare(b.emoji.name))
+        // Sort by score (lower is better), then alphabetically
+        .sort((a, b) => {
+          if (a.score !== b.score) {
+            return a.score - b.score
+          }
+          return a.emoji.name.localeCompare(b.emoji.name)
+        })
 
       return scored.map((entry) => entry.emoji)
     })
