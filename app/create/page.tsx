@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -1095,8 +1096,20 @@ function EmojiCreatorPage() {
                 packBrowser.selectedEmojis.length > 0 && isSidebarVisible 
                   ? "xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)]"
                   : ""
-              )}>
-                <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+              )}
+              style={{
+                transition: "grid-template-columns 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)"
+              }}
+              >
+                <motion.div
+                  layout
+                  transition={{ 
+                    duration: 0.35,
+                    ease: [0.25, 0.1, 0.25, 1]
+                  }}
+                  className="flex-1 flex flex-col min-w-0 min-h-0"
+                >
+                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden h-full">
                   <CardHeader className="flex-none">
                     <div className="flex gap-2 items-center pb-3">
                       <div className="relative flex-1">
@@ -1126,44 +1139,52 @@ function EmojiCreatorPage() {
                             <Grid3x3 className="h-4 w-4" />
                           )}
                         </Button>
-                        {packBrowser.selectedEmojis.length > 0 && (
-                          <>
-                            {/* Desktop sidebar toggle */}
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {
-                                setIsSidebarVisible(!isSidebarVisible)
-                                openpanel.track('Emoji Creator: Sidebar Toggled', {
-                                  visible: !isSidebarVisible,
-                                })
-                              }}
-                              className="hidden xl:flex"
+                        <AnimatePresence>
+                          {packBrowser.selectedEmojis.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              transition={{ duration: 0.2 }}
+                              className="flex items-center gap-2"
                             >
-                              {isSidebarVisible ? (
-                                <PanelRightClose className="h-4 w-4" />
-                              ) : (
-                                <PanelRightOpen className="h-4 w-4" />
-                              )}
-                            </Button>
-                            {/* Mobile cart button */}
-                            <Button
-                              onClick={() => updateCartOpen(true, 'toolbar')}
-                              className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
-                              size="icon"
-                            >
-                              <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
-                                <SmilePlus className="h-5 w-5 text-primary" />
-                              </div>
-                              <Badge
-                                variant="destructive"
-                                className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                              {/* Desktop sidebar toggle */}
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  setIsSidebarVisible(!isSidebarVisible)
+                                  openpanel.track('Emoji Creator: Sidebar Toggled', {
+                                    visible: !isSidebarVisible,
+                                  })
+                                }}
+                                className="hidden xl:flex"
                               >
-                                {packBrowser.selectedEmojis.length}
-                              </Badge>
-                            </Button>
-                          </>
-                        )}
+                                {isSidebarVisible ? (
+                                  <PanelRightClose className="h-4 w-4" />
+                                ) : (
+                                  <PanelRightOpen className="h-4 w-4" />
+                                )}
+                              </Button>
+                              {/* Mobile cart button */}
+                              <Button
+                                onClick={() => updateCartOpen(true, 'toolbar')}
+                                className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
+                                size="icon"
+                              >
+                                <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
+                                  <SmilePlus className="h-5 w-5 text-primary" />
+                                </div>
+                                <Badge
+                                  variant="destructive"
+                                  className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                                >
+                                  {packBrowser.selectedEmojis.length}
+                                </Badge>
+                              </Button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </div>
                     <div className="mt-6">
@@ -1191,11 +1212,24 @@ function EmojiCreatorPage() {
                     </ScrollArea>
                   </CardContent>
                 </Card>
+                </motion.div>
 
                 {/* Desktop sidebar - only show on xl screens when emojis are selected and sidebar is visible */}
-                {packBrowser.selectedEmojis.length > 0 && isSidebarVisible && (
-                  <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
-                    <PackSelectionSidebar
+                <AnimatePresence mode="sync">
+                  {packBrowser.selectedEmojis.length > 0 && isSidebarVisible && (
+                    <motion.div
+                      key="sidebar"
+                      initial={{ opacity: 0, x: 30, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 30, scale: 0.95 }}
+                      transition={{ 
+                        duration: 0.35,
+                        ease: [0.25, 0.1, 0.25, 1],
+                        opacity: { duration: 0.25 }
+                      }}
+                      className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full"
+                    >
+                      <PackSelectionSidebar
                     selectedEmojis={packBrowser.selectedEmojis}
                     maxSelection={20}
                     nameStatuses={packBrowser.nameStatuses}
@@ -1430,8 +1464,9 @@ function EmojiCreatorPage() {
                       }
                     }}
                   />
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Mobile sheet */}
                 <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
