@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
 import { openpanel } from "@/lib/safe-openpanel"
+import { removeBackground as removeBackgroundML } from "@/lib/utils/background-removal"
 
 interface EmojiEditorProps {
   emoji: ProcessedEmoji | null
@@ -66,6 +67,8 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
+  const [backgroundRemovedImageData, setBackgroundRemovedImageData] = useState<ImageData | null>(null)
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
   
   const isGif = emoji?.format === "GIF" || emoji?.originalFile.type === "image/gif"
   const isVideo = emoji?.wasVideo === true
@@ -76,6 +79,8 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       setAdjustments(defaultAdjustments)
       setRemoveBackground(false)
       setMakeHDR(false)
+      setBackgroundRemovedImageData(null)
+      setIsRemovingBackground(false)
       // Small delay to ensure canvas elements are mounted
       setTimeout(() => {
         loadOriginalImage()
@@ -125,6 +130,75 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     }
     
     img.src = URL.createObjectURL(emoji.processedBlob || emoji.originalFile)
+  }
+
+  // Process background removal using ML-based approach
+  const processBackgroundRemoval = async () => {
+    if (!emoji || !originalImageData) return
+
+    setIsRemovingBackground(true)
+
+    try {
+      toast("Removing background...", {
+        description: "Using AI to detect and remove background"
+      })
+
+      // Convert original image to blob
+      const canvas = document.createElement('canvas')
+      canvas.width = originalImageData.width
+      canvas.height = originalImageData.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        throw new Error('Could not get canvas context')
+      }
+
+      ctx.putImageData(originalImageData, 0, 0)
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b)
+          else reject(new Error('Failed to create blob'))
+        }, 'image/png')
+      })
+
+      // Use ML-based background removal
+      const processedBlob = await removeBackgroundML(blob)
+
+      // Load the result back into image data
+      const img = new Image()
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          const resultCanvas = document.createElement('canvas')
+          resultCanvas.width = img.width
+          resultCanvas.height = img.height
+          const resultCtx = resultCanvas.getContext('2d', { willReadFrequently: true })
+          if (!resultCtx) {
+            reject(new Error('Could not get canvas context'))
+            return
+          }
+
+          resultCtx.drawImage(img, 0, 0)
+          const imageData = resultCtx.getImageData(0, 0, resultCanvas.width, resultCanvas.height)
+          setBackgroundRemovedImageData(imageData)
+          resolve()
+        }
+        img.onerror = () => reject(new Error('Failed to load processed image'))
+        img.src = URL.createObjectURL(processedBlob)
+      })
+
+      toast.success("Background removed!", {
+        description: "AI-powered background removal complete"
+      })
+
+    } catch (error) {
+      console.error('Background removal failed:', error)
+      toast.error("Background removal failed", {
+        description: "Falling back to basic removal method"
+      })
+      // Don't set backgroundRemovedImageData, so applyAdjustments will use fallback
+    } finally {
+      setIsRemovingBackground(false)
+    }
   }
 
   // Modern HDR enhancement based on Greg Benz's natural HDR approach
@@ -324,11 +398,16 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     const ctx = canvas.getContext("2d", { willReadFrequently: true })
     if (!ctx) return
 
-    // Create a copy of the original image data
+    // Use background-removed image as base if available, otherwise use original
+    const baseImageData = removeBackground && backgroundRemovedImageData
+      ? backgroundRemovedImageData
+      : originalImageData
+
+    // Create a copy of the base image data
     const imageData = new ImageData(
-      new Uint8ClampedArray(originalImageData.data),
-      originalImageData.width,
-      originalImageData.height
+      new Uint8ClampedArray(baseImageData.data),
+      baseImageData.width,
+      baseImageData.height
     )
 
     const data = imageData.data
@@ -382,22 +461,8 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       data[i + 2] = b
     }
 
-    // Apply background removal if enabled
-    if (removeBackground) {
-      // Simple background removal based on color similarity
-      // This is a basic implementation - for production, use a proper ML model
-      const threshold = 30
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i]
-        const g = data[i + 1]
-        const b = data[i + 2]
-        
-        // Check if pixel is close to white or very light
-        if (r > 240 && g > 240 && b > 240) {
-          data[i + 3] = 0 // Make transparent
-        }
-      }
-    }
+    // Background removal is now handled by ML-based preprocessing
+    // The baseImageData already has the background removed if enabled
 
     ctx.putImageData(imageData, 0, 0)
 
@@ -446,17 +511,28 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     }, "image/png")
   }
 
+  // Trigger background removal when toggle is enabled
+  useEffect(() => {
+    if (removeBackground && !backgroundRemovedImageData && !isRemovingBackground) {
+      processBackgroundRemoval()
+    } else if (!removeBackground && backgroundRemovedImageData) {
+      // Clear background-removed data when toggle is disabled
+      setBackgroundRemovedImageData(null)
+    }
+  }, [removeBackground, originalImageData])
+
   useEffect(() => {
     if (originalImageData) {
       applyAdjustments()
     }
-  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData])
+  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData, backgroundRemovedImageData])
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments)
     setRemoveBackground(false)
     setMakeHDR(false)
     setHdrIntensity(50)
+    setBackgroundRemovedImageData(null)
   }
 
   const handleSave = async () => {
@@ -735,18 +811,21 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="remove-bg" className="text-sm">
+                      <Label htmlFor="remove-bg" className="text-sm flex items-center gap-2">
                         Remove Background
+                        {isRemovingBackground && <Loader2 className="h-3 w-3 animate-spin" />}
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Remove light backgrounds (experimental)
+                        {isRemovingBackground
+                          ? "AI is processing the image..."
+                          : "AI-powered background removal"}
                       </p>
                     </div>
                     <Switch
                       id="remove-bg"
                       checked={removeBackground}
                       onCheckedChange={setRemoveBackground}
-                      disabled={isGif || isProcessing}
+                      disabled={isGif || isProcessing || isRemovingBackground}
                     />
                   </div>
 
