@@ -15,16 +15,18 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { 
-  Sliders, 
-  Palette, 
-  Sparkles, 
+import {
+  Sliders,
+  Palette,
+  Sparkles,
   Image as ImageIcon,
   Loader2,
   RotateCcw,
   Download,
   Check,
-  Wand2
+  Wand2,
+  Eraser,
+  PaintBucket
 } from "lucide-react"
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
@@ -69,7 +71,15 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
   const [backgroundRemovedImageData, setBackgroundRemovedImageData] = useState<ImageData | null>(null)
   const [isRemovingBackground, setIsRemovingBackground] = useState(false)
-  
+
+  // Brush tool state
+  const [brushMode, setBrushMode] = useState<'erase' | 'restore' | null>(null)
+  const [brushSize, setBrushSize] = useState(20)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [manualMask, setManualMask] = useState<ImageData | null>(null)
+  const maskCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null)
+
   const isGif = emoji?.format === "GIF" || emoji?.originalFile.type === "image/gif"
   const isVideo = emoji?.wasVideo === true
 
@@ -81,6 +91,9 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       setMakeHDR(false)
       setBackgroundRemovedImageData(null)
       setIsRemovingBackground(false)
+      setBrushMode(null)
+      setManualMask(null)
+      setCursorPosition(null)
       // Small delay to ensure canvas elements are mounted
       setTimeout(() => {
         loadOriginalImage()
@@ -199,6 +212,157 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     } finally {
       setIsRemovingBackground(false)
     }
+  }
+
+  // Initialize manual mask when background removal is applied
+  useEffect(() => {
+    if (backgroundRemovedImageData && !manualMask) {
+      // Create an alpha mask from the background-removed image
+      const mask = new ImageData(
+        backgroundRemovedImageData.width,
+        backgroundRemovedImageData.height
+      )
+      // Copy alpha channel from background-removed image
+      for (let i = 0; i < backgroundRemovedImageData.data.length; i += 4) {
+        mask.data[i] = 255 // R
+        mask.data[i + 1] = 255 // G
+        mask.data[i + 2] = 255 // B
+        mask.data[i + 3] = backgroundRemovedImageData.data[i + 3] // Alpha
+      }
+      setManualMask(mask)
+    }
+  }, [backgroundRemovedImageData])
+
+  // Canvas drawing handlers
+  const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = previewCanvasRef.current
+    if (!canvas || !originalImageData) return null
+
+    const rect = canvas.getBoundingClientRect()
+    let clientX: number, clientY: number
+
+    if ('touches' in e) {
+      if (e.touches.length === 0) return null
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    // Get position relative to canvas
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+
+    // Scale to actual image dimensions
+    const scaleX = originalImageData.width / canvas.width
+    const scaleY = originalImageData.height / canvas.height
+
+    return {
+      x: Math.floor(x * scaleX),
+      y: Math.floor(y * scaleY),
+      canvasX: x,
+      canvasY: y
+    }
+  }
+
+  const drawBrushStroke = (x: number, y: number, mode: 'erase' | 'restore') => {
+    if (!manualMask || !originalImageData) return
+
+    const maskData = manualMask.data
+    const radius = brushSize / 2
+
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        if (distance > radius) continue
+
+        const px = Math.floor(x + dx)
+        const py = Math.floor(y + dy)
+
+        if (px < 0 || px >= manualMask.width || py < 0 || py >= manualMask.height) continue
+
+        const idx = (py * manualMask.width + px) * 4
+
+        // Soft brush with feathering
+        const strength = 1 - (distance / radius)
+
+        if (mode === 'erase') {
+          // Make transparent
+          const newAlpha = maskData[idx + 3] * (1 - strength * 0.8)
+          maskData[idx + 3] = Math.max(0, newAlpha)
+        } else {
+          // Restore from original
+          const targetAlpha = originalImageData.data[idx + 3]
+          maskData[idx + 3] = Math.min(255, maskData[idx + 3] + strength * 0.8 * (targetAlpha - maskData[idx + 3]))
+        }
+      }
+    }
+
+    setManualMask(new ImageData(new Uint8ClampedArray(maskData), manualMask.width, manualMask.height))
+  }
+
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!brushMode || !removeBackground || !backgroundRemovedImageData) return
+
+    e.preventDefault()
+    setIsDrawing(true)
+
+    const coords = getCanvasCoordinates(e)
+    if (coords) {
+      drawBrushStroke(coords.x, coords.y, brushMode)
+    }
+  }
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!removeBackground || !backgroundRemovedImageData) return
+
+    const coords = getCanvasCoordinates(e)
+    if (coords) {
+      setCursorPosition({ x: coords.canvasX, y: coords.canvasY })
+    }
+
+    if (!brushMode || !isDrawing) return
+
+    e.preventDefault()
+    if (coords) {
+      drawBrushStroke(coords.x, coords.y, brushMode)
+    }
+  }
+
+  const handleCanvasMouseUp = () => {
+    setIsDrawing(false)
+  }
+
+  const handleCanvasMouseLeave = () => {
+    setIsDrawing(false)
+    setCursorPosition(null)
+  }
+
+  const handleCanvasTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!brushMode || !removeBackground || !backgroundRemovedImageData) return
+
+    e.preventDefault()
+    setIsDrawing(true)
+
+    const coords = getCanvasCoordinates(e)
+    if (coords) {
+      drawBrushStroke(coords.x, coords.y, brushMode)
+    }
+  }
+
+  const handleCanvasTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!brushMode || !isDrawing || !removeBackground || !backgroundRemovedImageData) return
+
+    e.preventDefault()
+    const coords = getCanvasCoordinates(e)
+    if (coords) {
+      drawBrushStroke(coords.x, coords.y, brushMode)
+    }
+  }
+
+  const handleCanvasTouchEnd = () => {
+    setIsDrawing(false)
   }
 
   // Modern HDR enhancement based on Greg Benz's natural HDR approach
@@ -464,6 +628,14 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     // Background removal is now handled by ML-based preprocessing
     // The baseImageData already has the background removed if enabled
 
+    // Apply manual mask edits if present
+    if (removeBackground && manualMask) {
+      for (let i = 0; i < data.length; i += 4) {
+        // Apply the alpha channel from the manual mask
+        data[i + 3] = manualMask.data[i + 3]
+      }
+    }
+
     ctx.putImageData(imageData, 0, 0)
 
     // Apply filters if needed
@@ -525,7 +697,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     if (originalImageData) {
       applyAdjustments()
     }
-  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData, backgroundRemovedImageData])
+  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData, backgroundRemovedImageData, manualMask])
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments)
@@ -653,17 +825,58 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <canvas
-                    ref={previewCanvasRef}
-                    width={128}
-                    height={128}
-                    className="w-full h-full"
-                    style={{ imageRendering: 'crisp-edges' }}
-                  />
+                  <>
+                    <canvas
+                      ref={previewCanvasRef}
+                      width={128}
+                      height={128}
+                      className="w-full h-full"
+                      style={{
+                        imageRendering: 'crisp-edges',
+                        cursor: brushMode ? 'none' : 'default'
+                      }}
+                      onMouseDown={handleCanvasMouseDown}
+                      onMouseMove={handleCanvasMouseMove}
+                      onMouseUp={handleCanvasMouseUp}
+                      onMouseLeave={handleCanvasMouseLeave}
+                      onTouchStart={handleCanvasTouchStart}
+                      onTouchMove={handleCanvasTouchMove}
+                      onTouchEnd={handleCanvasTouchEnd}
+                    />
+                    {brushMode && cursorPosition && (
+                      <div
+                        className="absolute pointer-events-none border-2 rounded-full"
+                        style={{
+                          left: `${cursorPosition.x}px`,
+                          top: `${cursorPosition.y}px`,
+                          width: `${brushSize}px`,
+                          height: `${brushSize}px`,
+                          transform: 'translate(-50%, -50%)',
+                          borderColor: brushMode === 'erase' ? '#ef4444' : '#22c55e',
+                          backgroundColor: brushMode === 'erase' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)'
+                        }}
+                      />
+                    )}
+                  </>
                 )}
                 {makeHDR && hdrIntensity > 0 && (
                   <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
                     HDR: {hdrIntensity}%
+                  </div>
+                )}
+                {brushMode && (
+                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-md flex items-center gap-1">
+                    {brushMode === 'erase' ? (
+                      <>
+                        <Eraser className="h-3 w-3" />
+                        <span>Erasing</span>
+                      </>
+                    ) : (
+                      <>
+                        <PaintBucket className="h-3 w-3" />
+                        <span>Restoring</span>
+                      </>
+                    )}
                   </div>
                 )}
                 {isProcessing && (
@@ -828,6 +1041,58 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                       disabled={isGif || isProcessing || isRemovingBackground}
                     />
                   </div>
+
+                  {removeBackground && backgroundRemovedImageData && (
+                    <div className="space-y-3 pl-4 border-l-2 border-muted">
+                      <div>
+                        <Label className="text-sm">Manual Editing Tools</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Fine-tune the background removal
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant={brushMode === 'erase' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setBrushMode(brushMode === 'erase' ? null : 'erase')}
+                          disabled={isGif || isProcessing || isRemovingBackground}
+                          className="flex-1"
+                        >
+                          <Eraser className="h-4 w-4 mr-1" />
+                          Erase
+                        </Button>
+                        <Button
+                          variant={brushMode === 'restore' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setBrushMode(brushMode === 'restore' ? null : 'restore')}
+                          disabled={isGif || isProcessing || isRemovingBackground}
+                          className="flex-1"
+                        >
+                          <PaintBucket className="h-4 w-4 mr-1" />
+                          Restore
+                        </Button>
+                      </div>
+
+                      {brushMode && (
+                        <div>
+                          <Label className="text-sm">Brush Size</Label>
+                          <Slider
+                            value={[brushSize]}
+                            onValueChange={([value]) => setBrushSize(value)}
+                            min={5}
+                            max={50}
+                            step={5}
+                            className="mt-2"
+                            disabled={isGif || isProcessing}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {brushSize}px - {brushSize < 15 ? 'Fine' : brushSize < 30 ? 'Medium' : 'Large'} brush
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div>
