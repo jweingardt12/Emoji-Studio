@@ -16,9 +16,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square } from "lucide-react"
+import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square, Copy, ExternalLink, Clock, Command } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -82,6 +83,12 @@ function MyEmojisPage() {
   const [selectedEmojiNames, setSelectedEmojiNames] = useState<Set<string>>(new Set())
   const [showBulkActions, setShowBulkActions] = useState(false)
 
+  // Keyboard shortcuts help
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+
+  // Search input ref for focus
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     setIsClient(true)
     
@@ -109,7 +116,52 @@ function MyEmojisPage() {
     
     checkAuth()
   }, [router, hasRealData])
-  
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K: Focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+
+      // Cmd/Ctrl + A: Select all (only when not in input)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault()
+          selectAllEmojis()
+        }
+      }
+
+      // Escape: Clear selection or close dialogs
+      if (e.key === 'Escape') {
+        if (selectedEmojiNames.size > 0) {
+          clearSelection()
+        }
+      }
+
+      // Cmd/Ctrl + /: Show keyboard shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault()
+        setShowKeyboardHelp(!showKeyboardHelp)
+      }
+
+      // F: Toggle filters
+      if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault()
+          setShowFilters(!showFilters)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [selectedEmojiNames.size, showFilters, showKeyboardHelp])
+
   // Function to refresh emoji data from Slack
   const refreshEmojiData = async () => {
     if (!hasRealData || isRefreshing) return
@@ -274,6 +326,12 @@ function MyEmojisPage() {
       return newest
     }, null as Emoji | null)
 
+    // Get recent emojis (last 5)
+    const recentEmojis = [...myEmojis]
+      .filter(e => e.created)
+      .sort((a, b) => (b.created || 0) - (a.created || 0))
+      .slice(0, 5)
+
     return {
       total: totalEmojis,
       images,
@@ -281,7 +339,8 @@ function MyEmojisPage() {
       aliases: totalAliases,
       thisWeek,
       thisMonth,
-      newest: newestEmoji
+      newest: newestEmoji,
+      recentEmojis
     }
   }, [myEmojis, emojiData])
 
@@ -358,6 +417,29 @@ function MyEmojisPage() {
 
   const clearSelection = () => {
     setSelectedEmojiNames(new Set())
+  }
+
+  // Copy actions
+  const copyToClipboard = async (text: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      sonner.success(message)
+    } catch (error) {
+      sonner.error("Failed to copy to clipboard")
+    }
+  }
+
+  const copyEmojiName = (emoji: Emoji) => {
+    copyToClipboard(`:${emoji.name}:`, "Emoji name copied!")
+  }
+
+  const copyEmojiUrl = (emoji: Emoji) => {
+    copyToClipboard(emoji.url, "Emoji URL copied!")
+  }
+
+  const copyEmojiMarkdown = (emoji: Emoji) => {
+    const markdown = `![${emoji.name}](${emoji.url})`
+    copyToClipboard(markdown, "Markdown copied!")
   }
 
   const handleBulkDelete = async () => {
@@ -1468,13 +1550,29 @@ function MyEmojisPage() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
+                        ref={searchInputRef}
                         type="search"
-                        placeholder="Search emojis..."
+                        placeholder="Search emojis... (⌘K)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full sm:w-[300px] pl-9"
                       />
                     </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShowKeyboardHelp(true)}
+                            title="Keyboard shortcuts"
+                          >
+                            <Command className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Keyboard shortcuts</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </CardHeader>
@@ -1525,6 +1623,44 @@ function MyEmojisPage() {
                       </div>
                       <div className="text-2xl font-bold">{stats.thisMonth}</div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Activity */}
+              {stats.recentEmojis.length > 0 && (
+                <div className="px-6 py-4 border-b bg-background">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium">Recent Activity</h3>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {stats.recentEmojis.map((emoji) => (
+                      <TooltipProvider key={emoji.name}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-md border bg-card hover:bg-accent cursor-pointer transition-colors">
+                              <div className="relative h-6 w-6">
+                                <Image
+                                  src={emoji.url}
+                                  alt={emoji.name}
+                                  fill
+                                  className="object-contain"
+                                  unoptimized
+                                />
+                              </div>
+                              <span className="text-sm font-medium">:{emoji.name}:</span>
+                              {emoji.url.toLowerCase().includes('.gif') && (
+                                <Badge variant="default" className="text-xs px-1 py-0">GIF</Badge>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Created {formatDistanceToNow(new Date(emoji.created * 1000), { addSuffix: true })}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1819,6 +1955,21 @@ function MyEmojisPage() {
                           <TableCell>
                             {/* Desktop Actions */}
                             <div className="hidden sm:flex items-center justify-end gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => copyEmojiName(emoji)}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy name</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -1881,6 +2032,20 @@ function MyEmojisPage() {
                                     <LetterText className="h-4 w-4 mr-2" />
                                     Add Alias
                                   </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => copyEmojiName(emoji)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Name
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => copyEmojiUrl(emoji)}>
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Copy URL
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => copyEmojiMarkdown(emoji)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Markdown
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() => handleDelete(emoji)}
                                     className="text-destructive focus:text-destructive"
@@ -2464,6 +2629,45 @@ function MyEmojisPage() {
           </DrawerContent>
         </Drawer>
       )}
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <Dialog open={showKeyboardHelp} onOpenChange={setShowKeyboardHelp}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>
+              Use these shortcuts to navigate faster
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Focus search</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘K</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Select all / Deselect all</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘A</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Toggle filters</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">F</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Clear selection</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">Esc</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm">Show this help</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘/</kbd>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowKeyboardHelp(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
