@@ -1103,27 +1103,27 @@ function VisualizationsPage() {
 
           {/* Tabbed navigation for charts */}
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="overview" className="flex items-center gap-2">
-                <ChartPieIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Overview</span>
+            <TabsList className="grid w-full grid-cols-4 mb-6 h-auto p-1">
+              <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <ChartPieIcon className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="time" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Time Analysis</span>
+              <TabsTrigger value="time" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <Clock className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Time Analysis</span>
               </TabsTrigger>
-              <TabsTrigger value="creators" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Creator Analytics</span>
+              <TabsTrigger value="creators" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <Users className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Creator Analytics</span>
               </TabsTrigger>
-              <TabsTrigger value="content" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Content Analysis</span>
+              <TabsTrigger value="content" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <FileText className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Content Analysis</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="overview" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
               <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Top Emoji Creation Days - Half width */}
             <Card className="lg:col-span-2">
@@ -1448,7 +1448,7 @@ function VisualizationsPage() {
             </TabsContent>
 
             {/* Time Analysis Tab */}
-            <TabsContent value="time" className="space-y-4">
+            <TabsContent value="time" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
               <div>
                 <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                   <Clock className="h-6 w-6" />
@@ -1614,76 +1614,6 @@ function VisualizationsPage() {
               </CardFooter>
             </Card>
 
-            {/* Common Words in Emoji Names - Chart */}
-            <Card className="col-span-1 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Common Words in Emoji Names</CardTitle>
-                <CardDescription>Most frequently used words in emoji names</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Occurrences",
-                    },
-                    ...chartData.commonWords.reduce((acc: Record<string, any>, item, index) => {
-                      acc[item.word] = {
-                        label: item.word,
-                        color: `hsl(var(--chart-${(index % 8) + 1}))`
-                      };
-                      return acc;
-                    }, {} as Record<string, any>)
-                  }}
-                  className="h-[220px] max-w-full overflow-hidden"
-                >
-                  <BarChart
-                    accessibilityLayer
-                    data={chartData.commonWords.map((item, index) => ({
-                      ...item,
-                      fill: COLORS[index % COLORS.length]
-                    }))}
-                    layout="vertical"
-                    margin={{
-                      left: 10,
-                      right: 30,
-                      top: 5,
-                      bottom: 5
-                    }}
-                    barSize={6}
-                    barGap={2}
-                  >
-                    <YAxis
-                      dataKey="word"
-                      type="category"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                      width={80}
-                      tickFormatter={(value: string) => value.length > 8 ? `${value.substring(0, 7)}...` : value}
-                    />
-                    <XAxis dataKey="count" type="number" hide />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      layout="vertical" 
-                      radius={5}
-                      onClick={handleWordClick}
-                      cursor="pointer"
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  Top word: {chartData.commonWords[0]?.word || "none"}
-                  <TrendingUp className="h-4 w-4" />
-                </div>
-              </CardFooter>
-            </Card>
-            
             {/* NEW: Cumulative Emoji Growth - Stacked Area Chart */}
             <Card className="lg:col-span-4">
               <CardHeader>
@@ -1766,11 +1696,139 @@ function VisualizationsPage() {
                 </div>
               </CardFooter>
             </Card>
+
+            {/* NEW: Seasonal Patterns - Multi-line Area Chart */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Seasonal Patterns</CardTitle>
+                <CardDescription>Emoji creation by month across years</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    ...chartData.seasonalYears.reduce((acc: Record<string, any>, year, index) => {
+                      acc[year] = {
+                        label: year,
+                        color: COLORS[index % COLORS.length],
+                      };
+                      return acc;
+                    }, {}),
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.seasonalData}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    {chartData.seasonalYears.map((year, index) => (
+                      <Area
+                        key={year}
+                        type="monotone"
+                        dataKey={year}
+                        stroke={COLORS[index % COLORS.length]}
+                        fill={COLORS[index % COLORS.length]}
+                        fillOpacity={0.3}
+                      />
+                    ))}
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Comparing {chartData.seasonalYears.length} {chartData.seasonalYears.length === 1 ? 'year' : 'years'}
+                  <Calendar className="h-4 w-4" />
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Name Length Trend - Simple Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Average Emoji Name Length Trend</CardTitle>
+                <CardDescription>How emoji naming creativity has evolved</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    avgLength: {
+                      label: "Avg Characters",
+                      color: "#f59e0b",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.nameLengthTrend}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillNameLength" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          const date = payload[0].payload.date;
+                          const avgLength = payload[0].payload.avgLength;
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">Week of {date}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Avg: {avgLength} characters
+                              </div>
+                            </ChartTooltipContent>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="avgLength"
+                      stroke="#f59e0b"
+                      fill="url(#fillNameLength)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.nameLengthTrend.length > 0 && (
+                    <>
+                      Current avg: {chartData.nameLengthTrend[chartData.nameLengthTrend.length - 1]?.avgLength || 0} characters
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
               </div>
             </TabsContent>
 
             {/* Creator Analytics Tab */}
-            <TabsContent value="creators" className="space-y-4">
+            <TabsContent value="creators" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
               <div>
                 <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                   <Users className="h-6 w-6" />
@@ -2084,7 +2142,7 @@ function VisualizationsPage() {
             </TabsContent>
 
             {/* Content Analysis Tab */}
-            <TabsContent value="content" className="space-y-4">
+            <TabsContent value="content" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
               <div>
                 <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                   <FileText className="h-6 w-6" />
@@ -2094,130 +2152,72 @@ function VisualizationsPage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
-            {/* NEW: Seasonal Patterns - Multi-line Area Chart */}
-            <Card className="lg:col-span-2">
+            {/* Common Words in Emoji Names - Chart */}
+            <Card className="col-span-1 lg:col-span-2">
               <CardHeader>
-                <CardTitle>Seasonal Patterns</CardTitle>
-                <CardDescription>Emoji creation by month across years</CardDescription>
+                <CardTitle>Common Words in Emoji Names</CardTitle>
+                <CardDescription>Most frequently used words in emoji names</CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer
                   config={{
-                    ...chartData.seasonalYears.reduce((acc: Record<string, any>, year, index) => {
-                      acc[year] = {
-                        label: year,
-                        color: COLORS[index % COLORS.length],
+                    count: {
+                      label: "Occurrences",
+                    },
+                    ...chartData.commonWords.reduce((acc: Record<string, any>, item, index) => {
+                      acc[item.word] = {
+                        label: item.word,
+                        color: `hsl(var(--chart-${(index % 8) + 1}))`
                       };
                       return acc;
-                    }, {}),
+                    }, {} as Record<string, any>)
                   }}
-                  className="h-[300px] w-full"
+                  className="h-[220px] max-w-full overflow-hidden"
                 >
-                  <AreaChart
-                    data={chartData.seasonalData}
-                    margin={{ left: 12, right: 12, top: 12 }}
+                  <BarChart
+                    accessibilityLayer
+                    data={chartData.commonWords.map((item, index) => ({
+                      ...item,
+                      fill: COLORS[index % COLORS.length]
+                    }))}
+                    layout="vertical"
+                    margin={{
+                      left: 10,
+                      right: 30,
+                      top: 5,
+                      bottom: 5
+                    }}
+                    barSize={6}
+                    barGap={2}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="month"
+                    <YAxis
+                      dataKey="word"
+                      type="category"
                       tickLine={false}
+                      tickMargin={10}
                       axisLine={false}
-                      tickMargin={8}
+                      width={80}
+                      tickFormatter={(value: string) => value.length > 8 ? `${value.substring(0, 7)}...` : value}
                     />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend />
-                    {chartData.seasonalYears.map((year, index) => (
-                      <Area
-                        key={year}
-                        type="monotone"
-                        dataKey={year}
-                        stroke={COLORS[index % COLORS.length]}
-                        fill={COLORS[index % COLORS.length]}
-                        fillOpacity={0.3}
-                      />
-                    ))}
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  Comparing {chartData.seasonalYears.length} {chartData.seasonalYears.length === 1 ? 'year' : 'years'}
-                  <Calendar className="h-4 w-4" />
-                </div>
-              </CardFooter>
-            </Card>
-
-            {/* NEW: Name Length Trend - Simple Area Chart */}
-            <Card className="lg:col-span-4">
-              <CardHeader>
-                <CardTitle>Average Emoji Name Length Trend</CardTitle>
-                <CardDescription>How emoji naming creativity has evolved</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    avgLength: {
-                      label: "Avg Characters",
-                      color: "#f59e0b",
-                    },
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <AreaChart
-                    data={chartData.nameLengthTrend}
-                    margin={{ left: 12, right: 12, top: 12 }}
-                  >
-                    <defs>
-                      <linearGradient id="fillNameLength" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      minTickGap={32}
-                    />
-                    <YAxis tickLine={false} axisLine={false} />
+                    <XAxis dataKey="count" type="number" hide />
                     <ChartTooltip
-                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                        if (active && payload && payload.length) {
-                          const date = payload[0].payload.date;
-                          const avgLength = payload[0].payload.avgLength;
-                          return (
-                            <ChartTooltipContent>
-                              <div className="font-semibold">Week of {date}</div>
-                              <div className="text-xs text-muted-foreground">
-                                Avg: {avgLength} characters
-                              </div>
-                            </ChartTooltipContent>
-                          );
-                        }
-                        return null;
-                      }}
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
                     />
-                    <Area
-                      type="monotone"
-                      dataKey="avgLength"
-                      stroke="#f59e0b"
-                      fill="url(#fillNameLength)"
-                      fillOpacity={1}
+                    <Bar
+                      dataKey="count"
+                      layout="vertical"
+                      radius={5}
+                      onClick={handleWordClick}
+                      cursor="pointer"
                     />
-                  </AreaChart>
+                  </BarChart>
                 </ChartContainer>
               </CardContent>
               <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex gap-2 font-medium leading-none">
-                  {chartData.nameLengthTrend.length > 0 && (
-                    <>
-                      Current avg: {chartData.nameLengthTrend[chartData.nameLengthTrend.length - 1]?.avgLength || 0} characters
-                      <Activity className="h-4 w-4" />
-                    </>
-                  )}
+                  Top word: {chartData.commonWords[0]?.word || "none"}
+                  <TrendingUp className="h-4 w-4" />
                 </div>
               </CardFooter>
             </Card>
