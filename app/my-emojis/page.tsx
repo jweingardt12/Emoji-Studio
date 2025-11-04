@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from "lucide-react"
+import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -72,6 +72,15 @@ function MyEmojisPage() {
   const [currentFileIndex, setCurrentFileIndex] = useState(0)
   const [currentStep, setCurrentStep] = useState<string>("")
   const [processingError, setProcessingError] = useState<string>("")
+
+  // Filter states
+  const [filterType, setFilterType] = useState<"all" | "images" | "gifs">("all")
+  const [filterHasAliases, setFilterHasAliases] = useState<"all" | "with" | "without">("all")
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Bulk selection states
+  const [selectedEmojiNames, setSelectedEmojiNames] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -224,7 +233,7 @@ function MyEmojisPage() {
   const myEmojis = emojiData.filter(emoji => {
     // In demo mode, show all non-alias emojis
     if (!hasRealData) return emoji.is_alias !== 1
-    
+
     // Only include actual emojis I can delete (not aliases)
     return emoji.can_delete === true && emoji.is_alias !== 1
   })
@@ -232,18 +241,71 @@ function MyEmojisPage() {
   // Helper function to get all aliases for an emoji
   const getAliasesForEmoji = (emojiName: string) => {
     // Look through ALL emoji data, not just filtered ones
-    const aliases = emojiData.filter(e => 
+    const aliases = emojiData.filter(e =>
       e.is_alias === 1 && e.alias_for === emojiName
     ).map(e => e.name)
-    
+
     return aliases
   }
 
-  // Filter by search query
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalEmojis = myEmojis.length
+    const images = myEmojis.filter(e => !e.url.toLowerCase().includes('.gif')).length
+    const gifs = myEmojis.filter(e => e.url.toLowerCase().includes('.gif')).length
+
+    // Count total aliases across all my emojis
+    const totalAliases = myEmojis.reduce((count, emoji) => {
+      return count + getAliasesForEmoji(emoji.name).length
+    }, 0)
+
+    // Calculate week and month metrics
+    const now = Date.now() / 1000 // Convert to seconds
+    const oneWeekAgo = now - (7 * 24 * 60 * 60)
+    const oneMonthAgo = now - (30 * 24 * 60 * 60)
+
+    const thisWeek = myEmojis.filter(e => e.created && e.created >= oneWeekAgo).length
+    const thisMonth = myEmojis.filter(e => e.created && e.created >= oneMonthAgo).length
+
+    // Find newest emoji
+    const newestEmoji = myEmojis.reduce((newest, emoji) => {
+      if (!emoji.created) return newest
+      if (!newest || emoji.created > newest.created) return emoji
+      return newest
+    }, null as Emoji | null)
+
+    return {
+      total: totalEmojis,
+      images,
+      gifs,
+      aliases: totalAliases,
+      thisWeek,
+      thisMonth,
+      newest: newestEmoji
+    }
+  }, [myEmojis, emojiData])
+
+  // Filter by search query and filters
   const filteredEmojis = myEmojis.filter(emoji => {
+    // Search query filter
     const query = searchQuery.toLowerCase()
-    return emoji.name.toLowerCase().includes(query) ||
+    const matchesSearch = emoji.name.toLowerCase().includes(query) ||
            emoji.user_display_name?.toLowerCase().includes(query)
+
+    if (!matchesSearch) return false
+
+    // Type filter (images/gifs)
+    if (filterType === "images" && emoji.url.toLowerCase().includes('.gif')) return false
+    if (filterType === "gifs" && !emoji.url.toLowerCase().includes('.gif')) return false
+
+    // Aliases filter
+    if (filterHasAliases !== "all") {
+      const aliases = getAliasesForEmoji(emoji.name)
+      if (filterHasAliases === "with" && aliases.length === 0) return false
+      if (filterHasAliases === "without" && aliases.length > 0) return false
+    }
+
+    return true
   })
 
   // Sort filtered emojis
@@ -275,6 +337,131 @@ function MyEmojisPage() {
     } else {
       setSortColumn(column)
       setSortDirection('asc')
+    }
+  }
+
+  // Bulk selection handlers
+  const toggleEmojiSelection = (emojiName: string) => {
+    const newSelected = new Set(selectedEmojiNames)
+    if (newSelected.has(emojiName)) {
+      newSelected.delete(emojiName)
+    } else {
+      newSelected.add(emojiName)
+    }
+    setSelectedEmojiNames(newSelected)
+  }
+
+  const selectAllEmojis = () => {
+    const allNames = new Set(sortedEmojis.map(e => e.name))
+    setSelectedEmojiNames(allNames)
+  }
+
+  const clearSelection = () => {
+    setSelectedEmojiNames(new Set())
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedEmojiNames.size === 0) return
+
+    // Show confirmation
+    const confirmed = confirm(`Are you sure you want to delete ${selectedEmojiNames.size} emoji${selectedEmojiNames.size > 1 ? 's' : ''}?`)
+    if (!confirmed) return
+
+    sonner.loading(`Deleting ${selectedEmojiNames.size} emojis...`, { id: "bulk-delete" })
+
+    try {
+      const slackCurl = localStorage.getItem("slackCurlCommand")
+      if (!slackCurl) {
+        throw new Error("No Slack connection")
+      }
+
+      const parsed = parseSlackCurl(slackCurl)
+      if (!parsed.isValid) {
+        throw new Error("Invalid Slack credentials")
+      }
+
+      const { token, cookie, workspace: workspaceUrl } = parsed
+
+      // Delete each emoji
+      let successCount = 0
+      let failCount = 0
+
+      for (const emojiName of selectedEmojiNames) {
+        try {
+          const formData: Record<string, string> = {
+            token: token || "",
+            name: emojiName,
+            _x_reason: 'customize-emoji-remove',
+            _x_mode: 'online'
+          }
+
+          const response = await fetch("/api/slack-emojis", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              curlRequest: {
+                url: `https://${workspaceUrl}.slack.com/api/emoji.remove`,
+                method: "POST",
+                headers: {
+                  "Cookie": cookie,
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                formData: formData,
+              },
+            }),
+          })
+
+          const result = await response.json()
+          const slackResponse = result.slackResponse || result
+
+          if (response.ok && slackResponse.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        sonner.success(`Deleted ${successCount} emoji${successCount > 1 ? 's' : ''}`, {
+          id: "bulk-delete",
+          description: failCount > 0 ? `${failCount} failed` : undefined
+        })
+
+        // Remove deleted emojis from state
+        setEmojiData(prevData => {
+          const updatedData = prevData.filter(emoji => {
+            if (selectedEmojiNames.has(emoji.name)) return false
+            if (emoji.is_alias === 1 && selectedEmojiNames.has(emoji.alias_for || '')) return false
+            return true
+          })
+
+          safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-bulk-delete" })
+          return updatedData
+        })
+
+        clearSelection()
+
+        // Refresh in the background
+        setTimeout(async () => {
+          try {
+            await refreshEmojiData()
+          } catch (error) {
+            console.error('Background refresh failed:', error)
+          }
+        }, 2000)
+      } else {
+        throw new Error("All deletions failed")
+      }
+    } catch (error) {
+      sonner.error("Bulk delete failed", {
+        id: "bulk-delete",
+        description: error instanceof Error ? error.message : "An error occurred"
+      })
     }
   }
 
@@ -1291,6 +1478,166 @@ function MyEmojisPage() {
                   </div>
                 </div>
               </CardHeader>
+
+              {/* Statistics Dashboard */}
+              {stats.total > 0 && (
+                <div className="px-6 py-4 border-b bg-muted/30">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Hash className="h-3.5 w-3.5" />
+                        <span>Total</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.total}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <FileImage className="h-3.5 w-3.5" />
+                        <span>Images</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.images}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Film className="h-3.5 w-3.5" />
+                        <span>GIFs</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.gifs}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Link2 className="h-3.5 w-3.5" />
+                        <span>Aliases</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.aliases}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        <span>This Week</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.thisWeek}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>This Month</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.thisMonth}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Filters and Bulk Actions Bar */}
+              <div className="px-6 py-3 border-b bg-background flex flex-wrap items-center gap-3">
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filters
+                  {(filterType !== "all" || filterHasAliases !== "all") && (
+                    <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                      {(filterType !== "all" ? 1 : 0) + (filterHasAliases !== "all" ? 1 : 0)}
+                    </Badge>
+                  )}
+                </Button>
+
+                {selectedEmojiNames.size > 0 && (
+                  <>
+                    <div className="h-6 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {selectedEmojiNames.size} selected
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearSelection}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Clear
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        className="gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {sortedEmojis.length > 0 && (
+                  <>
+                    <div className="h-6 w-px bg-border ml-auto" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectedEmojiNames.size === sortedEmojis.length ? clearSelection : selectAllEmojis}
+                      className="gap-2"
+                    >
+                      {selectedEmojiNames.size === sortedEmojis.length ? (
+                        <>
+                          <Square className="h-4 w-4" />
+                          Deselect All
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="h-4 w-4" />
+                          Select All
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Filter Options */}
+              {showFilters && (
+                <div className="px-6 py-4 border-b bg-muted/20 space-y-3">
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs font-medium">Type</Label>
+                      <ToggleGroup type="single" value={filterType} onValueChange={(value) => value && setFilterType(value as any)} className="justify-start">
+                        <ToggleGroupItem value="all" size="sm">All</ToggleGroupItem>
+                        <ToggleGroupItem value="images" size="sm">Images</ToggleGroupItem>
+                        <ToggleGroupItem value="gifs" size="sm">GIFs</ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs font-medium">Aliases</Label>
+                      <ToggleGroup type="single" value={filterHasAliases} onValueChange={(value) => value && setFilterHasAliases(value as any)} className="justify-start">
+                        <ToggleGroupItem value="all" size="sm">All</ToggleGroupItem>
+                        <ToggleGroupItem value="with" size="sm">With Aliases</ToggleGroupItem>
+                        <ToggleGroupItem value="without" size="sm">Without Aliases</ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                  </div>
+                  {(filterType !== "all" || filterHasAliases !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterType("all")
+                        setFilterHasAliases("all")
+                      }}
+                      className="gap-2 h-8"
+                    >
+                      <X className="h-3 w-3" />
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <CardContent>
               {loading || isRefreshing ? (
                 viewMode === "table" ? (
@@ -1354,6 +1701,20 @@ function MyEmojisPage() {
                     <Table className="min-w-[500px]">
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-12">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={selectedEmojiNames.size === sortedEmojis.length ? clearSelection : selectAllEmojis}
+                            >
+                              {selectedEmojiNames.size === sortedEmojis.length ? (
+                                <CheckSquare className="h-4 w-4" />
+                              ) : (
+                                <Square className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableHead>
                           <TableHead className="w-20">Emoji</TableHead>
                           <TableHead className="min-w-[150px]">
                             <Button
@@ -1390,6 +1751,20 @@ function MyEmojisPage() {
                     <TableBody>
                       {sortedEmojis.map((emoji) => (
                         <TableRow key={emoji.name}>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => toggleEmojiSelection(emoji.name)}
+                            >
+                              {selectedEmojiNames.has(emoji.name) ? (
+                                <CheckSquare className="h-4 w-4" />
+                              ) : (
+                                <Square className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
                           <TableCell>
                             <div className="relative h-10 w-10">
                               <Image
@@ -1527,10 +1902,41 @@ function MyEmojisPage() {
                     {sortedEmojis.map((emoji) => (
                       <div
                         key={emoji.name}
-                        className="group relative flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
+                        className={`group relative flex flex-col items-center gap-2 p-4 rounded-lg border transition-all ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:shadow-md'}`}
                       >
+                        {/* Selection Checkbox */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 left-2 h-6 w-6 bg-background/80 backdrop-blur-sm z-10"
+                          onClick={() => toggleEmojiSelection(emoji.name)}
+                        >
+                          {selectedEmojiNames.has(emoji.name) ? (
+                            <CheckSquare className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        {/* Type Badge */}
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+                          <Badge variant={emoji.url.toLowerCase().includes('.gif') ? "default" : "secondary"} className="text-xs px-1.5 py-0">
+                            {emoji.url.toLowerCase().includes('.gif') ? (
+                              <>
+                                <Film className="h-3 w-3 mr-0.5" />
+                                GIF
+                              </>
+                            ) : (
+                              <>
+                                <FileImage className="h-3 w-3 mr-0.5" />
+                                IMG
+                              </>
+                            )}
+                          </Badge>
+                        </div>
+
                         {/* Emoji Image */}
-                        <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-24 w-24'}`}>
+                        <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-24 w-24'} mt-4`}>
                           <Image
                             src={emoji.url}
                             alt={emoji.name}
@@ -1539,7 +1945,7 @@ function MyEmojisPage() {
                             unoptimized
                           />
                         </div>
-                        
+
                         {/* Emoji Info */}
                         <div className="text-center w-full">
                           <p className="font-medium text-sm truncate">:{emoji.name}:</p>
