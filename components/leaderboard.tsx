@@ -90,10 +90,12 @@ function getTrendIndicator(change: number) {
 
 /**
  * Calculate "Top X%" ranking (what percentage tier from the top)
+ * Always returns at least 1% to avoid "Top 0%"
  */
 function calculatePercentile(userIndex: number, totalUsers: number): number {
   if (totalUsers <= 0) return 100
-  return Math.round(((userIndex + 1) / totalUsers) * 100)
+  const percentile = Math.round(((userIndex + 1) / totalUsers) * 100)
+  return Math.max(1, percentile)
 }
 
 const Leaderboard = ({
