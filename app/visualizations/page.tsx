@@ -297,7 +297,12 @@ function VisualizationsPage() {
       cumulativeGrowth: [],
       creatorTimeline: [],
       topCreatorNames: [],
-      creationVelocity: []
+      creationVelocity: [],
+      typePercentages: [],
+      activeCreatorsTimeline: [],
+      seasonalData: [],
+      seasonalYears: [],
+      nameLengthTrend: []
     }
 
     // Top emoji creators
@@ -698,14 +703,152 @@ function VisualizationsPage() {
           dataPoint[creatorName] = count;
         });
 
-        // Count "others"
-        const othersCount = sortedEmojis.filter(e =>
-          e.created! <= endTimestamp &&
-          !topCreatorNames.includes(e.user_display_name?.split(' ')[0] || '')
-        ).length;
-        dataPoint.others = othersCount;
-
         creatorTimeline.push(dataPoint);
+      }
+    }
+
+    // Calculate GIF vs Image percentage over time (stacked 100%)
+    const typePercentages: Array<{ date: string; imagePercent: number; gifPercent: number }> = [];
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let daysToShow = 90;
+
+      if (timeRange === "7days") daysToShow = 7;
+      else if (timeRange === "30days") daysToShow = 30;
+      else if (timeRange === "90days") daysToShow = 90;
+      else if (timeRange === "6months") daysToShow = 180;
+      else if (timeRange === "1year") daysToShow = 365;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        const endTimestamp = endOfDay.getTime() / 1000;
+
+        const emojisUpToDate = sortedEmojis.filter(e => e.created! <= endTimestamp);
+        const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
+        const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
+        const total = images + gifs;
+
+        typePercentages.push({
+          date: format(date, 'yyyy-MM-dd'),
+          imagePercent: total > 0 ? Math.round((images / total) * 100) : 0,
+          gifPercent: total > 0 ? Math.round((gifs / total) * 100) : 0,
+        });
+      }
+    }
+
+    // Calculate active creators over time
+    const activeCreatorsTimeline: Array<{ date: string; count: number }> = [];
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let daysToShow = 90;
+
+      if (timeRange === "7days") daysToShow = 7;
+      else if (timeRange === "30days") daysToShow = 30;
+      else if (timeRange === "90days") daysToShow = 90;
+      else if (timeRange === "6months") daysToShow = 180;
+      else if (timeRange === "1year") daysToShow = 365;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        const endTimestamp = endOfDay.getTime() / 1000;
+
+        // Count unique creators up to this date
+        const creators = new Set<string>();
+        sortedEmojis.forEach(e => {
+          if (e.created! <= endTimestamp && e.user_display_name) {
+            creators.add(e.user_display_name);
+          }
+        });
+
+        activeCreatorsTimeline.push({
+          date: format(date, 'yyyy-MM-dd'),
+          count: creators.size,
+        });
+      }
+    }
+
+    // Calculate seasonal patterns (emoji creation by month across years)
+    const seasonalPatterns: Record<string, Record<string, number>> = {};
+    if (sortedEmojis.length > 0) {
+      sortedEmojis.forEach(emoji => {
+        if (emoji.created) {
+          const date = new Date(emoji.created * 1000);
+          const year = date.getFullYear().toString();
+          const month = date.toLocaleDateString('en-US', { month: 'short' });
+
+          if (!seasonalPatterns[year]) {
+            seasonalPatterns[year] = {};
+          }
+          seasonalPatterns[year][month] = (seasonalPatterns[year][month] || 0) + 1;
+        }
+      });
+    }
+
+    // Convert seasonal patterns to array format for chart
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const years = Object.keys(seasonalPatterns).sort();
+    const seasonalData = months.map(month => {
+      const dataPoint: any = { month };
+      years.forEach(year => {
+        dataPoint[year] = seasonalPatterns[year]?.[month] || 0;
+      });
+      return dataPoint;
+    });
+
+    // Calculate average name length over time
+    const nameLengthTrend: Array<{ date: string; avgLength: number }> = [];
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let weeksToShow = 12;
+
+      if (timeRange === "7days") weeksToShow = 1;
+      else if (timeRange === "30days") weeksToShow = 4;
+      else if (timeRange === "90days") weeksToShow = 12;
+      else if (timeRange === "6months") weeksToShow = 26;
+      else if (timeRange === "1year") weeksToShow = 52;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        weeksToShow = Math.min(52, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+      }
+
+      for (let i = weeksToShow - 1; i >= 0; i--) {
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekStart.getDate() - 6);
+
+        weekStart.setHours(0, 0, 0, 0);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const startTimestamp = weekStart.getTime() / 1000;
+        const endTimestamp = weekEnd.getTime() / 1000;
+
+        const weekEmojis = sortedEmojis.filter(e =>
+          e.created! >= startTimestamp && e.created! <= endTimestamp
+        );
+
+        const avgLength = weekEmojis.length > 0
+          ? weekEmojis.reduce((sum, e) => sum + e.name.length, 0) / weekEmojis.length
+          : 0;
+
+        nameLengthTrend.push({
+          date: format(weekEnd, 'MMM d'),
+          avgLength: Math.round(avgLength * 10) / 10,
+        });
       }
     }
 
@@ -774,7 +917,12 @@ function VisualizationsPage() {
       cumulativeGrowth,
       creatorTimeline,
       topCreatorNames,
-      creationVelocity
+      creationVelocity,
+      typePercentages,
+      activeCreatorsTimeline,
+      seasonalData,
+      seasonalYears: years,
+      nameLengthTrend
     }
   }, [filteredEmojiData, currentTime, timeRange])
 
@@ -1549,39 +1697,8 @@ function VisualizationsPage() {
                       }}
                     />
                     <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip
-                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                        if (active && payload && payload.length) {
-                          const date = new Date(payload[0].payload.date);
-                          const images = payload[0].payload.images;
-                          const gifs = payload[0].payload.gifs;
-                          const total = payload[0].payload.total;
-                          return (
-                            <ChartTooltipContent>
-                              <div className="font-semibold">
-                                {date.toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </div>
-                              <div className="text-xs space-y-1 mt-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#00E396" }} />
-                                  <span className="text-muted-foreground">{images} images</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#FF4560" }} />
-                                  <span className="text-muted-foreground">{gifs} GIFs</span>
-                                </div>
-                                <div className="font-semibold border-t pt-1 mt-1">Total: {total}</div>
-                              </div>
-                            </ChartTooltipContent>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartLegend content={<ChartTooltipContent />} />
                     <Area
                       type="monotone"
                       dataKey="images"
@@ -1629,10 +1746,6 @@ function VisualizationsPage() {
                       };
                       return acc;
                     }, {}),
-                    others: {
-                      label: "Others",
-                      color: "#94a3b8",
-                    },
                   }}
                   className="h-[300px] w-full"
                 >
@@ -1669,14 +1782,6 @@ function VisualizationsPage() {
                         fillOpacity={0.6}
                       />
                     ))}
-                    <Area
-                      type="monotone"
-                      dataKey="others"
-                      stackId="1"
-                      stroke="#94a3b8"
-                      fill="#94a3b8"
-                      fillOpacity={0.3}
-                    />
                   </AreaChart>
                 </ChartContainer>
               </CardContent>
@@ -1727,31 +1832,8 @@ function VisualizationsPage() {
                       minTickGap={32}
                     />
                     <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip
-                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                        if (active && payload && payload.length) {
-                          const week = payload[0].payload.week;
-                          const count = payload[0].payload.count;
-                          const avg = payload[0].payload.movingAvg;
-                          return (
-                            <ChartTooltipContent>
-                              <div className="font-semibold">Week of {week}</div>
-                              <div className="text-xs space-y-1 mt-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-sm bg-purple-500" />
-                                  <span className="text-muted-foreground">{count} emojis</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 rounded-sm bg-cyan-500" />
-                                  <span className="text-muted-foreground">{avg} avg</span>
-                                </div>
-                              </div>
-                            </ChartTooltipContent>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartLegend content={<ChartTooltipContent />} />
                     <Area
                       type="monotone"
                       dataKey="count"
@@ -1774,6 +1856,302 @@ function VisualizationsPage() {
                   {chartData.creationVelocity.length > 0 && (
                     <>
                       Recent velocity: {chartData.creationVelocity[chartData.creationVelocity.length - 1]?.count || 0} emojis/week
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Type Distribution Percentage - Stacked 100% Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Emoji Type Market Share</CardTitle>
+                <CardDescription>GIF vs Image distribution over time (percentage)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    imagePercent: {
+                      label: "Static Images",
+                      color: "#00E396",
+                    },
+                    gifPercent: {
+                      label: "Animated GIFs",
+                      color: "#FF4560",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.typePercentages}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                    stackOffset="expand"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tickFormatter={(value: number) => `${Math.round(value * 100)}%`} />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          const date = new Date(payload[0].payload.date);
+                          const imagePercent = payload[0].payload.imagePercent;
+                          const gifPercent = payload[0].payload.gifPercent;
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">
+                                {date.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div className="text-xs space-y-1 mt-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#00E396" }} />
+                                  <span className="text-muted-foreground">{imagePercent}% images</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#FF4560" }} />
+                                  <span className="text-muted-foreground">{gifPercent}% GIFs</span>
+                                </div>
+                              </div>
+                            </ChartTooltipContent>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="imagePercent"
+                      stackId="1"
+                      stroke="#00E396"
+                      fill="#00E396"
+                      fillOpacity={0.6}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="gifPercent"
+                      stackId="1"
+                      stroke="#FF4560"
+                      fill="#FF4560"
+                      fillOpacity={0.6}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.typePercentages.length > 0 && (
+                    <>
+                      Current: {chartData.typePercentages[chartData.typePercentages.length - 1]?.imagePercent || 0}% images, {chartData.typePercentages[chartData.typePercentages.length - 1]?.gifPercent || 0}% GIFs
+                      <TrendingUp className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Active Creators Timeline - Step Area Chart */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Community Growth</CardTitle>
+                <CardDescription>Unique creators contributing over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Active Creators",
+                      color: "#06b6d4",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.activeCreatorsTimeline}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillCreators" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Area
+                      type="step"
+                      dataKey="count"
+                      stroke="#06b6d4"
+                      fill="url(#fillCreators)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.activeCreatorsTimeline.length > 0 && (
+                    <>
+                      Total contributors: {chartData.activeCreatorsTimeline[chartData.activeCreatorsTimeline.length - 1]?.count || 0}
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Seasonal Patterns - Multi-line Area Chart */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Seasonal Patterns</CardTitle>
+                <CardDescription>Emoji creation by month across years</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    ...chartData.seasonalYears.reduce((acc: Record<string, any>, year, index) => {
+                      acc[year] = {
+                        label: year,
+                        color: COLORS[index % COLORS.length],
+                      };
+                      return acc;
+                    }, {}),
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.seasonalData}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    {chartData.seasonalYears.map((year, index) => (
+                      <Area
+                        key={year}
+                        type="monotone"
+                        dataKey={year}
+                        stroke={COLORS[index % COLORS.length]}
+                        fill={COLORS[index % COLORS.length]}
+                        fillOpacity={0.3}
+                      />
+                    ))}
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Comparing {chartData.seasonalYears.length} {chartData.seasonalYears.length === 1 ? 'year' : 'years'}
+                  <Calendar className="h-4 w-4" />
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Name Length Trend - Simple Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Average Emoji Name Length Trend</CardTitle>
+                <CardDescription>How emoji naming creativity has evolved</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    avgLength: {
+                      label: "Avg Characters",
+                      color: "#f59e0b",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.nameLengthTrend}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillNameLength" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          const date = payload[0].payload.date;
+                          const avgLength = payload[0].payload.avgLength;
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">Week of {date}</div>
+                              <div className="text-xs text-muted-foreground">
+                                Avg: {avgLength} characters
+                              </div>
+                            </ChartTooltipContent>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="avgLength"
+                      stroke="#f59e0b"
+                      fill="url(#fillNameLength)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.nameLengthTrend.length > 0 && (
+                    <>
+                      Current avg: {chartData.nameLengthTrend[chartData.nameLengthTrend.length - 1]?.avgLength || 0} characters
                       <Activity className="h-4 w-4" />
                     </>
                   )}
