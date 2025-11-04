@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { initializeExtensionListener, type SlackAuthData, type SyncedEmojiData, type SyncedEmojiMeta } from "@/lib/chrome-extension"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
+import { emojiStorage } from "@/lib/storage/indexed-db"
 import { Emoji } from "@/lib/services/emoji-service"
 import { EmojiImportStatus } from "@/components/emoji-import-status"
 import { useOpenPanel } from '@openpanel/nextjs'
@@ -24,34 +24,37 @@ export function ChromeExtensionHandler() {
   const op = useOpenPanel()
 
   // Function to process synced data from extension storage
-  const processSyncedData = useCallback((data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
+  const processSyncedData = useCallback(async (data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
     console.log('[ChromeExtensionHandler] Processing synced data:', data, meta)
-    
+
     // Prevent duplicate processing of the same sync
-    const syncTime = data.lastSyncTime || 0;
+    const syncTime = data.lastSyncTime || Date.now();
     if (syncTime === lastSyncTimeProcessed.current) {
       console.log('[ChromeExtensionHandler] Already processed this sync data, skipping');
       return;
     }
     lastSyncTimeProcessed.current = syncTime;
-    
+
     // Check if this is actually new data or just cached data being loaded
     const existingLastSyncTime = localStorage.getItem('lastSyncTime');
     const isNewSync = !existingLastSyncTime || syncTime > parseInt(existingLastSyncTime);
-    
+
     try {
-      // Update emoji data in the app
+      // Update emoji data in the app (optimistic update)
       setEmojiData(data.emojiData as Emoji[])
       setWorkspace(data.workspace)
       setHasRealData(true)
-      
-      // Store in localStorage for persistence
-      safePersistEmojiDataToLocalStorage(data.emojiData, { source: 'chrome-extension-handler' })
+
+      // Save to storage with timestamp (this ensures atomicity and prevents race conditions)
+      console.log(`[ChromeExtensionHandler] Saving to storage with timestamp ${syncTime}`);
+      await emojiStorage.saveEmojis(data.emojiData, syncTime);
+
+      // Update metadata in localStorage for tracking
       localStorage.setItem('workspace', data.workspace)
       localStorage.setItem('emojiCount', data.emojiCount.toString())
       localStorage.setItem('lastFetchTime', data.lastFetchTime)
-      localStorage.setItem('lastSyncTime', data.lastSyncTime.toString())
-      
+      localStorage.setItem('lastSyncTime', syncTime.toString())
+
       // Store auth data if provided (for future API calls)
       if (data.token) {
         localStorage.setItem('extensionToken', data.token)
@@ -59,7 +62,7 @@ export function ChromeExtensionHandler() {
       if (data.cookie) {
         localStorage.setItem('extensionCookie', data.cookie)
       }
-      
+
       // Also generate and store a curl command for compatibility with the refresh button
       if (data.token && data.cookie && data.workspace) {
         const timestamp = Math.floor(Date.now() / 1000)
@@ -74,17 +77,25 @@ export function ChromeExtensionHandler() {
           -H 'sec-fetch-mode: cors' \
           -H 'sec-fetch-site: same-origin' \
           --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
-        
+
         localStorage.setItem('slackCurlCommand', curlCommand)
         console.log('[ChromeExtensionHandler] Generated and stored curl command for refresh')
       }
-      
-      // Trigger UI update
-      window.dispatchEvent(new CustomEvent('emojiDataUpdated'))
-      
+
+      console.log(`[ChromeExtensionHandler] Successfully saved synced data`);
+
+      // Dispatch event AFTER storage is complete with all data included
+      window.dispatchEvent(new CustomEvent('emojiDataUpdated', {
+        detail: {
+          emojiData: data.emojiData,
+          workspace: data.workspace,
+          timestamp: syncTime
+        }
+      }));
+
       // Calculate non-alias emoji count (to match dashboard display)
       const nonAliasCount = (data.emojiData as Emoji[]).filter(emoji => !emoji.is_alias).length
-      
+
       // Only show success toast if this is actually a NEW sync (not just loading cached data)
       if (isNewSync || forceShowToast) {
         toast.success(`Synced ${nonAliasCount} emojis from ${data.workspace}`, {
@@ -94,7 +105,7 @@ export function ChromeExtensionHandler() {
       } else {
         console.log('[ChromeExtensionHandler] Loaded cached data, not showing toast');
       }
-      
+
       // Track event
       op.track('chrome_extension_synced_data', {
         emojiCount: data.emojiCount,
@@ -103,7 +114,7 @@ export function ChromeExtensionHandler() {
         version: data.version,
         source: 'background_sync'
       })
-      
+
       // Hide loading overlay after data is successfully processed
       setProgress(100);
       setLoadingStage(`Processing complete!`);
@@ -264,16 +275,33 @@ export function ChromeExtensionHandler() {
 
       const typedEmojis = responseData.emojis as Emoji[]
       setProgress(90)
-      
-      // Update the emoji data
+
+      const syncTimestamp = Date.now();
+
+      // Update the emoji data (optimistic update)
       setEmojiData(typedEmojis)
       setHasRealData(true)
-      
-      // Store in localStorage
-      safePersistEmojiDataToLocalStorage(typedEmojis, { source: "chrome-extension-handler-fetch" })
+
+      // Save to storage with timestamp
+      console.log(`[ChromeExtensionHandler] Saving fetched data with timestamp ${syncTimestamp}`);
+      await emojiStorage.saveEmojis(typedEmojis, syncTimestamp);
+
+      // Update metadata in localStorage for tracking
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
-      
+      localStorage.setItem("lastSyncTime", syncTimestamp.toString())
+
+      console.log(`[ChromeExtensionHandler] Successfully saved ${typedEmojis.length} emojis`);
+
+      // Dispatch event AFTER storage is complete
+      window.dispatchEvent(new CustomEvent('emojiDataUpdated', {
+        detail: {
+          emojiData: typedEmojis,
+          workspace: workspace,
+          timestamp: syncTimestamp
+        }
+      }));
+
       setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
       setSuccess(`Successfully synced emojis from ${workspace}`)

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
-import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
+import { emojiStorage } from "@/lib/storage/indexed-db"
 
 export function useAutoRefresh() {
   const { hasRealData, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
@@ -114,19 +114,31 @@ export function useAutoRefresh() {
           can_delete: emoji.can_delete || false,
           aliases: emoji.aliases || [],
         }))
-        
+
         const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0))
-        setEmojiData(sortedData)
         const workspaceName = parsed.workspace || "slack-workspace"
+        const syncTimestamp = Date.now();
+
+        console.log(`[AutoRefresh] Updating ${sortedData.length} emojis with timestamp ${syncTimestamp}`)
+
+        // Update context immediately (optimistic update)
+        setEmojiData(sortedData)
         setWorkspace(workspaceName)
         setHasRealData(true)
-        safePersistEmojiDataToLocalStorage(sortedData, { source: "use-auto-refresh" })
+
+        // Save to storage with timestamp (this ensures atomicity and prevents race conditions)
+        await emojiStorage.saveEmojis(sortedData, syncTimestamp)
+
+        // Update metadata in localStorage for tracking
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-        
-        window.dispatchEvent(new CustomEvent("emojiDataUpdated", { 
-          detail: { emojiData: sortedData, workspace: workspaceName, timestamp: Date.now() } 
+
+        console.log(`[AutoRefresh] Successfully saved ${sortedData.length} emojis`)
+
+        // Dispatch event AFTER storage is complete with all data included
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+          detail: { emojiData: sortedData, workspace: workspaceName, timestamp: syncTimestamp }
         }))
       }
     } catch (error) {

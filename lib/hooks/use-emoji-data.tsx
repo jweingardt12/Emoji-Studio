@@ -206,24 +206,26 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Listen for emoji data updated event
     const handleEmojiDataUpdated = (event: Event) => {
-      console.log("Emoji data updated event detected")
+      console.log("[EmojiDataContext] Emoji data updated event detected")
       const customEvent = event as CustomEvent;
-      
-      // If the event contains data, use it directly
+
+      // Events MUST contain data to prevent race conditions
       if (customEvent.detail && customEvent.detail.emojiData) {
-        console.log(`[EmojiDataContext] Using data from event, ${customEvent.detail.emojiData.length} emojis`);
-        setEmojiData(customEvent.detail.emojiData);
-        if (customEvent.detail.workspace) {
-          setWorkspace(customEvent.detail.workspace);
+        const { emojiData, workspace, timestamp } = customEvent.detail;
+        console.log(`[EmojiDataContext] Using data from event: ${emojiData.length} emojis, timestamp: ${timestamp}`);
+
+        setEmojiData(emojiData);
+        if (workspace) {
+          setWorkspace(workspace);
           setHasRealData(true);
           setUseDemoData(false);
         }
         setLoading(false);
       } else {
-        // Fallback to loading from localStorage
-        setTimeout(() => {
-          loadEmojiData() // Reload data when the emojiDataUpdated event is fired
-        }, 100)
+        // WARNING: This should never happen - events must include data
+        console.error("[EmojiDataContext] emojiDataUpdated event missing data! This can cause stale data issues.");
+        console.error("[EmojiDataContext] Event detail:", customEvent.detail);
+        // Do NOT reload from storage - this was causing the race condition
       }
     }
 
