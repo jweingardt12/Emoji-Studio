@@ -75,7 +75,7 @@ const isWithinInterval = (date: Date, { start, end }: { start: Date; end: Date }
 }
 
 const parseISO = (dateStr: string) => new Date(dateStr)
-import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp, Calendar, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Clock, Users, FileText, Layers } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -1101,8 +1101,30 @@ function VisualizationsPage() {
             </div>
           </div>
 
-          {/* Responsive grid of charts */}
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Tabbed navigation for charts */}
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <ChartPieIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="time" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Time Analysis</span>
+              </TabsTrigger>
+              <TabsTrigger value="creators" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Creator Analytics</span>
+              </TabsTrigger>
+              <TabsTrigger value="content" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Content Analysis</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Overview Tab */}
+            <TabsContent value="overview" className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Top Emoji Creation Days - Half width */}
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -1422,6 +1444,19 @@ function VisualizationsPage() {
                 </ChartContainer>
               </CardContent>
             </Card>
+              </div>
+            </TabsContent>
+
+            {/* Time Analysis Tab */}
+            <TabsContent value="time" className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <Clock className="h-6 w-6" />
+                  Time-Based Patterns
+                </h2>
+                <p className="text-muted-foreground mb-4">Discover when and how emoji creation happens over time</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
             {/* Image vs GIF Emojis - Interactive Chart */}
             <Card className="lg:col-span-2">
@@ -1731,6 +1766,19 @@ function VisualizationsPage() {
                 </div>
               </CardFooter>
             </Card>
+              </div>
+            </TabsContent>
+
+            {/* Creator Analytics Tab */}
+            <TabsContent value="creators" className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <Users className="h-6 w-6" />
+                  Creator Insights
+                </h2>
+                <p className="text-muted-foreground mb-4">Analyze contributions and patterns from emoji creators</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
             {/* NEW: Top Creators Over Time - Stacked Area Chart */}
             <Card className="lg:col-span-4">
@@ -2032,6 +2080,19 @@ function VisualizationsPage() {
                 </div>
               </CardFooter>
             </Card>
+              </div>
+            </TabsContent>
+
+            {/* Content Analysis Tab */}
+            <TabsContent value="content" className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <FileText className="h-6 w-6" />
+                  Content Patterns
+                </h2>
+                <p className="text-muted-foreground mb-4">Explore naming conventions and content characteristics</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
             {/* NEW: Seasonal Patterns - Multi-line Area Chart */}
             <Card className="lg:col-span-2">
@@ -2375,8 +2436,10 @@ function VisualizationsPage() {
                 </div>
               </CardContent>
             </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
 
-          </div>
         </div>
       </div>
     </div>
