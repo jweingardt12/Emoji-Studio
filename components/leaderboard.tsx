@@ -89,11 +89,11 @@ function getTrendIndicator(change: number) {
 }
 
 /**
- * Calculate percentile ranking (what % of users this user is better than)
+ * Calculate "Top X%" ranking (what percentage tier from the top)
  */
 function calculatePercentile(userIndex: number, totalUsers: number): number {
-  if (totalUsers <= 1) return 100
-  return Math.round(((totalUsers - userIndex) / totalUsers) * 100)
+  if (totalUsers <= 0) return 100
+  return Math.round(((userIndex + 1) / totalUsers) * 100)
 }
 
 const Leaderboard = ({
@@ -668,7 +668,7 @@ const Leaderboard = ({
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Better than {calculatePercentile(userIndex, rankingList.length)}% of creators</p>
+                              <p>Ranked #{userIndex + 1} out of {rankingList.length} creators</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
