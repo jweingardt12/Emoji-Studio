@@ -75,7 +75,7 @@ const isWithinInterval = (date: Date, { start, end }: { start: Date; end: Date }
 }
 
 const parseISO = (dateStr: string) => new Date(dateStr)
-import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp, Calendar } from "lucide-react"
+import { ChartPieIcon, BarChart3Icon, LineChartIcon, Activity, TrendingUp, Calendar, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -132,6 +132,8 @@ function VisualizationsPage() {
   const [emojisOnDate, setEmojisOnDate] = useState<any[]>([])
   const [showDateEmojiDialog, setShowDateEmojiDialog] = useState(false)
   const [timeRange, setTimeRange] = useState<TimeRange>("all")
+  const [wordTableSortBy, setWordTableSortBy] = useState<'word' | 'count' | 'percentage' | 'length'>('count')
+  const [wordTableSortDirection, setWordTableSortDirection] = useState<'asc' | 'desc'>('desc')
   
   useEffect(() => {
     setIsClient(true)
@@ -270,9 +272,9 @@ function VisualizationsPage() {
     
     // Return all matching words sorted by frequency
     return Object.entries(wordCounts)
-      .map(([word, count]) => ({ word, count }))
+      .map(([word, count]) => ({ word, count, length: word.length }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 50) // Limit to top 50 results for performance
+      .slice(0, 100) // Limit to top 100 results for performance
   }
   
   // Calculate the current time in seconds (same format as emoji.created)
@@ -586,9 +588,9 @@ function VisualizationsPage() {
     
     // Get top words
     const commonWords = Object.entries(wordCounts)
-      .map(([word, count]) => ({ word, count }))
+      .map(([word, count]) => ({ word, count, length: word.length }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 8); // Top 8 words
+      .slice(0, 30); // Top 30 words for table
       
     // Calculate emoji creation by time of day in 3-hour buckets
     const timeLabels = [
@@ -2162,22 +2164,23 @@ function VisualizationsPage() {
             {/* Common Words Table */}
             <Card className="col-span-1 sm:col-span-2 lg:col-span-2">
               <CardHeader>
-                <CardTitle>Word Frequency Table</CardTitle>
+                <CardTitle>Word Frequency Analysis</CardTitle>
                 <CardDescription>Search and explore emoji word usage across all downloaded data</CardDescription>
               </CardHeader>
               <CardContent className="p-2 sm:p-4">
                 <div className="flex flex-col gap-3 sm:gap-4">
+                  {/* Search Input */}
                   <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="Search for words across all emoji names..." 
-                      className="w-full px-3 py-2 border rounded-md border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" 
+                    <input
+                      type="text"
+                      placeholder="Search for words across all emoji names..."
+                      className="w-full px-3 py-2 border rounded-md border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       value={selectedWord || ''}
                       onChange={(e) => {
                         const value = e.target.value;
                         setSelectedWord(value || null);
                         if (value) {
-                          const matchingEmojis = filteredEmojiData.filter(emoji => 
+                          const matchingEmojis = filteredEmojiData.filter(emoji =>
                             !emoji.is_alias && emoji.name && emoji.name.toLowerCase().includes(value.toLowerCase())
                           ).sort((a, b) => (b.created || 0) - (a.created || 0));
                           setEmojisWithWord(matchingEmojis);
@@ -2187,7 +2190,7 @@ function VisualizationsPage() {
                       }}
                     />
                     {selectedWord && (
-                      <button 
+                      <button
                         className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
                         onClick={() => {
                           setSelectedWord(null);
@@ -2198,39 +2201,175 @@ function VisualizationsPage() {
                       </button>
                     )}
                   </div>
+
+                  {/* Statistics Bar */}
+                  {(() => {
+                    const wordData = selectedWord
+                      ? getWordFrequenciesForSearch(selectedWord)
+                      : chartData.commonWords;
+                    const totalWords = wordData.reduce((sum, item) => sum + (item.count as number), 0);
+                    const avgLength = wordData.length > 0
+                      ? (wordData.reduce((sum, item) => sum + (item.length || 0), 0) / wordData.length).toFixed(1)
+                      : '0';
+
+                    return (
+                      <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 bg-muted/50 rounded-md">
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground">Unique Words</div>
+                          <div className="text-lg font-bold">{wordData.length}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground">Total Occurrences</div>
+                          <div className="text-lg font-bold">{totalWords}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-muted-foreground">Avg. Length</div>
+                          <div className="text-lg font-bold">{avgLength}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Table */}
                   <div className="border rounded-md overflow-hidden">
-                    <div className="grid grid-cols-3 font-medium bg-muted px-3 py-2 text-xs">
-                      <div>Word</div>
-                      <div className="text-right">Count</div>
-                      <div className="text-right">% of Total</div>
+                    {/* Table Header */}
+                    <div className="grid grid-cols-[2fr_1fr_1fr_1fr_2fr] font-medium bg-muted px-3 py-2 text-xs gap-2">
+                      <button
+                        className="flex items-center gap-1 hover:text-primary transition-colors text-left"
+                        onClick={() => {
+                          if (wordTableSortBy === 'word') {
+                            setWordTableSortDirection(wordTableSortDirection === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setWordTableSortBy('word');
+                            setWordTableSortDirection('asc');
+                          }
+                        }}
+                      >
+                        Word
+                        {wordTableSortBy === 'word' && (
+                          wordTableSortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        )}
+                        {wordTableSortBy !== 'word' && <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                      </button>
+                      <button
+                        className="flex items-center justify-end gap-1 hover:text-primary transition-colors"
+                        onClick={() => {
+                          if (wordTableSortBy === 'count') {
+                            setWordTableSortDirection(wordTableSortDirection === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setWordTableSortBy('count');
+                            setWordTableSortDirection('desc');
+                          }
+                        }}
+                      >
+                        Count
+                        {wordTableSortBy === 'count' && (
+                          wordTableSortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        )}
+                        {wordTableSortBy !== 'count' && <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                      </button>
+                      <button
+                        className="flex items-center justify-center gap-1 hover:text-primary transition-colors"
+                        onClick={() => {
+                          if (wordTableSortBy === 'length') {
+                            setWordTableSortDirection(wordTableSortDirection === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setWordTableSortBy('length');
+                            setWordTableSortDirection('desc');
+                          }
+                        }}
+                      >
+                        Len
+                        {wordTableSortBy === 'length' && (
+                          wordTableSortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        )}
+                        {wordTableSortBy !== 'length' && <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                      </button>
+                      <button
+                        className="flex items-center justify-end gap-1 hover:text-primary transition-colors"
+                        onClick={() => {
+                          if (wordTableSortBy === 'percentage') {
+                            setWordTableSortDirection(wordTableSortDirection === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setWordTableSortBy('percentage');
+                            setWordTableSortDirection('desc');
+                          }
+                        }}
+                      >
+                        %
+                        {wordTableSortBy === 'percentage' && (
+                          wordTableSortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        )}
+                        {wordTableSortBy !== 'percentage' && <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                      </button>
+                      <div className="text-left">Frequency</div>
                     </div>
+
                     {selectedWord && (
                       <div className="px-3 py-1 text-xs text-muted-foreground bg-accent/50 border-b">
                         Found {getWordFrequenciesForSearch(selectedWord).length} words matching "{selectedWord}"
                       </div>
                     )}
-                    <ScrollArea className="h-[180px]">
-                      {(selectedWord
-                        ? getWordFrequenciesForSearch(selectedWord)
-                        : chartData.commonWords
-                      ).map((item, index) => {
-                        // Calculate percentage of total emojis
+
+                    <ScrollArea className="h-[300px]">
+                      {(() => {
                         const totalEmojiCount = filteredEmojiData.length;
-                        const percentage = totalEmojiCount > 0 ? (((item.count as number) / totalEmojiCount) * 100).toFixed(1) : '0.0';
-                        
-                        return (
-                          <div 
-                            key={item.word} 
-                            className={`grid grid-cols-3 px-3 py-2 text-sm border-t border-border ${selectedWord === item.word ? 'bg-accent' : 'hover:bg-accent/50'}`}
+                        let wordData = (selectedWord
+                          ? getWordFrequenciesForSearch(selectedWord)
+                          : chartData.commonWords
+                        ).map(item => ({
+                          ...item,
+                          percentage: totalEmojiCount > 0 ? ((item.count as number) / totalEmojiCount) * 100 : 0
+                        }));
+
+                        // Sort based on current sort settings
+                        wordData.sort((a, b) => {
+                          let compareValue = 0;
+                          switch (wordTableSortBy) {
+                            case 'word':
+                              compareValue = a.word.localeCompare(b.word);
+                              break;
+                            case 'count':
+                              compareValue = (a.count as number) - (b.count as number);
+                              break;
+                            case 'percentage':
+                              compareValue = a.percentage - b.percentage;
+                              break;
+                            case 'length':
+                              compareValue = (a.length || 0) - (b.length || 0);
+                              break;
+                          }
+                          return wordTableSortDirection === 'asc' ? compareValue : -compareValue;
+                        });
+
+                        const maxCount = Math.max(...wordData.map(item => item.count as number), 1);
+
+                        return wordData.map((item) => (
+                          <div
+                            key={item.word}
+                            className={`grid grid-cols-[2fr_1fr_1fr_1fr_2fr] px-3 py-2 text-sm border-t border-border gap-2 items-center transition-colors ${
+                              selectedWord === item.word ? 'bg-accent' : 'hover:bg-accent/50'
+                            }`}
                             onClick={() => handleWordClick(item)}
                             style={{ cursor: 'pointer' }}
                           >
-                            <div>{item.word}</div>
-                            <div className="text-right">{item.count}</div>
-                            <div className="text-right">{percentage}%</div>
+                            <div className="font-medium truncate">{item.word}</div>
+                            <div className="text-right tabular-nums">{item.count}</div>
+                            <div className="text-center text-xs text-muted-foreground">{item.length}</div>
+                            <div className="text-right text-xs tabular-nums">{item.percentage.toFixed(1)}%</div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{
+                                    width: `${((item.count as number) / maxCount) * 100}%`
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        );
-                      })}
+                        ));
+                      })()}
                     </ScrollArea>
                   </div>
                 </div>
