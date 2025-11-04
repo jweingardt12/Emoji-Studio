@@ -1108,17 +1108,17 @@ function VisualizationsPage() {
                 <ChartPieIcon className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="time" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
-                <Clock className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Time Analysis</span>
+              <TabsTrigger value="activity" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+                <Activity className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Activity Patterns</span>
               </TabsTrigger>
               <TabsTrigger value="creators" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                 <Users className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Creator Analytics</span>
+                <span className="hidden sm:inline font-medium">Creators</span>
               </TabsTrigger>
               <TabsTrigger value="content" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                 <FileText className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Content Analysis</span>
+                <span className="hidden sm:inline font-medium">Content</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1294,170 +1294,6 @@ function VisualizationsPage() {
               </CardContent>
             </Card>
 
-            {/* Emojis by Day of Week - Half width */}
-            <Card className="md:col-span-1 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Emojis by Day of Week</CardTitle>
-                <CardDescription>When emojis are typically created</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Emojis Created",
-                      color: "#008FFB"
-                    },
-                    label: {
-                      color: "hsl(var(--background))"
-                    }
-                  }}
-                  className="w-full h-auto aspect-[3/2]"
-                >
-                  <BarChart
-                    accessibilityLayer
-                    data={chartData.weekdayDistribution}
-                    layout="vertical"
-                    margin={{
-                      top: 0,
-                      right: 16,
-                      bottom: 0,
-                      left: 0
-                    }}
-                  >
-                    <CartesianGrid horizontal={false} />
-                    <YAxis
-                      dataKey="day"
-                      type="category"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                      hide
-                    />
-                    <XAxis dataKey="count" type="number" hide />
-                    <ChartTooltip
-                      cursor={false}
-                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <ChartTooltipContent>
-                              <div className="font-semibold">{payload[0].payload.day}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {payload[0].value} emojis
-                              </div>
-                            </ChartTooltipContent>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <Bar
-                      dataKey="count"
-                      layout="vertical"
-                      fill="#008FFB"
-                      radius={4}
-                    >
-                      <LabelList
-                        dataKey="day"
-                        position="insideLeft"
-                        offset={8}
-                        className="fill-[--color-label]"
-                        fontSize={12}
-                      />
-                      <LabelList
-                        dataKey="count"
-                        position="right"
-                        offset={8}
-                        className="fill-foreground"
-                        fontSize={12}
-                      />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  Most active day: {chartData.weekdayDistribution.sort((a, b) => b.count - a.count)[0]?.day}
-                  <TrendingUp className="h-4 w-4" />
-                </div>
-              </CardFooter>
-            </Card>
-
-            {/* Emoji Name Length Distribution - Half width */}
-            <Card className="md:col-span-2 lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Name Length Distribution</CardTitle>
-                <CardDescription>Tap to see emojis</CardDescription>
-              </CardHeader>
-              <CardContent className="p-2">
-                <ChartContainer
-                  className="w-full h-[400px]"
-                  config={{
-                    count: {
-                      label: "",  // Removed label as it's inferred
-                      theme: {
-                        light: "#82ca9d",
-                        dark: "#82ca9d"
-                      }
-                    }
-                  }}
-                >
-                  <BarChart
-                    data={chartData.emojiDistribution}
-                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
-                    <XAxis 
-                      dataKey="length" 
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis 
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <ChartTooltip
-                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <ChartTooltipContent>
-                              <div className="font-semibold">{payload[0].payload.length} characters</div>
-                              <div className="text-xs text-muted-foreground">
-                                {payload[0].value} emojis
-                              </div>
-                            </ChartTooltipContent>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                    <ChartLegend />
-                    <Bar 
-                      dataKey="count" 
-                      fill="#00E396" 
-                      radius={[4, 4, 0, 0]}
-                      onClick={handleNameLengthClick}
-                      cursor="pointer"
-                      background={{ fill: 'transparent' }}  // Add transparent background to increase clickable area
-                      minPointSize={5}  // Ensure small values have minimum height for visibility
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-              </div>
-            </TabsContent>
-
-            {/* Time Analysis Tab */}
-            <TabsContent value="time" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                  <Clock className="h-6 w-6" />
-                  Time-Based Patterns
-                </h2>
-                <p className="text-muted-foreground mb-4">Discover when and how emoji creation happens over time</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
-
             {/* Image vs GIF Emojis - Interactive Chart */}
             <Card className="lg:col-span-2">
               <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
@@ -1555,6 +1391,172 @@ function VisualizationsPage() {
                   </BarChart>
                 </ChartContainer>
               </CardContent>
+            </Card>
+
+            {/* Community Growth */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Community Growth</CardTitle>
+                <CardDescription>Unique creators contributing over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Active Creators",
+                      color: "#06b6d4",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.activeCreatorsTimeline}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillCreators" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Area
+                      type="step"
+                      dataKey="count"
+                      stroke="#06b6d4"
+                      fill="url(#fillCreators)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.activeCreatorsTimeline.length > 0 && (
+                    <>
+                      Total contributors: {chartData.activeCreatorsTimeline[chartData.activeCreatorsTimeline.length - 1]?.count || 0}
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+              </div>
+            </TabsContent>
+
+            {/* Activity Patterns Tab */}
+            <TabsContent value="activity" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <Activity className="h-6 w-6" />
+                  Activity Patterns
+                </h2>
+                <p className="text-muted-foreground mb-4">When are emojis created?</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+            {/* Emojis by Day of Week */}
+            <Card className="md:col-span-1 lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Emojis by Day of Week</CardTitle>
+                <CardDescription>When emojis are typically created</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Emojis Created",
+                      color: "#008FFB"
+                    },
+                    label: {
+                      color: "hsl(var(--background))"
+                    }
+                  }}
+                  className="w-full h-auto aspect-[3/2]"
+                >
+                  <BarChart
+                    accessibilityLayer
+                    data={chartData.weekdayDistribution}
+                    layout="vertical"
+                    margin={{
+                      top: 0,
+                      right: 16,
+                      bottom: 0,
+                      left: 0
+                    }}
+                  >
+                    <CartesianGrid horizontal={false} />
+                    <YAxis
+                      dataKey="day"
+                      type="category"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      hide
+                    />
+                    <XAxis dataKey="count" type="number" hide />
+                    <ChartTooltip
+                      cursor={false}
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">{payload[0].payload.day}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {payload[0].value} emojis
+                              </div>
+                            </ChartTooltipContent>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      layout="vertical"
+                      fill="#008FFB"
+                      radius={4}
+                    >
+                      <LabelList
+                        dataKey="day"
+                        position="insideLeft"
+                        offset={8}
+                        className="fill-[--color-label]"
+                        fontSize={12}
+                      />
+                      <LabelList
+                        dataKey="count"
+                        position="right"
+                        offset={8}
+                        className="fill-foreground"
+                        fontSize={12}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Most active day: {chartData.weekdayDistribution.sort((a, b) => b.count - a.count)[0]?.day}
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+              </CardFooter>
             </Card>
 
             {/* Emoji Creation by Hour - Fill remaining row space */}
@@ -1751,8 +1753,230 @@ function VisualizationsPage() {
               </CardFooter>
             </Card>
 
-            {/* NEW: Name Length Trend - Simple Area Chart */}
+            {/* Creation Velocity - Gradient Area Chart */}
             <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Emoji Creation Velocity</CardTitle>
+                <CardDescription>Weekly emoji creation rate with 4-week moving average</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Emojis per Week",
+                      color: "#8b5cf6",
+                    },
+                    movingAvg: {
+                      label: "4-Week Average",
+                      color: "#06b6d4",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.creationVelocity}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillVelocity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="week"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartLegend content={<ChartTooltipContent />} />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#8b5cf6"
+                      fill="url(#fillVelocity)"
+                      fillOpacity={1}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="movingAvg"
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.creationVelocity.length > 0 && (
+                    <>
+                      Recent velocity: {chartData.creationVelocity[chartData.creationVelocity.length - 1]?.count || 0} emojis/week
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+              </div>
+            </TabsContent>
+
+            {/* Creators & Community Tab */}
+            <TabsContent value="creators" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <Users className="h-6 w-6" />
+                  Creators & Community
+                </h2>
+                <p className="text-muted-foreground mb-4">Who creates emojis?</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+            {/* NEW: Top Creators Over Time - Stacked Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Top Creators Contributions Over Time</CardTitle>
+                <CardDescription>Cumulative emoji creation by top 5 contributors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    ...chartData.topCreatorNames.reduce((acc: Record<string, any>, name, index) => {
+                      acc[name] = {
+                        label: name,
+                        color: COLORS[index % COLORS.length],
+                      };
+                      return acc;
+                    }, {}),
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.creatorTimeline}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    {chartData.topCreatorNames.map((name, index) => (
+                      <Area
+                        key={name}
+                        type="monotone"
+                        dataKey={name}
+                        stackId="1"
+                        stroke={COLORS[index % COLORS.length]}
+                        fill={COLORS[index % COLORS.length]}
+                        fillOpacity={0.6}
+                      />
+                    ))}
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Tracking {chartData.topCreatorNames.length} top creators
+                  <Activity className="h-4 w-4" />
+                </div>
+              </CardFooter>
+            </Card>
+              </div>
+            </TabsContent>
+
+            {/* Content & Naming Tab */}
+            <TabsContent value="content" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <FileText className="h-6 w-6" />
+                  Content & Naming
+                </h2>
+                <p className="text-muted-foreground mb-4">What do emojis look like?</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
+
+            {/* Emoji Name Length Distribution */}
+            <Card className="md:col-span-2 lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Name Length Distribution</CardTitle>
+                <CardDescription>Tap to see emojis</CardDescription>
+              </CardHeader>
+              <CardContent className="p-2">
+                <ChartContainer
+                  className="w-full h-[400px]"
+                  config={{
+                    count: {
+                      label: "",  // Removed label as it's inferred
+                      theme: {
+                        light: "#82ca9d",
+                        dark: "#82ca9d"
+                      }
+                    }
+                  }}
+                >
+                  <BarChart
+                    data={chartData.emojiDistribution}
+                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
+                    <XAxis
+                      dataKey="length"
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">{payload[0].payload.length} characters</div>
+                              <div className="text-xs text-muted-foreground">
+                                {payload[0].value} emojis
+                              </div>
+                            </ChartTooltipContent>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <ChartLegend />
+                    <Bar
+                      dataKey="count"
+                      fill="#00E396"
+                      radius={[4, 4, 0, 0]}
+                      onClick={handleNameLengthClick}
+                      cursor="pointer"
+                      background={{ fill: 'transparent' }}  // Add transparent background to increase clickable area
+                      minPointSize={5}  // Ensure small values have minimum height for visibility
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Average Emoji Name Length Trend */}
+            <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Average Emoji Name Length Trend</CardTitle>
                 <CardDescription>How emoji naming creativity has evolved</CardDescription>
@@ -1824,154 +2048,8 @@ function VisualizationsPage() {
                 </div>
               </CardFooter>
             </Card>
-              </div>
-            </TabsContent>
 
-            {/* Creator Analytics Tab */}
-            <TabsContent value="creators" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                  <Users className="h-6 w-6" />
-                  Creator Insights
-                </h2>
-                <p className="text-muted-foreground mb-4">Analyze contributions and patterns from emoji creators</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
-
-            {/* NEW: Top Creators Over Time - Stacked Area Chart */}
-            <Card className="lg:col-span-4">
-              <CardHeader>
-                <CardTitle>Top Creators Contributions Over Time</CardTitle>
-                <CardDescription>Cumulative emoji creation by top 5 contributors</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    ...chartData.topCreatorNames.reduce((acc: Record<string, any>, name, index) => {
-                      acc[name] = {
-                        label: name,
-                        color: COLORS[index % COLORS.length],
-                      };
-                      return acc;
-                    }, {}),
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <AreaChart
-                    data={chartData.creatorTimeline}
-                    margin={{ left: 12, right: 12, top: 12 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      minTickGap={32}
-                      tickFormatter={(value: string | number) => {
-                        const date = new Date(value);
-                        return date.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
-                      }}
-                    />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend />
-                    {chartData.topCreatorNames.map((name, index) => (
-                      <Area
-                        key={name}
-                        type="monotone"
-                        dataKey={name}
-                        stackId="1"
-                        stroke={COLORS[index % COLORS.length]}
-                        fill={COLORS[index % COLORS.length]}
-                        fillOpacity={0.6}
-                      />
-                    ))}
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  Tracking {chartData.topCreatorNames.length} top creators
-                  <Activity className="h-4 w-4" />
-                </div>
-              </CardFooter>
-            </Card>
-
-            {/* NEW: Creation Velocity - Gradient Area Chart */}
-            <Card className="lg:col-span-4">
-              <CardHeader>
-                <CardTitle>Emoji Creation Velocity</CardTitle>
-                <CardDescription>Weekly emoji creation rate with 4-week moving average</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Emojis per Week",
-                      color: "#8b5cf6",
-                    },
-                    movingAvg: {
-                      label: "4-Week Average",
-                      color: "#06b6d4",
-                    },
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <AreaChart
-                    data={chartData.creationVelocity}
-                    margin={{ left: 12, right: 12, top: 12 }}
-                  >
-                    <defs>
-                      <linearGradient id="fillVelocity" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="week"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      minTickGap={32}
-                    />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                    <ChartLegend content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#8b5cf6"
-                      fill="url(#fillVelocity)"
-                      fillOpacity={1}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="movingAvg"
-                      stroke="#06b6d4"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  {chartData.creationVelocity.length > 0 && (
-                    <>
-                      Recent velocity: {chartData.creationVelocity[chartData.creationVelocity.length - 1]?.count || 0} emojis/week
-                      <Activity className="h-4 w-4" />
-                    </>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
-
-            {/* NEW: Type Distribution Percentage - Stacked 100% Area Chart */}
+            {/* Emoji Type Market Share */}
             <Card className="lg:col-span-4">
               <CardHeader>
                 <CardTitle>Emoji Type Market Share</CardTitle>
@@ -2073,84 +2151,6 @@ function VisualizationsPage() {
                 </div>
               </CardFooter>
             </Card>
-
-            {/* NEW: Active Creators Timeline - Step Area Chart */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Community Growth</CardTitle>
-                <CardDescription>Unique creators contributing over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    count: {
-                      label: "Active Creators",
-                      color: "#06b6d4",
-                    },
-                  }}
-                  className="h-[300px] w-full"
-                >
-                  <AreaChart
-                    data={chartData.activeCreatorsTimeline}
-                    margin={{ left: 12, right: 12, top: 12 }}
-                  >
-                    <defs>
-                      <linearGradient id="fillCreators" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      minTickGap={32}
-                      tickFormatter={(value: string | number) => {
-                        const date = new Date(value);
-                        return date.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
-                      }}
-                    />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="step"
-                      dataKey="count"
-                      stroke="#06b6d4"
-                      fill="url(#fillCreators)"
-                      fillOpacity={1}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                  {chartData.activeCreatorsTimeline.length > 0 && (
-                    <>
-                      Total contributors: {chartData.activeCreatorsTimeline[chartData.activeCreatorsTimeline.length - 1]?.count || 0}
-                      <Activity className="h-4 w-4" />
-                    </>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
-              </div>
-            </TabsContent>
-
-            {/* Content Analysis Tab */}
-            <TabsContent value="content" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <div>
-                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                  <FileText className="h-6 w-6" />
-                  Content Patterns
-                </h2>
-                <p className="text-muted-foreground mb-4">Explore naming conventions and content characteristics</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
             {/* Common Words in Emoji Names - Chart */}
             <Card className="col-span-1 lg:col-span-2">
