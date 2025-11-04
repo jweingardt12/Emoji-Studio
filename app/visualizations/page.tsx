@@ -291,7 +291,13 @@ function VisualizationsPage() {
       aliasRatio: { original: 0, alias: 0 },
       weekdayDistribution: [],
       emojiTypes: [],
-      commonWords: []
+      commonWords: [],
+      emojisByHour: [],
+      peakTimePeriod: "Unknown",
+      cumulativeGrowth: [],
+      creatorTimeline: [],
+      topCreatorNames: [],
+      creationVelocity: []
     }
 
     // Top emoji creators
@@ -613,6 +619,144 @@ function VisualizationsPage() {
     // Find the peak time period outside of the render function to avoid hydration issues
     const peakTimePeriod = [...emojisByHour].sort((a, b) => b.count - a.count)[0]?.timeOfDay || "Unknown";
     
+    // Calculate cumulative growth data (images vs GIFs stacked)
+    const cumulativeGrowth: Array<{ date: string; images: number; gifs: number; total: number }> = [];
+    const sortedEmojis = [...filteredEmojiData]
+      .filter(e => e.created && !e.is_alias)
+      .sort((a, b) => (a.created || 0) - (b.created || 0));
+
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let daysToShow = 90; // default
+
+      if (timeRange === "7days") daysToShow = 7;
+      else if (timeRange === "30days") daysToShow = 30;
+      else if (timeRange === "90days") daysToShow = 90;
+      else if (timeRange === "6months") daysToShow = 180;
+      else if (timeRange === "1year") daysToShow = 365;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        const endTimestamp = endOfDay.getTime() / 1000;
+
+        // Count emojis created up to this date
+        const emojisUpToDate = sortedEmojis.filter(e => e.created! <= endTimestamp);
+        const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
+        const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
+
+        cumulativeGrowth.push({
+          date: format(date, 'yyyy-MM-dd'),
+          images,
+          gifs,
+          total: images + gifs
+        });
+      }
+    }
+
+    // Calculate top creators over time (for stacked area chart)
+    const topCreatorNames = topCreators.slice(0, 5).map(c => c.name);
+    const creatorTimeline: Array<any> = [];
+
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let daysToShow = 90;
+
+      if (timeRange === "7days") daysToShow = 7;
+      else if (timeRange === "30days") daysToShow = 30;
+      else if (timeRange === "90days") daysToShow = 90;
+      else if (timeRange === "6months") daysToShow = 180;
+      else if (timeRange === "1year") daysToShow = 365;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        const endTimestamp = endOfDay.getTime() / 1000;
+
+        const dataPoint: any = {
+          date: format(date, 'yyyy-MM-dd')
+        };
+
+        // Count cumulative emojis for each top creator
+        topCreatorNames.forEach(creatorName => {
+          const count = sortedEmojis.filter(e =>
+            e.created! <= endTimestamp &&
+            e.user_display_name?.split(' ')[0] === creatorName
+          ).length;
+          dataPoint[creatorName] = count;
+        });
+
+        // Count "others"
+        const othersCount = sortedEmojis.filter(e =>
+          e.created! <= endTimestamp &&
+          !topCreatorNames.includes(e.user_display_name?.split(' ')[0] || '')
+        ).length;
+        dataPoint.others = othersCount;
+
+        creatorTimeline.push(dataPoint);
+      }
+    }
+
+    // Calculate creation velocity (emojis per week with moving average)
+    const creationVelocity: Array<{ week: string; count: number; timestamp: number; movingAvg?: number }> = [];
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let weeksToShow = 12; // default to 12 weeks
+
+      if (timeRange === "7days") weeksToShow = 1;
+      else if (timeRange === "30days") weeksToShow = 4;
+      else if (timeRange === "90days") weeksToShow = 12;
+      else if (timeRange === "6months") weeksToShow = 26;
+      else if (timeRange === "1year") weeksToShow = 52;
+      else if (timeRange === "all") {
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        weeksToShow = Math.min(52, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+      }
+
+      for (let i = weeksToShow - 1; i >= 0; i--) {
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekStart.getDate() - 6);
+
+        weekStart.setHours(0, 0, 0, 0);
+        weekEnd.setHours(23, 59, 59, 999);
+
+        const startTimestamp = weekStart.getTime() / 1000;
+        const endTimestamp = weekEnd.getTime() / 1000;
+
+        const weekCount = sortedEmojis.filter(e =>
+          e.created! >= startTimestamp && e.created! <= endTimestamp
+        ).length;
+
+        creationVelocity.push({
+          week: format(weekEnd, 'MMM d'),
+          count: weekCount,
+          timestamp: endTimestamp
+        });
+      }
+
+      // Add 4-week moving average
+      creationVelocity.forEach((item, index) => {
+        const start = Math.max(0, index - 3);
+        const slice = creationVelocity.slice(start, index + 1);
+        const avg = slice.reduce((sum, v) => sum + v.count, 0) / slice.length;
+        item.movingAvg = Math.round(avg * 10) / 10;
+      });
+    }
+
     return {
       topCreators,
       emojisByMonth,
@@ -626,7 +770,11 @@ function VisualizationsPage() {
       emojiTypes,
       commonWords,
       emojisByHour,
-      peakTimePeriod
+      peakTimePeriod,
+      cumulativeGrowth,
+      creatorTimeline,
+      topCreatorNames,
+      creationVelocity
     }
   }, [filteredEmojiData, currentTime, timeRange])
 
@@ -1351,6 +1499,288 @@ function VisualizationsPage() {
               </CardFooter>
             </Card>
             
+            {/* NEW: Cumulative Emoji Growth - Stacked Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Cumulative Emoji Growth</CardTitle>
+                <CardDescription>Total emoji library size over time (stacked by type)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    images: {
+                      label: "Static Images",
+                      color: "#00E396",
+                    },
+                    gifs: {
+                      label: "Animated GIFs",
+                      color: "#FF4560",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.cumulativeGrowth}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillImages" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#00E396" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#00E396" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient id="fillGifs" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#FF4560" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#FF4560" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          const date = new Date(payload[0].payload.date);
+                          const images = payload[0].payload.images;
+                          const gifs = payload[0].payload.gifs;
+                          const total = payload[0].payload.total;
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">
+                                {date.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div className="text-xs space-y-1 mt-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#00E396" }} />
+                                  <span className="text-muted-foreground">{images} images</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#FF4560" }} />
+                                  <span className="text-muted-foreground">{gifs} GIFs</span>
+                                </div>
+                                <div className="font-semibold border-t pt-1 mt-1">Total: {total}</div>
+                              </div>
+                            </ChartTooltipContent>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="images"
+                      stackId="1"
+                      stroke="#00E396"
+                      fill="url(#fillImages)"
+                      fillOpacity={1}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="gifs"
+                      stackId="1"
+                      stroke="#FF4560"
+                      fill="url(#fillGifs)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.cumulativeGrowth.length > 0 && (
+                    <>
+                      Current total: {chartData.cumulativeGrowth[chartData.cumulativeGrowth.length - 1]?.total || 0} emojis
+                      <TrendingUp className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Top Creators Over Time - Stacked Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Top Creators Contributions Over Time</CardTitle>
+                <CardDescription>Cumulative emoji creation by top 5 contributors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    ...chartData.topCreatorNames.reduce((acc: Record<string, any>, name, index) => {
+                      acc[name] = {
+                        label: name,
+                        color: COLORS[index % COLORS.length],
+                      };
+                      return acc;
+                    }, {}),
+                    others: {
+                      label: "Others",
+                      color: "#94a3b8",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.creatorTimeline}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                      tickFormatter={(value: string | number) => {
+                        const date = new Date(value);
+                        return date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    {chartData.topCreatorNames.map((name, index) => (
+                      <Area
+                        key={name}
+                        type="monotone"
+                        dataKey={name}
+                        stackId="1"
+                        stroke={COLORS[index % COLORS.length]}
+                        fill={COLORS[index % COLORS.length]}
+                        fillOpacity={0.6}
+                      />
+                    ))}
+                    <Area
+                      type="monotone"
+                      dataKey="others"
+                      stackId="1"
+                      stroke="#94a3b8"
+                      fill="#94a3b8"
+                      fillOpacity={0.3}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Tracking {chartData.topCreatorNames.length} top creators
+                  <Activity className="h-4 w-4" />
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* NEW: Creation Velocity - Gradient Area Chart */}
+            <Card className="lg:col-span-4">
+              <CardHeader>
+                <CardTitle>Emoji Creation Velocity</CardTitle>
+                <CardDescription>Weekly emoji creation rate with 4-week moving average</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Emojis per Week",
+                      color: "#8b5cf6",
+                    },
+                    movingAvg: {
+                      label: "4-Week Average",
+                      color: "#06b6d4",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <AreaChart
+                    data={chartData.creationVelocity}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <defs>
+                      <linearGradient id="fillVelocity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="week"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          const week = payload[0].payload.week;
+                          const count = payload[0].payload.count;
+                          const avg = payload[0].payload.movingAvg;
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">Week of {week}</div>
+                              <div className="text-xs space-y-1 mt-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm bg-purple-500" />
+                                  <span className="text-muted-foreground">{count} emojis</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-sm bg-cyan-500" />
+                                  <span className="text-muted-foreground">{avg} avg</span>
+                                </div>
+                              </div>
+                            </ChartTooltipContent>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#8b5cf6"
+                      fill="url(#fillVelocity)"
+                      fillOpacity={1}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="movingAvg"
+                      stroke="#06b6d4"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.creationVelocity.length > 0 && (
+                    <>
+                      Recent velocity: {chartData.creationVelocity[chartData.creationVelocity.length - 1]?.count || 0} emojis/week
+                      <Activity className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
             {/* Common Words Table */}
             <Card className="col-span-1 sm:col-span-2 lg:col-span-2">
               <CardHeader>
