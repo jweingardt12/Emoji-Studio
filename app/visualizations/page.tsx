@@ -902,6 +902,112 @@ function VisualizationsPage() {
       });
     }
 
+    // Calculate new vs returning creators over time
+    const newVsReturningCreators: Array<{ date: string; newCreators: number; returningCreators: number }> = [];
+    if (sortedEmojis.length > 0) {
+      const now = new Date();
+      let periodsToShow = 12; // months by default
+      let periodType: 'month' | 'week' = 'month';
+
+      if (timeRange === "7days") {
+        periodsToShow = 7;
+        periodType = 'week';
+      } else if (timeRange === "30days") {
+        periodsToShow = 4;
+        periodType = 'week';
+      } else if (timeRange === "90days") {
+        periodsToShow = 12;
+        periodType = 'week';
+      }
+
+      // Track when each creator first appeared
+      const creatorFirstAppearance = new Map<string, number>();
+      sortedEmojis.forEach(emoji => {
+        if (emoji.user_display_name && emoji.created) {
+          const existing = creatorFirstAppearance.get(emoji.user_display_name);
+          if (!existing || emoji.created < existing) {
+            creatorFirstAppearance.set(emoji.user_display_name, emoji.created);
+          }
+        }
+      });
+
+      for (let i = periodsToShow - 1; i >= 0; i--) {
+        const date = new Date(now);
+        if (periodType === 'month') {
+          date.setMonth(date.getMonth() - i);
+          date.setDate(1);
+        } else {
+          date.setDate(date.getDate() - i * 7);
+        }
+
+        const startOfPeriod = new Date(date);
+        startOfPeriod.setHours(0, 0, 0, 0);
+        const endOfPeriod = new Date(startOfPeriod);
+        if (periodType === 'month') {
+          endOfPeriod.setMonth(endOfPeriod.getMonth() + 1);
+        } else {
+          endOfPeriod.setDate(endOfPeriod.getDate() + 7);
+        }
+
+        const startTimestamp = startOfPeriod.getTime() / 1000;
+        const endTimestamp = endOfPeriod.getTime() / 1000;
+
+        // Count creators who made emojis in this period
+        const creatorsInPeriod = new Set<string>();
+        sortedEmojis.forEach(e => {
+          if (e.created && e.created >= startTimestamp && e.created < endTimestamp && e.user_display_name) {
+            creatorsInPeriod.add(e.user_display_name);
+          }
+        });
+
+        // Determine which are new vs returning
+        let newCount = 0;
+        let returningCount = 0;
+        creatorsInPeriod.forEach(creator => {
+          const firstAppearance = creatorFirstAppearance.get(creator);
+          if (firstAppearance && firstAppearance >= startTimestamp && firstAppearance < endTimestamp) {
+            newCount++;
+          } else {
+            returningCount++;
+          }
+        });
+
+        newVsReturningCreators.push({
+          date: periodType === 'month'
+            ? date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+            : format(date, 'yyyy-MM-dd'),
+          newCreators: newCount,
+          returningCreators: returningCount,
+        });
+      }
+    }
+
+    // Calculate creator productivity distribution
+    const creatorProductivity: Array<{ range: string; count: number; avgCount: number }> = [];
+    const productivityRanges = [
+      { min: 1, max: 1, label: '1' },
+      { min: 2, max: 5, label: '2-5' },
+      { min: 6, max: 10, label: '6-10' },
+      { min: 11, max: 25, label: '11-25' },
+      { min: 26, max: 50, label: '26-50' },
+      { min: 51, max: 999999, label: '50+' },
+    ];
+
+    productivityRanges.forEach(range => {
+      const creatorsInRange = Object.entries(creators).filter(
+        ([_, count]) => count >= range.min && count <= range.max
+      );
+      const avgCount = creatorsInRange.length > 0
+        ? Math.round(creatorsInRange.reduce((sum, [_, count]) => sum + count, 0) / creatorsInRange.length)
+        : 0;
+
+      creatorProductivity.push({
+        range: range.label,
+        count: creatorsInRange.length,
+        avgCount,
+      });
+    });
+
     return {
       topCreators,
       emojisByMonth,
@@ -924,7 +1030,9 @@ function VisualizationsPage() {
       activeCreatorsTimeline,
       seasonalData,
       seasonalYears: years,
-      nameLengthTrend
+      nameLengthTrend,
+      newVsReturningCreators,
+      creatorProductivity,
     }
   }, [filteredEmojiData, currentTime, timeRange])
 
@@ -1700,7 +1808,7 @@ function VisualizationsPage() {
             </Card>
 
             {/* NEW: Seasonal Patterns - Multi-line Area Chart */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-4">
               <CardHeader>
                 <CardTitle>Seasonal Patterns</CardTitle>
                 <CardDescription>Emoji creation by month across years</CardDescription>
@@ -1894,6 +2002,135 @@ function VisualizationsPage() {
               <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex gap-2 font-medium leading-none">
                   Tracking {chartData.topCreatorNames.length} top creators
+                  <Activity className="h-4 w-4" />
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* New vs Returning Creators */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>New vs Returning Creators</CardTitle>
+                <CardDescription>Creator retention and community growth</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    newCreators: {
+                      label: "New Creators",
+                      color: "#00E396",
+                    },
+                    returningCreators: {
+                      label: "Returning Creators",
+                      color: "#008FFB",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <BarChart
+                    data={chartData.newVsReturningCreators}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={32}
+                    />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend />
+                    <Bar
+                      dataKey="newCreators"
+                      stackId="creators"
+                      fill="#00E396"
+                      radius={[0, 0, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="returningCreators"
+                      stackId="creators"
+                      fill="#008FFB"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  {chartData.newVsReturningCreators.length > 0 && (
+                    <>
+                      Latest: {chartData.newVsReturningCreators[chartData.newVsReturningCreators.length - 1]?.newCreators || 0} new, {chartData.newVsReturningCreators[chartData.newVsReturningCreators.length - 1]?.returningCreators || 0} returning
+                      <Users className="h-4 w-4" />
+                    </>
+                  )}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* Creator Productivity Distribution */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Creator Productivity Distribution</CardTitle>
+                <CardDescription>Number of creators by emoji count</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    count: {
+                      label: "Creators",
+                      color: "#775DD0",
+                    },
+                  }}
+                  className="h-[300px] w-full"
+                >
+                  <BarChart
+                    data={chartData.creatorProductivity}
+                    margin={{ left: 12, right: 12, top: 12 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="range"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      label={{ value: 'Emojis Created', position: 'insideBottom', offset: -5 }}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      label={{ value: 'Number of Creators', angle: -90, position: 'insideLeft' }}
+                    />
+                    <ChartTooltip
+                      content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <ChartTooltipContent>
+                              <div className="font-semibold">{payload[0].payload.range} emojis</div>
+                              <div className="text-xs text-muted-foreground">
+                                {payload[0].value} creators
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Avg: {payload[0].payload.avgCount} emojis
+                              </div>
+                            </ChartTooltipContent>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="#775DD0"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm">
+                <div className="flex gap-2 font-medium leading-none">
+                  Total creators: {chartData.creatorProductivity.reduce((sum, item) => sum + item.count, 0)}
                   <Activity className="h-4 w-4" />
                 </div>
               </CardFooter>
@@ -2172,7 +2409,7 @@ function VisualizationsPage() {
                       return acc;
                     }, {} as Record<string, any>)
                   }}
-                  className="h-[220px] max-w-full overflow-hidden"
+                  className="h-[300px] max-w-full overflow-hidden"
                 >
                   <BarChart
                     accessibilityLayer
@@ -2184,11 +2421,11 @@ function VisualizationsPage() {
                     margin={{
                       left: 10,
                       right: 30,
-                      top: 5,
-                      bottom: 5
+                      top: 10,
+                      bottom: 10
                     }}
-                    barSize={6}
-                    barGap={2}
+                    barSize={20}
+                    barGap={4}
                   >
                     <YAxis
                       dataKey="word"

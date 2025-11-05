@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react"
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, startTransition } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Emoji } from "@/lib/services/emoji-service"
@@ -677,8 +677,12 @@ function ExplorerPage() {
                             if (bulkSelectionMode) {
                               toggleEmojiSelection(emoji.name, e);
                             } else {
-                              setSelectedEmoji(emoji);
+                              // Track analytics immediately (non-blocking)
                               analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
+                              // Defer state update to prevent blocking the UI
+                              startTransition(() => {
+                                setSelectedEmoji(emoji);
+                              });
                             }
                           }}
                         >
@@ -827,7 +831,9 @@ function ExplorerPage() {
             emoji={selectedEmoji}
             onClose={() => setSelectedEmoji(null)}
             onEmojiClick={(emoji) => {
-              setSelectedEmoji(emoji);
+              startTransition(() => {
+                setSelectedEmoji(emoji);
+              });
             }}
             onUserClick={(userId: string, userName: string) => {
               const userFromLeaderboard = leaderboard.find(u => u.user_id === userId);
