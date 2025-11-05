@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, Suspense } from "react"
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { RequireData } from "@/components/require-data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -82,6 +82,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 // Metadata moved to page.metadata.ts
 
+// Utility function to calculate days to show based on time range
+const calculateDaysToShow = (timeRange: TimeRange, oldestTimestamp?: number): number => {
+  const now = new Date();
+
+  switch (timeRange) {
+    case "7days": return 7;
+    case "30days": return 30;
+    case "90days": return 90;
+    case "6months": return 180;
+    case "1year": return 365;
+    case "all":
+      if (oldestTimestamp) {
+        const oldestDate = new Date(oldestTimestamp * 1000);
+        return Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      return 365; // fallback
+    default:
+      return 90;
+  }
+}
+
+// Utility function to calculate weeks to show based on time range
+const calculateWeeksToShow = (timeRange: TimeRange, oldestTimestamp?: number): number => {
+  const now = new Date();
+
+  switch (timeRange) {
+    case "7days": return 1;
+    case "30days": return 4;
+    case "90days": return 12;
+    case "6months": return 26;
+    case "1year": return 52;
+    case "all":
+      if (oldestTimestamp) {
+        const oldestDate = new Date(oldestTimestamp * 1000);
+        return Math.min(52, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+      }
+      return 52; // fallback
+    default:
+      return 12;
+  }
+}
+
 
 // Component to display emoji names with tooltip for long names
 const EmojiName = ({ name }: { name: string }) => {
@@ -144,10 +186,10 @@ function VisualizationsPage() {
   // Filter emojis based on selected time range
   const filteredEmojiData = useMemo(() => {
     if (!emojiData || timeRange === "all") return emojiData
-    
+
     const now = Date.now() / 1000 // Current time in seconds
     let cutoffTime: number
-    
+
     switch (timeRange) {
       case "7days":
         cutoffTime = now - (7 * 24 * 60 * 60)
@@ -167,26 +209,39 @@ function VisualizationsPage() {
       default:
         return emojiData
     }
-    
+
     return emojiData.filter(emoji => emoji.created && emoji.created >= cutoffTime)
   }, [emojiData, timeRange])
+
+  // Cache sorted emoji data to avoid repeated sorts
+  const sortedEmojiData = useMemo(() => {
+    if (!filteredEmojiData) return []
+    return [...filteredEmojiData]
+      .filter(e => e.created && !e.is_alias)
+      .sort((a, b) => (a.created || 0) - (b.created || 0))
+  }, [filteredEmojiData])
+
+  // Get oldest timestamp for date range calculations
+  const oldestTimestamp = useMemo(() => {
+    return sortedEmojiData.length > 0 ? sortedEmojiData[0].created : undefined
+  }, [sortedEmojiData])
   
   // Function to handle click on name length bar
-  const handleNameLengthClick = (data: { length: number }) => {
+  const handleNameLengthClick = useCallback((data: { length: number }) => {
     if (!filteredEmojiData) return
-    
+
     const length = data.length
-    const matchingEmojis = filteredEmojiData.filter(emoji => 
+    const matchingEmojis = filteredEmojiData.filter(emoji =>
       !emoji.is_alias && emoji.name && emoji.name.length === length
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
-    
+
     setSelectedNameLength(length)
     setEmojisWithLength(matchingEmojis)
     setShowEmojiDialog(true)
-  }
-  
+  }, [filteredEmojiData])
+
   // Function to handle click on an individual emoji
-  const handleEmojiClick = (emoji: typeof emojiData[0]) => {
+  const handleEmojiClick = useCallback((emoji: any) => {
     // Close any open dialogs first
     setShowEmojiDialog(false)
     setShowWordEmojiDialog(false)
@@ -194,68 +249,68 @@ function VisualizationsPage() {
     setTimeout(() => {
       setSelectedEmoji(emoji)
     }, 50)
-  }
-  
+  }, [])
+
   // Function to close the emoji overlay
-  const handleCloseEmojiOverlay = () => {
+  const handleCloseEmojiOverlay = useCallback(() => {
     setSelectedEmoji(null)
-  }
-  
+  }, [])
+
   // Function to handle click on word bar
-  const handleWordClick = (data: { word: string }) => {
+  const handleWordClick = useCallback((data: { word: string }) => {
     if (!filteredEmojiData) return
-    
+
     const word = data.word
-    const matchingEmojis = filteredEmojiData.filter(emoji => 
+    const matchingEmojis = filteredEmojiData.filter(emoji =>
       !emoji.is_alias && emoji.name && emoji.name.toLowerCase().includes(word.toLowerCase())
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
-    
+
     setSelectedWord(word)
     setEmojisWithWord(matchingEmojis)
     setShowWordEmojiDialog(true)
-  }
-  
+  }, [filteredEmojiData])
+
   // Function to handle click on date bar
-  const handleDateClick = (data: { date: string }) => {
+  const handleDateClick = useCallback((data: { date: string }) => {
     if (!filteredEmojiData) return
-    
+
     const dateStr = data.date
     const date = new Date(dateStr)
-    
+
     // Set time to start of day
     const startOfDay = new Date(date)
     startOfDay.setHours(0, 0, 0, 0)
     const startTimestamp = startOfDay.getTime() / 1000
-    
+
     // Set time to end of day
     const endOfDay = new Date(date)
     endOfDay.setHours(23, 59, 59, 999)
     const endTimestamp = endOfDay.getTime() / 1000
-    
+
     // Find emojis created on this date
-    const matchingEmojis = filteredEmojiData.filter(emoji => 
-      !emoji.is_alias && emoji.created && 
+    const matchingEmojis = filteredEmojiData.filter(emoji =>
+      !emoji.is_alias && emoji.created &&
       emoji.created >= startTimestamp && emoji.created <= endTimestamp
     ).sort((a, b) => (b.created || 0) - (a.created || 0)) // Sort by newest first
-    
+
     setSelectedDate(dateStr)
     setEmojisOnDate(matchingEmojis)
     setShowDateEmojiDialog(true)
-  }
-  
+  }, [filteredEmojiData])
+
   // Function to handle type change
-  const handleTypeChange = (value: "image" | "gif") => {
+  const handleTypeChange = useCallback((value: "image" | "gif") => {
     setActiveEmojiType(value)
-  }
+  }, [])
   
   // Function to generate word frequencies dynamically based on search
-  const getWordFrequenciesForSearch = (searchTerm: string) => {
+  const getWordFrequenciesForSearch = useCallback((searchTerm: string) => {
     if (!filteredEmojiData || !searchTerm.trim()) return []
-    
+
     const wordCounts: Record<string, number> = {}
     const stopWords = ['the', 'and', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are']
     const searchLower = searchTerm.toLowerCase()
-    
+
     filteredEmojiData.forEach(emoji => {
       if (!emoji.is_alias && emoji.name) {
         // Split emoji name by non-alphanumeric characters and underscores
@@ -263,19 +318,19 @@ function VisualizationsPage() {
           .filter(word => word.length > 2) // Only words with 3+ characters
           .filter(word => !stopWords.includes(word)) // Filter out stop words
           .filter(word => word.includes(searchLower)) // Only words that contain the search term
-        
+
         words.forEach(word => {
           wordCounts[word] = (wordCounts[word] || 0) + 1
         })
       }
     })
-    
+
     // Return all matching words sorted by frequency
     return Object.entries(wordCounts)
       .map(([word, count]) => ({ word, count, length: word.length }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 100) // Limit to top 100 results for performance
-  }
+  }, [filteredEmojiData])
   
   // Calculate the current time in seconds (same format as emoji.created)
   const currentTime = Math.floor(Date.now() / 1000)
@@ -513,57 +568,40 @@ function VisualizationsPage() {
     // Emoji types (image vs GIF)
     const emojiTypes = [];
     const now = new Date();
-    
-    // Determine the number of days to show based on time range
-    let daysToShow = 90; // default
-    if (timeRange === "7days") daysToShow = 7;
-    else if (timeRange === "30days") daysToShow = 30;
-    else if (timeRange === "90days") daysToShow = 90;
-    else if (timeRange === "6months") daysToShow = 180;
-    else if (timeRange === "1year") daysToShow = 365;
-    else if (timeRange === "all" && filteredEmojiData.length > 0) {
-      // For "all time", show data from the oldest emoji to now
-      const oldestEmoji = filteredEmojiData
-        .filter(e => e.created)
-        .sort((a, b) => (a.created || 0) - (b.created || 0))[0];
-      if (oldestEmoji && oldestEmoji.created) {
-        const oldestDate = new Date(oldestEmoji.created * 1000);
-        daysToShow = differenceInDays(now, oldestDate); // Show true all-time data
-      }
-    }
-    
+    const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
+
     // Generate data for the calculated period
     for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
       const dateString = format(date, 'yyyy-MM-dd');
-      
+
       // Count image and GIF emojis for this date
       const dayStart = new Date(date);
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
-      
+
       const dayStartTimestamp = dayStart.getTime() / 1000;
       const dayEndTimestamp = dayEnd.getTime() / 1000;
-      
+
       // Filter emojis created on this day
-      const dayEmojis = filteredEmojiData.filter(emoji => 
-        emoji.created && 
-        emoji.created >= dayStartTimestamp && 
+      const dayEmojis = filteredEmojiData.filter(emoji =>
+        emoji.created &&
+        emoji.created >= dayStartTimestamp &&
         emoji.created <= dayEndTimestamp &&
         !emoji.is_alias
       );
-      
+
       // Count image and GIF emojis
-      const imageEmojis = dayEmojis.filter(emoji => 
+      const imageEmojis = dayEmojis.filter(emoji =>
         emoji.url && !emoji.url.toLowerCase().includes('.gif')
       ).length;
-      
-      const gifEmojis = dayEmojis.filter(emoji => 
+
+      const gifEmojis = dayEmojis.filter(emoji =>
         emoji.url && emoji.url.toLowerCase().includes('.gif')
       ).length;
-      
+
       emojiTypes.push({
         date: dateString,
         image: imageEmojis,
@@ -630,23 +668,10 @@ function VisualizationsPage() {
     
     // Calculate cumulative growth data (images vs GIFs stacked)
     const cumulativeGrowth: Array<{ date: string; images: number; gifs: number; total: number }> = [];
-    const sortedEmojis = [...filteredEmojiData]
-      .filter(e => e.created && !e.is_alias)
-      .sort((a, b) => (a.created || 0) - (b.created || 0));
 
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let daysToShow = 90; // default
-
-      if (timeRange === "7days") daysToShow = 7;
-      else if (timeRange === "30days") daysToShow = 30;
-      else if (timeRange === "90days") daysToShow = 90;
-      else if (timeRange === "6months") daysToShow = 180;
-      else if (timeRange === "1year") daysToShow = 365;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
+      const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
 
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
@@ -656,7 +681,7 @@ function VisualizationsPage() {
         const endTimestamp = endOfDay.getTime() / 1000;
 
         // Count emojis created up to this date
-        const emojisUpToDate = sortedEmojis.filter(e => e.created! <= endTimestamp);
+        const emojisUpToDate = sortedEmojiData.filter(e => e.created! <= endTimestamp);
         const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
         const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
 
@@ -673,19 +698,9 @@ function VisualizationsPage() {
     const topCreatorNames = topCreators.slice(0, 5).map(c => c.name);
     const creatorTimeline: Array<any> = [];
 
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let daysToShow = 90;
-
-      if (timeRange === "7days") daysToShow = 7;
-      else if (timeRange === "30days") daysToShow = 30;
-      else if (timeRange === "90days") daysToShow = 90;
-      else if (timeRange === "6months") daysToShow = 180;
-      else if (timeRange === "1year") daysToShow = 365;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
+      const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
 
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
@@ -700,7 +715,7 @@ function VisualizationsPage() {
 
         // Count cumulative emojis for each top creator
         topCreatorNames.forEach(creatorName => {
-          const count = sortedEmojis.filter(e =>
+          const count = sortedEmojiData.filter(e =>
             e.created! <= endTimestamp &&
             e.user_display_name?.split(' ')[0] === creatorName
           ).length;
@@ -713,19 +728,9 @@ function VisualizationsPage() {
 
     // Calculate GIF vs Image percentage over time (stacked 100%)
     const typePercentages: Array<{ date: string; imagePercent: number; gifPercent: number }> = [];
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let daysToShow = 90;
-
-      if (timeRange === "7days") daysToShow = 7;
-      else if (timeRange === "30days") daysToShow = 30;
-      else if (timeRange === "90days") daysToShow = 90;
-      else if (timeRange === "6months") daysToShow = 180;
-      else if (timeRange === "1year") daysToShow = 365;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
+      const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
 
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
@@ -734,7 +739,7 @@ function VisualizationsPage() {
         endOfDay.setHours(23, 59, 59, 999);
         const endTimestamp = endOfDay.getTime() / 1000;
 
-        const emojisUpToDate = sortedEmojis.filter(e => e.created! <= endTimestamp);
+        const emojisUpToDate = sortedEmojiData.filter(e => e.created! <= endTimestamp);
         const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
         const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
         const total = images + gifs;
@@ -749,19 +754,9 @@ function VisualizationsPage() {
 
     // Calculate active creators over time
     const activeCreatorsTimeline: Array<{ date: string; count: number }> = [];
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let daysToShow = 90;
-
-      if (timeRange === "7days") daysToShow = 7;
-      else if (timeRange === "30days") daysToShow = 30;
-      else if (timeRange === "90days") daysToShow = 90;
-      else if (timeRange === "6months") daysToShow = 180;
-      else if (timeRange === "1year") daysToShow = 365;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
+      const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
 
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
@@ -772,7 +767,7 @@ function VisualizationsPage() {
 
         // Count unique creators up to this date
         const creators = new Set<string>();
-        sortedEmojis.forEach(e => {
+        sortedEmojiData.forEach(e => {
           if (e.created! <= endTimestamp && e.user_display_name) {
             creators.add(e.user_display_name);
           }
@@ -787,8 +782,8 @@ function VisualizationsPage() {
 
     // Calculate seasonal patterns (emoji creation by month across years)
     const seasonalPatterns: Record<string, Record<string, number>> = {};
-    if (sortedEmojis.length > 0) {
-      sortedEmojis.forEach(emoji => {
+    if (sortedEmojiData.length > 0) {
+      sortedEmojiData.forEach(emoji => {
         if (emoji.created) {
           const date = new Date(emoji.created * 1000);
           const year = date.getFullYear().toString();
@@ -815,19 +810,9 @@ function VisualizationsPage() {
 
     // Calculate average name length over time
     const nameLengthTrend: Array<{ date: string; avgLength: number }> = [];
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let weeksToShow = 12;
-
-      if (timeRange === "7days") weeksToShow = 1;
-      else if (timeRange === "30days") weeksToShow = 4;
-      else if (timeRange === "90days") weeksToShow = 12;
-      else if (timeRange === "6months") weeksToShow = 26;
-      else if (timeRange === "1year") weeksToShow = 52;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        weeksToShow = Math.min(52, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
-      }
+      const weeksToShow = calculateWeeksToShow(timeRange, oldestTimestamp);
 
       for (let i = weeksToShow - 1; i >= 0; i--) {
         const weekEnd = new Date(now);
@@ -841,7 +826,7 @@ function VisualizationsPage() {
         const startTimestamp = weekStart.getTime() / 1000;
         const endTimestamp = weekEnd.getTime() / 1000;
 
-        const weekEmojis = sortedEmojis.filter(e =>
+        const weekEmojis = sortedEmojiData.filter(e =>
           e.created! >= startTimestamp && e.created! <= endTimestamp
         );
 
@@ -858,19 +843,9 @@ function VisualizationsPage() {
 
     // Calculate creation velocity (emojis per week with moving average)
     const creationVelocity: Array<{ week: string; count: number; timestamp: number; movingAvg?: number }> = [];
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
-      let weeksToShow = 12; // default to 12 weeks
-
-      if (timeRange === "7days") weeksToShow = 1;
-      else if (timeRange === "30days") weeksToShow = 4;
-      else if (timeRange === "90days") weeksToShow = 12;
-      else if (timeRange === "6months") weeksToShow = 26;
-      else if (timeRange === "1year") weeksToShow = 52;
-      else if (timeRange === "all") {
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        weeksToShow = Math.min(52, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
-      }
+      const weeksToShow = calculateWeeksToShow(timeRange, oldestTimestamp);
 
       for (let i = weeksToShow - 1; i >= 0; i--) {
         const weekEnd = new Date(now);
@@ -884,7 +859,7 @@ function VisualizationsPage() {
         const startTimestamp = weekStart.getTime() / 1000;
         const endTimestamp = weekEnd.getTime() / 1000;
 
-        const weekCount = sortedEmojis.filter(e =>
+        const weekCount = sortedEmojiData.filter(e =>
           e.created! >= startTimestamp && e.created! <= endTimestamp
         ).length;
 
@@ -906,7 +881,7 @@ function VisualizationsPage() {
 
     // Calculate new vs returning creators over time
     const newVsReturningCreators: Array<{ date: string; newCreators: number; returningCreators: number }> = [];
-    if (sortedEmojis.length > 0) {
+    if (sortedEmojiData.length > 0) {
       const now = new Date();
       let periodsToShow = 12; // months by default
       let periodType: 'month' | 'week' = 'month';
@@ -928,7 +903,7 @@ function VisualizationsPage() {
         periodType = 'month';
       } else if (timeRange === "all") {
         // For all time, calculate months from oldest to now
-        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        const oldestDate = new Date(sortedEmojiData[0].created! * 1000);
         const monthsDiff = (now.getFullYear() - oldestDate.getFullYear()) * 12 + (now.getMonth() - oldestDate.getMonth());
         periodsToShow = Math.max(1, monthsDiff + 1);
         periodType = 'month';
@@ -936,7 +911,7 @@ function VisualizationsPage() {
 
       // Track when each creator first appeared
       const creatorFirstAppearance = new Map<string, number>();
-      sortedEmojis.forEach(emoji => {
+      sortedEmojiData.forEach(emoji => {
         if (emoji.user_display_name && emoji.created) {
           const existing = creatorFirstAppearance.get(emoji.user_display_name);
           if (!existing || emoji.created < existing) {
@@ -968,7 +943,7 @@ function VisualizationsPage() {
 
         // Count creators who made emojis in this period
         const creatorsInPeriod = new Set<string>();
-        sortedEmojis.forEach(e => {
+        sortedEmojiData.forEach(e => {
           if (e.created && e.created >= startTimestamp && e.created < endTimestamp && e.user_display_name) {
             creatorsInPeriod.add(e.user_display_name);
           }
@@ -1048,7 +1023,7 @@ function VisualizationsPage() {
       newVsReturningCreators,
       creatorProductivity,
     }
-  }, [filteredEmojiData, currentTime, timeRange])
+  }, [filteredEmojiData, sortedEmojiData, oldestTimestamp, currentTime, timeRange])
 
   // Colors for charts - using vibrant colors that match the screenshot
   const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4']
