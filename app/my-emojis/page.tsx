@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square, Copy, ExternalLink, Clock, Command, Image as ImageIcon } from "lucide-react"
@@ -578,6 +579,64 @@ function MyEmojisPage() {
         description: error instanceof Error ? error.message : "An error occurred"
       })
     }
+  }
+
+  const handleBulkDownload = async () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const [JSZip, { saveAs }] = await Promise.all([
+      import('jszip').then(m => m.default),
+      import('file-saver')
+    ])
+
+    sonner.loading(`Downloading ${selectedEmojiNames.size} emojis...`, { id: "bulk-download" })
+
+    try {
+      const zip = new JSZip()
+      const emojisToDownload = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
+
+      for (const emoji of emojisToDownload) {
+        try {
+          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`
+          const response = await fetch(proxyUrl)
+
+          if (!response.ok) continue
+
+          const blob = await response.blob()
+          let extension = '.png'
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('gif')) extension = '.gif'
+          else if (contentType?.includes('jpeg')) extension = '.jpg'
+
+          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`
+          zip.file(fileName, blob)
+        } catch (error) {
+          console.error(`Failed to download ${emoji.name}`, error)
+        }
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, `my-emojis-${Date.now()}.zip`)
+
+      sonner.success(`Downloaded ${selectedEmojiNames.size} emojis`, { id: "bulk-download" })
+    } catch (error) {
+      sonner.error("Failed to download emojis", { id: "bulk-download" })
+    }
+  }
+
+  const handleBulkCopyNames = () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const names = Array.from(selectedEmojiNames).map(name => `:${name}:`).join('\n')
+    copyToClipboard(names, `Copied ${selectedEmojiNames.size} emoji names!`)
+  }
+
+  const handleBulkCopyUrls = () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const emojisToGet = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
+    const urls = emojisToGet.map(e => e.url).join('\n')
+    copyToClipboard(urls, `Copied ${selectedEmojiNames.size} emoji URLs!`)
   }
 
   const handleRename = (emoji: Emoji) => {
@@ -1680,18 +1739,36 @@ function MyEmojisPage() {
                 {selectedEmojiNames.size > 0 && (
                   <>
                     <div className="h-6 w-px bg-border" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
                         {selectedEmojiNames.size} selected
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={clearSelection}
+                        onClick={handleBulkDownload}
                         className="gap-2"
                       >
-                        <X className="h-4 w-4" />
-                        Clear
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkCopyNames}
+                        className="gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Names
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkCopyUrls}
+                        className="gap-2"
+                      >
+                        <Link2 className="h-4 w-4" />
+                        Copy URLs
                       </Button>
                       <Button
                         variant="destructive"
@@ -1701,6 +1778,15 @@ function MyEmojisPage() {
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSelection}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Clear
                       </Button>
                     </div>
                   </>
@@ -2060,11 +2146,12 @@ function MyEmojisPage() {
                 ) : (
                   <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'} gap-4 sm:gap-5`}>
                     {sortedEmojis.map((emoji) => (
-                      <div
-                        key={emoji.name}
-                        className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
-                        onClick={() => toggleEmojiSelection(emoji.name)}
-                      >
+                      <ContextMenu key={emoji.name}>
+                        <ContextMenuTrigger>
+                          <div
+                            className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+                            onClick={() => toggleEmojiSelection(emoji.name)}
+                          >
                         {/* Selection Checkbox */}
                         <Button
                           variant="ghost"
@@ -2250,6 +2337,46 @@ function MyEmojisPage() {
                           </div>
                         )}
                       </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyEmojiName(emoji)
+                      }}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Name
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyEmojiUrl(emoji)
+                      }}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Copy URL
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyImageToClipboard(emoji)
+                      }}>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Copy Image
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        handleRename(emoji)
+                      }} disabled={emoji.is_alias === 1}>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Rename
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(emoji)
+                      }} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                     ))}
                   </div>
                 )
