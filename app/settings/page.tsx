@@ -1539,7 +1539,7 @@ export default function SettingsPage() {
                                     Download the native Emoji Studio app from the App Store for the best iOS experience.
                                   </p>
                                   <a
-                                    href="https://apps.apple.com/us/app/emoji-studio/id6739374099"
+                                    href="https://apps.apple.com/us/app/emoji-studio-for-slack/id6751079971?itscg=30200&itsct=apps_box_badge&mttnsubad=6751079971"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"

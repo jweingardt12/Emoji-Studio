@@ -528,7 +528,7 @@ function VisualizationsPage() {
         .sort((a, b) => (a.created || 0) - (b.created || 0))[0];
       if (oldestEmoji && oldestEmoji.created) {
         const oldestDate = new Date(oldestEmoji.created * 1000);
-        daysToShow = Math.min(365, differenceInDays(now, oldestDate)); // Cap at 1 year for performance
+        daysToShow = differenceInDays(now, oldestDate); // Show true all-time data
       }
     }
     
@@ -645,7 +645,7 @@ function VisualizationsPage() {
       else if (timeRange === "1year") daysToShow = 365;
       else if (timeRange === "all") {
         const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       for (let i = daysToShow - 1; i >= 0; i--) {
@@ -684,7 +684,7 @@ function VisualizationsPage() {
       else if (timeRange === "1year") daysToShow = 365;
       else if (timeRange === "all") {
         const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       for (let i = daysToShow - 1; i >= 0; i--) {
@@ -724,7 +724,7 @@ function VisualizationsPage() {
       else if (timeRange === "1year") daysToShow = 365;
       else if (timeRange === "all") {
         const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       for (let i = daysToShow - 1; i >= 0; i--) {
@@ -760,7 +760,7 @@ function VisualizationsPage() {
       else if (timeRange === "1year") daysToShow = 365;
       else if (timeRange === "all") {
         const oldestDate = new Date(sortedEmojis[0].created! * 1000);
-        daysToShow = Math.min(365, Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24)));
+        daysToShow = Math.ceil((now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       for (let i = daysToShow - 1; i >= 0; i--) {
@@ -920,6 +920,18 @@ function VisualizationsPage() {
       } else if (timeRange === "90days") {
         periodsToShow = 12;
         periodType = 'week';
+      } else if (timeRange === "6months") {
+        periodsToShow = 6;
+        periodType = 'month';
+      } else if (timeRange === "1year") {
+        periodsToShow = 12;
+        periodType = 'month';
+      } else if (timeRange === "all") {
+        // For all time, calculate months from oldest to now
+        const oldestDate = new Date(sortedEmojis[0].created! * 1000);
+        const monthsDiff = (now.getFullYear() - oldestDate.getFullYear()) * 12 + (now.getMonth() - oldestDate.getMonth());
+        periodsToShow = Math.max(1, monthsDiff + 1);
+        periodType = 'month';
       }
 
       // Track when each creator first appeared
