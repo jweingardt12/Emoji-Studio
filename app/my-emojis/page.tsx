@@ -1967,7 +1967,13 @@ function MyEmojisPage() {
                       </TableHeader>
                     <TableBody>
                       {sortedEmojis.map((emoji) => (
-                        <TableRow key={emoji.name}>
+                        <ContextMenu key={emoji.name}>
+                          <ContextMenuTrigger asChild>
+                            <TableRow
+                              onContextMenu={(e) => {
+                                e.stopPropagation()
+                              }}
+                            >
                           <TableCell>
                             <Button
                               variant="ghost"
@@ -2139,6 +2145,46 @@ function MyEmojisPage() {
                             </div>
                           </TableCell>
                         </TableRow>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyEmojiName(emoji)
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Name
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyEmojiUrl(emoji)
+                        }}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Copy URL
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyImageToClipboard(emoji)
+                        }}>
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Copy Image
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          handleRename(emoji)
+                        }} disabled={emoji.is_alias === 1}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Rename
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(emoji)
+                        }} className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                       ))}
                     </TableBody>
                     </Table>
