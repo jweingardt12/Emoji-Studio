@@ -15,6 +15,47 @@ import {
 } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
+// Custom hook for count-up animation
+function useCountUp(target: number, duration: number = 1500, decimals: number = 0) {
+  const [count, setCount] = useState(0);
+  const startTimeRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Reset when target changes
+    startTimeRef.current = null;
+
+    const animate = (currentTime: number) => {
+      if (startTimeRef.current === null) {
+        startTimeRef.current = currentTime;
+      }
+
+      const elapsed = currentTime - startTimeRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function (easeOutExpo) for smooth deceleration
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+
+      const currentCount = easeProgress * target;
+      setCount(currentCount);
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [target, duration]);
+
+  return decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString();
+}
+
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -163,6 +204,12 @@ export function SectionCards() {
 
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
+  // Animated counts for hero metrics
+  const animatedTotalEmojis = useCountUp(totalNonAliasEmojis);
+  const animatedAeu = useCountUp(aeu);
+  const animatedEpu = useCountUp(emojisPerUser, 1500, 2);
+  const animatedEpw = useCountUp(epw);
+
   return (
     <div className="relative w-full">
       {/* Left blur effect - desktop only */}
@@ -186,7 +233,7 @@ export function SectionCards() {
         <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
-              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
+              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">Total Emojis</span></CardTitle>
@@ -194,7 +241,7 @@ export function SectionCards() {
                   </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
-                      {totalNonAliasEmojis.toLocaleString()}
+                      {animatedTotalEmojis}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -260,7 +307,7 @@ export function SectionCards() {
         <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
-              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
+              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 flex flex-col h-full">
                 <CardHeader className="px-2 py-2 xs:px-2 xs:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">AEU</span></CardTitle>
@@ -268,7 +315,7 @@ export function SectionCards() {
                   </div>
                   <div className="flex items-center justify-between mt-1 xs:mt-2">
                     <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
-                      {aeu.toLocaleString()}
+                      {animatedAeu}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -327,7 +374,7 @@ export function SectionCards() {
         <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
-              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
+              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPU</span></CardTitle>
@@ -335,7 +382,7 @@ export function SectionCards() {
                   </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
-                      {emojisPerUser.toFixed(2)}
+                      {animatedEpu}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -396,7 +443,7 @@ export function SectionCards() {
         <div className="flex-shrink-0 w-[300px] sm:w-[350px] lg:w-[400px] xl:w-[450px] 2xl:flex-1 min-h-[128px] snap-center" style={{ scrollSnapAlign: 'center' }}>
           <InfoDrawerResponsive
             trigger={
-              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full">
+              <Card tabIndex={0} role="button" className="@container/card cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.02] hover:border-primary/30 transition-all duration-300 flex flex-col h-full">
                 <CardHeader className="px-2 py-2 sm:px-2 sm:py-2 md:px-3 md:py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base xs:text-lg md:text-xl font-semibold text-foreground cursor-pointer hover:opacity-80"><span className="border-b border-dotted border-muted-foreground">EPW</span></CardTitle>
@@ -404,7 +451,7 @@ export function SectionCards() {
                   </div>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
-                      {epw.toLocaleString()}
+                      {animatedEpw}
                     </CardTitle>
                     <Badge
                       variant="outline"
