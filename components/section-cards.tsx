@@ -251,7 +251,7 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">All Unique Emojis</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
                       {animatedTotalEmojis}
                     </CardTitle>
                     <Badge
@@ -325,7 +325,7 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Active Emoji Uploaders</div>
                   </div>
                   <div className="flex items-center justify-between mt-1 xs:mt-2">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
                       {animatedAeu}
                     </CardTitle>
                     <Badge
@@ -392,7 +392,7 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Emojis Per User</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
                       {animatedEpu}
                     </CardTitle>
                     <Badge
@@ -461,7 +461,7 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Emojis Per Week</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
                       {animatedEpw}
                     </CardTitle>
                     <Badge
