@@ -57,10 +57,6 @@ function ExplorerPage() {
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
   const [selectedEmojis, setSelectedEmojis] = useState<Set<string>>(new Set());
 
-  // Hover preview state
-  const [hoveredEmoji, setHoveredEmoji] = useState<Emoji | null>(null);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-
   // Remove pagination state as we're using virtual scrolling
   
   // Initialize client-side state
@@ -183,6 +179,42 @@ function ExplorerPage() {
 
   const copyEmojiUrl = (emoji: Emoji, e?: React.MouseEvent) => {
     copyToClipboard(emoji.url, "Emoji URL copied!", e);
+  };
+
+  const copyImageToClipboard = async (emoji: Emoji, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    try {
+      // GIFs can't be reliably copied to clipboard, so copy URL instead
+      if (emoji.url.toLowerCase().includes('.gif')) {
+        await navigator.clipboard.writeText(emoji.url);
+        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)");
+        return;
+      }
+
+      const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(emoji.url)}`);
+      if (!response.ok) throw new Error('Failed to fetch image');
+
+      const blob = await response.blob();
+
+      // Check if the clipboard API supports this image type
+      if (!ClipboardItem.supports(blob.type)) {
+        // Fallback to copying URL
+        await navigator.clipboard.writeText(emoji.url);
+        sonner.success("Image URL copied! (Image format not supported for clipboard)");
+        return;
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+      sonner.success("Image copied to clipboard!");
+    } catch (error) {
+      sonner.error("Failed to copy image to clipboard");
+    }
   };
 
   const downloadSingleEmoji = async (emoji: Emoji, e?: React.MouseEvent) => {
@@ -649,18 +681,6 @@ function ExplorerPage() {
                               analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
                             }
                           }}
-                          onMouseEnter={(e) => {
-                            if (!isMobile && !bulkSelectionMode) {
-                              setHoveredEmoji(emoji);
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setHoverPosition({ x: rect.left, y: rect.top });
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (!isMobile) {
-                              setHoveredEmoji(null);
-                            }
-                          }}
                         >
                           {/* Bulk Selection Checkbox */}
                           {bulkSelectionMode && (
@@ -682,16 +702,6 @@ function ExplorerPage() {
                           {showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && (
                             <Badge variant="default" className="absolute top-2 right-2 text-xs px-2 py-0.5">
                               New
-                            </Badge>
-                          )}
-
-                          {/* Type Badge */}
-                          {!bulkSelectionMode && (
-                            <Badge
-                              variant={emoji.url.includes('.gif') ? "default" : "secondary"}
-                              className="absolute top-2 right-2 text-xs px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              {emoji.url.includes('.gif') ? 'GIF' : 'IMG'}
                             </Badge>
                           )}
 
@@ -736,7 +746,7 @@ function ExplorerPage() {
 
                           {/* Quick Actions - Desktop Only */}
                           {!isMobile && !bulkSelectionMode && (
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1">
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -776,12 +786,12 @@ function ExplorerPage() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
-                                      onClick={(e) => downloadSingleEmoji(emoji, e)}
+                                      onClick={(e) => copyImageToClipboard(emoji, e)}
                                     >
-                                      <Download className="h-4 w-4" />
+                                      <ImageIcon className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Download</TooltipContent>
+                                  <TooltipContent>Copy image</TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
                             </div>
@@ -809,73 +819,6 @@ function ExplorerPage() {
           </div>
         )}
       </div>
-
-      {/* Enhanced Hover Preview - Desktop Only */}
-      {hoveredEmoji && !isMobile && (
-        <div
-          className="fixed z-40 pointer-events-none"
-          style={{
-            left: hoverPosition.x + 200,
-            top: hoverPosition.y,
-          }}
-        >
-          <div className="bg-popover border-2 border-primary/50 rounded-xl shadow-2xl p-4 w-64 animate-in fade-in-0 zoom-in-95 duration-200">
-            {/* Large Emoji Preview */}
-            <div className="flex justify-center mb-4">
-              <img
-                src={hoveredEmoji.url}
-                alt={`:${hoveredEmoji.name}:`}
-                className="h-32 w-32 object-contain rounded-lg"
-                onError={() => {}}
-              />
-            </div>
-
-            {/* Emoji Details */}
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Name</p>
-                <p className="font-semibold text-sm break-all">:{hoveredEmoji.name}:</p>
-              </div>
-
-              {hoveredEmoji.user_display_name && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Creator</p>
-                  <p className="text-sm">{hoveredEmoji.user_display_name}</p>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Type</p>
-                  <Badge variant={hoveredEmoji.url.includes('.gif') ? "default" : "secondary"} className="text-xs">
-                    {hoveredEmoji.url.includes('.gif') ? 'GIF' : 'Image'}
-                  </Badge>
-                </div>
-
-                {hoveredEmoji.created && (
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Created</p>
-                    <p className="text-xs">
-                      {new Date(hoveredEmoji.created * 1000).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {hoveredEmoji.is_alias === 1 && hoveredEmoji.alias_for && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Alias</p>
-                  <p className="text-xs">Points to :{hoveredEmoji.alias_for}:</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Emoji Overlay */}
       {selectedEmoji && (
