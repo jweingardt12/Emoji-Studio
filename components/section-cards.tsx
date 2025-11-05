@@ -17,13 +17,24 @@ import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
 // Custom hook for count-up animation
 function useCountUp(target: number, duration: number = 1500, decimals: number = 0) {
-  const [count, setCount] = useState(0);
+  // Start with the target value to prevent hydration mismatch
+  const [count, setCount] = useState(target);
+  const [isClient, setIsClient] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
+  // Set client flag after mount
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Only animate on client side after initial render
+    if (!isClient) return;
+
     // Reset when target changes
     startTimeRef.current = null;
+    setCount(0); // Start from 0 for animation
 
     const animate = (currentTime: number) => {
       if (startTimeRef.current === null) {
@@ -51,7 +62,7 @@ function useCountUp(target: number, duration: number = 1500, decimals: number = 
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [target, duration]);
+  }, [target, duration, isClient]);
 
   return decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString();
 }
