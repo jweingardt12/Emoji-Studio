@@ -1533,12 +1533,21 @@ export default function SettingsPage() {
                             <h3 className="font-semibold">Install on Mobile</h3>
                             <div className="mt-3 space-y-3">
                               <div className="space-y-2">
-                                <p className="text-sm font-medium">iOS (Safari):</p>
-                                <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-1 ml-2">
-                                  <li>Tap the Share button (square with arrow)</li>
-                                  <li>Scroll down and tap "Add to Home Screen"</li>
-                                  <li>Tap "Add" to install</li>
-                                </ol>
+                                <p className="text-sm font-medium">iOS App:</p>
+                                <div className="space-y-2">
+                                  <p className="text-sm text-muted-foreground">
+                                    Download the native Emoji Studio app from the App Store for the best iOS experience.
+                                  </p>
+                                  <a
+                                    href="https://apps.apple.com/us/app/emoji-studio-for-slack/id6751079971?itscg=30200&itsct=apps_box_badge&mttnsubad=6751079971"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                                  >
+                                    <Smartphone className="h-4 w-4" />
+                                    View on App Store
+                                  </a>
+                                </div>
                               </div>
                               <div className="space-y-2">
                                 <p className="text-sm font-medium">Android (Chrome):</p>

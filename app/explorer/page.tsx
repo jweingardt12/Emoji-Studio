@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense } from "react"
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, startTransition } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Emoji } from "@/lib/services/emoji-service"
@@ -8,10 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, Download, Loader2, Sparkles, X } from "lucide-react"
+import { Search, Filter, Download, Loader2, Sparkles, X, Copy, ExternalLink, Image as ImageIcon, CheckSquare, Square, Trash2 } from "lucide-react"
 const EmojiOverlay = React.lazy(() => import("@/components/emoji-overlay"))
 const UserOverlay = React.lazy(() => import("@/components/user-overlay"))
 import { getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { toast as sonner } from "sonner"
+import { Badge } from "@/components/ui/badge"
 // Lightweight date formatter to replace date-fns
 const format = (date: Date | number, formatStr: string) => {
   const d = typeof date === 'number' ? new Date(date * 1000) : date
@@ -49,6 +52,10 @@ function ExplorerPage() {
   // State for date filtering (for notifications)
   const [sinceFilter, setSinceFilter] = useState<number | null>(null);
   const [showNewBadge, setShowNewBadge] = useState(false);
+
+  // Bulk selection state
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false);
+  const [selectedEmojis, setSelectedEmojis] = useState<Set<string>>(new Set());
 
   // Remove pagination state as we're using virtual scrolling
   
@@ -151,6 +158,164 @@ function ExplorerPage() {
 
   const getPlaceholderImage = (name: string) => {
     return `https://via.placeholder.com/64x64/EAEAEA/999999?text=${name.slice(0, 2)}`;
+  };
+
+  // Copy actions
+  const copyToClipboard = async (text: string, message: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      sonner.success(message);
+    } catch (error) {
+      sonner.error("Failed to copy to clipboard");
+    }
+  };
+
+  const copyEmojiName = (emoji: Emoji, e?: React.MouseEvent) => {
+    copyToClipboard(`:${emoji.name}:`, "Emoji name copied!", e);
+  };
+
+  const copyEmojiUrl = (emoji: Emoji, e?: React.MouseEvent) => {
+    copyToClipboard(emoji.url, "Emoji URL copied!", e);
+  };
+
+  const copyImageToClipboard = async (emoji: Emoji, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    try {
+      // GIFs can't be reliably copied to clipboard, so copy URL instead
+      if (emoji.url.toLowerCase().includes('.gif')) {
+        await navigator.clipboard.writeText(emoji.url);
+        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)");
+        return;
+      }
+
+      const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(emoji.url)}`);
+      if (!response.ok) throw new Error('Failed to fetch image');
+
+      const blob = await response.blob();
+
+      // Check if the clipboard API supports this image type
+      if (!ClipboardItem.supports(blob.type)) {
+        // Fallback to copying URL
+        await navigator.clipboard.writeText(emoji.url);
+        sonner.success("Image URL copied! (Image format not supported for clipboard)");
+        return;
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+      sonner.success("Image copied to clipboard!");
+    } catch (error) {
+      sonner.error("Failed to copy image to clipboard");
+    }
+  };
+
+  const downloadSingleEmoji = async (emoji: Emoji, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    try {
+      const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      let extension = '.png';
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('gif')) extension = '.gif';
+      else if (contentType?.includes('jpeg')) extension = '.jpg';
+
+      a.download = `${emoji.name}${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      sonner.success(`Downloaded :${emoji.name}:`);
+    } catch (error) {
+      sonner.error("Failed to download emoji");
+    }
+  };
+
+  // Bulk selection handlers
+  const toggleEmojiSelection = (emojiName: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setSelectedEmojis(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emojiName)) {
+        newSet.delete(emojiName);
+      } else {
+        newSet.add(emojiName);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllEmojis = () => {
+    const allNames = new Set(sortedEmojis.map(e => e.name));
+    setSelectedEmojis(allNames);
+  };
+
+  const clearSelection = () => {
+    setSelectedEmojis(new Set());
+    setBulkSelectionMode(false);
+  };
+
+  const downloadSelectedEmojis = async () => {
+    if (selectedEmojis.size === 0) return;
+
+    const [JSZip, { saveAs }] = await Promise.all([
+      import('jszip').then(m => m.default),
+      import('file-saver')
+    ]);
+
+    sonner.loading(`Downloading ${selectedEmojis.size} emojis...`, { id: "bulk-download-selected" });
+
+    try {
+      const zip = new JSZip();
+      const emojisToDownload = sortedEmojis.filter(e => selectedEmojis.has(e.name));
+
+      for (const emoji of emojisToDownload) {
+        try {
+          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
+          const response = await fetch(proxyUrl);
+
+          if (!response.ok) continue;
+
+          const blob = await response.blob();
+          let extension = '.png';
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('gif')) extension = '.gif';
+          else if (contentType?.includes('jpeg')) extension = '.jpg';
+
+          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`;
+          zip.file(fileName, blob);
+        } catch (error) {
+          console.error(`Failed to download ${emoji.name}`, error);
+        }
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `emoji-selection-${Date.now()}.zip`);
+
+      sonner.success(`Downloaded ${selectedEmojis.size} emojis`, { id: "bulk-download-selected" });
+      clearSelection();
+    } catch (error) {
+      sonner.error("Failed to download selected emojis", { id: "bulk-download-selected" });
+    }
   };
 
   const handleCancelDownload = () => {
@@ -387,8 +552,17 @@ function ExplorerPage() {
                     <SelectItem value="name">Name (A-Z)</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Button 
+
+                <Button
+                  onClick={() => setBulkSelectionMode(!bulkSelectionMode)}
+                  variant={bulkSelectionMode ? "default" : "outline"}
+                  className="w-full sm:w-auto"
+                >
+                  <CheckSquare className="mr-2 h-4 w-4" />
+                  {bulkSelectionMode ? 'Exit Selection' : 'Select Multiple'}
+                </Button>
+
+                <Button
                   onClick={handleDownloadAll}
                   disabled={isDownloading || !nonAliasCount}
                   variant="outline"
@@ -407,23 +581,60 @@ function ExplorerPage() {
                   )}
                 </Button>
               </div>
+
+              {/* Bulk Selection Actions Bar */}
+              {bulkSelectionMode && (
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                  <span className="text-sm font-medium">
+                    {selectedEmojis.size} selected
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllEmojis}
+                    disabled={selectedEmojis.size === sortedEmojis.length}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearSelection}
+                    disabled={selectedEmojis.size === 0}
+                  >
+                    Clear
+                  </Button>
+                  <div className="flex-1" />
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={downloadSelectedEmojis}
+                    disabled={selectedEmojis.size === 0}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Selected ({selectedEmojis.size})
+                  </Button>
+                </div>
+              )}
             </div>
             {/* Emoji Grid */}
             {loading ? (
               <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                   {Array.from({ length: 24 }).map((_, i) => (
-                    <div key={i} className="flex flex-col items-center justify-center p-2 sm:p-3 border rounded-lg bg-card min-h-[120px] sm:min-h-[130px]">
-                      {/* Emoji Image Skeleton */}
-                      <div className="flex-shrink-0 mb-1.5 sm:mb-2">
-                        <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded" />
+                    <div key={i} className="flex flex-col items-center justify-between rounded-xl border-2 bg-card p-4 shadow-sm">
+                      {/* Emoji Image Skeleton - Larger */}
+                      <div className="flex-shrink-0 mb-3 mt-2">
+                        <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg" />
                       </div>
-                      {/* Emoji Name Skeleton */}
-                      <Skeleton className="h-3 w-16 mb-0.5" />
-                      {/* Creator Name Skeleton */}
-                      <Skeleton className="h-3 w-12 mb-0.5" />
-                      {/* Date Skeleton */}
-                      <Skeleton className="h-3 w-10" />
+                      <div className="w-full space-y-2">
+                        {/* Emoji Name Skeleton */}
+                        <Skeleton className="h-4 w-24 mx-auto" />
+                        {/* Creator Name Skeleton */}
+                        <Skeleton className="h-3 w-16 mx-auto" />
+                        {/* Date Skeleton */}
+                        <Skeleton className="h-3 w-20 mx-auto" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -452,63 +663,143 @@ function ExplorerPage() {
                   </div>
                 ) : (
                   <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                       {sortedEmojis.map((emoji) => (
                         <div
                           key={`${emoji.name}-${emoji.url}`}
                           className={cn(
-                            "relative flex flex-col items-center justify-center rounded-lg border bg-card p-2 sm:p-3 shadow hover:border-primary/30 hover:shadow-md transition-all cursor-pointer w-full min-h-[120px] sm:min-h-[130px]",
-                            showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && "ring-2 ring-primary/50 bg-primary/5"
+                            "group relative flex flex-col items-center justify-between rounded-xl border-2 bg-card p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full",
+                            showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && "ring-2 ring-primary/50 bg-primary/5",
+                            selectedEmojis.has(emoji.name) && bulkSelectionMode && "ring-2 ring-primary bg-primary/5 border-primary",
+                            !bulkSelectionMode && "hover:border-primary/40"
                           )}
-                          title={emoji.name}
-                          onClick={() => {
-                            setSelectedEmoji(emoji);
-                            analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
+                          onClick={(e) => {
+                            if (bulkSelectionMode) {
+                              toggleEmojiSelection(emoji.name, e);
+                            } else {
+                              // Track analytics immediately (non-blocking)
+                              analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
+                              // Defer state update to prevent blocking the UI
+                              startTransition(() => {
+                                setSelectedEmoji(emoji);
+                              });
+                            }
                           }}
                         >
-                          {/* New badge */}
-                          {showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && (
-                            <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
-                              New
+                          {/* Bulk Selection Checkbox */}
+                          {bulkSelectionMode && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <div className={cn(
+                                "h-5 w-5 rounded border-2 flex items-center justify-center transition-colors",
+                                selectedEmojis.has(emoji.name)
+                                  ? "bg-primary border-primary text-primary-foreground"
+                                  : "bg-background border-muted-foreground/30"
+                              )}>
+                                {selectedEmojis.has(emoji.name) && (
+                                  <CheckSquare className="h-4 w-4" />
+                                )}
+                              </div>
                             </div>
                           )}
-                          {/* Emoji Image */}
-                          <div className="flex-shrink-0 mb-1.5 sm:mb-2">
+
+                          {/* New badge */}
+                          {showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && (
+                            <Badge variant="default" className="absolute top-2 right-2 text-xs px-2 py-0.5">
+                              New
+                            </Badge>
+                          )}
+
+                          {/* Emoji Image - Larger */}
+                          <div className="flex-shrink-0 mb-3 mt-2">
                             {imageErrors[emoji.name] ? (
-                              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
+                              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
                                 {emoji.name.slice(0, 2).toUpperCase()}
                               </div>
                             ) : (
                               <img
                                 src={emoji.url || getPlaceholderImage(emoji.name)}
                                 alt={`:${emoji.name}:`}
-                                className="h-10 w-10 sm:h-12 sm:w-12 object-contain rounded"
+                                className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
                                 onError={() => handleImageError(emoji.name)}
                                 loading="lazy"
                               />
                             )}
                           </div>
-                          
-                          {/* Emoji Name */}
-                          <span
-                            className="text-xs font-medium text-foreground text-center w-full truncate px-1 mb-0.5"
-                            title={`:${emoji.name}:`}
-                          >
-                            :{emoji.name && emoji.name.length > 12 ? emoji.name.slice(0, 12) + "…" : emoji.name}:
-                          </span>
-                          
-                          {/* Creator Name */}
-                          <span
-                            className="text-xs text-muted-foreground text-center w-full truncate px-1 mb-0.5"
-                            title={emoji.user_display_name}
-                          >
-                            {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : ""}
-                          </span>
-                          
-                          {/* Creation Date */}
-                          <span className="text-xs text-muted-foreground text-center w-full truncate px-1">
-                            {emoji.created ? new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ""}
-                          </span>
+
+                          {/* Emoji Details */}
+                          <div className="w-full space-y-1">
+                            {/* Emoji Name */}
+                            <p className="text-sm font-semibold text-foreground text-center truncate px-1" title={`:${emoji.name}:`}>
+                              :{emoji.name.length > 14 ? emoji.name.slice(0, 14) + "…" : emoji.name}:
+                            </p>
+
+                            {/* Creator Name */}
+                            {emoji.user_display_name && (
+                              <p className="text-xs text-muted-foreground text-center truncate px-1" title={emoji.user_display_name}>
+                                by {emoji.user_display_name.split(" ")[0]}
+                              </p>
+                            )}
+
+                            {/* Creation Date */}
+                            {emoji.created && (
+                              <p className="text-xs text-muted-foreground/80 text-center">
+                                {new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Quick Actions - Desktop Only */}
+                          {!isMobile && !bulkSelectionMode && (
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={(e) => copyEmojiName(emoji, e)}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy name</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={(e) => copyEmojiUrl(emoji, e)}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy URL</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={(e) => copyImageToClipboard(emoji, e)}
+                                    >
+                                      <ImageIcon className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy image</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -532,6 +823,7 @@ function ExplorerPage() {
           </div>
         )}
       </div>
+
       {/* Emoji Overlay */}
       {selectedEmoji && (
         <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" />}>
@@ -539,7 +831,9 @@ function ExplorerPage() {
             emoji={selectedEmoji}
             onClose={() => setSelectedEmoji(null)}
             onEmojiClick={(emoji) => {
-              setSelectedEmoji(emoji);
+              startTransition(() => {
+                setSelectedEmoji(emoji);
+              });
             }}
             onUserClick={(userId: string, userName: string) => {
               const userFromLeaderboard = leaderboard.find(u => u.user_id === userId);

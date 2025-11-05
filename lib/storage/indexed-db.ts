@@ -204,61 +204,121 @@ class IndexedDBStorage {
 // Singleton instance
 export const idb = new IndexedDBStorage();
 
-// Helper functions for emoji data specifically
+// Helper functions for emoji data specifically with timestamp versioning
 export const emojiStorage = {
-  async saveEmojis(emojis: any[]): Promise<void> {
+  async saveEmojis(emojis: any[], timestamp?: number): Promise<void> {
+    const saveTimestamp = timestamp || Date.now();
+    const dataWithMeta = {
+      emojis,
+      timestamp: saveTimestamp,
+      version: 1
+    };
+
+    // Check if we're trying to save older data
+    const existing = await this.loadEmojisWithMeta();
+    if (existing && existing.timestamp > saveTimestamp) {
+      console.warn(`[EmojiStorage] Rejecting stale data write. Existing: ${existing.timestamp}, New: ${saveTimestamp}`);
+      return;
+    }
+
     let storedInIndexedDb = false;
 
     try {
-      await idb.setItem('emojis', 'emoji_data', emojis);
+      await idb.setItem('emojis', 'emoji_data', dataWithMeta);
       storedInIndexedDb = true;
-      console.log(`Saved ${emojis.length} emojis to IndexedDB`);
+      console.log(`[EmojiStorage] Saved ${emojis.length} emojis to IndexedDB with timestamp ${saveTimestamp}`);
     } catch (error) {
-      console.error('Failed to save emojis to IndexedDB:', error);
+      console.error('[EmojiStorage] Failed to save emojis to IndexedDB:', error);
     }
 
-    if (!storedInIndexedDb) {
+    // Always sync to localStorage for fallback, with same timestamp check
+    if (storedInIndexedDb) {
+      try {
+        const existingLs = localStorage.getItem('emojiData');
+        const existingLsMeta = existingLs ? JSON.parse(localStorage.getItem('emojiDataMeta') || '{}') : null;
+
+        if (!existingLsMeta || existingLsMeta.timestamp < saveTimestamp) {
+          localStorage.setItem('emojiData', JSON.stringify(emojis));
+          localStorage.setItem('emojiDataMeta', JSON.stringify({ timestamp: saveTimestamp, version: 1 }));
+          console.log(`[EmojiStorage] Synced ${emojis.length} emojis to localStorage with timestamp ${saveTimestamp}`);
+        } else {
+          console.log(`[EmojiStorage] Skipped localStorage sync - existing data is newer`);
+        }
+      } catch (error) {
+        console.error('[EmojiStorage] Failed to sync to localStorage:', error);
+      }
+    } else {
+      // IndexedDB failed, try localStorage as primary
       const result = safePersistEmojiDataToLocalStorage(emojis as any, { source: 'indexedDB-fallback' });
-      if (!result.saved && result.reason) {
+      if (result.saved) {
+        localStorage.setItem('emojiDataMeta', JSON.stringify({ timestamp: saveTimestamp, version: 1 }));
+      } else if (result.reason) {
         console.warn(`[EmojiStorage] Emoji data could not be persisted to localStorage fallback: ${result.reason}`);
       }
     }
   },
 
-  async loadEmojis(): Promise<any[] | null> {
+  async loadEmojisWithMeta(): Promise<{ emojis: any[], timestamp: number, version: number } | null> {
+    let idbData = null;
+    let lsData = null;
+
+    // Try IndexedDB first
     try {
-      const emojis = await idb.getItem('emojis', 'emoji_data');
-      if (emojis) {
-        console.log(`Loaded ${emojis.length} emojis from IndexedDB`);
-        return emojis;
+      const data = await idb.getItem('emojis', 'emoji_data');
+      if (data) {
+        // Check if data has metadata (new format)
+        if (data.emojis && data.timestamp) {
+          idbData = data;
+          console.log(`[EmojiStorage] Loaded ${data.emojis.length} emojis from IndexedDB (timestamp: ${data.timestamp})`);
+        } else if (Array.isArray(data)) {
+          // Old format - migrate it
+          idbData = { emojis: data, timestamp: Date.now(), version: 1 };
+          console.log(`[EmojiStorage] Migrating ${data.length} emojis to new format`);
+        }
       }
     } catch (error) {
-      console.error('Failed to load emojis from IndexedDB:', error);
+      console.error('[EmojiStorage] Failed to load from IndexedDB:', error);
     }
-    
-    // Fallback to localStorage
-    const stored = localStorage.getItem('emojiData');
-    if (stored) {
-      try {
+
+    // Try localStorage
+    try {
+      const stored = localStorage.getItem('emojiData');
+      const storedMeta = localStorage.getItem('emojiDataMeta');
+
+      if (stored) {
         const emojis = JSON.parse(stored);
-        // Migrate to IndexedDB
-        await idb.setItem('emojis', 'emoji_data', emojis).catch(() => {});
-        return emojis;
-      } catch (e) {
-        console.error('Failed to parse localStorage emoji data:', e);
+        const meta = storedMeta ? JSON.parse(storedMeta) : { timestamp: 0, version: 1 };
+        lsData = { emojis, timestamp: meta.timestamp, version: meta.version };
+        console.log(`[EmojiStorage] Loaded ${emojis.length} emojis from localStorage (timestamp: ${meta.timestamp})`);
       }
+    } catch (error) {
+      console.error('[EmojiStorage] Failed to load from localStorage:', error);
     }
-    
-    return null;
+
+    // Return the newest data
+    if (idbData && lsData) {
+      const result = idbData.timestamp >= lsData.timestamp ? idbData : lsData;
+      console.log(`[EmojiStorage] Using ${idbData.timestamp >= lsData.timestamp ? 'IndexedDB' : 'localStorage'} data (newer)`);
+      return result;
+    }
+
+    return idbData || lsData;
+  },
+
+  async loadEmojis(): Promise<any[] | null> {
+    const data = await this.loadEmojisWithMeta();
+    return data ? data.emojis : null;
   },
 
   async clearEmojis(): Promise<void> {
+    console.log('[EmojiStorage] Clearing all emoji data');
     try {
       await idb.removeItem('emojis', 'emoji_data');
     } catch (error) {
-      console.error('Failed to clear emojis from IndexedDB:', error);
+      console.error('[EmojiStorage] Failed to clear from IndexedDB:', error);
     }
     localStorage.removeItem('emojiData');
+    localStorage.removeItem('emojiDataMeta');
   }
 };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, Calendar, Info, Search, Trophy, Check } from "lucide-react"
+import { ChevronLeft, ChevronRight, Calendar, Info, Search, Trophy, Check, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -33,8 +33,10 @@ export interface UserWithEmojiCount {
   user_display_name: string
   emoji_count: number
   l4wepw?: number
+  l4wepwChange?: number
   most_recent_emoji_timestamp?: number
-  recent_emojis?: Emoji[] 
+  oldest_emoji_timestamp?: number
+  recent_emojis?: Emoji[]
   rank?: number
 }
 
@@ -59,6 +61,41 @@ export interface LeaderboardProps {
    * Optional search query to filter users by name
    */
   searchQuery?: string
+}
+
+/**
+ * Helper function to get trend icon and color based on percentage change
+ */
+function getTrendIndicator(change: number) {
+  if (change > 5) {
+    return {
+      icon: TrendingUp,
+      color: "text-green-500",
+      label: "Increasing activity"
+    }
+  } else if (change < -5) {
+    return {
+      icon: TrendingDown,
+      color: "text-red-500",
+      label: "Decreasing activity"
+    }
+  } else {
+    return {
+      icon: Minus,
+      color: "text-yellow-500",
+      label: "Stable activity"
+    }
+  }
+}
+
+/**
+ * Calculate "Top X%" ranking (what percentage tier from the top)
+ * Always returns at least 1% to avoid "Top 0%"
+ */
+function calculatePercentile(userIndex: number, totalUsers: number): number {
+  if (totalUsers <= 0) return 100
+  const percentile = Math.round(((userIndex + 1) / totalUsers) * 100)
+  return Math.max(1, percentile)
 }
 
 const Leaderboard = ({
@@ -340,18 +377,32 @@ const Leaderboard = ({
                   <TableHead className="hidden md:table-cell w-[150px] text-left">Emoji Samples</TableHead>
                 )}
                 {dateRange === "all" && (
-                  <TableHead className="w-[50px] sm:w-[100px] text-right text-xs sm:text-sm p-2 sm:p-3">
-                    <TooltipProvider>
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger className="cursor-help border-b border-dotted border-muted-foreground">
-                          EPW
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Emojis Per Week (last 4 weeks)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableHead>
+                  <>
+                    <TableHead className="w-[50px] sm:w-[100px] text-right text-xs sm:text-sm p-2 sm:p-3">
+                      <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger className="cursor-help border-b border-dotted border-muted-foreground">
+                            EPW
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Emojis Per Week (last 4 weeks)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
+                    <TableHead className="w-[60px] sm:w-[80px] text-center text-xs sm:text-sm p-2 sm:p-3">
+                      <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger className="cursor-help border-b border-dotted border-muted-foreground">
+                            Trend
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Activity trend (last 4 weeks vs previous 4 weeks)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableHead>
+                  </>
                 )}
                 <TableHead
                   className="w-[60px] sm:w-[120px] text-right text-xs sm:text-sm cursor-pointer hover:text-primary transition-colors p-2 sm:p-3"
@@ -359,6 +410,20 @@ const Leaderboard = ({
                 >
                   Total
                 </TableHead>
+                {variant === "expanded" && (
+                  <TableHead className="w-[70px] sm:w-[100px] text-center text-xs sm:text-sm p-2 sm:p-3">
+                    <TooltipProvider>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger className="cursor-help border-b border-dotted border-muted-foreground">
+                          Rank
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Percentile ranking</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -396,42 +461,57 @@ const Leaderboard = ({
                     }}
                   >
                     <TableCell className={`text-center font-medium ${
-                      variant === "compact" 
-                        ? "w-[50px] sm:w-[80px] p-3 sm:p-4" 
+                      variant === "compact"
+                        ? "w-[50px] sm:w-[80px] p-3 sm:p-4"
                         : "w-[40px] sm:w-[80px] p-2 sm:p-4"
                     }`}>
                       {userIndex === 0 ? (
-                        <div
-                          className={`inline-flex items-center justify-center rounded-full bg-yellow-400 text-white font-bold ${
-                            variant === "compact"
-                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
-                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
-                          }`}
-                          title="1st Place"
-                        >
-                          1
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Trophy className={`${
+                            variant === "compact" ? "h-5 w-5" : "h-4 w-4 sm:h-5 sm:w-5"
+                          } text-yellow-400 drop-shadow-md`} />
+                          <div
+                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 text-white font-bold shadow-lg ${
+                              variant === "compact"
+                                ? "h-8 w-8 sm:h-9 sm:w-9 text-sm"
+                                : "h-7 w-7 sm:h-9 sm:w-9 text-xs sm:text-sm"
+                            }`}
+                            title="1st Place"
+                          >
+                            1
+                          </div>
                         </div>
                       ) : userIndex === 1 ? (
-                        <div
-                          className={`inline-flex items-center justify-center rounded-full bg-gray-300 text-white font-bold ${
-                            variant === "compact"
-                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
-                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
-                          }`}
-                          title="2nd Place"
-                        >
-                          2
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Trophy className={`${
+                            variant === "compact" ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"
+                          } text-gray-400 drop-shadow-md`} />
+                          <div
+                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-400 text-white font-bold shadow-lg ${
+                              variant === "compact"
+                                ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
+                                : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
+                            }`}
+                            title="2nd Place"
+                          >
+                            2
+                          </div>
                         </div>
                       ) : userIndex === 2 ? (
-                        <div
-                          className={`inline-flex items-center justify-center rounded-full bg-amber-700 text-white font-bold ${
-                            variant === "compact"
-                              ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
-                              : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
-                          }`}
-                          title="3rd Place"
-                        >
-                          3
+                        <div className="flex flex-col items-center gap-0.5">
+                          <Trophy className={`${
+                            variant === "compact" ? "h-3 w-3" : "h-2 w-2 sm:h-3 sm:w-3"
+                          } text-amber-700 drop-shadow-md`} />
+                          <div
+                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-amber-700 text-white font-bold shadow-lg ${
+                              variant === "compact"
+                                ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
+                                : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
+                            }`}
+                            title="3rd Place"
+                          >
+                            3
+                          </div>
                         </div>
                       ) : (
                         <span className={`text-muted-foreground ${
@@ -532,9 +612,43 @@ const Leaderboard = ({
                       </TableCell>
                     )}
                     {dateRange === "all" && (
-                      <TableCell className="text-right p-2 sm:p-4 text-xs sm:text-sm">
-                        {typeof user.l4wepw === "number" ? user.l4wepw.toFixed(1) : "-"}
-                      </TableCell>
+                      <>
+                        <TableCell className="text-right p-2 sm:p-4 text-xs sm:text-sm">
+                          {typeof user.l4wepw === "number" ? user.l4wepw.toFixed(1) : "-"}
+                        </TableCell>
+                        <TableCell className="text-center p-2 sm:p-4">
+                          {typeof user.l4wepwChange === "number" ? (
+                            <TooltipProvider>
+                              <Tooltip delayDuration={100}>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center justify-center gap-1">
+                                    {(() => {
+                                      const trend = getTrendIndicator(user.l4wepwChange);
+                                      const TrendIcon = trend.icon;
+                                      return (
+                                        <>
+                                          <TrendIcon className={cn("h-3 w-3 sm:h-4 sm:w-4", trend.color)} />
+                                          <span className={cn("text-xs font-medium", trend.color)}>
+                                            {user.l4wepwChange > 0 ? "+" : ""}{user.l4wepwChange.toFixed(0)}%
+                                          </span>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{getTrendIndicator(user.l4wepwChange).label}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {user.l4wepwChange > 0 ? "+" : ""}{user.l4wepwChange.toFixed(1)}% vs previous 4 weeks
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      </>
                     )}
                     <TableCell
                       className={`text-right cursor-pointer hover:text-primary transition-colors font-semibold ${
@@ -546,6 +660,22 @@ const Leaderboard = ({
                     >
                       {user.emoji_count}
                     </TableCell>
+                    {variant === "expanded" && (
+                      <TableCell className="text-center p-2 sm:p-4">
+                        <TooltipProvider>
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <div className="inline-flex items-center justify-center px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                Top {calculatePercentile(userIndex, rankingList.length)}%
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Ranked #{userIndex + 1} out of {rankingList.length} creators</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })}
@@ -553,13 +683,15 @@ const Leaderboard = ({
               {emptyRowsCount > 0 && (
                 Array.from({ length: emptyRowsCount }).map((_, index) => (
                   <TableRow key={`empty-${index}`} className="h-[53px]">
-                    <TableCell colSpan={ 
+                    <TableCell colSpan={
                       // Base columns: Rank, User, Total = 3
                       // Add 1 for Emoji Samples if variant is expanded
-                      // Add 1 for EPW if dateRange is all
-                      3 + 
-                      (variant === "expanded" ? 1 : 0) + 
-                      (dateRange === "all" ? 1 : 0)
+                      // Add 2 for EPW + Trend if dateRange is all
+                      // Add 1 for Percentile Rank if variant is expanded
+                      3 +
+                      (variant === "expanded" ? 1 : 0) +
+                      (dateRange === "all" ? 2 : 0) +
+                      (variant === "expanded" ? 1 : 0)
                     } />
                   </TableRow>
                 ))

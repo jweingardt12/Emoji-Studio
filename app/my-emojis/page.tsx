@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -16,9 +16,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuSeparator } from "@/components/ui/context-menu"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from "lucide-react"
+import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square, Copy, ExternalLink, Clock, Command, Image as ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -73,6 +75,21 @@ function MyEmojisPage() {
   const [currentStep, setCurrentStep] = useState<string>("")
   const [processingError, setProcessingError] = useState<string>("")
 
+  // Filter states
+  const [filterType, setFilterType] = useState<"all" | "images" | "gifs">("all")
+  const [filterHasAliases, setFilterHasAliases] = useState<"all" | "with" | "without">("all")
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Bulk selection states
+  const [selectedEmojiNames, setSelectedEmojiNames] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
+
+  // Keyboard shortcuts help
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+
+  // Search input ref for focus
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     setIsClient(true)
     
@@ -100,7 +117,52 @@ function MyEmojisPage() {
     
     checkAuth()
   }, [router, hasRealData])
-  
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K: Focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+
+      // Cmd/Ctrl + A: Select all (only when not in input)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault()
+          selectAllEmojis()
+        }
+      }
+
+      // Escape: Clear selection or close dialogs
+      if (e.key === 'Escape') {
+        if (selectedEmojiNames.size > 0) {
+          clearSelection()
+        }
+      }
+
+      // Cmd/Ctrl + /: Show keyboard shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault()
+        setShowKeyboardHelp(!showKeyboardHelp)
+      }
+
+      // F: Toggle filters
+      if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault()
+          setShowFilters(!showFilters)
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [selectedEmojiNames.size, showFilters, showKeyboardHelp])
+
   // Function to refresh emoji data from Slack
   const refreshEmojiData = async () => {
     if (!hasRealData || isRefreshing) return
@@ -224,7 +286,7 @@ function MyEmojisPage() {
   const myEmojis = emojiData.filter(emoji => {
     // In demo mode, show all non-alias emojis
     if (!hasRealData) return emoji.is_alias !== 1
-    
+
     // Only include actual emojis I can delete (not aliases)
     return emoji.can_delete === true && emoji.is_alias !== 1
   })
@@ -232,18 +294,78 @@ function MyEmojisPage() {
   // Helper function to get all aliases for an emoji
   const getAliasesForEmoji = (emojiName: string) => {
     // Look through ALL emoji data, not just filtered ones
-    const aliases = emojiData.filter(e => 
+    const aliases = emojiData.filter(e =>
       e.is_alias === 1 && e.alias_for === emojiName
     ).map(e => e.name)
-    
+
     return aliases
   }
 
-  // Filter by search query
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const totalEmojis = myEmojis.length
+    const images = myEmojis.filter(e => !e.url.toLowerCase().includes('.gif')).length
+    const gifs = myEmojis.filter(e => e.url.toLowerCase().includes('.gif')).length
+
+    // Count total aliases across all my emojis
+    const totalAliases = myEmojis.reduce((count, emoji) => {
+      return count + getAliasesForEmoji(emoji.name).length
+    }, 0)
+
+    // Calculate week and month metrics
+    const now = Date.now() / 1000 // Convert to seconds
+    const oneWeekAgo = now - (7 * 24 * 60 * 60)
+    const oneMonthAgo = now - (30 * 24 * 60 * 60)
+
+    const thisWeek = myEmojis.filter(e => e.created && e.created >= oneWeekAgo).length
+    const thisMonth = myEmojis.filter(e => e.created && e.created >= oneMonthAgo).length
+
+    // Find newest emoji
+    const newestEmoji = myEmojis.reduce((newest, emoji) => {
+      if (!emoji.created) return newest
+      if (!newest || emoji.created > newest.created) return emoji
+      return newest
+    }, null as Emoji | null)
+
+    // Get recent emojis (last 5)
+    const recentEmojis = [...myEmojis]
+      .filter(e => e.created)
+      .sort((a, b) => (b.created || 0) - (a.created || 0))
+      .slice(0, 5)
+
+    return {
+      total: totalEmojis,
+      images,
+      gifs,
+      aliases: totalAliases,
+      thisWeek,
+      thisMonth,
+      newest: newestEmoji,
+      recentEmojis
+    }
+  }, [myEmojis, emojiData])
+
+  // Filter by search query and filters
   const filteredEmojis = myEmojis.filter(emoji => {
+    // Search query filter
     const query = searchQuery.toLowerCase()
-    return emoji.name.toLowerCase().includes(query) ||
+    const matchesSearch = emoji.name.toLowerCase().includes(query) ||
            emoji.user_display_name?.toLowerCase().includes(query)
+
+    if (!matchesSearch) return false
+
+    // Type filter (images/gifs)
+    if (filterType === "images" && emoji.url.toLowerCase().includes('.gif')) return false
+    if (filterType === "gifs" && !emoji.url.toLowerCase().includes('.gif')) return false
+
+    // Aliases filter
+    if (filterHasAliases !== "all") {
+      const aliases = getAliasesForEmoji(emoji.name)
+      if (filterHasAliases === "with" && aliases.length === 0) return false
+      if (filterHasAliases === "without" && aliases.length > 0) return false
+    }
+
+    return true
   })
 
   // Sort filtered emojis
@@ -276,6 +398,245 @@ function MyEmojisPage() {
       setSortColumn(column)
       setSortDirection('asc')
     }
+  }
+
+  // Bulk selection handlers
+  const toggleEmojiSelection = (emojiName: string) => {
+    const newSelected = new Set(selectedEmojiNames)
+    if (newSelected.has(emojiName)) {
+      newSelected.delete(emojiName)
+    } else {
+      newSelected.add(emojiName)
+    }
+    setSelectedEmojiNames(newSelected)
+  }
+
+  const selectAllEmojis = () => {
+    const allNames = new Set(sortedEmojis.map(e => e.name))
+    setSelectedEmojiNames(allNames)
+  }
+
+  const clearSelection = () => {
+    setSelectedEmojiNames(new Set())
+  }
+
+  // Copy actions
+  const copyToClipboard = async (text: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      sonner.success(message)
+    } catch (error) {
+      sonner.error("Failed to copy to clipboard")
+    }
+  }
+
+  const copyEmojiName = (emoji: Emoji) => {
+    copyToClipboard(`:${emoji.name}:`, "Emoji name copied!")
+  }
+
+  const copyEmojiUrl = (emoji: Emoji) => {
+    copyToClipboard(emoji.url, "Emoji URL copied!")
+  }
+
+  const copyEmojiMarkdown = (emoji: Emoji) => {
+    const markdown = `![${emoji.name}](${emoji.url})`
+    copyToClipboard(markdown, "Markdown copied!")
+  }
+
+  const copyImageToClipboard = async (emoji: Emoji) => {
+    try {
+      // GIFs can't be reliably copied to clipboard, so copy URL instead
+      if (emoji.url.toLowerCase().includes('.gif')) {
+        await navigator.clipboard.writeText(emoji.url)
+        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)")
+        return
+      }
+
+      const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(emoji.url)}`)
+      if (!response.ok) throw new Error('Failed to fetch image')
+
+      const blob = await response.blob()
+
+      // Check if the clipboard API supports this image type
+      if (!ClipboardItem.supports(blob.type)) {
+        // Fallback to copying URL
+        await navigator.clipboard.writeText(emoji.url)
+        sonner.success("Image URL copied! (Image format not supported for clipboard)")
+        return
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ])
+      sonner.success("Image copied to clipboard!")
+    } catch (error) {
+      sonner.error("Failed to copy image to clipboard")
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedEmojiNames.size === 0) return
+
+    // Show confirmation
+    const confirmed = confirm(`Are you sure you want to delete ${selectedEmojiNames.size} emoji${selectedEmojiNames.size > 1 ? 's' : ''}?`)
+    if (!confirmed) return
+
+    sonner.loading(`Deleting ${selectedEmojiNames.size} emojis...`, { id: "bulk-delete" })
+
+    try {
+      const slackCurl = localStorage.getItem("slackCurlCommand")
+      if (!slackCurl) {
+        throw new Error("No Slack connection")
+      }
+
+      const parsed = parseSlackCurl(slackCurl)
+      if (!parsed.isValid) {
+        throw new Error("Invalid Slack credentials")
+      }
+
+      const { token, cookie, workspace: workspaceUrl } = parsed
+
+      // Delete each emoji
+      let successCount = 0
+      let failCount = 0
+
+      for (const emojiName of selectedEmojiNames) {
+        try {
+          const formData: Record<string, string> = {
+            token: token || "",
+            name: emojiName,
+            _x_reason: 'customize-emoji-remove',
+            _x_mode: 'online'
+          }
+
+          const response = await fetch("/api/slack-emojis", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              curlRequest: {
+                url: `https://${workspaceUrl}.slack.com/api/emoji.remove`,
+                method: "POST",
+                headers: {
+                  "Cookie": cookie,
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                formData: formData,
+              },
+            }),
+          })
+
+          const result = await response.json()
+          const slackResponse = result.slackResponse || result
+
+          if (response.ok && slackResponse.ok) {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (error) {
+          failCount++
+        }
+      }
+
+      if (successCount > 0) {
+        sonner.success(`Deleted ${successCount} emoji${successCount > 1 ? 's' : ''}`, {
+          id: "bulk-delete",
+          description: failCount > 0 ? `${failCount} failed` : undefined
+        })
+
+        // Remove deleted emojis from state
+        setEmojiData(prevData => {
+          const updatedData = prevData.filter(emoji => {
+            if (selectedEmojiNames.has(emoji.name)) return false
+            if (emoji.is_alias === 1 && selectedEmojiNames.has(emoji.alias_for || '')) return false
+            return true
+          })
+
+          safePersistEmojiDataToLocalStorage(updatedData, { source: "my-emojis-bulk-delete" })
+          return updatedData
+        })
+
+        clearSelection()
+
+        // Refresh in the background
+        setTimeout(async () => {
+          try {
+            await refreshEmojiData()
+          } catch (error) {
+            console.error('Background refresh failed:', error)
+          }
+        }, 2000)
+      } else {
+        throw new Error("All deletions failed")
+      }
+    } catch (error) {
+      sonner.error("Bulk delete failed", {
+        id: "bulk-delete",
+        description: error instanceof Error ? error.message : "An error occurred"
+      })
+    }
+  }
+
+  const handleBulkDownload = async () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const [JSZip, { saveAs }] = await Promise.all([
+      import('jszip').then(m => m.default),
+      import('file-saver')
+    ])
+
+    sonner.loading(`Downloading ${selectedEmojiNames.size} emojis...`, { id: "bulk-download" })
+
+    try {
+      const zip = new JSZip()
+      const emojisToDownload = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
+
+      for (const emoji of emojisToDownload) {
+        try {
+          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`
+          const response = await fetch(proxyUrl)
+
+          if (!response.ok) continue
+
+          const blob = await response.blob()
+          let extension = '.png'
+          const contentType = response.headers.get('content-type')
+          if (contentType?.includes('gif')) extension = '.gif'
+          else if (contentType?.includes('jpeg')) extension = '.jpg'
+
+          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`
+          zip.file(fileName, blob)
+        } catch (error) {
+          console.error(`Failed to download ${emoji.name}`, error)
+        }
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      saveAs(content, `my-emojis-${Date.now()}.zip`)
+
+      sonner.success(`Downloaded ${selectedEmojiNames.size} emojis`, { id: "bulk-download" })
+    } catch (error) {
+      sonner.error("Failed to download emojis", { id: "bulk-download" })
+    }
+  }
+
+  const handleBulkCopyNames = () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const names = Array.from(selectedEmojiNames).map(name => `:${name}:`).join('\n')
+    copyToClipboard(names, `Copied ${selectedEmojiNames.size} emoji names!`)
+  }
+
+  const handleBulkCopyUrls = () => {
+    if (selectedEmojiNames.size === 0) return
+
+    const emojisToGet = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
+    const urls = emojisToGet.map(e => e.url).join('\n')
+    copyToClipboard(urls, `Copied ${selectedEmojiNames.size} emoji URLs!`)
   }
 
   const handleRename = (emoji: Emoji) => {
@@ -1281,17 +1642,220 @@ function MyEmojisPage() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
+                        ref={searchInputRef}
                         type="search"
-                        placeholder="Search emojis..."
+                        placeholder="Search emojis... (⌘K)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full sm:w-[300px] pl-9"
                       />
                     </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShowKeyboardHelp(true)}
+                            title="Keyboard shortcuts"
+                          >
+                            <Command className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Keyboard shortcuts</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+
+              {/* Statistics Dashboard */}
+              {stats.total > 0 && (
+                <div className="px-6 py-4 border-b bg-muted/30">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Hash className="h-3.5 w-3.5" />
+                        <span>Total</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.total}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <FileImage className="h-3.5 w-3.5" />
+                        <span>Images</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.images}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Film className="h-3.5 w-3.5" />
+                        <span>GIFs</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.gifs}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Link2 className="h-3.5 w-3.5" />
+                        <span>Aliases</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.aliases}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <TrendingUp className="h-3.5 w-3.5" />
+                        <span>This Week</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.thisWeek}</div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>This Month</span>
+                      </div>
+                      <div className="text-2xl font-bold">{stats.thisMonth}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Filters and Bulk Actions Bar */}
+              <div className="px-6 py-3 border-b bg-background flex flex-wrap items-center gap-3">
+                <Button
+                  variant={showFilters ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filters
+                  {(filterType !== "all" || filterHasAliases !== "all") && (
+                    <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                      {(filterType !== "all" ? 1 : 0) + (filterHasAliases !== "all" ? 1 : 0)}
+                    </Badge>
+                  )}
+                </Button>
+
+                {selectedEmojiNames.size > 0 && (
+                  <>
+                    <div className="h-6 w-px bg-border" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
+                        {selectedEmojiNames.size} selected
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkDownload}
+                        className="gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkCopyNames}
+                        className="gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Names
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkCopyUrls}
+                        className="gap-2"
+                      >
+                        <Link2 className="h-4 w-4" />
+                        Copy URLs
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        className="gap-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearSelection}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Clear
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {sortedEmojis.length > 0 && (
+                  <>
+                    <div className="h-6 w-px bg-border ml-auto" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={selectedEmojiNames.size === sortedEmojis.length ? clearSelection : selectAllEmojis}
+                      className="gap-2"
+                    >
+                      {selectedEmojiNames.size === sortedEmojis.length ? (
+                        <>
+                          <Square className="h-4 w-4" />
+                          Deselect All
+                        </>
+                      ) : (
+                        <>
+                          <CheckSquare className="h-4 w-4" />
+                          Select All
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Filter Options */}
+              {showFilters && (
+                <div className="px-6 py-4 border-b bg-muted/20 space-y-3">
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs font-medium">Type</Label>
+                      <ToggleGroup type="single" value={filterType} onValueChange={(value) => value && setFilterType(value as any)} className="justify-start">
+                        <ToggleGroupItem value="all" size="sm">All</ToggleGroupItem>
+                        <ToggleGroupItem value="images" size="sm">Images</ToggleGroupItem>
+                        <ToggleGroupItem value="gifs" size="sm">GIFs</ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs font-medium">Aliases</Label>
+                      <ToggleGroup type="single" value={filterHasAliases} onValueChange={(value) => value && setFilterHasAliases(value as any)} className="justify-start">
+                        <ToggleGroupItem value="all" size="sm">All</ToggleGroupItem>
+                        <ToggleGroupItem value="with" size="sm">With Aliases</ToggleGroupItem>
+                        <ToggleGroupItem value="without" size="sm">Without Aliases</ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                  </div>
+                  {(filterType !== "all" || filterHasAliases !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterType("all")
+                        setFilterHasAliases("all")
+                      }}
+                      className="gap-2 h-8"
+                    >
+                      <X className="h-3 w-3" />
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <CardContent className="pt-6">
               {loading || isRefreshing ? (
                 viewMode === "table" ? (
                   <div className="w-full overflow-x-auto">
@@ -1354,6 +1918,20 @@ function MyEmojisPage() {
                     <Table className="min-w-[500px]">
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-12">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={selectedEmojiNames.size === sortedEmojis.length ? clearSelection : selectAllEmojis}
+                            >
+                              {selectedEmojiNames.size === sortedEmojis.length ? (
+                                <CheckSquare className="h-4 w-4" />
+                              ) : (
+                                <Square className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableHead>
                           <TableHead className="w-20">Emoji</TableHead>
                           <TableHead className="min-w-[150px]">
                             <Button
@@ -1389,7 +1967,27 @@ function MyEmojisPage() {
                       </TableHeader>
                     <TableBody>
                       {sortedEmojis.map((emoji) => (
-                        <TableRow key={emoji.name}>
+                        <ContextMenu key={emoji.name}>
+                          <ContextMenuTrigger asChild>
+                            <TableRow
+                              onContextMenu={(e) => {
+                                e.stopPropagation()
+                              }}
+                            >
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => toggleEmojiSelection(emoji.name)}
+                            >
+                              {selectedEmojiNames.has(emoji.name) ? (
+                                <CheckSquare className="h-4 w-4" />
+                              ) : (
+                                <Square className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
                           <TableCell>
                             <div className="relative h-10 w-10">
                               <Image
@@ -1444,6 +2042,21 @@ function MyEmojisPage() {
                           <TableCell>
                             {/* Desktop Actions */}
                             <div className="hidden sm:flex items-center justify-end gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => copyEmojiName(emoji)}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy name</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -1506,6 +2119,20 @@ function MyEmojisPage() {
                                     <LetterText className="h-4 w-4 mr-2" />
                                     Add Alias
                                   </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => copyEmojiName(emoji)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Name
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => copyEmojiUrl(emoji)}>
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Copy URL
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => copyEmojiMarkdown(emoji)}>
+                                    <Copy className="h-4 w-4 mr-2" />
+                                    Copy Markdown
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() => handleDelete(emoji)}
                                     className="text-destructive focus:text-destructive"
@@ -1518,33 +2145,95 @@ function MyEmojisPage() {
                             </div>
                           </TableCell>
                         </TableRow>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyEmojiName(emoji)
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Name
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyEmojiUrl(emoji)
+                        }}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Copy URL
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          copyImageToClipboard(emoji)
+                        }}>
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Copy Image
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          handleRename(emoji)
+                        }} disabled={emoji.is_alias === 1}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Rename
+                        </ContextMenuItem>
+                        <ContextMenuItem onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(emoji)
+                        }} className="text-destructive focus:text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                       ))}
                     </TableBody>
                     </Table>
                   </div>
                 ) : (
-                  <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'} gap-4`}>
+                  <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'} gap-4 sm:gap-5`}>
                     {sortedEmojis.map((emoji) => (
-                      <div
-                        key={emoji.name}
-                        className="group relative flex flex-col items-center gap-2 p-4 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                      >
-                        {/* Emoji Image */}
-                        <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-24 w-24'}`}>
+                      <ContextMenu key={emoji.name}>
+                        <ContextMenuTrigger asChild>
+                          <div
+                            className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+                            onClick={() => toggleEmojiSelection(emoji.name)}
+                            onContextMenu={(e) => {
+                              e.stopPropagation()
+                            }}
+                          >
+                        {/* Selection Checkbox */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 left-2 h-6 w-6 bg-background/80 backdrop-blur-sm z-10"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleEmojiSelection(emoji.name)
+                          }}
+                        >
+                          {selectedEmojiNames.has(emoji.name) ? (
+                            <CheckSquare className="h-4 w-4 text-primary" />
+                          ) : (
+                            <Square className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        {/* Emoji Image - Larger */}
+                        <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-20 w-20 sm:h-24 sm:w-24'} mb-3 mt-2`}>
                           <Image
                             src={emoji.url}
                             alt={emoji.name}
                             fill
-                            className="object-contain"
+                            className="object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
                             unoptimized
                           />
                         </div>
-                        
+
                         {/* Emoji Info */}
-                        <div className="text-center w-full">
-                          <p className="font-medium text-sm truncate">:{emoji.name}:</p>
+                        <div className="w-full space-y-1">
+                          <p className="text-sm font-semibold text-foreground text-center truncate px-1" title={`:${emoji.name}:`}>:{emoji.name.length > 14 ? emoji.name.slice(0, 14) + "…" : emoji.name}:</p>
                           {emoji.created && (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground/80 text-center">
                               {formatDistanceToNow(new Date(emoji.created * 1000), { addSuffix: true })}
                             </p>
                           )}
@@ -1586,7 +2275,8 @@ function MyEmojisPage() {
                             variant="ghost"
                             size="icon"
                             className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedEmoji(emoji)
                               setIsActionsDrawerOpen(true)
                             }}
@@ -1594,50 +2284,148 @@ function MyEmojisPage() {
                             <MoreVertical className="h-3 w-3" />
                           </Button>
                         ) : (
-                          <div className="absolute inset-0 bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                            <div className="flex flex-col gap-1">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-2 text-xs"
-                                onClick={() => handleRename(emoji)}
-                                disabled={emoji.is_alias === 1}
-                                title={emoji.is_alias === 1 ? "Cannot rename aliases" : undefined}
-                              >
-                                <Edit2 className="h-3 w-3 mr-1" />
-                                Rename
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-2 text-xs"
-                                onClick={() => handleReplace(emoji)}
-                              >
-                                <ImageUp className="h-3 w-3 mr-1" />
-                                Replace
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-2 text-xs"
-                                onClick={() => handleAddAlias(emoji)}
-                              >
-                                <LetterText className="h-3 w-3 mr-1" />
-                                Add Alias
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(emoji)}
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Delete
-                              </Button>
-                            </div>
+                          /* Desktop Quick Actions - Floating Toolbar positioned at top to avoid covering text */
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyEmojiName(emoji)
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy name</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyEmojiUrl(emoji)
+                                    }}
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy URL</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyImageToClipboard(emoji)
+                                    }}
+                                  >
+                                    <ImageIcon className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy image</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRename(emoji)
+                                    }}
+                                    disabled={emoji.is_alias === 1}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {emoji.is_alias === 1 ? "Cannot rename aliases" : "Rename"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDelete(emoji)
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         )}
                       </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyEmojiName(emoji)
+                      }}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Name
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyEmojiUrl(emoji)
+                      }}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Copy URL
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        copyImageToClipboard(emoji)
+                      }}>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Copy Image
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        handleRename(emoji)
+                      }} disabled={emoji.is_alias === 1}>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Rename
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(emoji)
+                      }} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                     ))}
                   </div>
                 )
@@ -2058,6 +2846,45 @@ function MyEmojisPage() {
           </DrawerContent>
         </Drawer>
       )}
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <Dialog open={showKeyboardHelp} onOpenChange={setShowKeyboardHelp}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            <DialogDescription>
+              Use these shortcuts to navigate faster
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Focus search</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘K</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Select all / Deselect all</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘A</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Toggle filters</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">F</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b">
+              <span className="text-sm">Clear selection</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">Esc</kbd>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm">Show this help</span>
+              <kbd className="px-2 py-1 text-xs font-semibold bg-muted rounded">⌘/</kbd>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowKeyboardHelp(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

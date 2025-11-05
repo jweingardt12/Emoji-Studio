@@ -208,26 +208,26 @@ function DashboardPage() {
   }
   
   return (
-    <div className={`flex flex-col gap-4 transition-all duration-700 ${
-      pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-    }`}>
+    <div className="flex flex-col gap-4">
       <ChromeExtensionHandler />
-      
+
       {/* Mobile Header - Only show on mobile */}
       <div className="md:hidden flex items-center justify-between px-3 py-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <img 
-            src="/logo.png" 
-            alt="Emoji Studio" 
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
             className="h-8 w-8 rounded-lg shadow-sm"
           />
           <h1 className="text-lg font-semibold">Emoji Studio</h1>
         </div>
         <RefreshButton />
       </div>
-      
-      {/* Hero Metrics Section */}
-      <div className="px-3 sm:px-4 lg:px-6 pt-3 md:pt-6">
+
+      {/* Hero Metrics Section - Staggered animation delay: 0ms */}
+      <div className={`px-3 sm:px-4 lg:px-6 pt-3 md:pt-6 transition-all duration-700 ${
+        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
         {loading && !showDemoData ? (
           <div className="grid grid-cols-1 gap-4">
             {/* Primary metric skeleton */}
@@ -250,9 +250,11 @@ function DashboardPage() {
           <SectionCards />
         )}
       </div>
-      
-      {/* ChartAreaInteractive with skeleton */}
-      <div className="px-3 sm:px-4 lg:px-6">
+
+      {/* ChartAreaInteractive with skeleton - Staggered animation delay: 150ms */}
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-150 ${
+        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
         {loading && !showDemoData ? (
           <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 flex flex-col gap-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
@@ -266,8 +268,10 @@ function DashboardPage() {
           <ChartAreaInteractive />
         )}
       </div>
-      {/* Tabbed Content for Mobile, Side-by-side for Desktop */}
-      <div className="px-3 sm:px-4 lg:px-6">
+      {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-300 ${
+        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      }`}>
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}
           dateRange={dateRange}

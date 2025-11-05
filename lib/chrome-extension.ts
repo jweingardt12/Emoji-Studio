@@ -84,32 +84,50 @@ export function initializeExtensionListener(
           onSyncedDataReceived(event.data.data, event.data.meta);
         } else {
           // Default handling - store in localStorage
-          console.log('[Emoji Studio] No handler provided, storing in localStorage');
-          
-          // Store emoji data
-          localStorage.setItem('emojiData', JSON.stringify(event.data.data.emojiData));
-          localStorage.setItem('workspace', event.data.data.workspace);
-          localStorage.setItem('emojiCount', event.data.data.emojiCount.toString());
-          localStorage.setItem('lastFetchTime', event.data.data.lastFetchTime);
-          localStorage.setItem('lastSyncTime', event.data.data.lastSyncTime.toString());
-          
-          // Store auth data if provided
-          if (event.data.data.token) {
-            localStorage.setItem('extensionToken', event.data.data.token);
-          }
-          if (event.data.data.cookie) {
-            localStorage.setItem('extensionCookie', event.data.data.cookie);
-          }
-          
-          // Trigger UI update
-          window.dispatchEvent(new CustomEvent('emojiDataUpdated'));
-          
-          // Show success notification
-          const notification = document.createElement('div');
-          notification.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
-          notification.textContent = `Synced ${event.data.data.emojiCount} emojis from ${event.data.data.workspace}`;
-          document.body.appendChild(notification);
-          setTimeout(() => notification.remove(), 3000);
+          console.log('[Emoji Studio] No handler provided, using default storage');
+
+          const emojiData = event.data.data.emojiData;
+          const workspace = event.data.data.workspace;
+          const syncTimestamp = event.data.data.lastSyncTime || Date.now();
+
+          // Import storage dynamically (this is async)
+          import('./storage/indexed-db').then(({ emojiStorage }) => {
+            emojiStorage.saveEmojis(emojiData, syncTimestamp).then(() => {
+              console.log('[Emoji Studio] Saved synced data to storage');
+
+              // Update metadata in localStorage for tracking
+              localStorage.setItem('workspace', workspace);
+              localStorage.setItem('emojiCount', event.data.data.emojiCount.toString());
+              localStorage.setItem('lastFetchTime', event.data.data.lastFetchTime);
+              localStorage.setItem('lastSyncTime', syncTimestamp.toString());
+
+              // Store auth data if provided
+              if (event.data.data.token) {
+                localStorage.setItem('extensionToken', event.data.data.token);
+              }
+              if (event.data.data.cookie) {
+                localStorage.setItem('extensionCookie', event.data.data.cookie);
+              }
+
+              // Trigger UI update WITH data to prevent race conditions
+              window.dispatchEvent(new CustomEvent('emojiDataUpdated', {
+                detail: {
+                  emojiData: emojiData,
+                  workspace: workspace,
+                  timestamp: syncTimestamp
+                }
+              }));
+
+              // Show success notification
+              const notification = document.createElement('div');
+              notification.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+              notification.textContent = `Synced ${event.data.data.emojiCount} emojis from ${workspace}`;
+              document.body.appendChild(notification);
+              setTimeout(() => notification.remove(), 3000);
+            }).catch((error) => {
+              console.error('[Emoji Studio] Failed to save synced data:', error);
+            });
+          });
         }
       }
     } else if (event.data.type === 'EMOJI_STUDIO_DATA') {

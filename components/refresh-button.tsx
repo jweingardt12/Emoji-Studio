@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
-import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
+import { emojiStorage } from "@/lib/storage/indexed-db"
 import { toast } from "sonner"
 import { useState } from "react"
 
@@ -159,23 +159,36 @@ export function RefreshButton() {
       if (recentData && Array.isArray(recentData) && recentData.length > 0) {
         // Sort by created timestamp descending (newest first)
         const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0));
-        console.log(`About to update context with ${sortedData.length} emojis`);
-        setEmojiData(sortedData)
+        console.log(`[RefreshButton] About to update context with ${sortedData.length} emojis`);
+
         const workspaceName = parsed.workspace || "slack-workspace"
+        const syncTimestamp = Date.now();
+
+        // Update context immediately (optimistic update)
+        setEmojiData(sortedData)
         setWorkspace(workspaceName)
         setHasRealData(true)
-        safePersistEmojiDataToLocalStorage(sortedData, { source: "refresh-button" })
+
+        // Save to storage with timestamp (this ensures atomicity and prevents race conditions)
+        console.log(`[RefreshButton] Saving to storage with timestamp ${syncTimestamp}`);
+        await emojiStorage.saveEmojis(sortedData, syncTimestamp);
+
+        // Update metadata in localStorage for tracking
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-        console.log(`Successfully loaded ${sortedData.length} emojis from ${workspaceName}`)
-        window.dispatchEvent(new CustomEvent("emojiDataUpdated", { 
-          detail: { 
+
+        console.log(`[RefreshButton] Successfully saved ${sortedData.length} emojis from ${workspaceName}`)
+
+        // Dispatch event AFTER storage is complete with all data included
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+          detail: {
             emojiData: sortedData,
             workspace: workspaceName,
-            timestamp: Date.now()
-          } 
+            timestamp: syncTimestamp
+          }
         }))
+
         toast.success(`Successfully refreshed ${sortedData.length} emojis!`)
       } else {
         toast.error("No emoji data returned from Slack. Please check your connection.")

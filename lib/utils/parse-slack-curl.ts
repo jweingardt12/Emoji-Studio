@@ -1,4 +1,56 @@
 /**
+ * Validates structured Slack auth data (format sent by Chrome extension)
+ * @param authData Structured object with token, cookie, workspace, etc.
+ * @returns Validated and normalized auth data
+ */
+export function validateStructuredAuthData(authData: any) {
+  // Handle both token formats: 'token' and 'formToken'
+  const token = authData.token || authData.formToken || null
+
+  // Handle cookie - can be string or need to extract 'd' value
+  let cookie = authData.cookie || null
+
+  // Extract 'd' cookie value if not already in cookie format
+  if (authData.d && !cookie) {
+    cookie = `d=${authData.d}`
+  }
+
+  // Handle workspace/teamId
+  const workspace = authData.workspace || authData.teamId || null
+  const teamId = authData.teamId || authData.team_id || null
+
+  // Handle xId (various formats)
+  const xId = authData.xId || authData._x_id || authData.x_id || null
+
+  // Validate token format (should be xoxc- or xoxd- prefixed for Slack)
+  const isValidToken = token && (
+    token.startsWith('xoxc-') ||
+    token.startsWith('xoxd-') ||
+    token.startsWith('xoxb-') ||
+    token.startsWith('xoxp-')
+  )
+
+  const isValid = !!(
+    (token || cookie) &&
+    (workspace || teamId)
+  )
+
+  if (!isValidToken && token) {
+    console.warn('[Auth Validation] Token does not match expected Slack format (xoxc-, xoxd-, etc.)')
+  }
+
+  return {
+    token,
+    cookie,
+    workspace,
+    teamId,
+    xId,
+    isValid,
+    error: isValid ? null : 'Missing required authentication (token/cookie) or workspace information'
+  }
+}
+
+/**
  * Parses a Slack curl command to extract token, cookie, and workspace information
  * @param curlCommand The curl command copied from browser dev tools
  * @returns Object containing parsed information
