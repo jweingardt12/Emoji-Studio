@@ -17,24 +17,29 @@ import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
 // Custom hook for count-up animation
 function useCountUp(target: number, duration: number = 1500, decimals: number = 0) {
-  // Start with the target value to prevent hydration mismatch
-  const [count, setCount] = useState(target);
-  const [isClient, setIsClient] = useState(false);
+  // Always start with 0 to ensure consistent initial state
+  const [count, setCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const targetRef = useRef(target);
 
-  // Set client flag after mount
+  // Update target ref when target changes
   useEffect(() => {
-    setIsClient(true);
+    targetRef.current = target;
+  }, [target]);
+
+  // Set mounted flag after hydration
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   useEffect(() => {
-    // Only animate on client side after initial render
-    if (!isClient) return;
+    // Only animate after component is mounted (after hydration)
+    if (!mounted) return;
 
-    // Reset when target changes
+    // Reset animation
     startTimeRef.current = null;
-    setCount(0); // Start from 0 for animation
 
     const animate = (currentTime: number) => {
       if (startTimeRef.current === null) {
@@ -47,7 +52,7 @@ function useCountUp(target: number, duration: number = 1500, decimals: number = 
       // Easing function (easeOutExpo) for smooth deceleration
       const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
 
-      const currentCount = easeProgress * target;
+      const currentCount = easeProgress * targetRef.current;
       setCount(currentCount);
 
       if (progress < 1) {
@@ -62,9 +67,13 @@ function useCountUp(target: number, duration: number = 1500, decimals: number = 
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [target, duration, isClient]);
+  }, [mounted, duration]);
 
-  return decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString();
+  // Before mount, show the target value to match SSR
+  // After mount, show animated count
+  const displayValue = mounted ? count : target;
+
+  return decimals > 0 ? displayValue.toFixed(decimals) : Math.floor(displayValue).toLocaleString();
 }
 
 export function SectionCards() {
