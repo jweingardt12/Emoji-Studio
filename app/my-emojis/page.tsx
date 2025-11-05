@@ -1627,44 +1627,6 @@ function MyEmojisPage() {
                 </div>
               )}
 
-              {/* Recent Activity */}
-              {stats.recentEmojis.length > 0 && (
-                <div className="px-6 py-4 border-b bg-background">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium">Recent Activity</h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {stats.recentEmojis.map((emoji) => (
-                      <TooltipProvider key={emoji.name}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-md border bg-card hover:bg-accent cursor-pointer transition-colors">
-                              <div className="relative h-6 w-6">
-                                <Image
-                                  src={emoji.url}
-                                  alt={emoji.name}
-                                  fill
-                                  className="object-contain"
-                                  unoptimized
-                                />
-                              </div>
-                              <span className="text-sm font-medium">:{emoji.name}:</span>
-                              {emoji.url.toLowerCase().includes('.gif') && (
-                                <Badge variant="default" className="text-xs px-1 py-0">GIF</Badge>
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Created {formatDistanceToNow(new Date(emoji.created * 1000), { addSuffix: true })}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Filters and Bulk Actions Bar */}
               <div className="px-6 py-3 border-b bg-background flex flex-wrap items-center gap-3">
                 <Button
@@ -2148,8 +2110,8 @@ function MyEmojisPage() {
                             <MoreVertical className="h-3 w-3" />
                           </Button>
                         ) : (
-                          /* Desktop Quick Actions - Floating Toolbar */
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                          /* Desktop Quick Actions - Floating Toolbar positioned at top to avoid covering text */
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
