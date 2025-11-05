@@ -19,7 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square, Copy, ExternalLink, Clock, Command } from "lucide-react"
+import { Edit2, ImageUp, Trash2, LetterText, Plus, Search, User, Calendar, Hash, Grid3X3, TableIcon, Loader2, MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, TrendingUp, FileImage, Film, Link2, Download, Filter, X, CheckSquare, Square, Copy, ExternalLink, Clock, Command, Image as ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -440,6 +440,23 @@ function MyEmojisPage() {
   const copyEmojiMarkdown = (emoji: Emoji) => {
     const markdown = `![${emoji.name}](${emoji.url})`
     copyToClipboard(markdown, "Markdown copied!")
+  }
+
+  const copyImageToClipboard = async (emoji: Emoji) => {
+    try {
+      const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(emoji.url)}`)
+      if (!response.ok) throw new Error('Failed to fetch image')
+
+      const blob = await response.blob()
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ])
+      sonner.success("Image copied to clipboard!")
+    } catch (error) {
+      sonner.error("Failed to copy image to clipboard")
+    }
   }
 
   const handleBulkDelete = async () => {
@@ -1736,7 +1753,7 @@ function MyEmojisPage() {
                 </div>
               )}
 
-              <CardContent>
+              <CardContent className="pt-6">
               {loading || isRefreshing ? (
                 viewMode === "table" ? (
                   <div className="w-full overflow-x-auto">
@@ -2029,14 +2046,18 @@ function MyEmojisPage() {
                     {sortedEmojis.map((emoji) => (
                       <div
                         key={emoji.name}
-                        className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+                        className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+                        onClick={() => toggleEmojiSelection(emoji.name)}
                       >
                         {/* Selection Checkbox */}
                         <Button
                           variant="ghost"
                           size="icon"
                           className="absolute top-2 left-2 h-6 w-6 bg-background/80 backdrop-blur-sm z-10"
-                          onClick={() => toggleEmojiSelection(emoji.name)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleEmojiSelection(emoji.name)
+                          }}
                         >
                           {selectedEmojiNames.has(emoji.name) ? (
                             <CheckSquare className="h-4 w-4 text-primary" />
@@ -2102,7 +2123,8 @@ function MyEmojisPage() {
                             variant="ghost"
                             size="icon"
                             className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation()
                               setSelectedEmoji(emoji)
                               setIsActionsDrawerOpen(true)
                             }}
@@ -2119,7 +2141,10 @@ function MyEmojisPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => copyEmojiName(emoji)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyEmojiName(emoji)
+                                    }}
                                   >
                                     <Copy className="h-4 w-4" />
                                   </Button>
@@ -2135,7 +2160,10 @@ function MyEmojisPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => copyEmojiUrl(emoji)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyEmojiUrl(emoji)
+                                    }}
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
@@ -2151,7 +2179,29 @@ function MyEmojisPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
-                                    onClick={() => handleRename(emoji)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      copyImageToClipboard(emoji)
+                                    }}
+                                  >
+                                    <ImageIcon className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy image</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRename(emoji)
+                                    }}
                                     disabled={emoji.is_alias === 1}
                                   >
                                     <Edit2 className="h-4 w-4" />
@@ -2170,7 +2220,10 @@ function MyEmojisPage() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 text-destructive hover:text-destructive"
-                                    onClick={() => handleDelete(emoji)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDelete(emoji)
+                                    }}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
