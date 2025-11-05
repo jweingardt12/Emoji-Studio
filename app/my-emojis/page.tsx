@@ -89,10 +89,6 @@ function MyEmojisPage() {
   // Search input ref for focus
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Hover preview state
-  const [hoveredEmoji, setHoveredEmoji] = useState<Emoji | null>(null)
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 })
-
   useEffect(() => {
     setIsClient(true)
     
@@ -2072,18 +2068,6 @@ function MyEmojisPage() {
                       <div
                         key={emoji.name}
                         className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
-                        onMouseEnter={(e) => {
-                          if (!isMobile) {
-                            setHoveredEmoji(emoji)
-                            const rect = e.currentTarget.getBoundingClientRect()
-                            setHoverPosition({ x: rect.left, y: rect.top })
-                          }
-                        }}
-                        onMouseLeave={() => {
-                          if (!isMobile) {
-                            setHoveredEmoji(null)
-                          }
-                        }}
                       >
                         {/* Selection Checkbox */}
                         <Button
@@ -2098,23 +2082,6 @@ function MyEmojisPage() {
                             <Square className="h-4 w-4" />
                           )}
                         </Button>
-
-                        {/* Type Badge */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
-                          <Badge variant={emoji.url.toLowerCase().includes('.gif') ? "default" : "secondary"} className="text-xs px-1.5 py-0">
-                            {emoji.url.toLowerCase().includes('.gif') ? (
-                              <>
-                                <Film className="h-3 w-3 mr-0.5" />
-                                GIF
-                              </>
-                            ) : (
-                              <>
-                                <FileImage className="h-3 w-3 mr-0.5" />
-                                IMG
-                              </>
-                            )}
-                          </Badge>
-                        </div>
 
                         {/* Emoji Image - Larger */}
                         <div className={`relative ${isMobile ? 'h-16 w-16' : 'h-20 w-20 sm:h-24 sm:w-24'} mb-3 mt-2`}>
@@ -2671,79 +2638,6 @@ function MyEmojisPage() {
             </div>
           </DrawerContent>
         </Drawer>
-      )}
-
-      {/* Enhanced Hover Preview - Desktop Only */}
-      {hoveredEmoji && !isMobile && (
-        <div
-          className="fixed z-40 pointer-events-none"
-          style={{
-            left: hoverPosition.x + 200,
-            top: hoverPosition.y,
-          }}
-        >
-          <div className="bg-popover border-2 border-primary/50 rounded-xl shadow-2xl p-4 w-64 animate-in fade-in-0 zoom-in-95 duration-200">
-            {/* Large Emoji Preview */}
-            <div className="flex justify-center mb-4">
-              <Image
-                src={hoveredEmoji.url}
-                alt={`:${hoveredEmoji.name}:`}
-                width={128}
-                height={128}
-                className="object-contain rounded-lg"
-                unoptimized
-              />
-            </div>
-
-            {/* Emoji Details */}
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Name</p>
-                <p className="font-semibold text-sm break-all">:{hoveredEmoji.name}:</p>
-              </div>
-
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Type</p>
-                  <Badge variant={hoveredEmoji.url.toLowerCase().includes('.gif') ? "default" : "secondary"} className="text-xs">
-                    {hoveredEmoji.url.toLowerCase().includes('.gif') ? 'GIF' : 'Image'}
-                  </Badge>
-                </div>
-
-                {hoveredEmoji.created && (
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Created</p>
-                    <p className="text-xs">
-                      {formatDistanceToNow(new Date(hoveredEmoji.created * 1000), { addSuffix: true })}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Show alias count if not an alias */}
-              {hoveredEmoji.is_alias !== 1 && (() => {
-                const aliases = getAliasesForEmoji(hoveredEmoji.name);
-                if (aliases.length > 0) {
-                  return (
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Aliases</p>
-                      <p className="text-xs">{aliases.length} alias{aliases.length > 1 ? 'es' : ''}</p>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              {/* Show alias info if it is an alias */}
-              {hoveredEmoji.is_alias === 1 && hoveredEmoji.alias_for && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Alias Of</p>
-                  <p className="text-xs">:{hoveredEmoji.alias_for}:</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Keyboard Shortcuts Help Dialog */}
