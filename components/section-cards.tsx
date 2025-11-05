@@ -15,67 +15,6 @@ import {
 } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
-// Custom hook for count-up animation
-function useCountUp(target: number, duration: number = 1500, decimals: number = 0) {
-  // Always start with 0 to ensure consistent initial state
-  const [count, setCount] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  const startTimeRef = useRef<number | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const targetRef = useRef(target);
-
-  // Update target ref when target changes
-  useEffect(() => {
-    targetRef.current = target;
-  }, [target]);
-
-  // Set mounted flag after hydration
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    // Only animate after component is mounted (after hydration)
-    if (!mounted) return;
-
-    // Reset animation
-    startTimeRef.current = null;
-
-    const animate = (currentTime: number) => {
-      if (startTimeRef.current === null) {
-        startTimeRef.current = currentTime;
-      }
-
-      const elapsed = currentTime - startTimeRef.current;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Easing function (easeOutExpo) for smooth deceleration
-      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-
-      const currentCount = easeProgress * targetRef.current;
-      setCount(currentCount);
-
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [mounted, duration]);
-
-  // Before mount, show the target value to match SSR
-  // After mount, show animated count
-  const displayValue = mounted ? count : target;
-
-  return decimals > 0 ? displayValue.toFixed(decimals) : Math.floor(displayValue).toLocaleString();
-}
-
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -224,12 +163,6 @@ export function SectionCards() {
 
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
-  // Animated counts for hero metrics
-  const animatedTotalEmojis = useCountUp(totalNonAliasEmojis);
-  const animatedAeu = useCountUp(aeu);
-  const animatedEpu = useCountUp(emojisPerUser, 1500, 2);
-  const animatedEpw = useCountUp(epw);
-
   return (
     <div className="relative w-full">
       {/* Left blur effect - desktop only */}
@@ -260,8 +193,8 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">All Unique Emojis</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
-                      {animatedTotalEmojis}
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                      {totalNonAliasEmojis.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -334,8 +267,8 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Active Emoji Uploaders</div>
                   </div>
                   <div className="flex items-center justify-between mt-1 xs:mt-2">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
-                      {animatedAeu}
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                      {aeu.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -401,8 +334,8 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Emojis Per User</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
-                      {animatedEpu}
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                      {emojisPerUser.toFixed(2)}
                     </CardTitle>
                     <Badge
                       variant="outline"
@@ -470,8 +403,8 @@ export function SectionCards() {
                     <div className="text-sm text-muted-foreground">Emojis Per Week</div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums" suppressHydrationWarning>
-                      {animatedEpw}
+                    <CardTitle className="text-xl xs:text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-semibold tabular-nums">
+                      {epw.toLocaleString()}
                     </CardTitle>
                     <Badge
                       variant="outline"
