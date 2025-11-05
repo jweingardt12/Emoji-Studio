@@ -2147,10 +2147,13 @@ function MyEmojisPage() {
                   <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'} gap-4 sm:gap-5`}>
                     {sortedEmojis.map((emoji) => (
                       <ContextMenu key={emoji.name}>
-                        <ContextMenuTrigger>
+                        <ContextMenuTrigger asChild>
                           <div
                             className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
                             onClick={() => toggleEmojiSelection(emoji.name)}
+                            onContextMenu={(e) => {
+                              e.stopPropagation()
+                            }}
                           >
                         {/* Selection Checkbox */}
                         <Button
