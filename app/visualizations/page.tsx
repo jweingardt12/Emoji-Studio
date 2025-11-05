@@ -304,7 +304,9 @@ function VisualizationsPage() {
       activeCreatorsTimeline: [],
       seasonalData: [],
       seasonalYears: [],
-      nameLengthTrend: []
+      nameLengthTrend: [],
+      newVsReturningCreators: [],
+      creatorProductivity: [],
     }
 
     // Top emoji creators
@@ -2028,7 +2030,7 @@ function VisualizationsPage() {
                   className="h-[300px] w-full"
                 >
                   <BarChart
-                    data={chartData.newVsReturningCreators}
+                    data={chartData.newVsReturningCreators || []}
                     margin={{ left: 12, right: 12, top: 12 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -2059,7 +2061,7 @@ function VisualizationsPage() {
               </CardContent>
               <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex gap-2 font-medium leading-none">
-                  {chartData.newVsReturningCreators.length > 0 && (
+                  {chartData.newVsReturningCreators && chartData.newVsReturningCreators.length > 0 && (
                     <>
                       Latest: {chartData.newVsReturningCreators[chartData.newVsReturningCreators.length - 1]?.newCreators || 0} new, {chartData.newVsReturningCreators[chartData.newVsReturningCreators.length - 1]?.returningCreators || 0} returning
                       <Users className="h-4 w-4" />
@@ -2086,7 +2088,7 @@ function VisualizationsPage() {
                   className="h-[300px] w-full"
                 >
                   <BarChart
-                    data={chartData.creatorProductivity}
+                    data={chartData.creatorProductivity || []}
                     margin={{ left: 12, right: 12, top: 12 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -2130,7 +2132,7 @@ function VisualizationsPage() {
               </CardContent>
               <CardFooter className="flex-col items-start gap-2 text-sm">
                 <div className="flex gap-2 font-medium leading-none">
-                  Total creators: {chartData.creatorProductivity.reduce((sum, item) => sum + item.count, 0)}
+                  Total creators: {chartData.creatorProductivity?.reduce((sum, item) => sum + item.count, 0) || 0}
                   <Activity className="h-4 w-4" />
                 </div>
               </CardFooter>
