@@ -444,10 +444,26 @@ function MyEmojisPage() {
 
   const copyImageToClipboard = async (emoji: Emoji) => {
     try {
+      // GIFs can't be reliably copied to clipboard, so copy URL instead
+      if (emoji.url.toLowerCase().includes('.gif')) {
+        await navigator.clipboard.writeText(emoji.url)
+        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)")
+        return
+      }
+
       const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(emoji.url)}`)
       if (!response.ok) throw new Error('Failed to fetch image')
 
       const blob = await response.blob()
+
+      // Check if the clipboard API supports this image type
+      if (!ClipboardItem.supports(blob.type)) {
+        // Fallback to copying URL
+        await navigator.clipboard.writeText(emoji.url)
+        sonner.success("Image URL copied! (Image format not supported for clipboard)")
+        return
+      }
+
       await navigator.clipboard.write([
         new ClipboardItem({
           [blob.type]: blob
