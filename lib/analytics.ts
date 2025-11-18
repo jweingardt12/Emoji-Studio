@@ -1,4 +1,5 @@
 import { useOpenPanel } from '@openpanel/nextjs';
+import { useEmojiData } from '@/lib/hooks/use-emoji-data';
 
 // Event types for better type safety
 export enum AnalyticsEvent {
@@ -24,6 +25,7 @@ export enum AnalyticsEvent {
 // Analytics utility hook to track events in the emoji dashboard
 export function useAnalytics() {
   const op = useOpenPanel();
+  const { workspace } = useEmojiData();
 
   return {
     // Track when a user views an emoji's details
@@ -31,6 +33,7 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.VIEW_EMOJI, {
         emoji_name: emojiName,
         creator: emojiCreator,
+        workspace,
       });
     },
 
@@ -38,6 +41,7 @@ export function useAnalytics() {
     trackEmojiCopy: (emojiName: string) => {
       op.track(AnalyticsEvent.COPY_EMOJI, {
         emoji_name: emojiName,
+        workspace,
       });
     },
 
@@ -45,6 +49,7 @@ export function useAnalytics() {
     trackEmojiDownload: (emojiName: string) => {
       op.track(AnalyticsEvent.DOWNLOAD_EMOJI, {
         emoji_name: emojiName,
+        workspace,
       });
     },
 
@@ -52,6 +57,7 @@ export function useAnalytics() {
     trackUserProfileView: (username: string) => {
       op.track(AnalyticsEvent.VIEW_USER_PROFILE, {
         username,
+        workspace,
       });
     },
 
@@ -60,6 +66,7 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.SEARCH_EMOJI, {
         search_term: searchTerm,
         result_count: resultCount,
+        workspace,
       });
     },
 
@@ -68,6 +75,7 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.FILTER_EMOJI, {
         filter_type: filterType,
         filter_value: filterValue,
+        workspace,
       });
     },
 
@@ -76,14 +84,16 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.SORT_EMOJI, {
         sort_by: sortBy,
         sort_direction: sortDirection,
+        workspace,
       });
     },
-    
+
     // Track when a user navigates to a different page
     trackNavigation: (pageName: string, url: string) => {
       op.track(AnalyticsEvent.PAGE_NAVIGATION, {
         page: pageName,
         url: url,
+        workspace,
       });
     },
 
@@ -92,6 +102,7 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.DOWNLOAD_ALL_CLICKED, {
         emoji_count: count,
         search_query: query,
+        workspace,
       });
     },
 
@@ -100,6 +111,7 @@ export function useAnalytics() {
       op.track(AnalyticsEvent.DOWNLOAD_ALL_SUCCESS, {
         downloaded_emoji_count: count,
         search_query: query,
+        workspace,
       });
     },
 
@@ -109,6 +121,7 @@ export function useAnalytics() {
         emoji_count_at_failure: count,
         search_query_at_failure: query,
         failure_reason: reason,
+        workspace,
       });
     },
 
@@ -118,23 +131,29 @@ export function useAnalytics() {
         emoji_count_at_cancel: count,
         search_query_at_cancel: query,
         emojis_processed_before_cancel: processedCount,
+        workspace,
       });
     },
 
     // Track when feedback link is clicked
     trackFeedbackClicked: () => {
-      op.track(AnalyticsEvent.FEEDBACK_CLICKED);
+      op.track(AnalyticsEvent.FEEDBACK_CLICKED, {
+        workspace,
+      });
     },
 
     // Track when feedback modal is opened
     trackFeedbackModalOpened: () => {
-      op.track(AnalyticsEvent.FEEDBACK_MODAL_OPENED);
+      op.track(AnalyticsEvent.FEEDBACK_MODAL_OPENED, {
+        workspace,
+      });
     },
 
     // Track when feedback modal is closed
     trackFeedbackModalClosed: (submitted: boolean) => {
       op.track(AnalyticsEvent.FEEDBACK_MODAL_CLOSED, {
         feedback_submitted: submitted,
+        workspace,
       });
     },
 
@@ -144,6 +163,7 @@ export function useAnalytics() {
         feedback_type: feedbackType,
         has_workspace_connected: hasWorkspace,
         submitted_from_page: currentPage,
+        workspace,
       });
     },
 
@@ -151,6 +171,7 @@ export function useAnalytics() {
     trackFeedbackSubmissionFailed: (error: string) => {
       op.track(AnalyticsEvent.FEEDBACK_SUBMISSION_FAILED, {
         error_message: error,
+        workspace,
       });
     },
 
@@ -162,6 +183,7 @@ export function useAnalytics() {
         email,
         properties: {
           app: 'emoji-dashboard',
+          workspace,
         },
       });
     },

@@ -808,7 +808,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="mt-auto pt-4">
           <hr className="mb-3 border-muted" />
           <p className="px-3 py-2 text-xs text-muted-foreground text-center">
-            This project is not affiliated or endorsed by Slack in any way.
+            This project is neither affiliated nor endorsed by Slack in any way.
           </p>
           <MadeWithLove />
         </div>
