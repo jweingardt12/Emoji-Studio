@@ -435,65 +435,49 @@ interface PackBrowserTabsProps {
 export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackBrowserTabsProps) {
   if (searchQuery) return null
 
+  const tabs: { id: Tab; label: string; emoji: string }[] = [
+    { id: "popular", label: "Popular", emoji: "🔥" },
+    { id: "recent", label: "Recent", emoji: "🕒" },
+    { id: "memes", label: "Memes", emoji: "😂" },
+    { id: "blobcats", label: "Blob Cats", emoji: "🐱" },
+    { id: "partyparrots", label: "Parrots", emoji: "🦜" },
+    { id: "bufo", label: "Bufo", emoji: "🐸" },
+  ]
+
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex gap-2 pb-2">
-        <Button
-          variant={selectedTab === "popular" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("popular")}
-          className="rounded-full"
-        >
-          <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
-          Popular · Slackmojis
-        </Button>
-        <Button
-          variant={selectedTab === "recent" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("recent")}
-          className="rounded-full"
-        >
-          <Clock className="h-3.5 w-3.5 mr-1.5" />
-          Recent · Slackmojis
-        </Button>
-        <Button
-          variant={selectedTab === "memes" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("memes")}
-          className="rounded-full"
-        >
-          <Laugh className="h-3.5 w-3.5 mr-1.5" />
-          Memes
-        </Button>
-        <Button
-          variant={selectedTab === "blobcats" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("blobcats")}
-          className="rounded-full"
-        >
-          <Cat className="h-3.5 w-3.5 mr-1.5" />
-          Blob Cats
-        </Button>
-        <Button
-          variant={selectedTab === "partyparrots" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("partyparrots")}
-          className="rounded-full"
-        >
-          <Bird className="h-3.5 w-3.5 mr-1.5" />
-          Party Parrots
-        </Button>
-        <Button
-          variant={selectedTab === "bufo" ? "default" : "secondary"}
-          size="sm"
-          onClick={() => onSelectTab("bufo")}
-          className="rounded-full"
-        >
-          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-          Bufo
-        </Button>
+    <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+      <div className="flex p-1 bg-muted/50 rounded-xl w-max min-w-full sm:min-w-0">
+        {tabs.map((tab) => {
+          const isSelected = selectedTab === tab.id
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onSelectTab(tab.id)}
+              className={cn(
+                "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                isSelected
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              )}
+            >
+              {isSelected && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border/50"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                <span className="text-base leading-none">{tab.emoji}</span>
+                {tab.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
-    </ScrollArea>
+    </div>
   )
 }
 
@@ -506,30 +490,47 @@ interface PackEmojiGridProps {
 }
 
 export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
+  const isGridView = viewMode === "grid"
+
   if (loading && emojis.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className={cn(
+        "grid gap-4",
+        isGridView
+          ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6"
+          : "grid-cols-1"
+      )}>
+        {Array.from({ length: 24 }).map((_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "animate-pulse bg-muted/50 rounded-xl",
+              isGridView ? "aspect-square" : "h-16"
+            )}
+          />
+        ))}
       </div>
     )
   }
 
   if (emojis.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground">
-        No emojis found
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+          <Search className="w-8 h-8 opacity-50" />
+        </div>
+        <p className="font-medium">No emojis found</p>
+        <p className="text-sm opacity-70">Try searching for something else</p>
       </div>
     )
   }
-
-  const isGridView = viewMode === "grid"
 
   return (
     <AnimatePresence mode="wait">
       {isGridView ? (
         <motion.div
           key="grid"
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-4"
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
           variants={gridContainerVariants}
           initial="initial"
           animate="animate"
@@ -553,34 +554,35 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   transition={{ delay: Math.min(index * 0.025, 0.25) }}
                   onClick={() => onToggleSelection(emoji)}
                   className={cn(
-                    "relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all hover:border-primary/50 hover:bg-accent/50",
+                    "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
                     isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-muted/30"
+                      ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))]"
+                      : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm"
                   )}
                 >
-                  <div className="relative w-16 h-16 flex-shrink-0">
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
                     <img
                       src={emoji.imageURL}
                       alt={emoji.name}
-                      className="w-full h-full object-contain"
+                      className="max-w-full max-h-full object-contain drop-shadow-sm"
                       loading="lazy"
                     />
-                    <motion.div
-                      layout
-                      className={cn(
-                        "absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
-                        isSelected
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-muted-foreground/30"
-                      )}
-                    >
-                      {isSelected && "✓"}
-                    </motion.div>
                   </div>
-                  <span className="text-[10px] text-center text-muted-foreground line-clamp-2 w-full leading-tight">
-                    {emoji.name}
-                  </span>
+
+                  <div className={cn(
+                    "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
+                    isSelected
+                      ? "bg-primary text-primary-foreground scale-100 opacity-100"
+                      : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
+                  )}>
+                    {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
+                  </div>
+
+                  <div className="absolute bottom-2 left-1 right-1">
+                    <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
+                      :{emoji.name}:
+                    </p>
+                  </div>
                 </motion.button>
               )
             })}
@@ -613,29 +615,29 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   transition={{ delay: Math.min(index * 0.02, 0.18) }}
                   onClick={() => onToggleSelection(emoji)}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50",
+                    "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
                     isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-transparent bg-muted"
+                      ? "border-primary bg-primary/5"
+                      : "border-transparent bg-card hover:border-border hover:shadow-sm"
                   )}
                 >
-                  <img
-                    src={emoji.imageURL}
-                    alt={emoji.name}
-                    className="w-12 h-12 object-contain"
-                    loading="lazy"
-                  />
-                  <span className="flex-1 text-left font-medium">
+                  <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
+                    <img
+                      src={emoji.imageURL}
+                      alt={emoji.name}
+                      className="w-8 h-8 object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="flex-1 text-left font-medium text-sm">
                     :{emoji.name}:
                   </span>
-                  {isSelected && (
-                    <motion.div
-                      layout
-                      className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold"
-                    >
-                      ✓
-                    </motion.div>
-                  )}
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+                    isSelected ? "text-primary" : "text-muted-foreground/30"
+                  )}>
+                    {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-4 h-4 rounded-full border-2 border-current" />}
+                  </div>
                 </motion.button>
               )
             })}
@@ -725,10 +727,14 @@ export function PackSelectionSidebar({
 
       <ScrollArea className="flex-1 min-h-0 p-4">
         {selectedEmojis.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center text-muted-foreground">
-            <Download className="h-12 w-12 mb-2 opacity-20" />
-            <p className="text-sm">No emojis selected</p>
-            <p className="text-xs">Click emojis to add them here</p>
+          <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground p-4">
+            <div className="w-20 h-20 rounded-2xl bg-muted/30 flex items-center justify-center mb-4 rotate-3">
+              <Sparkles className="h-10 w-10 opacity-20" />
+            </div>
+            <h4 className="font-medium text-foreground mb-1">No emojis selected</h4>
+            <p className="text-xs max-w-[200px]">
+              Browse the packs and click on emojis to add them to your collection
+            </p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -749,9 +755,9 @@ export function PackSelectionSidebar({
                     exit="exit"
                     transition={{ delay: Math.min(index * 0.03, 0.2) }}
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2 rounded-lg bg-background border transition-all group min-w-0 overflow-hidden",
+                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
                       hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
-                      hasNameChecking && status === "available" && "border-green-500/30"
+                      hasNameChecking && status === "available" && "border-green-500/30 bg-green-50/10"
                     )}
                   >
                     <img

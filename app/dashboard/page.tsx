@@ -30,27 +30,27 @@ function DashboardPage() {
   const [pageVisible, setPageVisible] = useState(false)
   // Sync loading is now handled by ChromeExtensionHandler
   const router = useRouter()
-  
+
   useEffect(() => {
     setIsClient(true)
-    
+
     // The ChromeExtensionHandler now handles sync progress in real-time
     // Remove old URL parameter handling as it's been replaced by real sync progress messages
-    
+
     // Trigger fade in animation after a short delay
     const timer = setTimeout(() => {
       setPageVisible(true)
     }, 100)
-    
+
     // Listen for emoji data updates to force re-render
     const handleEmojiDataUpdated = () => {
       // Sync loading is now handled by ChromeExtensionHandler
-      
+
       // Refresh the page visible state to trigger animations
       setPageVisible(false);
       setTimeout(() => setPageVisible(true), 100);
     };
-    
+
     // Listen for Chrome extension messages to add emojis from Slackmojis
     const handleExtensionMessage = async (event: MessageEvent) => {
       if (event.data.type === 'EMOJI_STUDIO_ADD_EMOJI') {
@@ -58,12 +58,12 @@ function DashboardPage() {
         if (!emojiData || !emojiData.url || !emojiData.name) {
           return;
         }
-        
+
         try {
           // Navigate to create page with the emoji data
           const createUrl = new URL('/create', window.location.origin);
           createUrl.searchParams.set('from', 'extension');
-          
+
           // Store the emoji data temporarily so the create page can pick it up
           window.sessionStorage.setItem('pendingEmojiFromSlackmojis', JSON.stringify({
             imageUrl: emojiData.url,
@@ -71,7 +71,7 @@ function DashboardPage() {
             name: emojiData.name,
             source: 'slackmojis'
           }));
-          
+
           // Navigate to create page
           window.location.href = createUrl.toString();
         } catch (error) {
@@ -79,21 +79,21 @@ function DashboardPage() {
         }
       }
     };
-    
+
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     window.addEventListener('message', handleExtensionMessage);
-    
+
     return () => {
       clearTimeout(timer);
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
       window.removeEventListener('message', handleExtensionMessage);
     };
   }, [])
-  const { 
-    emojiData, 
-    filterByDateRange, 
-    loading, 
-    hasRealData, 
+  const {
+    emojiData,
+    filterByDateRange,
+    loading,
+    hasRealData,
     userLeaderboard,
     useDemoData
   } = useEmojiData()
@@ -132,12 +132,12 @@ function DashboardPage() {
     // Aggregate leaderboard from filtered emojis
     return getUserLeaderboard(filteredEmojis, Math.floor(Date.now() / 1000));
   }, [emojiData, dateRange, filterByDateRange, showDemoData, userLeaderboard])
-  
+
   // Create onViewUser function after filteredLeaderboard is defined
   const onViewUser = useCallback((user: UserWithEmojiCount) => {
     // Find the user's rank in the leaderboard
     const userRank = filteredLeaderboard.findIndex((u: UserWithEmojiCount) => u.user_id === user.user_id) + 1;
-    
+
     // Add rank to the user object
     const userWithRank = {
       ...user,
@@ -159,26 +159,26 @@ function DashboardPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const isSyncing = urlParams.get('syncStarting') === 'true';
       const waitTime = isSyncing ? 10000 : 2000; // 10 seconds if syncing, 2 seconds otherwise
-      
+
       const timeout = setTimeout(() => {
         const hasAnyData = hasRealData || useDemoData;
         if (!hasAnyData) {
           router.replace('/settings');
         }
       }, waitTime);
-      
+
       // If data arrives before timeout, cancel the redirect
       if (hasRealData || useDemoData) {
         clearTimeout(timeout);
       }
-      
+
       return () => clearTimeout(timeout);
     }
   }, [isClient, loading, hasRealData, useDemoData, router])
 
   // Only render when client-side to avoid hydration mismatches
   if (!isClient) return null;
-  
+
   // Show loading skeletons while data is loading
   if (loading && !hasRealData && !useDemoData) {
     return (
@@ -195,7 +195,7 @@ function DashboardPage() {
       </div>
     );
   }
-  
+
   // Show empty state if no data
   if (!loading && !hasRealData && !useDemoData && emojiData.length === 0) {
     return (
@@ -206,9 +206,9 @@ function DashboardPage() {
       </div>
     );
   }
-  
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 md:gap-8 w-full pb-8">
       <ChromeExtensionHandler />
 
       {/* Mobile Header - Only show on mobile */}
@@ -225,9 +225,8 @@ function DashboardPage() {
       </div>
 
       {/* Hero Metrics Section - Staggered animation delay: 0ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 pt-3 md:pt-6 transition-all duration-700 ${
-        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
+      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-all duration-700 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
         {loading && !showDemoData ? (
           <div className="grid grid-cols-1 gap-4">
             {/* Primary metric skeleton */}
@@ -252,12 +251,11 @@ function DashboardPage() {
       </div>
 
       {/* ChartAreaInteractive with skeleton - Staggered animation delay: 150ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-150 ${
-        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-150 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
         {loading && !showDemoData ? (
-          <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 flex flex-col gap-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
+          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
               <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
               <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
             </div>
@@ -269,9 +267,8 @@ function DashboardPage() {
         )}
       </div>
       {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-300 ${
-        pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-      }`}>
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-300 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}>
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}
           dateRange={dateRange}
@@ -285,9 +282,9 @@ function DashboardPage() {
         />
       </div>
       {/* User Overlay */}
-      <UserOverlay 
-        user={selectedUser} 
-        onClose={() => setSelectedUser(null)} 
+      <UserOverlay
+        user={selectedUser}
+        onClose={() => setSelectedUser(null)}
         onEmojiClick={handleEmojiClickFromUserOverlay}
       />
       {/* Emoji Overlay */}
@@ -295,7 +292,7 @@ function DashboardPage() {
         emoji={selectedEmojiForOverlay}
         onClose={() => setSelectedEmojiForOverlay(null)}
       />
-      
+
       {/* ChromeExtensionHandler now handles sync loading overlay */}
     </div>
   )

@@ -88,7 +88,7 @@ export default function RootLayout({
                 <NotificationManager />
               </PWALayoutWrapper>
             </EmojiDataProvider>
-            <Toaster 
+            <Toaster
               position="bottom-right"
             />
             <ThemeTracker />
@@ -100,8 +100,8 @@ export default function RootLayout({
 }
 
 export const metadata = {
-  title: "Emoji Studio - Analytics for Slack Emojis",
-  description: "Emoji Studio is the missing analytics platform for custom Slack emojis. See leaderboards, visualizations, and insights into company culture.",
+  title: "Emoji Studio - Slack Emoji Management",
+  description: "Emoji Studio is the missing management platform for custom Slack emojis. Create, manage, analyze, and understand your company's emoji culture.",
   generator: "v0.dev",
   applicationName: "Emoji Studio",
   appleWebApp: {
