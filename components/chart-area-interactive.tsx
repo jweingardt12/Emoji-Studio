@@ -105,9 +105,9 @@ export function ChartAreaInteractive() {
       }
       setNow(new Date()); // Update the timestamp to force recalculation
     };
-    
+
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
-    
+
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     };
@@ -205,7 +205,7 @@ export function ChartAreaInteractive() {
   // Handle chart clicks - full functionality on desktop, dots only on mobile
   const handleDataPointClick = (d: any) => {
     console.log('Chart clicked:', d);
-    
+
     // Handle the new event structure (chart area clicks)
     if (d && d.activeLabel && typeof d.activeIndex !== 'undefined') {
       const index = parseInt(d.activeIndex);
@@ -216,7 +216,7 @@ export function ChartAreaInteractive() {
         return;
       }
     }
-    
+
     // Handle direct dot click (when d is the data point itself)
     if (d && d.payload && d.payload.date) {
       const payload = d.payload;
@@ -224,7 +224,7 @@ export function ChartAreaInteractive() {
       processDataPoint(payload);
       return;
     }
-    
+
     // Handle chart area click (when d has activePayload) - legacy support
     if (d?.activePayload?.length && emojiData.length) {
       const payload = d.activePayload[0].payload;
@@ -281,7 +281,7 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   if (!isClient || !now) {
     return (
-      <Card className="@container/card">
+      <Card className="border-muted/40 shadow-sm bg-card/50">
         <CardHeader className="relative">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="mt-2 h-4 w-64" />
@@ -300,7 +300,7 @@ export function ChartAreaInteractive() {
   /*  Render chart                                                         */
   /* -------------------------------------------------------------------- */
   return (
-    <Card className="@container/card">
+    <Card className="border-muted/40 shadow-sm bg-card/50 overflow-hidden">
       <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-3 xs:py-4 sm:py-6">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <LineChart className="h-5 w-5" />
@@ -350,7 +350,7 @@ export function ChartAreaInteractive() {
         </div>
       </CardHeader>
 
-      <CardContent className="px-0 xs:px-1 pt-2 xs:pt-3 sm:px-4 sm:pt-4">
+      <CardContent className="px-0 sm:px-4 pb-4">
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[280px] xs:h-[300px] sm:h-[320px] w-full"
@@ -405,7 +405,7 @@ export function ChartAreaInteractive() {
                     ? d.toLocaleDateString("en-US", { weekday: "narrow" })
                     : d.toLocaleDateString("en-US", { weekday: "short" });
                 }
-                
+
                 if (timeRange === "30d") {
                   const day = d.getDate();
                   // Show 1st of month and more frequent day numbers
@@ -414,13 +414,13 @@ export function ChartAreaInteractive() {
                   }
                   return day.toString();
                 }
-                
+
                 /* 90 days */
                 if (d.getDate() === 1) {
                   // Always show month names
                   return d.toLocaleDateString("en-US", { month: "short" });
                 }
-                
+
                 if (isMobile) {
                   // On mobile, show some day numbers
                   if (d.getDate() % 10 === 0) {
@@ -428,7 +428,7 @@ export function ChartAreaInteractive() {
                   }
                   return "";
                 }
-                
+
                 // Desktop 90-day view
                 if (d.getDate() % 10 === 0) {
                   return d.getDate().toString();
@@ -457,18 +457,18 @@ export function ChartAreaInteractive() {
 
                 const heading = monthly
                   ? (() => {
-                      const [y, m] = label.split("-");
-                      const d = new Date(+y, +m - 1, 1);
-                      return d.toLocaleDateString("en-US", {
-                        month: "long",
-                        year: "numeric",
-                      });
-                    })()
-                  : parseISO(label).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: timeRange === "all" ? "numeric" : undefined,
+                    const [y, m] = label.split("-");
+                    const d = new Date(+y, +m - 1, 1);
+                    return d.toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
                     });
+                  })()
+                  : parseISO(label).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: timeRange === "all" ? "numeric" : undefined,
+                  });
 
                 return (
                   <div className="rounded-lg bg-background p-2 xs:p-3 text-xs shadow-lg ring-1 ring-border">
@@ -500,12 +500,12 @@ export function ChartAreaInteractive() {
                 <stop
                   offset="0%"
                   stopColor="var(--color-created)"
-                  stopOpacity={0.8}
+                  stopOpacity={0.5}
                 />
                 <stop
                   offset="100%"
                   stopColor="var(--color-created)"
-                  stopOpacity={0.1}
+                  stopOpacity={0.0}
                 />
               </linearGradient>
               <linearGradient
@@ -515,8 +515,8 @@ export function ChartAreaInteractive() {
                 x2="0"
                 y2="1"
               >
-                <stop offset="0%" stopColor="#FF00B8" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#FF00B8" stopOpacity={0.1} />
+                <stop offset="0%" stopColor="#FF00B8" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="#FF00B8" stopOpacity={0.0} />
               </linearGradient>
             </defs>
 

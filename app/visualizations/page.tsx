@@ -667,11 +667,16 @@ function VisualizationsPage() {
     const peakTimePeriod = [...emojisByHour].sort((a, b) => b.count - a.count)[0]?.timeOfDay || "Unknown";
     
     // Calculate cumulative growth data (images vs GIFs stacked)
+    // Optimized: Use sorted data and index tracking instead of filtering entire array each time
     const cumulativeGrowth: Array<{ date: string; images: number; gifs: number; total: number }> = [];
 
     if (sortedEmojiData.length > 0) {
       const now = new Date();
       const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
+
+      let emojiIndex = 0;
+      let cumulativeImages = 0;
+      let cumulativeGifs = 0;
 
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
@@ -680,16 +685,22 @@ function VisualizationsPage() {
         endOfDay.setHours(23, 59, 59, 999);
         const endTimestamp = endOfDay.getTime() / 1000;
 
-        // Count emojis created up to this date
-        const emojisUpToDate = sortedEmojiData.filter(e => e.created! <= endTimestamp);
-        const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
-        const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
+        // Process emojis up to this timestamp (array is sorted)
+        while (emojiIndex < sortedEmojiData.length && sortedEmojiData[emojiIndex].created! <= endTimestamp) {
+          const emoji = sortedEmojiData[emojiIndex];
+          if (emoji.url && emoji.url.toLowerCase().includes('.gif')) {
+            cumulativeGifs++;
+          } else if (emoji.url) {
+            cumulativeImages++;
+          }
+          emojiIndex++;
+        }
 
         cumulativeGrowth.push({
           date: format(date, 'yyyy-MM-dd'),
-          images,
-          gifs,
-          total: images + gifs
+          images: cumulativeImages,
+          gifs: cumulativeGifs,
+          total: cumulativeImages + cumulativeGifs
         });
       }
     }
@@ -727,37 +738,29 @@ function VisualizationsPage() {
     }
 
     // Calculate GIF vs Image percentage over time (stacked 100%)
+    // Optimized: Reuse cumulative counts from previous calculation
     const typePercentages: Array<{ date: string; imagePercent: number; gifPercent: number }> = [];
-    if (sortedEmojiData.length > 0) {
-      const now = new Date();
-      const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
-
-      for (let i = daysToShow - 1; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-        const endTimestamp = endOfDay.getTime() / 1000;
-
-        const emojisUpToDate = sortedEmojiData.filter(e => e.created! <= endTimestamp);
-        const images = emojisUpToDate.filter(e => e.url && !e.url.toLowerCase().includes('.gif')).length;
-        const gifs = emojisUpToDate.filter(e => e.url && e.url.toLowerCase().includes('.gif')).length;
-        const total = images + gifs;
-
+    if (cumulativeGrowth.length > 0) {
+      cumulativeGrowth.forEach(dayData => {
+        const total = dayData.total;
         typePercentages.push({
-          date: format(date, 'yyyy-MM-dd'),
-          imagePercent: total > 0 ? Math.round((images / total) * 100) : 0,
-          gifPercent: total > 0 ? Math.round((gifs / total) * 100) : 0,
+          date: dayData.date,
+          imagePercent: total > 0 ? Math.round((dayData.images / total) * 100) : 0,
+          gifPercent: total > 0 ? Math.round((dayData.gifs / total) * 100) : 0,
         });
-      }
+      });
     }
 
     // Calculate active creators over time
+    // Optimized: Use sorted data and track cumulative creators
     const activeCreatorsTimeline: Array<{ date: string; count: number }> = [];
     if (sortedEmojiData.length > 0) {
       const now = new Date();
       const daysToShow = calculateDaysToShow(timeRange, oldestTimestamp);
 
+      let emojiIndex = 0;
+      const cumulativeCreators = new Set<string>();
+
       for (let i = daysToShow - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
@@ -765,17 +768,18 @@ function VisualizationsPage() {
         endOfDay.setHours(23, 59, 59, 999);
         const endTimestamp = endOfDay.getTime() / 1000;
 
-        // Count unique creators up to this date
-        const creators = new Set<string>();
-        sortedEmojiData.forEach(e => {
-          if (e.created! <= endTimestamp && e.user_display_name) {
-            creators.add(e.user_display_name);
+        // Add creators up to this timestamp
+        while (emojiIndex < sortedEmojiData.length && sortedEmojiData[emojiIndex].created! <= endTimestamp) {
+          const emoji = sortedEmojiData[emojiIndex];
+          if (emoji.user_display_name) {
+            cumulativeCreators.add(emoji.user_display_name);
           }
-        });
+          emojiIndex++;
+        }
 
         activeCreatorsTimeline.push({
           date: format(date, 'yyyy-MM-dd'),
-          count: creators.size,
+          count: cumulativeCreators.size,
         });
       }
     }
