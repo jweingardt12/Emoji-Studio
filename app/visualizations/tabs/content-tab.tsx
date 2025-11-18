@@ -1,7 +1,7 @@
 import React, { memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, Cell, LabelList } from "recharts"
 import { FileText, Activity, TrendingUp } from "lucide-react"
 
 interface ContentTabProps {
@@ -298,7 +298,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     radius={4}
                                 >
                                     {chartData.commonWords.slice(0, 10).map((entry: any, index: number) => (
-                                        <cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 8) + 1}))`} />
+                                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 8) + 1}))`} />
                                     ))}
                                     <LabelList
                                         dataKey="count"
