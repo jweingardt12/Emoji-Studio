@@ -84,6 +84,7 @@ export const OverviewTab = memo(({
                                 radius={4}
                                 onClick={handleDateClick}
                                 style={{ cursor: 'pointer' }}
+                                isAnimationActive={false}
                             >
                                 <LabelList
                                     dataKey="date"
@@ -269,7 +270,7 @@ export const OverviewTab = memo(({
                                     return null
                                 }}
                             />
-                            <Bar dataKey={activeEmojiType} fill={activeEmojiType === "image" ? "#00E396" : "#FF4560"} radius={4} />
+                            <Bar dataKey={activeEmojiType} fill={activeEmojiType === "image" ? "#00E396" : "#FF4560"} radius={4} isAnimationActive={false} />
                         </BarChart>
                     </ChartContainer>
                 </CardContent>
@@ -321,6 +322,7 @@ export const OverviewTab = memo(({
                                 stroke="#06b6d4"
                                 fill="url(#fillCreators)"
                                 fillOpacity={1}
+                                isAnimationActive={false}
                             />
                         </AreaChart>
                     </ChartContainer>

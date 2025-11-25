@@ -6,12 +6,19 @@
  * Based on iOS SlackmojisPickerView patterns
  *
  * Now refactored for composability - can be embedded directly into pages
+ *
+ * Improvements:
+ * - Full keyboard navigation (arrow keys, Enter, Escape)
+ * - ARIA labels for accessibility
+ * - Larger tap targets for mobile (44x44px minimum)
+ * - Loading states with visual feedback
+ * - Favorites system with localStorage persistence
  */
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
-import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
+import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -22,8 +29,34 @@ import type { PackEmoji } from "@/lib/types/emoji-pack"
 import { cn } from "@/lib/utils"
 import { isEmojiNameAvailable } from "@/lib/services/emoji-service"
 
-type Tab = "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
+type Tab = "favorites" | "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
 type NameStatus = "checking" | "available" | "taken"
+
+// Favorites storage key
+const FAVORITES_STORAGE_KEY = "emoji-pack-favorites"
+
+// Load favorites from localStorage
+const loadFavorites = (): Set<string> => {
+  if (typeof window === "undefined") return new Set()
+  try {
+    const saved = localStorage.getItem(FAVORITES_STORAGE_KEY)
+    if (saved) {
+      return new Set(JSON.parse(saved))
+    }
+  } catch (error) {
+    console.error("Failed to load favorites:", error)
+  }
+  return new Set()
+}
+
+// Save favorites to localStorage
+const saveFavorites = (favorites: Set<string>) => {
+  try {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(favorites)))
+  } catch (error) {
+    console.error("Failed to save favorites:", error)
+  }
+}
 
 const gridContainerVariants: Variants = {
   initial: { opacity: 0, y: 8 },
@@ -89,6 +122,7 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   const [searchQuery, setSearchQuery] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isSearching, setIsSearching] = useState(false)
 
   // Pack data
   const [popularEmojis, setPopularEmojis] = useState<PackEmoji[]>([])
@@ -100,11 +134,18 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   const [searchResults, setSearchResults] = useState<PackEmoji[]>([])
   const [loading, setLoading] = useState(false)
 
+  // Favorites
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => loadFavorites())
+  const [favoriteEmojis, setFavoriteEmojis] = useState<PackEmoji[]>([])
+
   // Name availability status for selected emojis
   const [nameStatuses, setNameStatuses] = useState<Map<string, NameStatus>>(new Map())
   const [editingName, setEditingName] = useState<string | null>(null)
   const [editingValue, setEditingValue] = useState("")
   const [customNames, setCustomNames] = useState<Map<string, string>>(new Map()) // Track edited names
+
+  // Keyboard navigation
+  const [focusedIndex, setFocusedIndex] = useState(-1)
 
   // Load initial packs and restore selections
   useEffect(() => {
@@ -285,6 +326,7 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
   }
 
   const performSearch = async (query: string) => {
+    setIsSearching(true)
     setLoading(true)
     try {
       // Search across all packs instead of just Slackmojis
@@ -296,11 +338,64 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       setSearchResults([]) // Set empty array on error
     } finally {
       setLoading(false)
+      setIsSearching(false)
     }
   }
 
+  // Update favorite emojis when favorites change or packs load
+  useEffect(() => {
+    const allEmojis = [
+      ...popularEmojis,
+      ...recentEmojis,
+      ...memesEmojis,
+      ...blobcatsEmojis,
+      ...partyparrotsEmojis,
+      ...bufoEmojis,
+    ]
+
+    const favs = allEmojis.filter((emoji) => {
+      const key = `${emoji.id}|${emoji.name}`
+      return favoriteIds.has(key)
+    })
+
+    // Deduplicate
+    const seen = new Set<string>()
+    const uniqueFavs = favs.filter((emoji) => {
+      const key = `${emoji.id}|${emoji.name}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
+    setFavoriteEmojis(uniqueFavs)
+  }, [favoriteIds, popularEmojis, recentEmojis, memesEmojis, blobcatsEmojis, partyparrotsEmojis, bufoEmojis])
+
+  // Toggle favorite
+  const toggleFavorite = useCallback((emoji: PackEmoji) => {
+    const key = `${emoji.id}|${emoji.name}`
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+        toast.success(`Removed from favorites`)
+      } else {
+        next.add(key)
+        toast.success(`Added to favorites`)
+      }
+      saveFavorites(next)
+      return next
+    })
+  }, [])
+
+  // Check if emoji is favorited
+  const isFavorite = useCallback((emoji: PackEmoji): boolean => {
+    const key = `${emoji.id}|${emoji.name}`
+    return favoriteIds.has(key)
+  }, [favoriteIds])
+
   const currentEmojis = useMemo(() => {
     if (searchQuery.trim()) return searchResults
+    if (selectedTab === "favorites") return favoriteEmojis
     if (selectedTab === "popular") return popularEmojis
     if (selectedTab === "recent") return recentEmojis
     if (selectedTab === "memes") return memesEmojis
@@ -308,7 +403,7 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     if (selectedTab === "partyparrots") return partyparrotsEmojis
     if (selectedTab === "bufo") return bufoEmojis
     return []
-  }, [selectedTab, searchQuery, popularEmojis, recentEmojis, memesEmojis, blobcatsEmojis, partyparrotsEmojis, bufoEmojis, searchResults])
+  }, [selectedTab, searchQuery, popularEmojis, recentEmojis, memesEmojis, blobcatsEmojis, partyparrotsEmojis, bufoEmojis, searchResults, favoriteEmojis])
 
   const toggleSelection = (emoji: PackEmoji) => {
     const key = `${emoji.id}|${emoji.name}`
@@ -403,6 +498,7 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     selectedIds,
     currentEmojis,
     loading,
+    isSearching,
     nameStatuses,
     editingName,
     setEditingName,
@@ -412,6 +508,16 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     saveCustomName,
     getEffectiveName,
     clearSelectionsAndStorage,
+
+    // Favorites
+    favoriteIds,
+    favoriteEmojis,
+    toggleFavorite,
+    isFavorite,
+
+    // Keyboard navigation
+    focusedIndex,
+    setFocusedIndex,
 
     // Computed
     selectedEmojis: getSelectedEmojis(),
@@ -430,12 +536,14 @@ interface PackBrowserTabsProps {
   selectedTab: Tab
   onSelectTab: (tab: Tab) => void
   searchQuery: string
+  favoritesCount?: number
 }
 
-export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackBrowserTabsProps) {
+export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery, favoritesCount = 0 }: PackBrowserTabsProps) {
   if (searchQuery) return null
 
-  const tabs: { id: Tab; label: string; emoji: string }[] = [
+  const tabs: { id: Tab; label: string; emoji: string; badge?: number }[] = [
+    { id: "favorites", label: "Favorites", emoji: "❤️", badge: favoritesCount },
     { id: "popular", label: "Popular", emoji: "🔥" },
     { id: "recent", label: "Recent", emoji: "🕒" },
     { id: "memes", label: "Memes", emoji: "😂" },
@@ -445,7 +553,11 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
   ]
 
   return (
-    <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+    <div
+      className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar"
+      role="tablist"
+      aria-label="Emoji pack categories"
+    >
       <div className="flex p-1 bg-muted/50 rounded-xl w-max min-w-full sm:min-w-0">
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
@@ -454,8 +566,12 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
+              role="tab"
+              aria-selected={isSelected}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={isSelected ? 0 : -1}
               className={cn(
-                "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[44px]",
                 isSelected
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -472,6 +588,11 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               <span className="relative z-10 flex items-center gap-2">
                 <span className="text-base leading-none">{tab.emoji}</span>
                 {tab.label}
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-primary/20 text-primary rounded-full">
+                    {tab.badge}
+                  </span>
+                )}
               </span>
             </button>
           )
@@ -487,10 +608,98 @@ interface PackEmojiGridProps {
   viewMode: "grid" | "list"
   selectedIds: Set<string>
   onToggleSelection: (emoji: PackEmoji) => void
+  onToggleFavorite?: (emoji: PackEmoji) => void
+  isFavorite?: (emoji: PackEmoji) => boolean
+  isSearching?: boolean
+  focusedIndex?: number
+  onFocusedIndexChange?: (index: number) => void
 }
 
-export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
+export function PackEmojiGrid({
+  emojis,
+  loading,
+  viewMode,
+  selectedIds,
+  onToggleSelection,
+  onToggleFavorite,
+  isFavorite,
+  isSearching = false,
+  focusedIndex = -1,
+  onFocusedIndexChange
+}: PackEmojiGridProps) {
   const isGridView = viewMode === "grid"
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  // Calculate columns for keyboard navigation
+  const getColumnsCount = () => {
+    if (!isGridView) return 1
+    // Match the grid classes
+    if (typeof window !== "undefined") {
+      if (window.innerWidth >= 1280) return 6
+      if (window.innerWidth >= 768) return 5
+      if (window.innerWidth >= 640) return 4
+      return 3
+    }
+    return 4
+  }
+
+  // Keyboard navigation handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!onFocusedIndexChange) return
+
+    const cols = getColumnsCount()
+    const total = emojis.length
+
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault()
+        onFocusedIndexChange(Math.min(focusedIndex + 1, total - 1))
+        break
+      case "ArrowLeft":
+        e.preventDefault()
+        onFocusedIndexChange(Math.max(focusedIndex - 1, 0))
+        break
+      case "ArrowDown":
+        e.preventDefault()
+        onFocusedIndexChange(Math.min(focusedIndex + cols, total - 1))
+        break
+      case "ArrowUp":
+        e.preventDefault()
+        onFocusedIndexChange(Math.max(focusedIndex - cols, 0))
+        break
+      case "Enter":
+      case " ":
+        e.preventDefault()
+        if (focusedIndex >= 0 && focusedIndex < total) {
+          onToggleSelection(emojis[focusedIndex])
+        }
+        break
+      case "f":
+        e.preventDefault()
+        if (focusedIndex >= 0 && focusedIndex < total && onToggleFavorite) {
+          onToggleFavorite(emojis[focusedIndex])
+        }
+        break
+      case "Home":
+        e.preventDefault()
+        onFocusedIndexChange(0)
+        break
+      case "End":
+        e.preventDefault()
+        onFocusedIndexChange(total - 1)
+        break
+    }
+  }, [emojis, focusedIndex, onFocusedIndexChange, onToggleSelection, onToggleFavorite])
+
+  // Show searching indicator
+  if (isSearching) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <Loader2 className="w-10 h-10 animate-spin mb-4 text-primary" />
+        <p className="font-medium">Searching...</p>
+      </div>
+    )
+  }
 
   if (loading && emojis.length === 0) {
     return (
@@ -529,6 +738,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
     <AnimatePresence mode="wait">
       {isGridView ? (
         <motion.div
+          ref={gridRef}
           key="grid"
           className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
           variants={gridContainerVariants}
@@ -536,15 +746,20 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
           animate="animate"
           exit="exit"
           layout
+          role="grid"
+          aria-label="Emoji grid"
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
         >
           <AnimatePresence mode="popLayout">
             {emojis.map((emoji, index) => {
               const key = `${emoji.id}|${emoji.name}`
               const isSelected = selectedIds.has(key)
+              const isFav = isFavorite?.(emoji) ?? false
+              const isFocused = index === focusedIndex
 
               return (
-                <motion.button
-                  type="button"
+                <motion.div
                   layout
                   key={key}
                   variants={gridItemVariants}
@@ -552,38 +767,69 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   animate="enter"
                   exit="exit"
                   transition={{ delay: Math.min(index * 0.025, 0.25) }}
-                  onClick={() => onToggleSelection(emoji)}
+                  role="gridcell"
                   className={cn(
-                    "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
+                    "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200 min-h-[80px]",
                     isSelected
                       ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))]"
-                      : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm"
+                      : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm",
+                    isFocused && "ring-2 ring-ring ring-offset-2"
                   )}
                 >
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
+                  {/* Main click area - minimum 44x44 tap target */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleSelection(emoji)}
+                    aria-label={`Select emoji ${emoji.name}${isSelected ? " (selected)" : ""}`}
+                    aria-pressed={isSelected}
+                    className="absolute inset-0 w-full h-full min-h-[44px] min-w-[44px] z-10 cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+
+                  {/* Favorite button - 44x44 tap target */}
+                  {onToggleFavorite && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleFavorite(emoji)
+                      }}
+                      aria-label={isFav ? `Remove ${emoji.name} from favorites` : `Add ${emoji.name} to favorites`}
+                      aria-pressed={isFav}
+                      className={cn(
+                        "absolute top-0 left-0 w-11 h-11 flex items-center justify-center z-20 transition-all duration-200 rounded-tl-xl",
+                        isFav
+                          ? "text-red-500"
+                          : "text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-red-500"
+                      )}
+                    >
+                      <Heart className={cn("w-4 h-4", isFav && "fill-current")} />
+                    </button>
+                  )}
+
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6 pointer-events-none">
                     <img
                       src={emoji.imageURL}
-                      alt={emoji.name}
+                      alt=""
                       className="max-w-full max-h-full object-contain drop-shadow-sm"
                       loading="lazy"
                     />
                   </div>
 
                   <div className={cn(
-                    "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
+                    "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10 pointer-events-none",
                     isSelected
                       ? "bg-primary text-primary-foreground scale-100 opacity-100"
                       : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
                   )}>
-                    {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
+                    {isSelected ? <CheckCircle2 className="w-4 h-4" /> : "+"}
                   </div>
 
-                  <div className="absolute bottom-2 left-1 right-1">
+                  <div className="absolute bottom-2 left-1 right-1 pointer-events-none">
                     <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
                       :{emoji.name}:
                     </p>
                   </div>
-                </motion.button>
+                </motion.div>
               )
             })}
           </AnimatePresence>
@@ -597,15 +843,20 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
           animate="animate"
           exit="exit"
           layout
+          role="listbox"
+          aria-label="Emoji list"
+          onKeyDown={handleKeyDown}
+          tabIndex={0}
         >
           <AnimatePresence mode="popLayout">
             {emojis.map((emoji, index) => {
               const key = `${emoji.id}|${emoji.name}`
               const isSelected = selectedIds.has(key)
+              const isFav = isFavorite?.(emoji) ?? false
+              const isFocused = index === focusedIndex
 
               return (
-                <motion.button
-                  type="button"
+                <motion.div
                   layout
                   key={key}
                   variants={listItemVariants}
@@ -613,32 +864,64 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   animate="enter"
                   exit="exit"
                   transition={{ delay: Math.min(index * 0.02, 0.18) }}
-                  onClick={() => onToggleSelection(emoji)}
+                  role="option"
+                  aria-selected={isSelected}
                   className={cn(
-                    "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
+                    "group w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200 min-h-[56px]",
                     isSelected
                       ? "border-primary bg-primary/5"
-                      : "border-transparent bg-card hover:border-border hover:shadow-sm"
+                      : "border-transparent bg-card hover:border-border hover:shadow-sm",
+                    isFocused && "ring-2 ring-ring ring-offset-2"
                   )}
                 >
-                  <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
-                    <img
-                      src={emoji.imageURL}
-                      alt={emoji.name}
-                      className="w-8 h-8 object-contain"
-                      loading="lazy"
-                    />
-                  </div>
-                  <span className="flex-1 text-left font-medium text-sm">
-                    :{emoji.name}:
-                  </span>
+                  {/* Favorite button - 44x44 tap target */}
+                  {onToggleFavorite && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onToggleFavorite(emoji)
+                      }}
+                      aria-label={isFav ? `Remove ${emoji.name} from favorites` : `Add ${emoji.name} to favorites`}
+                      aria-pressed={isFav}
+                      className={cn(
+                        "w-11 h-11 flex items-center justify-center transition-all duration-200 rounded-lg flex-shrink-0",
+                        isFav
+                          ? "text-red-500"
+                          : "text-muted-foreground/40 hover:text-red-500"
+                      )}
+                    >
+                      <Heart className={cn("w-5 h-5", isFav && "fill-current")} />
+                    </button>
+                  )}
+
+                  {/* Main click area */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleSelection(emoji)}
+                    aria-label={`Select emoji ${emoji.name}${isSelected ? " (selected)" : ""}`}
+                    className="flex-1 flex items-center gap-4 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg"
+                  >
+                    <div className="w-11 h-11 flex items-center justify-center bg-muted/30 rounded-lg flex-shrink-0">
+                      <img
+                        src={emoji.imageURL}
+                        alt=""
+                        className="w-8 h-8 object-contain"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="flex-1 text-left font-medium text-sm">
+                      :{emoji.name}:
+                    </span>
+                  </button>
+
                   <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0",
                     isSelected ? "text-primary" : "text-muted-foreground/30"
                   )}>
-                    {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-4 h-4 rounded-full border-2 border-current" />}
+                    {isSelected ? <CheckCircle2 className="w-6 h-6" /> : <div className="w-5 h-5 rounded-full border-2 border-current" />}
                   </div>
-                </motion.button>
+                </motion.div>
               )
             })}
           </AnimatePresence>
@@ -708,19 +991,20 @@ export function PackSelectionSidebar({
     <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:shadow bg-card">
       <div className="p-4 sm:p-5 border-b">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-sm">Selected Emojis</h3>
+          <h3 className="font-semibold text-sm" id="selected-emojis-heading">Selected Emojis</h3>
           {selectedEmojis.length > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onClear}
-              className="h-7 text-xs"
+              className="h-9 min-w-[80px] text-xs"
+              aria-label="Clear all selected emojis"
             >
               Clear All
             </Button>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground" aria-live="polite">
           {selectedEmojis.length}/{maxSelection} selected
         </p>
       </div>
@@ -798,7 +1082,8 @@ export function PackSelectionSidebar({
                               onSetEditingValue("")
                             }
                           }}
-                          className="h-6 w-full min-w-0 max-w-full text-xs font-mono"
+                          className="h-9 w-full min-w-0 max-w-full text-xs font-mono"
+                          aria-label={`Edit name for ${emoji.name}`}
                         />
                       ) : (
                         <>
@@ -814,9 +1099,10 @@ export function PackSelectionSidebar({
                               onSetEditingName(key)
                               onSetEditingValue(displayName)
                             }}
-                            className="group/name flex-shrink-0"
+                            aria-label={`Edit name for ${emoji.name}`}
+                            className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-lg hover:bg-muted/50 transition-colors"
                           >
-                            <Edit2 className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
+                            <Edit2 className="h-4 w-4 opacity-40 group-hover:opacity-70 transition-opacity" />
                           </button>
                         </>
                       )}
@@ -824,15 +1110,21 @@ export function PackSelectionSidebar({
 
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {hasNameChecking && status === "checking" && (
-                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <div className="w-8 h-8 flex items-center justify-center" aria-label="Checking name availability">
+                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        </div>
                       )}
                       {hasNameChecking && status === "available" && (
-                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        <div className="w-8 h-8 flex items-center justify-center" aria-label="Name is available">
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        </div>
                       )}
                       {hasNameChecking && status === "taken" && (
                         <HoverCard openDelay={200} closeDelay={100}>
                           <HoverCardTrigger asChild>
-                            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
+                            <button className="w-8 h-8 flex items-center justify-center" aria-label="Name is taken - click for details">
+                              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
+                            </button>
                           </HoverCardTrigger>
                           <HoverCardContent className="w-64 text-xs">
                             This name is already taken in your workspace. Click the pencil to edit it before continuing.
@@ -843,10 +1135,11 @@ export function PackSelectionSidebar({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-11 w-11 opacity-60 hover:opacity-100 transition-opacity"
                         onClick={() => onRemove(emoji)}
+                        aria-label={`Remove ${emoji.name} from selection`}
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-5 w-5" />
                       </Button>
                     </div>
                   </motion.div>
@@ -863,8 +1156,9 @@ export function PackSelectionSidebar({
           <Button
             onClick={onDownload}
             disabled={!canDownload || !!downloadProgress}
-            className="w-full"
+            className="w-full min-h-[44px]"
             variant="outline"
+            aria-label={`Download ${selectedEmojis.length} emoji${selectedEmojis.length !== 1 ? "s" : ""} as ZIP`}
           >
             <Download className="mr-2 h-4 w-4" />
             Download
@@ -873,7 +1167,8 @@ export function PackSelectionSidebar({
           <Button
             onClick={onSendToSlack}
             disabled={!canSendToSlack || !!uploadProgress}
-            className="w-full"
+            className="w-full min-h-[44px]"
+            aria-label={`Upload ${selectedEmojis.length} emoji${selectedEmojis.length !== 1 ? "s" : ""} to Slack`}
           >
             <Send className="mr-2 h-4 w-4" />
             Send to Slack

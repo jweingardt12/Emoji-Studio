@@ -1,8 +1,11 @@
-import React, { memo } from "react"
+import React, { memo, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, LabelList, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts"
 import { TrendingUp, Activity } from "lucide-react"
+
+// Module-level color palette to avoid recreation on each render
+const CHART_COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4']
 
 interface ActivityTabProps {
     chartData: any
@@ -72,6 +75,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     layout="vertical"
                                     fill="#008FFB"
                                     radius={4}
+                                    isAnimationActive={false}
                                 >
                                     <LabelList
                                         dataKey="day"
@@ -130,6 +134,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                         fill="#8b5cf6"
                                         stroke="#8b5cf6"
                                         fillOpacity={0.6}
+                                        isAnimationActive={false}
                                     />
                                 </RadarChart>
                             </ChartContainer>
@@ -201,6 +206,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     stroke="#00E396"
                                     fill="url(#fillImages)"
                                     fillOpacity={1}
+                                    isAnimationActive={false}
                                 />
                                 <Area
                                     type="monotone"
@@ -209,6 +215,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     stroke="#FF4560"
                                     fill="url(#fillGifs)"
                                     fillOpacity={1}
+                                    isAnimationActive={false}
                                 />
                             </AreaChart>
                         </ChartContainer>
@@ -235,10 +242,9 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                         <ChartContainer
                             config={{
                                 ...chartData.seasonalYears.reduce((acc: Record<string, any>, year: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
                                     acc[year] = {
                                         label: year,
-                                        color: COLORS[index % COLORS.length],
+                                        color: CHART_COLORS[index % CHART_COLORS.length],
                                     };
                                     return acc;
                                 }, {}),
@@ -259,19 +265,17 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                 <YAxis tickLine={false} axisLine={false} />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <ChartLegend />
-                                {chartData.seasonalYears.map((year: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
-                                    return (
-                                        <Area
-                                            key={year}
-                                            type="monotone"
-                                            dataKey={year}
-                                            stroke={COLORS[index % COLORS.length]}
-                                            fill={COLORS[index % COLORS.length]}
-                                            fillOpacity={0.3}
-                                        />
-                                    )
-                                })}
+                                {chartData.seasonalYears.map((year: string, index: number) => (
+                                    <Area
+                                        key={year}
+                                        type="monotone"
+                                        dataKey={year}
+                                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                        fillOpacity={0.3}
+                                        isAnimationActive={false}
+                                    />
+                                ))}
                             </AreaChart>
                         </ChartContainer>
                     </CardContent>
@@ -318,6 +322,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     stroke="#8b5cf6"
                                     fill="url(#fillVelocity)"
                                     fillOpacity={1}
+                                    isAnimationActive={false}
                                 />
                                 <Line
                                     type="monotone"
@@ -325,6 +330,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     stroke="#06b6d4"
                                     strokeWidth={2}
                                     dot={false}
+                                    isAnimationActive={false}
                                 />
                             </AreaChart>
                         </ChartContainer>

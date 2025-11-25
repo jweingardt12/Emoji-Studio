@@ -1,18 +1,20 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useDeferredValue } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Activity, Calendar, ChartPieIcon, FileText, Users } from "lucide-react"
+import { Activity, Calendar, ChartPieIcon, FileText, Users, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { useVisualizationData, TimeRange } from "./use-visualization-data"
 import { OverviewTab } from "./tabs/overview-tab"
 import { ActivityTab } from "./tabs/activity-tab"
 import { CreatorsTab } from "./tabs/creators-tab"
 import { ContentTab } from "./tabs/content-tab"
+
+type TabValue = "overview" | "activity" | "creators" | "content"
 
 // Helper to format date for display
 const format = (date: Date | number, formatStr: string) => {
@@ -60,6 +62,7 @@ const timeRangeOptions: { value: TimeRange; label: string }[] = [
 export default function VisualizationsPage() {
   // Add client-side only rendering to avoid hydration mismatches
   const [isClient, setIsClient] = useState(false)
+  const [activeTab, setActiveTab] = useState<TabValue>("overview")
   const [activeEmojiType, setActiveEmojiType] = useState<"image" | "gif">("image")
   const [selectedNameLength, setSelectedNameLength] = useState<number | null>(null)
   const [emojisWithLength, setEmojisWithLength] = useState<any[]>([])
@@ -73,14 +76,18 @@ export default function VisualizationsPage() {
   const [showDateEmojiDialog, setShowDateEmojiDialog] = useState(false)
   const [timeRange, setTimeRange] = useState<TimeRange>("all")
 
+  // Use deferred value for time range to keep UI responsive during heavy calculations
+  const deferredTimeRange = useDeferredValue(timeRange)
+  const isTimeRangePending = timeRange !== deferredTimeRange
+
   useEffect(() => {
     setIsClient(true)
   }, [])
 
   const { emojiData } = useEmojiData()
 
-  // Use the optimized hook for data processing
-  const { filteredEmojiData, chartData } = useVisualizationData(emojiData, timeRange)
+  // Use the optimized hook for data processing with deferred time range
+  const { filteredEmojiData, chartData } = useVisualizationData(emojiData, deferredTimeRange)
 
   // Function to handle click on name length bar
   const handleNameLengthClick = useCallback((data: { length: number }) => {
@@ -274,7 +281,7 @@ export default function VisualizationsPage() {
           </div>
 
           {/* Tabbed navigation for charts */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-6 h-auto p-1">
               <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                 <ChartPieIcon className="h-5 w-5" />
@@ -294,33 +301,52 @@ export default function VisualizationsPage() {
               </TabsTrigger>
             </TabsList>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <OverviewTab
-                chartData={chartData}
-                timeRange={timeRange}
-                activeEmojiType={activeEmojiType}
-                handleTypeChange={handleTypeChange}
-                handleDateClick={handleDateClick}
-                isClient={isClient}
-                timeRangeOptions={timeRangeOptions}
-              />
-            </TabsContent>
+            {/* Loading indicator when time range is changing */}
+            {isTimeRangePending && (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <span>Updating charts...</span>
+              </div>
+            )}
 
-            {/* Activity Patterns Tab */}
-            <TabsContent value="activity" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <ActivityTab chartData={chartData} isClient={isClient} />
-            </TabsContent>
+            {/* Lazy load tabs - only render the active tab */}
+            <div className={isTimeRangePending ? "opacity-50 pointer-events-none" : ""}>
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-4" forceMount={activeTab === "overview" ? true : undefined}>
+                {activeTab === "overview" && (
+                  <OverviewTab
+                    chartData={chartData}
+                    timeRange={timeRange}
+                    activeEmojiType={activeEmojiType}
+                    handleTypeChange={handleTypeChange}
+                    handleDateClick={handleDateClick}
+                    isClient={isClient}
+                    timeRangeOptions={timeRangeOptions}
+                  />
+                )}
+              </TabsContent>
 
-            {/* Creators & Community Tab */}
-            <TabsContent value="creators" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <CreatorsTab chartData={chartData} />
-            </TabsContent>
+              {/* Activity Patterns Tab */}
+              <TabsContent value="activity" className="space-y-4" forceMount={activeTab === "activity" ? true : undefined}>
+                {activeTab === "activity" && (
+                  <ActivityTab chartData={chartData} isClient={isClient} />
+                )}
+              </TabsContent>
 
-            {/* Content & Naming Tab */}
-            <TabsContent value="content" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <ContentTab chartData={chartData} handleNameLengthClick={handleNameLengthClick} />
-            </TabsContent>
+              {/* Creators & Community Tab */}
+              <TabsContent value="creators" className="space-y-4" forceMount={activeTab === "creators" ? true : undefined}>
+                {activeTab === "creators" && (
+                  <CreatorsTab chartData={chartData} />
+                )}
+              </TabsContent>
+
+              {/* Content & Naming Tab */}
+              <TabsContent value="content" className="space-y-4" forceMount={activeTab === "content" ? true : undefined}>
+                {activeTab === "content" && (
+                  <ContentTab chartData={chartData} handleNameLengthClick={handleNameLengthClick} />
+                )}
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
       </div>
