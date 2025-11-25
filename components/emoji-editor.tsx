@@ -15,16 +15,18 @@ import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { 
-  Sliders, 
-  Palette, 
-  Sparkles, 
+import {
+  Sliders,
+  Palette,
+  Sparkles,
   Image as ImageIcon,
   Loader2,
   RotateCcw,
   Download,
   Check,
-  Wand2
+  Wand2,
+  Undo2,
+  Redo2
 } from "lucide-react"
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
@@ -46,6 +48,61 @@ interface ImageAdjustments {
   sharpen: number
 }
 
+// Artistic filter presets
+type FilterPreset = "none" | "sepia" | "vintage" | "noir" | "vibrant" | "cool" | "warm" | "dramatic"
+
+interface FilterPresetConfig {
+  name: string
+  adjustments: Partial<ImageAdjustments>
+  colorMatrix?: number[]
+}
+
+const filterPresets: Record<FilterPreset, FilterPresetConfig> = {
+  none: { name: "None", adjustments: {} },
+  sepia: {
+    name: "Sepia",
+    adjustments: { saturation: 30 },
+    colorMatrix: [0.393, 0.769, 0.189, 0, 0, 0.349, 0.686, 0.168, 0, 0, 0.272, 0.534, 0.131, 0, 0, 0, 0, 0, 1, 0]
+  },
+  vintage: {
+    name: "Vintage",
+    adjustments: { brightness: 110, contrast: 90, saturation: 70 },
+    colorMatrix: [0.9, 0.1, 0, 0, 0.05, 0.1, 0.8, 0.1, 0, 0.02, 0.1, 0.1, 0.7, 0, 0.08, 0, 0, 0, 1, 0]
+  },
+  noir: {
+    name: "Noir",
+    adjustments: { saturation: 0, contrast: 130, brightness: 95 },
+    colorMatrix: [0.299, 0.587, 0.114, 0, 0, 0.299, 0.587, 0.114, 0, 0, 0.299, 0.587, 0.114, 0, 0, 0, 0, 0, 1, 0]
+  },
+  vibrant: {
+    name: "Vibrant",
+    adjustments: { saturation: 140, contrast: 115, brightness: 105 }
+  },
+  cool: {
+    name: "Cool",
+    adjustments: { saturation: 90 },
+    colorMatrix: [0.9, 0, 0.1, 0, 0, 0, 0.95, 0.05, 0, 0, 0.1, 0.1, 1.1, 0, 0.05, 0, 0, 0, 1, 0]
+  },
+  warm: {
+    name: "Warm",
+    adjustments: { saturation: 105 },
+    colorMatrix: [1.1, 0.1, 0, 0, 0.05, 0.05, 1.0, 0, 0, 0.02, 0, 0, 0.9, 0, 0, 0, 0, 0, 1, 0]
+  },
+  dramatic: {
+    name: "Dramatic",
+    adjustments: { contrast: 140, saturation: 120, brightness: 90 }
+  }
+}
+
+// History entry for undo/redo
+interface HistoryEntry {
+  adjustments: ImageAdjustments
+  removeBackground: boolean
+  makeHDR: boolean
+  hdrIntensity: number
+  activeFilter: FilterPreset
+}
+
 const defaultAdjustments: ImageAdjustments = {
   brightness: 100,
   contrast: 100,
@@ -55,20 +112,100 @@ const defaultAdjustments: ImageAdjustments = {
   sharpen: 0,
 }
 
+const MAX_HISTORY = 50
+
 export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps) {
   const [adjustments, setAdjustments] = useState<ImageAdjustments>(defaultAdjustments)
   const [removeBackground, setRemoveBackground] = useState(false)
   const [makeHDR, setMakeHDR] = useState(false)
   const [hdrIntensity, setHdrIntensity] = useState(50)
+  const [activeFilter, setActiveFilter] = useState<FilterPreset>("none")
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [editedBlob, setEditedBlob] = useState<Blob | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
-  
+
+  // Undo/Redo history
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
+  const isUndoingRef = useRef(false)
+
+  const canUndo = historyIndex > 0
+  const canRedo = historyIndex < history.length - 1
+
   const isGif = emoji?.format === "GIF" || emoji?.originalFile.type === "image/gif"
   const isVideo = emoji?.wasVideo === true
+
+  // Save current state to history
+  const saveToHistory = () => {
+    if (isUndoingRef.current) return
+
+    const entry: HistoryEntry = {
+      adjustments: { ...adjustments },
+      removeBackground,
+      makeHDR,
+      hdrIntensity,
+      activeFilter
+    }
+
+    setHistory(prev => {
+      // Remove any future history if we're not at the end
+      const newHistory = prev.slice(0, historyIndex + 1)
+      // Add new entry
+      newHistory.push(entry)
+      // Limit history size
+      if (newHistory.length > MAX_HISTORY) {
+        newHistory.shift()
+        return newHistory
+      }
+      return newHistory
+    })
+    setHistoryIndex(prev => Math.min(prev + 1, MAX_HISTORY - 1))
+  }
+
+  // Undo action
+  const handleUndo = () => {
+    if (!canUndo) return
+    isUndoingRef.current = true
+    const prevIndex = historyIndex - 1
+    const entry = history[prevIndex]
+    setAdjustments(entry.adjustments)
+    setRemoveBackground(entry.removeBackground)
+    setMakeHDR(entry.makeHDR)
+    setHdrIntensity(entry.hdrIntensity)
+    setActiveFilter(entry.activeFilter)
+    setHistoryIndex(prevIndex)
+    setTimeout(() => { isUndoingRef.current = false }, 100)
+  }
+
+  // Redo action
+  const handleRedo = () => {
+    if (!canRedo) return
+    isUndoingRef.current = true
+    const nextIndex = historyIndex + 1
+    const entry = history[nextIndex]
+    setAdjustments(entry.adjustments)
+    setRemoveBackground(entry.removeBackground)
+    setMakeHDR(entry.makeHDR)
+    setHdrIntensity(entry.hdrIntensity)
+    setActiveFilter(entry.activeFilter)
+    setHistoryIndex(nextIndex)
+    setTimeout(() => { isUndoingRef.current = false }, 100)
+  }
+
+  // Apply a filter preset
+  const applyFilterPreset = (preset: FilterPreset) => {
+    const config = filterPresets[preset]
+    setActiveFilter(preset)
+    if (preset !== "none") {
+      setAdjustments(prev => ({
+        ...defaultAdjustments,
+        ...config.adjustments
+      }))
+    }
+  }
 
   useEffect(() => {
     if (emoji && isOpen) {
@@ -76,12 +213,52 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       setAdjustments(defaultAdjustments)
       setRemoveBackground(false)
       setMakeHDR(false)
+      setActiveFilter("none")
+      // Reset history
+      setHistory([{
+        adjustments: defaultAdjustments,
+        removeBackground: false,
+        makeHDR: false,
+        hdrIntensity: 50,
+        activeFilter: "none"
+      }])
+      setHistoryIndex(0)
       // Small delay to ensure canvas elements are mounted
       setTimeout(() => {
         loadOriginalImage()
       }, 100)
     }
   }, [emoji, isOpen])
+
+  // Debounced history save when adjustments change
+  useEffect(() => {
+    if (!originalImageData || isUndoingRef.current) return
+    const timer = setTimeout(() => {
+      saveToHistory()
+    }, 500) // Save to history after 500ms of no changes
+    return () => clearTimeout(timer)
+  }, [adjustments, removeBackground, makeHDR, hdrIntensity, activeFilter])
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          handleRedo()
+        } else {
+          handleUndo()
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+        e.preventDefault()
+        handleRedo()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, canUndo, canRedo, history, historyIndex])
 
   const loadOriginalImage = async () => {
     if (!emoji || !canvasRef.current || !previewCanvasRef.current) return
@@ -376,6 +553,18 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
         g = Math.min(255, Math.max(0, newG))
       }
 
+      // Apply color matrix from filter preset
+      const filterConfig = filterPresets[activeFilter]
+      if (filterConfig.colorMatrix) {
+        const m = filterConfig.colorMatrix
+        const newR = m[0] * r + m[1] * g + m[2] * b + m[3] * a + m[4] * 255
+        const newG = m[5] * r + m[6] * g + m[7] * b + m[8] * a + m[9] * 255
+        const newB = m[10] * r + m[11] * g + m[12] * b + m[13] * a + m[14] * 255
+        r = Math.min(255, Math.max(0, newR))
+        g = Math.min(255, Math.max(0, newG))
+        b = Math.min(255, Math.max(0, newB))
+      }
+
       // Update pixel data
       data[i] = r
       data[i + 1] = g
@@ -450,13 +639,14 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     if (originalImageData) {
       applyAdjustments()
     }
-  }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData])
+  }, [adjustments, removeBackground, makeHDR, hdrIntensity, activeFilter, originalImageData])
 
   const handleReset = () => {
     setAdjustments(defaultAdjustments)
     setRemoveBackground(false)
     setMakeHDR(false)
     setHdrIntensity(50)
+    setActiveFilter("none")
   }
 
   const handleSave = async () => {
@@ -606,6 +796,24 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
               <Button
                 variant="outline"
                 size="sm"
+                onClick={handleUndo}
+                disabled={isProcessing || !canUndo}
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRedo}
+                disabled={isProcessing || !canRedo}
+                title="Redo (Ctrl+Shift+Z)"
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleReset}
                 disabled={isProcessing}
               >
@@ -613,6 +821,11 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                 Reset
               </Button>
             </div>
+            {history.length > 1 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                History: {historyIndex + 1}/{history.length}
+              </p>
+            )}
           </div>
 
           {/* Controls Section */}
@@ -698,35 +911,64 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
               </TabsContent>
 
               <TabsContent value="effects" className="space-y-4 mt-4">
-                <div className="space-y-3">
+                <div className="space-y-4">
+                  {/* Filter Presets */}
                   <div>
-                    <Label className="text-sm">Blur</Label>
-                    <Slider
-                      value={[adjustments.blur]}
-                      onValueChange={([value]) =>
-                        setAdjustments({ ...adjustments, blur: value })
-                      }
-                      min={0}
-                      max={10}
-                      step={0.5}
-                      className="mt-2"
-                      disabled={isGif || isProcessing}
-                    />
+                    <Label className="text-sm mb-2 block">Filter Presets</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(Object.keys(filterPresets) as FilterPreset[]).map((preset) => (
+                        <button
+                          key={preset}
+                          onClick={() => applyFilterPreset(preset)}
+                          disabled={isGif || isProcessing}
+                          className={`
+                            px-2 py-1.5 text-xs rounded-md border transition-all
+                            ${activeFilter === preset
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-muted/50 hover:bg-muted border-border hover:border-primary/50"
+                            }
+                            ${(isGif || isProcessing) ? "opacity-50 cursor-not-allowed" : ""}
+                          `}
+                        >
+                          {filterPresets[preset].name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div>
-                    <Label className="text-sm">Sharpen</Label>
-                    <Slider
-                      value={[adjustments.sharpen]}
-                      onValueChange={([value]) =>
-                        setAdjustments({ ...adjustments, sharpen: value })
-                      }
-                      min={0}
-                      max={100}
-                      step={1}
-                      className="mt-2"
-                      disabled={isGif || isProcessing}
-                    />
+                  <div className="border-t pt-4">
+                    <Label className="text-sm mb-2 block">Fine-tune Effects</Label>
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Blur</Label>
+                        <Slider
+                          value={[adjustments.blur]}
+                          onValueChange={([value]) =>
+                            setAdjustments({ ...adjustments, blur: value })
+                          }
+                          min={0}
+                          max={10}
+                          step={0.5}
+                          className="mt-2"
+                          disabled={isGif || isProcessing}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Sharpen</Label>
+                        <Slider
+                          value={[adjustments.sharpen]}
+                          onValueChange={([value]) =>
+                            setAdjustments({ ...adjustments, sharpen: value })
+                          }
+                          min={0}
+                          max={100}
+                          step={1}
+                          className="mt-2"
+                          disabled={isGif || isProcessing}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
