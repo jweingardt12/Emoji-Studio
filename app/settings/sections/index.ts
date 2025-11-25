@@ -1,0 +1,6 @@
+export { ConnectionSection } from './connection-section'
+export { NotificationsSection } from './notifications-section'
+export { PreferencesSection } from './preferences-section'
+export { PWASection } from './pwa-section'
+export { DataSection } from './data-section'
+export { ActionsSection } from './actions-section'
