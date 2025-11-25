@@ -78,6 +78,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     cursor="pointer"
                                     background={{ fill: 'transparent' }}
                                     minPointSize={5}
+                                    isAnimationActive={false}
                                 />
                             </BarChart>
                         </ChartContainer>
@@ -139,6 +140,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     stroke="#f59e0b"
                                     fill="url(#fillNameLength)"
                                     fillOpacity={1}
+                                    isAnimationActive={false}
                                 />
                             </AreaChart>
                         </ChartContainer>
@@ -228,6 +230,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     stroke="#00E396"
                                     fill="#00E396"
                                     fillOpacity={0.6}
+                                    isAnimationActive={false}
                                 />
                                 <Area
                                     type="monotone"
@@ -236,6 +239,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     stroke="#FF4560"
                                     fill="#FF4560"
                                     fillOpacity={0.6}
+                                    isAnimationActive={false}
                                 />
                             </AreaChart>
                         </ChartContainer>
@@ -296,6 +300,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     dataKey="count"
                                     layout="vertical"
                                     radius={4}
+                                    isAnimationActive={false}
                                 >
                                     {chartData.commonWords.slice(0, 10).map((entry: any, index: number) => (
                                         <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 8) + 1}))`} />

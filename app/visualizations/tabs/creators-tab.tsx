@@ -4,6 +4,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts"
 import { Users, Activity } from "lucide-react"
 
+// Module-level color palette to avoid recreation on each render
+const CHART_COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4']
+
 interface CreatorsTabProps {
     chartData: any
 }
@@ -30,10 +33,9 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                         <ChartContainer
                             config={{
                                 ...chartData.topCreatorNames.reduce((acc: Record<string, any>, name: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
                                     acc[name] = {
                                         label: name,
-                                        color: COLORS[index % COLORS.length],
+                                        color: CHART_COLORS[index % CHART_COLORS.length],
                                     };
                                     return acc;
                                 }, {}),
@@ -62,20 +64,18 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                                 <YAxis tickLine={false} axisLine={false} />
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <ChartLegend />
-                                {chartData.topCreatorNames.map((name: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
-                                    return (
-                                        <Area
-                                            key={name}
-                                            type="monotone"
-                                            dataKey={name}
-                                            stackId="1"
-                                            stroke={COLORS[index % COLORS.length]}
-                                            fill={COLORS[index % COLORS.length]}
-                                            fillOpacity={0.6}
-                                        />
-                                    )
-                                })}
+                                {chartData.topCreatorNames.map((name: string, index: number) => (
+                                    <Area
+                                        key={name}
+                                        type="monotone"
+                                        dataKey={name}
+                                        stackId="1"
+                                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                                        fillOpacity={0.6}
+                                        isAnimationActive={false}
+                                    />
+                                ))}
                             </AreaChart>
                         </ChartContainer>
                     </CardContent>
@@ -121,12 +121,14 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                                     stackId="creators"
                                     fill="#00E396"
                                     radius={[0, 0, 0, 0]}
+                                    isAnimationActive={false}
                                 />
                                 <Bar
                                     dataKey="returningCreators"
                                     stackId="creators"
                                     fill="#008FFB"
                                     radius={[4, 4, 0, 0]}
+                                    isAnimationActive={false}
                                 />
                             </BarChart>
                         </ChartContainer>
@@ -195,6 +197,7 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                                     dataKey="count"
                                     fill="#775DD0"
                                     radius={[4, 4, 0, 0]}
+                                    isAnimationActive={false}
                                 />
                             </BarChart>
                         </ChartContainer>
