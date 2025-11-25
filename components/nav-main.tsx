@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { triggerHaptic } from "@/lib/utils/animations"
 
 interface NavMainProps {
   items: {
@@ -32,7 +33,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
 
   return (
     <div className="grid gap-1 p-2">
-      {items.map((item) => {
+      {items.map((item, index) => {
         const Icon = item.icon
         const isActive = pathname === item.url
         const isRefresh = item.action === "refresh"
@@ -42,6 +43,9 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {
+          // Trigger haptic feedback on mobile
+          triggerHaptic("light")
+
           if (isDisabled) {
             e.preventDefault()
             return
@@ -58,7 +62,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             onNavigate?.(item)
             return
           }
-          
+
           // For internal navigation, don't prevent default - let Link handle it naturally
           // Just call onNavigate for tracking/sidebar closing
           if (!item.external) {
@@ -76,7 +80,10 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                "transition-all duration-150 ease-out",
+                "hover:bg-accent hover:text-accent-foreground hover:translate-x-0.5",
+                "active:scale-[0.98] active:bg-accent/80",
                 isDisabled && "pointer-events-none opacity-50",
               )}
             >
@@ -143,12 +150,20 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             onClick={handleClick}
             prefetch={true}
             className={cn(
-              "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+              "transition-all duration-150 ease-out",
+              "hover:bg-accent hover:text-accent-foreground hover:translate-x-0.5",
+              "active:scale-[0.98] active:bg-accent/80",
               isActive && "bg-accent text-accent-foreground",
               isDisabled && "pointer-events-none opacity-50",
             )}
             aria-current={isActive ? "page" : undefined}
+            style={{ animationDelay: `${index * 30}ms` }}
           >
+            {/* Active indicator bar */}
+            {isActive && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full transition-all duration-200" />
+            )}
             {linkContent}
           </Link>
         )
