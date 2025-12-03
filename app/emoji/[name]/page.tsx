@@ -97,13 +97,12 @@ export default function EmojiDetailPage() {
   }
 
   // Show skeleton while loading or still searching
-  if (loading || emoji === undefined || (!emoji && !searchComplete)) {
+  if (loading || emoji === undefined || !emoji) {
+    // Only show "not found" after search is complete
+    if (emoji === null && searchComplete) {
+      return <EmojiNotFound name={emojiName} />
+    }
     return <EmojiDetailSkeleton />
-  }
-
-  // Only show "not found" after search is complete
-  if (emoji === null && searchComplete) {
-    return <EmojiNotFound name={emojiName} />
   }
 
   return (
