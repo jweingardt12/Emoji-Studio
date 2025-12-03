@@ -18,14 +18,36 @@ export default function EmojiDetailPage() {
   const fromExtension = searchParams.get('from') === 'extension'
 
   const { emojiData, loading } = useEmojiData()
+  const [searchComplete, setSearchComplete] = useState(false)
 
-  // Find the emoji synchronously using useMemo to prevent flash of "not found"
+  // Find the emoji synchronously using useMemo
   const emoji = useMemo(() => {
-    if (loading || emojiData.length === 0) return undefined; // undefined = still searching
+    if (loading || emojiData.length === 0) return undefined;
     return emojiData.find(
       e => e.name.toLowerCase() === emojiName.toLowerCase()
-    ) || null; // null = searched but not found
+    ) || null;
   }, [emojiData, loading, emojiName])
+
+  // Delay showing "not found" to allow for data updates (especially from extension)
+  useEffect(() => {
+    if (loading) {
+      setSearchComplete(false)
+      return
+    }
+
+    // If emoji is found immediately, mark search complete
+    if (emoji) {
+      setSearchComplete(true)
+      return
+    }
+
+    // If not found, wait a moment for potential data updates before confirming "not found"
+    const timer = setTimeout(() => {
+      setSearchComplete(true)
+    }, fromExtension ? 1500 : 500) // Longer wait if from extension
+
+    return () => clearTimeout(timer)
+  }, [loading, emoji, fromExtension])
 
   // Find creator and their other emojis
   const { creator, creatorEmojis } = useMemo(() => {
@@ -74,12 +96,13 @@ export default function EmojiDetailPage() {
     })
   }
 
-  // undefined = still loading/searching, null = searched but not found
-  if (loading || emoji === undefined) {
+  // Show skeleton while loading or still searching
+  if (loading || emoji === undefined || (!emoji && !searchComplete)) {
     return <EmojiDetailSkeleton />
   }
 
-  if (emoji === null) {
+  // Only show "not found" after search is complete
+  if (emoji === null && searchComplete) {
     return <EmojiNotFound name={emojiName} />
   }
 
