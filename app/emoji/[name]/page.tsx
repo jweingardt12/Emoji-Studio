@@ -18,34 +18,30 @@ export default function EmojiDetailPage() {
   const fromExtension = searchParams.get('from') === 'extension'
 
   const { emojiData, loading } = useEmojiData()
-  const [emoji, setEmoji] = useState<Emoji | null>(null)
-  const [creator, setCreator] = useState<UserWithEmojiCount | null>(null)
-  const [creatorEmojis, setCreatorEmojis] = useState<Emoji[]>([])
 
-  // Find the emoji from data
-  useEffect(() => {
-    if (!loading && emojiData.length > 0) {
-      const found = emojiData.find(
-        e => e.name.toLowerCase() === emojiName.toLowerCase()
-      )
-      setEmoji(found || null)
-
-      if (found) {
-        // Find creator info
-        const leaderboard = getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000))
-        const creatorInfo = leaderboard.find(u => u.user_id === found.user_id)
-        setCreator(creatorInfo || null)
-
-        // Find other emojis by same creator
-        const otherEmojis = emojiData.filter(e =>
-          e.user_id === found.user_id &&
-          e.name !== found.name &&
-          !e.is_alias
-        ).slice(0, 12)
-        setCreatorEmojis(otherEmojis)
-      }
-    }
+  // Find the emoji synchronously using useMemo to prevent flash of "not found"
+  const emoji = useMemo(() => {
+    if (loading || emojiData.length === 0) return undefined; // undefined = still searching
+    return emojiData.find(
+      e => e.name.toLowerCase() === emojiName.toLowerCase()
+    ) || null; // null = searched but not found
   }, [emojiData, loading, emojiName])
+
+  // Find creator and their other emojis
+  const { creator, creatorEmojis } = useMemo(() => {
+    if (!emoji) return { creator: null, creatorEmojis: [] };
+
+    const leaderboard = getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000))
+    const creatorInfo = leaderboard.find(u => u.user_id === emoji.user_id) || null
+
+    const otherEmojis = emojiData.filter(e =>
+      e.user_id === emoji.user_id &&
+      e.name !== emoji.name &&
+      !e.is_alias
+    ).slice(0, 12)
+
+    return { creator: creatorInfo, creatorEmojis: otherEmojis }
+  }, [emoji, emojiData])
 
   const copyEmojiCode = () => {
     navigator.clipboard.writeText(`:${emojiName}:`)
@@ -78,11 +74,12 @@ export default function EmojiDetailPage() {
     })
   }
 
-  if (loading) {
+  // undefined = still loading/searching, null = searched but not found
+  if (loading || emoji === undefined) {
     return <EmojiDetailSkeleton />
   }
 
-  if (!emoji) {
+  if (emoji === null) {
     return <EmojiNotFound name={emojiName} />
   }
 
