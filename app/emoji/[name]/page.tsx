@@ -20,12 +20,11 @@ export default function EmojiDetailPage() {
   const { emojiData, loading } = useEmojiData()
 
   // Find the emoji - only search if we have data
-  const emoji = useMemo(() => {
-    if (loading) return undefined;
-    if (emojiData.length === 0) return null; // No data = can't find
+  const emoji = useMemo((): Emoji | null => {
+    if (loading || emojiData.length === 0) return null;
     return emojiData.find(
       e => e.name.toLowerCase() === emojiName.toLowerCase()
-    ) || null;
+    ) ?? null;
   }, [emojiData, loading, emojiName])
 
   // Find creator and their other emojis
