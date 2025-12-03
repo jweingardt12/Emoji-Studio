@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useSearchParams } from "next/navigation"
-import { useEffect, useState, useMemo } from "react"
+import { useMemo } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Emoji, getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
 import { ArrowLeft, Copy, Download, User, Calendar, Hash, ExternalLink } from "lucide-react"
@@ -18,36 +18,15 @@ export default function EmojiDetailPage() {
   const fromExtension = searchParams.get('from') === 'extension'
 
   const { emojiData, loading } = useEmojiData()
-  const [searchComplete, setSearchComplete] = useState(false)
 
-  // Find the emoji synchronously using useMemo
+  // Find the emoji - only search if we have data
   const emoji = useMemo(() => {
-    if (loading || emojiData.length === 0) return undefined;
+    if (loading) return undefined;
+    if (emojiData.length === 0) return null; // No data = can't find
     return emojiData.find(
       e => e.name.toLowerCase() === emojiName.toLowerCase()
     ) || null;
   }, [emojiData, loading, emojiName])
-
-  // Delay showing "not found" to allow for data updates (especially from extension)
-  useEffect(() => {
-    if (loading) {
-      setSearchComplete(false)
-      return
-    }
-
-    // If emoji is found immediately, mark search complete
-    if (emoji) {
-      setSearchComplete(true)
-      return
-    }
-
-    // If not found, wait a moment for potential data updates before confirming "not found"
-    const timer = setTimeout(() => {
-      setSearchComplete(true)
-    }, fromExtension ? 1500 : 500) // Longer wait if from extension
-
-    return () => clearTimeout(timer)
-  }, [loading, emoji, fromExtension])
 
   // Find creator and their other emojis
   const { creator, creatorEmojis } = useMemo(() => {
@@ -96,13 +75,14 @@ export default function EmojiDetailPage() {
     })
   }
 
-  // Show skeleton while loading or still searching
-  if (loading || emoji === undefined || !emoji) {
-    // Only show "not found" after search is complete
-    if (emoji === null && searchComplete) {
-      return <EmojiNotFound name={emojiName} />
-    }
+  // Show skeleton only while actively loading
+  if (loading) {
     return <EmojiDetailSkeleton />
+  }
+
+  // Not loading - either show emoji or "not found"
+  if (!emoji) {
+    return <EmojiNotFound name={emojiName} />
   }
 
   return (
