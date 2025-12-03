@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams, useSearchParams } from "next/navigation"
-import { useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Emoji, getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
 import { ArrowLeft, Copy, Download, User, Calendar, Hash, ExternalLink } from "lucide-react"
@@ -18,6 +18,19 @@ export default function EmojiDetailPage() {
   const fromExtension = searchParams.get('from') === 'extension'
 
   const { emojiData, loading } = useEmojiData()
+
+  // Track when initial data load is complete (with small delay for state propagation)
+  const [hasInitialized, setHasInitialized] = useState(false)
+
+  useEffect(() => {
+    if (!loading) {
+      // Small delay to ensure state has fully propagated before showing "Not Found"
+      const timer = setTimeout(() => setHasInitialized(true), 150)
+      return () => clearTimeout(timer)
+    } else {
+      setHasInitialized(false)
+    }
+  }, [loading])
 
   // Find the emoji - only search if we have data
   const emoji = useMemo((): Emoji | null => {
@@ -74,12 +87,12 @@ export default function EmojiDetailPage() {
     })
   }
 
-  // Show skeleton only while actively loading
-  if (loading) {
+  // Show skeleton while loading OR while waiting for state to fully propagate
+  if (loading || !hasInitialized) {
     return <EmojiDetailSkeleton />
   }
 
-  // Not loading - either show emoji or "not found"
+  // Loading complete - either show emoji or "not found"
   if (!emoji) {
     return <EmojiNotFound name={emojiName} />
   }
