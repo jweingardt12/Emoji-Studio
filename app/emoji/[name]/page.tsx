@@ -19,26 +19,28 @@ export default function EmojiDetailPage() {
 
   const { emojiData, loading } = useEmojiData()
 
-  // Track when initial data load is complete (with small delay for state propagation)
-  const [hasInitialized, setHasInitialized] = useState(false)
+  // Track timeout for empty data state (give time for data to propagate)
+  const [emptyDataTimeout, setEmptyDataTimeout] = useState(false)
 
   useEffect(() => {
-    if (!loading) {
-      // Small delay to ensure state has fully propagated before showing "Not Found"
-      const timer = setTimeout(() => setHasInitialized(true), 150)
+    // Only start timeout if loading is done but we have no data
+    if (!loading && emojiData.length === 0) {
+      const timer = setTimeout(() => setEmptyDataTimeout(true), 1000)
       return () => clearTimeout(timer)
-    } else {
-      setHasInitialized(false)
     }
-  }, [loading])
+    // Reset timeout flag when we get data
+    if (emojiData.length > 0) {
+      setEmptyDataTimeout(false)
+    }
+  }, [loading, emojiData.length])
 
   // Find the emoji - only search if we have data
   const emoji = useMemo((): Emoji | null => {
-    if (loading || emojiData.length === 0) return null;
+    if (emojiData.length === 0) return null;
     return emojiData.find(
       e => e.name.toLowerCase() === emojiName.toLowerCase()
     ) ?? null;
-  }, [emojiData, loading, emojiName])
+  }, [emojiData, emojiName])
 
   // Find creator and their other emojis
   const { creator, creatorEmojis } = useMemo(() => {
@@ -87,16 +89,62 @@ export default function EmojiDetailPage() {
     })
   }
 
-  // Show skeleton while loading OR while waiting for state to fully propagate
-  if (loading || !hasInitialized) {
+  // Show skeleton while loading
+  if (loading) {
     return <EmojiDetailSkeleton />
   }
 
-  // Loading complete - either show emoji or "not found"
-  if (!emoji) {
+  // Emoji found - show it immediately
+  if (emoji) {
+    return (
+      <EmojiDetailContent
+        emoji={emoji}
+        emojiName={emojiName}
+        creator={creator}
+        creatorEmojis={creatorEmojis}
+        fromExtension={fromExtension}
+        copyEmojiCode={copyEmojiCode}
+        downloadEmoji={downloadEmoji}
+        formatDate={formatDate}
+      />
+    )
+  }
+
+  // No emoji found - check if we have data to search through
+  if (emojiData.length > 0) {
+    // We have data but emoji doesn't exist in it
     return <EmojiNotFound name={emojiName} />
   }
 
+  // No data yet - show skeleton while waiting (unless timeout passed)
+  if (!emptyDataTimeout) {
+    return <EmojiDetailSkeleton />
+  }
+
+  // Timeout passed with no data - show "Not Found"
+  return <EmojiNotFound name={emojiName} />
+}
+
+// Extracted component to avoid duplication
+function EmojiDetailContent({
+  emoji,
+  emojiName,
+  creator,
+  creatorEmojis,
+  fromExtension,
+  copyEmojiCode,
+  downloadEmoji,
+  formatDate,
+}: {
+  emoji: Emoji
+  emojiName: string
+  creator: ReturnType<typeof getUserLeaderboard>[0] | null
+  creatorEmojis: Emoji[]
+  fromExtension: boolean
+  copyEmojiCode: () => void
+  downloadEmoji: () => void
+  formatDate: (timestamp: number) => string
+}) {
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
       {/* Back navigation */}
