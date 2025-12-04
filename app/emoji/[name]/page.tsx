@@ -197,7 +197,7 @@ function EmojiDetailContent({
                 )}
 
                 {/* Alias info */}
-                {emoji.is_alias && emoji.alias_for && (
+                {Boolean(emoji.is_alias) && emoji.alias_for && (
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <Hash className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Alias for</span>
