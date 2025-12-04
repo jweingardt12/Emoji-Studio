@@ -181,7 +181,11 @@ function EmojiDetailContent({
                     href={`/explorer?search=${encodeURIComponent(emoji.user_id)}`}
                     className="font-semibold hover:text-primary transition-colors"
                   >
-                    {emoji.user_display_name || 'Unknown'}
+                    {emoji.user_display_name
+                      ? emoji.user_display_name.split(' ').length > 1
+                        ? `${emoji.user_display_name.split(' ')[0]} ${emoji.user_display_name.split(' ').slice(-1)[0][0]}.`
+                        : emoji.user_display_name
+                      : 'Unknown'}
                   </Link>
                 </div>
 
