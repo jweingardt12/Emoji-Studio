@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,11 +12,12 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { QrScanDrawer } from "@/components/qr-scan-drawer"
 import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 
 export default function PairPage() {
   const router = useRouter()
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
+  const track = useTrack()
   const [scanOpen, setScanOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [processingPairing, setProcessingPairing] = useState(false)
@@ -30,7 +31,7 @@ export default function PairPage() {
     
     if (compressedData && !processingPairing) {
       setProcessingPairing(true)
-      openpanel.track("Mobile QR Pairing: Started", {
+      track("Mobile QR Pairing: Started", {
         source: "compressed_data"
       })
 
@@ -57,7 +58,7 @@ export default function PairPage() {
     } else if (encodedCurl && !processingPairing) {
       // Old format - direct base64 encoded curl
       setProcessingPairing(true)
-      openpanel.track("Mobile QR Pairing: Started", {
+      track("Mobile QR Pairing: Started", {
         source: "direct_curl"
       })
       
@@ -73,7 +74,7 @@ export default function PairPage() {
     } else if (sid && !processingPairing) {
       // Session-based format - try to claim it
       setProcessingPairing(true)
-      openpanel.track("Mobile QR Pairing: Started", {
+      track("Mobile QR Pairing: Started", {
         source: "session_id"
       })
       claimAndImport(sid)
@@ -136,7 +137,7 @@ export default function PairPage() {
       setWorkspace(parsed.workspace || "slack-workspace")
       
       // Track successful import
-      openpanel.track("Mobile QR Pairing: Import Success", {
+      track("Mobile QR Pairing: Import Success", {
         workspace: parsed.workspace || "unknown",
         emojiCount: emojis.length
       })
@@ -144,7 +145,7 @@ export default function PairPage() {
       // Don't show toast here - the dashboard will handle showing sync status
       router.replace("/dashboard")
     } catch (e: any) {
-      openpanel.track("Mobile QR Pairing: Import Failed", {
+      track("Mobile QR Pairing: Import Failed", {
         error: e.message || "Unknown error"
       })
       toast.error(e.message || "Failed to import curl")
@@ -186,7 +187,7 @@ export default function PairPage() {
           successfulClaim = true
           setHasImported(true) // Set immediately to prevent duplicate processing
           
-          openpanel.track("Mobile QR Pairing: Claim Success", {
+          track("Mobile QR Pairing: Claim Success", {
             sessionId: sid,
             retry: true
           })
@@ -199,14 +200,14 @@ export default function PairPage() {
       successfulClaim = true
       setHasImported(true) // Set immediately to prevent duplicate processing
       
-      openpanel.track("Mobile QR Pairing: Claim Success", {
+      track("Mobile QR Pairing: Claim Success", {
         sessionId: sid
       })
       
       await handleCurlImport(data.curl)
     } catch (err: any) {
       if (!hasImported && !successfulClaim) {
-        openpanel.track("Mobile QR Pairing: Claim Failed", {
+        track("Mobile QR Pairing: Claim Failed", {
           sessionId: sid,
           error: err.message || "Unknown error"
         })
@@ -223,7 +224,7 @@ export default function PairPage() {
       const sid = url.searchParams.get("sid") // Fallback for old QR codes
       
       if (encodedCurl) {
-        openpanel.track("Mobile QR Pairing: QR Scanned", {
+        track("Mobile QR Pairing: QR Scanned", {
           type: "direct_curl"
         })
         
@@ -238,7 +239,7 @@ export default function PairPage() {
         }
         return
       } else if (sid) {
-        openpanel.track("Mobile QR Pairing: QR Scanned", {
+        track("Mobile QR Pairing: QR Scanned", {
           type: "session_id"
         })
         setScanOpen(false) // Close scanner
@@ -246,13 +247,13 @@ export default function PairPage() {
         return
       }
       
-      openpanel.track("Mobile QR Pairing: Invalid QR", {
+      track("Mobile QR Pairing: Invalid QR", {
         reason: "no_data"
       })
       toast.error("QR does not contain pairing data")
     } catch {
       if (/^[A-Za-z0-9_-]+$/.test(text)) {
-        openpanel.track("Mobile QR Pairing: QR Scanned", {
+        track("Mobile QR Pairing: QR Scanned", {
           type: "encrypted_code"
         })
         setScanOpen(false)
@@ -260,7 +261,7 @@ export default function PairPage() {
         return
       }
 
-      openpanel.track("Mobile QR Pairing: Invalid QR", {
+      track("Mobile QR Pairing: Invalid QR", {
         reason: "invalid_content"
       })
       toast.error("Invalid QR content")
@@ -300,7 +301,7 @@ export default function PairPage() {
         <CardContent>
           <div className="flex flex-col gap-3 mb-4">
             <Button variant="outline" onClick={() => {
-              openpanel.track("Mobile QR Pairing: Open Scanner", {})
+              track("Mobile QR Pairing: Open Scanner", {})
               setScanOpen(true)
             }}>
               Pair to Desktop (Scan QR)

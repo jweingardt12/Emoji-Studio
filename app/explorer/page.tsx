@@ -21,7 +21,7 @@ const format = (date: Date | number, formatStr: string) => {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 import { useAnalytics } from "@/lib/analytics"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
 import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
@@ -32,9 +32,10 @@ function ExplorerPage() {
   // Add client-side only rendering to avoid hydration mismatches
   const [isClient, setIsClient] = useState(false);
   const isMobile = useIsMobile();
-  
+
   const { emojiData, loading } = useEmojiData();
   const analytics = useAnalytics();
+  const track = useTrack();
 
   // State for filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +81,7 @@ function ExplorerPage() {
           setSinceFilter(timestamp);
           setShowNewBadge(true);
           analytics.trackEmojiFilter('since_date', timestamp.toString());
-          openpanel.track('Explorer: Opened From Notification', { timestamp });
+          track('Explorer: Opened From Notification', { timestamp });
         }
       }
     }
@@ -508,7 +509,7 @@ function ExplorerPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      openpanel.track('Explorer: Clear Date Filter');
+                      track('Explorer: Clear Date Filter');
                       setSinceFilter(null);
                       setShowNewBadge(false);
                       // Remove since param from URL

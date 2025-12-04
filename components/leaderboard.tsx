@@ -427,8 +427,8 @@ const Leaderboard = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedLeaderboard.map((user) => {
-                
+              {paginatedLeaderboard.map((user, mapIndex) => {
+
                 const ts = user.most_recent_emoji_timestamp
                 // Use client-calculated now/oneYearAgo for hydration safety
                 const lastDate = ts ? new Date(ts > 1e12 ? ts : ts * 1000) : null
@@ -441,12 +441,20 @@ const Leaderboard = ({
                       ? nameParts[0]
                       : `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`
                 }
-                
+
                 // Calculate position based on the appropriate leaderboard
                 // When showing inactive users, use the original sorted leaderboard
                 // When hiding inactive users, use the filtered leaderboard for ranking
                 const rankingList = showInactiveUsers ? sortedLeaderboard : filteredByActivityLeaderboard
-                const userIndex = rankingList.findIndex(u => u.user_id === user.user_id)
+                let userIndex = rankingList.findIndex(u => u.user_id === user.user_id)
+
+                // Fallback: if user not found in ranking list (can happen due to async state updates),
+                // compute the index from pagination position
+                if (userIndex < 0) {
+                  userIndex = variant === "compact"
+                    ? mapIndex
+                    : (currentPage - 1) * itemsPerPage + mapIndex
+                }
                 return (
                   <TableRow
                     key={user.user_id}

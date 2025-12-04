@@ -11,7 +11,7 @@ import { useEffect, useState, useRef } from "react"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
@@ -355,6 +355,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
 export default function SettingsPage() {
   const pathname = usePathname()
   const isMobile = useIsMobile()
+  const track = useTrack()
   const [showPWAWelcome, setShowPWAWelcome] = useState(false)
   
   // Check if it's a first-time PWA user
@@ -429,7 +430,7 @@ export default function SettingsPage() {
   const handleSectionChange = (section: SettingsSection) => {
     setActiveSection(section);
     window.history.replaceState(null, '', `#${section}`);
-    openpanel.track('Settings: Navigate Section', { section });
+    track('Settings: Navigate Section', { section });
   };
   
   // Load notification settings from localStorage
@@ -473,7 +474,7 @@ export default function SettingsPage() {
     }
     
     toast.success('Notification settings saved!');
-    openpanel.track('Settings: Update Notifications', settings);
+    track('Settings: Update Notifications', settings);
   }, [notificationsEnabled, notificationFrequency, notificationTime, hasExtension]);
   
   // Check notification permission status
@@ -579,7 +580,7 @@ export default function SettingsPage() {
       if (hasMountedRef.current) {
         if (previousThresholdRef.current !== inactivityThresholdMonths) {
           toast.success("Inactive user threshold saved!");
-          openpanel.track("Settings: Change Inactivity Threshold", { months: inactivityThresholdMonths });
+          track("Settings: Change Inactivity Threshold", { months: inactivityThresholdMonths });
         }
       } else {
         hasMountedRef.current = true;
@@ -1266,13 +1267,13 @@ export default function SettingsPage() {
                         id="notifications-enabled"
                         checked={notificationsEnabled}
                         onCheckedChange={async (checked) => {
-                          openpanel.track('Settings: Notification Toggle', { enabled: checked });
+                          track('Settings: Notification Toggle', { enabled: checked });
                           
                           if (checked && permissionStatus !== 'granted') {
                             if ('Notification' in window) {
                               const permission = await Notification.requestPermission();
                               setPermissionStatus(permission);
-                              openpanel.track('Settings: Notification Permission Request', { result: permission });
+                              track('Settings: Notification Permission Request', { result: permission });
                               
                               if (permission !== 'granted') {
                                 toast.error('Notification permission denied. Please enable notifications in your browser settings.');
@@ -1389,17 +1390,17 @@ export default function SettingsPage() {
                           size="sm"
                           onClick={async () => {
                             console.log('[Sample Notification] Button clicked');
-                            openpanel.track('Settings: Sample Notification Clicked');
+                            track('Settings: Sample Notification Clicked');
                             
                             if (!('Notification' in window)) {
                               toast.error('Notifications are not supported in this browser');
-                              openpanel.track('Settings: Sample Notification Failed', { reason: 'not_supported' });
+                              track('Settings: Sample Notification Failed', { reason: 'not_supported' });
                               return;
                             }
                             
                             if (Notification.permission !== 'granted') {
                               toast.error('Please enable notifications first');
-                              openpanel.track('Settings: Sample Notification Failed', { reason: 'permission_denied' });
+                              track('Settings: Sample Notification Failed', { reason: 'permission_denied' });
                               return;
                             }
                             
@@ -1422,7 +1423,7 @@ export default function SettingsPage() {
                               });
                               
                               notification.onclick = () => {
-                                openpanel.track('Settings: Sample Notification Clicked Through');
+                                track('Settings: Sample Notification Clicked Through');
                                 // Navigate to explorer with a sample date filter
                                 const sinceTimestamp = Math.floor(Date.now() / 1000 - 86400); // 24 hours ago
                                 window.location.href = `/explorer?since=${sinceTimestamp}`;
@@ -1431,11 +1432,11 @@ export default function SettingsPage() {
                               
                               toast.success('Sample notification sent! This is what you\'ll see when new emojis are found.');
                               console.log('[Sample Notification] Created successfully');
-                              openpanel.track('Settings: Sample Notification Sent', { emojiCount: randomCount });
+                              track('Settings: Sample Notification Sent', { emojiCount: randomCount });
                             } catch (error) {
                               console.error('[Sample Notification] Failed:', error);
                               toast.error('Failed to send sample notification');
-                              openpanel.track('Settings: Sample Notification Error', { error: String(error) });
+                              track('Settings: Sample Notification Error', { error: String(error) });
                             }
                           }}
                         >

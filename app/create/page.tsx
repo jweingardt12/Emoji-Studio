@@ -20,7 +20,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { useToast } from "@/components/ui/use-toast"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import Marquee from "@/components/ui/marquee"
 import { cn } from "@/lib/utils"
@@ -67,6 +67,7 @@ const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
 function EmojiCreatorPage() {
   const { loading, emojiData } = useEmojiData()
   const isMobile = useIsMobile()
+  const track = useTrack()
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [processedEmojis, setProcessedEmojis] = useState<ProcessedEmoji[]>([])
   const [processingFiles, setProcessingFiles] = useState<File[]>([])
@@ -135,7 +136,7 @@ function EmojiCreatorPage() {
   const updateCartOpen = useCallback(
     (open: boolean, source: 'toolbar' | 'sheet' | 'sheet-action') => {
       setIsCartOpen(open)
-      openpanel.track(
+      track(
         open ? 'Emoji Creator: Selection Drawer Opened' : 'Emoji Creator: Selection Drawer Closed',
         {
           source,
@@ -275,7 +276,7 @@ function EmojiCreatorPage() {
               setProcessingFiles(files);
               
               // Track the cart sync event
-              openpanel.track('chrome_extension_cart_synced', {
+              track('chrome_extension_cart_synced', {
                 emojiCount: files.length,
                 workspace: cartData.workspace || 'unknown',
                 source: 'extension-cart'
@@ -308,7 +309,7 @@ function EmojiCreatorPage() {
         console.log('[Create Page] Emoji name:', emojiName)
         
         // Track the event
-        openpanel.track("chrome_extension_emoji_received", { 
+        track("chrome_extension_emoji_received", { 
           emojiName: emojiName || 'unnamed',
           isHDR: isHDR || false,
           source: 'chrome-extension-direct'
@@ -440,7 +441,7 @@ function EmojiCreatorPage() {
             variant: "destructive",
           })
           
-          openpanel.track("Emoji Creator: Extension Image Load Failed", { 
+          track("Emoji Creator: Extension Image Load Failed", { 
             imageUrl: imageUrl,
             error: error instanceof Error ? error.message : 'Unknown error'
           })
@@ -524,7 +525,7 @@ function EmojiCreatorPage() {
     if (files.length > 0) {
       setSelectedFiles(prev => [...prev, ...files])
       setShowUploadOverlay(true) // Open overlay when files are dropped
-      openpanel.track("Emoji Creator: Files Dropped", {
+      track("Emoji Creator: Files Dropped", {
         fileCount: files.length,
         fileTypes: files.map(f => f.type)
       })
@@ -535,7 +536,7 @@ function EmojiCreatorPage() {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) {
       setSelectedFiles(prev => [...prev, ...files])
-      openpanel.track("Emoji Creator: Files Selected", { 
+      track("Emoji Creator: Files Selected", { 
         fileCount: files.length,
         fileTypes: files.map(f => f.type)
       })
@@ -553,7 +554,7 @@ function EmojiCreatorPage() {
       }
     }
 
-    openpanel.track("Emoji Creator: Processing Started", { 
+    track("Emoji Creator: Processing Started", { 
       fileCount: files.length,
       fileTypes: files.map(f => f.type),
       totalSize: files.reduce((sum, f) => sum + f.size, 0)
@@ -675,7 +676,7 @@ function EmojiCreatorPage() {
         newProcessedEmojis.push(processed)
         setCurrentStep('completed')
         
-        openpanel.track("Emoji Creator: File Processed Successfully", { 
+        track("Emoji Creator: File Processed Successfully", { 
           fileName: file.name,
           fileType: file.type,
           originalSize: file.size,
@@ -688,7 +689,7 @@ function EmojiCreatorPage() {
         setProcessingError(error instanceof Error ? error.message : 'Unknown error')
         setCurrentStep('error')
         
-        openpanel.track("Emoji Creator: Processing Error", { 
+        track("Emoji Creator: Processing Error", { 
           fileName: file.name,
           fileType: file.type,
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -707,7 +708,7 @@ function EmojiCreatorPage() {
     
     // Track completion if emojis were processed successfully
     if (newProcessedEmojis.length > 0) {
-      openpanel.track("Emoji Creator: Batch Processing Completed", { 
+      track("Emoji Creator: Batch Processing Completed", { 
         totalFiles: files.length,
         successfulFiles: newProcessedEmojis.length,
         failedFiles: files.length - newProcessedEmojis.length,
@@ -722,7 +723,7 @@ function EmojiCreatorPage() {
 
   const handleDownloadEmoji = async (emoji: ProcessedEmoji) => {
     await EmojiProcessor.downloadEmoji(emoji)
-    openpanel.track("Emoji Creator: Single Emoji Downloaded", { 
+    track("Emoji Creator: Single Emoji Downloaded", { 
       emojiName: emoji.name,
       format: emoji.format,
       size: emoji.processedSize
@@ -731,7 +732,7 @@ function EmojiCreatorPage() {
 
   const handleDownloadAll = async () => {
     await EmojiProcessor.downloadAllEmojis(processedEmojis)
-    openpanel.track("Emoji Creator: All Emojis Downloaded", { 
+    track("Emoji Creator: All Emojis Downloaded", { 
       emojiCount: processedEmojis.length,
       totalSize: processedEmojis.reduce((sum, e) => sum + e.processedSize, 0),
       formats: [...new Set(processedEmojis.map(e => e.format))]
@@ -744,7 +745,7 @@ function EmojiCreatorPage() {
       setProcessedEmojis(prev => prev.map((emoji, i) => 
         i === index ? { ...emoji, name: newName } : emoji
       ))
-      openpanel.track("Emoji Creator: Emoji Name Updated", { 
+      track("Emoji Creator: Emoji Name Updated", { 
         oldName: emoji.name,
         newName: newName,
         format: emoji.format
@@ -756,7 +757,7 @@ function EmojiCreatorPage() {
   const handleEditEmoji = (emoji: ProcessedEmoji, index: number) => {
     setEditingEmoji(emoji)
     setEditingEmojiIndex(index)
-    openpanel.track("Emoji Creator: Edit Started", { 
+    track("Emoji Creator: Edit Started", { 
       emojiName: emoji.name,
       format: emoji.format,
       isGif: emoji.format === "GIF",
@@ -773,7 +774,7 @@ function EmojiCreatorPage() {
     // Close the processing modal temporarily
     setIsProcessing(false)
     
-    openpanel.track("Emoji Creator: GIF Frame Edit Started", { 
+    track("Emoji Creator: GIF Frame Edit Started", { 
       emojiName: emoji.name,
       originalSize: emoji.originalSize,
       processedSize: emoji.processedSize,
@@ -786,7 +787,7 @@ function EmojiCreatorPage() {
       setProcessedEmojis(prev => prev.map((emoji, i) => 
         i === editingEmojiIndex ? editedEmoji : emoji
       ))
-      openpanel.track("Emoji Creator: Edit Saved", { 
+      track("Emoji Creator: Edit Saved", { 
         emojiName: editedEmoji.name,
         format: editedEmoji.format,
         originalSize: editedEmoji.originalSize,
@@ -935,7 +936,7 @@ function EmojiCreatorPage() {
     setShowGifEditor(false)
     
     
-    openpanel.track("Emoji Creator: GIF Frame Editor Export", {
+    track("Emoji Creator: GIF Frame Editor Export", {
       originalSize: originalFile.size,
       processedSize: blob.size,
       selectedFrames: selectedFrames.length,
@@ -966,7 +967,7 @@ function EmojiCreatorPage() {
         }
       }
       setSelectedFiles(prev => prev.filter((_, i) => i !== index))
-      openpanel.track("Emoji Creator: File Removed", {
+      track("Emoji Creator: File Removed", {
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size
@@ -1014,7 +1015,7 @@ function EmojiCreatorPage() {
 
     if (trimmed === "") {
       if (lastTrackedSearchQuery.current !== "") {
-        openpanel.track('Emoji Creator: Pack Search Cleared', {
+        track('Emoji Creator: Pack Search Cleared', {
           previousQuery: lastTrackedSearchQuery.current,
         })
         lastTrackedSearchQuery.current = ""
@@ -1024,7 +1025,7 @@ function EmojiCreatorPage() {
 
     const handler = window.setTimeout(() => {
       if (trimmed !== lastTrackedSearchQuery.current) {
-        openpanel.track('Emoji Creator: Pack Search', {
+        track('Emoji Creator: Pack Search', {
           query: trimmed,
           length: trimmed.length,
         })
@@ -1109,7 +1110,7 @@ function EmojiCreatorPage() {
                           onClick={() => {
                             const nextView = packBrowser.viewMode === "grid" ? "list" : "grid"
                             packBrowser.setViewMode(nextView)
-                            openpanel.track('Emoji Creator: Pack View Changed', {
+                            track('Emoji Creator: Pack View Changed', {
                               view: nextView,
                             })
                           }}
@@ -1144,7 +1145,7 @@ function EmojiCreatorPage() {
                         selectedTab={packBrowser.selectedTab}
                         onSelectTab={(tab) => {
                           packBrowser.setSelectedTab(tab)
-                          openpanel.track('Emoji Creator: Pack Tab Selected', {
+                          track('Emoji Creator: Pack Tab Selected', {
                             tab,
                           })
                         }}
@@ -1180,7 +1181,7 @@ function EmojiCreatorPage() {
                     onRemove={(emoji) => {
                       const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
                       packBrowser.removeFromSelection(emoji)
-                      openpanel.track('Emoji Creator: Selection Item Removed', {
+                      track('Emoji Creator: Selection Item Removed', {
                         id: emoji.id,
                         name: emoji.name,
                         remainingCount,
@@ -1191,7 +1192,7 @@ function EmojiCreatorPage() {
                       setDownloadProgress(null)
                       setUploadProgress(null)
                       packBrowser.clearSelection()
-                      openpanel.track('Emoji Creator: Selection Cleared', {
+                      track('Emoji Creator: Selection Cleared', {
                         previousCount,
                       })
                     }}
@@ -1420,7 +1421,7 @@ function EmojiCreatorPage() {
                         onRemove={(emoji) => {
                           const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
                           packBrowser.removeFromSelection(emoji)
-                          openpanel.track('Emoji Creator: Selection Item Removed', {
+                          track('Emoji Creator: Selection Item Removed', {
                             id: emoji.id,
                             name: emoji.name,
                             remainingCount,
@@ -1431,7 +1432,7 @@ function EmojiCreatorPage() {
                           setDownloadProgress(null)
                           setUploadProgress(null)
                           packBrowser.clearSelection()
-                          openpanel.track('Emoji Creator: Selection Cleared', {
+                          track('Emoji Creator: Selection Cleared', {
                             previousCount,
                           })
                         }}
@@ -1852,7 +1853,7 @@ function EmojiCreatorPage() {
                         const fileCount = selectedFiles.length
                         const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
                         setSelectedFiles([])
-                        openpanel.track("Emoji Creator: All Files Cleared", {
+                        track("Emoji Creator: All Files Cleared", {
                           fileCount: fileCount,
                           totalSize: totalSize
                         })
