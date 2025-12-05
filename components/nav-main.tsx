@@ -38,7 +38,8 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         const isRefresh = item.action === "refresh"
         const isFeedback = item.action === "feedback"
         const isSettings = item.url === "/settings"
-        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !item.external && !isFeedback)
+        const isWrapped = item.url === "/wrapped"
+        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !isWrapped && !item.external && !isFeedback)
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {

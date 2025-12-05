@@ -18,6 +18,7 @@ import {
   UserCircle,
   MessageSquareIcon,
   Smartphone,
+  Gift,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -674,6 +675,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "My Emojis",
       url: "/my-emojis",
       icon: UserCircle,
+    },
+    {
+      title: "Wrapped",
+      url: "/wrapped",
+      icon: Gift,
+      badge: "NEW",
     },
     {
       title: "Settings",

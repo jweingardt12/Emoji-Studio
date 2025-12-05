@@ -12,7 +12,10 @@ import { Switch } from "@/components/ui/switch"
 import { useTrack } from "@/lib/hooks/use-track"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Share2 } from "lucide-react"
+import { LeaderboardShareModal } from "@/components/leaderboard-share-modal"
 
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
@@ -56,6 +59,7 @@ function LeaderboardPage() {
 
   const [showInactiveUsers, setShowInactiveUsersState] = useState<boolean>(true)
   const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(3)
+  const [showShareModal, setShowShareModal] = useState(false)
 
   useEffect(() => {
     setNow(new Date());
@@ -79,8 +83,14 @@ function LeaderboardPage() {
     } else if (dateRange === "quarter") {
       const start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
       filteredEmojis = filterByDateRange(start, now);
+    } else if (dateRange === "thisyear") {
+      const start = new Date(now.getFullYear(), 0, 1); // January 1st of current year
+      filteredEmojis = filterByDateRange(start, now);
+    } else if (dateRange === "year") {
+      const start = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      filteredEmojis = filterByDateRange(start, now);
     }
-    
+
     let leaderboardData = getUserLeaderboard(filteredEmojis, Math.floor(now.getTime() / 1000));
 
     if (!showInactiveUsers) {
@@ -107,6 +117,11 @@ function LeaderboardPage() {
     setShowInactiveUsersState(value);
     track("Leaderboard: Toggle Show Inactive Users", { active: value });
   };
+
+  // Get workspace name from localStorage
+  const workspaceName = typeof window !== 'undefined'
+    ? localStorage.getItem("workspace") || "Workspace"
+    : "Workspace";
 
   if (!isClient || !now) return null;
   
@@ -166,7 +181,20 @@ function LeaderboardPage() {
               <h1 className="text-2xl font-bold tracking-tight">
                 Leaderboard
               </h1>
-              <RefreshButton />
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowShareModal(true)}
+                  className="h-10 px-4 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                  disabled={filteredLeaderboard.length === 0}
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="font-semibold">Share</span>
+                  <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full leading-none">
+                    NEW
+                  </span>
+                </Button>
+                <RefreshButton />
+              </div>
             </div>
             <Leaderboard
               leaderboard={filteredLeaderboard}
@@ -183,9 +211,22 @@ function LeaderboardPage() {
         ) : (
           // Desktop: With card wrapper
           <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 sm:mb-4">
-              Leaderboard
-            </h2>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                Leaderboard
+              </h2>
+              <Button
+                onClick={() => setShowShareModal(true)}
+                className="h-10 px-5 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                disabled={filteredLeaderboard.length === 0}
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="font-semibold">Share</span>
+                <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[10px] font-bold bg-primary text-primary-foreground rounded-full leading-none">
+                  NEW
+                </span>
+              </Button>
+            </div>
             <Leaderboard
               leaderboard={filteredLeaderboard}
               isLoading={loading}
@@ -207,6 +248,15 @@ function LeaderboardPage() {
           onClose={() => setSelectedUser(null)}
         />
       )}
+
+      <LeaderboardShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        users={filteredLeaderboard}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        workspaceName={workspaceName}
+      />
     </div>
   )
 }
