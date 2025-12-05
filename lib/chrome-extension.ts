@@ -58,17 +58,37 @@ export function initializeExtensionListener(
   console.log('[Emoji Studio] Initializing extension listener');
   console.log('[Emoji Studio] Window location:', window.location.href);
   
-  // Log all messages for debugging
+  // Log messages for debugging (filter out noise)
   window.addEventListener('message', (event) => {
-    console.log('[Emoji Studio] Received window message:', event.data);
-    console.log('[Emoji Studio] Message origin:', event.origin);
-    console.log('[Emoji Studio] Message type:', event.data?.type);
-    
+    // Only log messages that look like they're from our extension
+    const messageType = event.data?.type;
+    if (messageType && (
+      messageType.includes('EMOJI_STUDIO') ||
+      messageType.includes('SLACK') ||
+      messageType === 'REQUEST_EXTENSION_DATA' ||
+      messageType === 'REQUEST_EXTENSION_SYNC_DATA'
+    )) {
+      console.log('[Emoji Studio] Received window message:', {
+        type: messageType,
+        origin: event.origin,
+        hasData: !!event.data.data,
+        hasMeta: !!event.data.meta,
+        source: event.data.source
+      });
+    }
+
     // Handle synced data from extension (new background sync)
     if (event.data.type === 'EMOJI_STUDIO_SYNCED_DATA') {
       console.log('[Emoji Studio] Received EMOJI_STUDIO_SYNCED_DATA message');
       if (event.data.data && event.data.meta) {
-        console.log('[Emoji Studio] Synced data:', event.data.data);
+        console.log('[Emoji Studio] Synced data summary:', {
+          workspace: event.data.data.workspace,
+          emojiCount: event.data.data.emojiCount,
+          hasToken: !!event.data.data.token,
+          hasCookie: !!event.data.data.cookie,
+          lastSyncTime: event.data.data.lastSyncTime,
+          source: event.data.source
+        });
         console.log('[Emoji Studio] Sync metadata:', event.data.meta);
         
         // Prevent processing the same sync data multiple times within 5 seconds

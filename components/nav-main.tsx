@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { AuroraText } from "@/components/ui/aurora-text"
 
 interface NavMainProps {
   items: {
@@ -137,6 +138,25 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
           </>
         )
 
+        // Special content for Wrapped link with aurora effect
+        const wrappedLinkContent = (
+          <>
+            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <AuroraText
+              className="text-sm font-medium"
+              colors={["#f97316", "#eab308", "#ef4444", "#f97316"]}
+              speed={1.5}
+            >
+              {item.title}
+            </AuroraText>
+            {item.badge && (
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )
+
         const link = (
           <Link
             key={item.title}
@@ -150,7 +170,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             )}
             aria-current={isActive ? "page" : undefined}
           >
-            {linkContent}
+            {isWrapped && !isActive ? wrappedLinkContent : linkContent}
           </Link>
         )
 
