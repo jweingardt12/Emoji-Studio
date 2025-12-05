@@ -511,6 +511,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmojiCode}>
                               <Link className="h-3 w-3" />
+                              <span className="sr-only">Copy emoji code</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -580,27 +581,27 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
   const overlayContent = (
     <TooltipProvider>
       <div
-        className={`fixed inset-0 z-[9999] transition-all duration-300 ${
-          isMobile 
-            ? "" 
+        className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out ${
+          isMobile
+            ? ""
             : "bg-black/50 backdrop-blur-sm flex items-center justify-center p-2"
         } ${isVisible ? "opacity-100" : "opacity-0"}`}
         onClick={isMobile ? undefined : handleClose}
       >
         {/* Backdrop for mobile */}
         {isMobile && (
-          <div 
-            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+          <div
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             onClick={handleClose}
           />
         )}
-        
+
         <div
-          className={`bg-card border border-border shadow-lg w-full overflow-auto transition-all duration-300 ${
-            isMobile 
-              ? "absolute bottom-0 left-0 right-0 h-[85vh] rounded-t-xl" 
+          className={`bg-card border border-border shadow-lg w-full overflow-auto transition-all duration-300 ease-out ${
+            isMobile
+              ? "absolute bottom-0 left-0 right-0 h-[85vh] rounded-t-xl"
               : "rounded-xl max-w-5xl max-h-[70vh]"
           } ${
             isMobile
@@ -646,6 +647,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleClose} className="absolute top-3 right-3 z-10">
                   <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
                 </Button>
               </>
             )}
@@ -714,6 +716,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmojiCode}>
                               <Link className="h-3 w-3" />
+                              <span className="sr-only">Copy emoji code</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>

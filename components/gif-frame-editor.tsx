@@ -533,6 +533,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
               disabled={currentFrame === 0}
             >
               <SkipBack className="h-4 w-4" />
+              <span className="sr-only">Previous frame</span>
             </Button>
             <Button
               size="icon"
@@ -541,6 +542,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
               onClick={previewPlaying ? stopPreview : startPreview}
             >
               {previewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              <span className="sr-only">{previewPlaying ? 'Pause preview' : 'Play preview'}</span>
             </Button>
             <Button
               size="icon"
@@ -554,12 +556,13 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
               disabled={currentFrame === frames.length - 1}
             >
               <SkipForward className="h-4 w-4" />
+              <span className="sr-only">Next frame</span>
             </Button>
             <span className="text-sm text-muted-foreground ml-2">
               Frame {currentFrame + 1} / {frames.length}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
               size="icon"
@@ -569,6 +572,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
               disabled={timelineZoom <= 0.5}
             >
               <ZoomOut className="h-4 w-4" />
+              <span className="sr-only">Zoom out timeline</span>
             </Button>
             <span className="text-sm text-muted-foreground w-12 text-center">
               {Math.round(timelineZoom * 100)}%
@@ -581,6 +585,7 @@ export function GifFrameEditor({ file, isOpen, onClose, onExport }: GifFrameEdit
               disabled={timelineZoom >= 4}
             >
               <ZoomIn className="h-4 w-4" />
+              <span className="sr-only">Zoom in timeline</span>
             </Button>
           </div>
         </div>

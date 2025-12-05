@@ -308,14 +308,14 @@ export function EmojiProcessingModal({
   }
 
   const modalContent = (
-    <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-out ${
         isOpen ? 'bg-black/80 backdrop-blur-sm' : 'bg-black/0 backdrop-blur-none'
       }`}
       onClick={isProcessingComplete ? onClose : undefined}
     >
-      <div 
-        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ${
+      <div
+        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ease-out ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         } ${isProcessingComplete ? 'bg-blue-500/30 p-[2px] rounded-xl' : ''}`}
         onClick={(e) => e.stopPropagation()}
@@ -344,6 +344,7 @@ export function EmojiProcessingModal({
             onClick={onClose}
           >
             <X className="h-3.5 w-3.5" />
+            <span className="sr-only">Close</span>
           </Button>
         )}
         <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur">
@@ -504,6 +505,7 @@ export function EmojiProcessingModal({
                             onClick={() => handleSaveEdit(index)}
                           >
                             <Check className="h-3 w-3" />
+                            <span className="sr-only">Save name</span>
                           </Button>
                           <Button
                             size="icon"
@@ -512,6 +514,7 @@ export function EmojiProcessingModal({
                             onClick={handleCancelEdit}
                           >
                             <X className="h-3 w-3" />
+                            <span className="sr-only">Cancel editing</span>
                           </Button>
                         </div>
                       ) : (
@@ -559,6 +562,7 @@ export function EmojiProcessingModal({
                           title="Edit emoji"
                         >
                           <Sliders className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span className="sr-only">Edit emoji</span>
                         </Button>
                       )}
                       {onEditGifFrames && emoji.format === 'GIF' && (
@@ -570,6 +574,7 @@ export function EmojiProcessingModal({
                           title="Edit GIF frames"
                         >
                           <Sliders className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          <span className="sr-only">Edit GIF frames</span>
                         </Button>
                       )}
                     </div>

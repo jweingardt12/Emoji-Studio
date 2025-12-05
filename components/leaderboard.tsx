@@ -710,16 +710,8 @@ const Leaderboard = ({
       )}
       {/* Pagination for expanded view */}
       {variant === "expanded" && totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6">
-          <Button
-            asChild
-            variant="default"
-            size="default"
-            className="min-w-[140px]"
-          >
-            <a href="/leaderboard">See More</a>
-          </Button>
-          <div className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-center mt-6">
+          <div className="text-sm text-muted-foreground mr-4">
             Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedLeaderboard.length)} to{" "}
             {Math.min(currentPage * itemsPerPage, sortedLeaderboard.length)} of {sortedLeaderboard.length} users
           </div>

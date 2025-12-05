@@ -618,11 +618,11 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   // Desktop overlay (existing code)
   const overlayContent = (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-300 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 ${isVisible ? "opacity-100" : "opacity-0"}`}
+      className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 ${isVisible ? "opacity-100" : "opacity-0"}`}
       onClick={handleClose}
     >
       <div
-        className={`bg-card border border-border shadow-lg w-full overflow-y-auto transition-all duration-300 rounded-xl max-w-5xl max-h-[85vh] ${
+        className={`bg-card border border-border shadow-lg w-full overflow-y-auto transition-all duration-300 ease-out rounded-xl max-w-5xl max-h-[85vh] ${
           isVisible ? "scale-100" : "scale-95"
         }`}
         onClick={(e) => e.stopPropagation()}

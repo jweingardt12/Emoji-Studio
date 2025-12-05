@@ -159,13 +159,56 @@ export function parseSlackCurl(curlCommand: string) {
   // Extract workspace URL - more flexible pattern
   let workspace = null
   const urlMatch = curlCommand.match(/https:\/\/([^.]+)\.slack\.com/)
-  const urlMatch2 = curlCommand.match(/slack\.com\/api\/([^/\s]+)/)
 
-  if (urlMatch) {
+  if (urlMatch && urlMatch[1] !== 'app' && urlMatch[1] !== 'api' && urlMatch[1] !== 'files') {
+    // Found a real workspace subdomain (not app.slack.com, api.slack.com, etc.)
     workspace = urlMatch[1]
-    console.log("Found workspace:", workspace)
-  } else if (urlMatch2 && !workspace) {
-    // If we can't find a workspace subdomain, we'll use a default
+    console.log("Found workspace from subdomain:", workspace)
+  }
+
+  // If subdomain is "app" or not found, try to extract from slack_route cookie or URL path
+  if (!workspace || workspace === 'app') {
+    // Try to find workspace in slack_route (format: T0ABC123 or workspace-name)
+    const slackRouteMatch = curlCommand.match(/slack_route=([A-Z][A-Z0-9]+)/i)
+    if (slackRouteMatch) {
+      // This is a team ID, we'll use it as workspace identifier
+      workspace = slackRouteMatch[1]
+      console.log("Found workspace from slack_route:", workspace)
+    }
+  }
+
+  // Try to find in URL path like /client/T0ABC123/
+  if (!workspace || workspace === 'app') {
+    const clientPathMatch = curlCommand.match(/\/client\/([A-Z][A-Z0-9]+)/i)
+    if (clientPathMatch) {
+      workspace = clientPathMatch[1]
+      console.log("Found workspace from client path:", workspace)
+    }
+  }
+
+  // Try to find team parameter in URL or body
+  if (!workspace || workspace === 'app') {
+    const teamMatch = curlCommand.match(/[?&]team=([^&\s'"]+)/) ||
+                      curlCommand.match(/team_id=([^&\s'"]+)/) ||
+                      curlCommand.match(/"team":"([^"]+)"/) ||
+                      curlCommand.match(/'team':'([^']+)'/)
+    if (teamMatch) {
+      workspace = teamMatch[1]
+      console.log("Found workspace from team parameter:", workspace)
+    }
+  }
+
+  // Last resort - if URL points to a workspace-specific endpoint
+  if (!workspace || workspace === 'app') {
+    const apiWorkspaceMatch = curlCommand.match(/https:\/\/([a-zA-Z0-9-]+)\.enterprise\.slack\.com/)
+    if (apiWorkspaceMatch) {
+      workspace = apiWorkspaceMatch[1]
+      console.log("Found enterprise workspace:", workspace)
+    }
+  }
+
+  // Fallback
+  if (!workspace || workspace === 'app') {
     workspace = "workspace"
     console.log("Using default workspace name")
   }

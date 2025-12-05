@@ -967,6 +967,7 @@ export function GifFrameEditorV2({ file, isOpen, onClose, onExport }: GifFrameEd
                     onClick={() => setShowPreview(false)}
                   >
                     <X className="h-3 w-3" />
+                    <span className="sr-only">Close preview</span>
                   </Button>
                 </div>
                 <canvas

@@ -21,6 +21,7 @@ import { packDiscovery } from "@/lib/services/pack-discovery"
 import type { PackEmoji } from "@/lib/types/emoji-pack"
 import { cn } from "@/lib/utils"
 import { isEmojiNameAvailable } from "@/lib/services/emoji-service"
+import { OptimizedEmojiImage } from "@/components/optimized-emoji-image"
 
 type Tab = "popular" | "recent" | "memes" | "blobcats" | "partyparrots" | "bufo"
 type NameStatus = "checking" | "available" | "taken"
@@ -561,11 +562,10 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   )}
                 >
                   <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
-                    <img
+                    <OptimizedEmojiImage
                       src={emoji.imageURL}
                       alt={emoji.name}
                       className="max-w-full max-h-full object-contain drop-shadow-sm"
-                      loading="lazy"
                     />
                   </div>
 
@@ -622,11 +622,10 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
                   )}
                 >
                   <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
-                    <img
+                    <OptimizedEmojiImage
                       src={emoji.imageURL}
                       alt={emoji.name}
                       className="w-8 h-8 object-contain"
-                      loading="lazy"
                     />
                   </div>
                   <span className="flex-1 text-left font-medium text-sm">
@@ -760,11 +759,11 @@ export function PackSelectionSidebar({
                       hasNameChecking && status === "available" && "border-green-500/30 bg-green-50/10"
                     )}
                   >
-                    <img
+                    <OptimizedEmojiImage
                       src={emoji.imageURL}
                       alt={emoji.name}
                       className="w-12 h-12 object-contain flex-shrink-0"
-                      loading="lazy"
+                      priority={true}
                     />
 
                     <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
@@ -847,6 +846,7 @@ export function PackSelectionSidebar({
                         onClick={() => onRemove(emoji)}
                       >
                         <X className="h-4 w-4" />
+                        <span className="sr-only">Remove emoji</span>
                       </Button>
                     </div>
                   </motion.div>
