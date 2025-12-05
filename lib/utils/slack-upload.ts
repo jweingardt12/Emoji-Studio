@@ -315,9 +315,28 @@ export async function uploadPackEmojiToSlack(
 
 // Check if user has a valid Slack connection
 export function hasSlackConnection(): boolean {
+  // Check for curl command (primary method)
   const storedCurl = localStorage.getItem("slackCurlCommand")
-  if (!storedCurl) return false
+  if (storedCurl) {
+    const parsed = parseSlackCurl(storedCurl)
+    if (parsed.isValid && parsed.url) return true
+  }
 
-  const parsed = parseSlackCurl(storedCurl)
-  return parsed.isValid && !!parsed.url
+  // Check for extension-synced data (fallback for when curl command wasn't generated)
+  // This handles cases where the extension synced emoji data but token/cookie were null
+  const workspace = localStorage.getItem("workspace")
+  const emojiCount = localStorage.getItem("emojiCount")
+  const extensionToken = localStorage.getItem("extensionToken")
+
+  // If we have workspace + emoji count + token from extension, we have a valid connection
+  if (workspace && emojiCount && parseInt(emojiCount) > 0 && extensionToken) {
+    return true
+  }
+
+  // Also check if we have workspace + emoji data in storage (for read-only access)
+  if (workspace && emojiCount && parseInt(emojiCount) > 0) {
+    return true
+  }
+
+  return false
 }

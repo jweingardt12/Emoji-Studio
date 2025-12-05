@@ -25,7 +25,15 @@ export function ChromeExtensionHandler() {
 
   // Function to process synced data from extension storage
   const processSyncedData = useCallback(async (data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
-    console.log('[ChromeExtensionHandler] Processing synced data:', data, meta)
+    console.log('[ChromeExtensionHandler] Processing synced data:', {
+      workspace: data.workspace,
+      emojiCount: data.emojiCount,
+      hasToken: !!data.token,
+      hasCookie: !!data.cookie,
+      version: data.version,
+      lastSyncTime: data.lastSyncTime
+    })
+    console.log('[ChromeExtensionHandler] Sync meta:', meta)
 
     // Prevent duplicate processing of the same sync
     const syncTime = data.lastSyncTime || Date.now();
@@ -40,6 +48,14 @@ export function ChromeExtensionHandler() {
     const isNewSync = !existingLastSyncTime || syncTime > parseInt(existingLastSyncTime);
 
     try {
+      // Validate we have actual emoji data
+      if (!data.emojiData || !Array.isArray(data.emojiData)) {
+        console.error('[ChromeExtensionHandler] Invalid emoji data received:', typeof data.emojiData);
+        throw new Error('Invalid emoji data format');
+      }
+
+      console.log(`[ChromeExtensionHandler] Processing ${data.emojiData.length} emojis for workspace ${data.workspace}`);
+
       // Update emoji data in the app (optimistic update)
       setEmojiData(data.emojiData as Emoji[])
       setWorkspace(data.workspace)
@@ -58,28 +74,39 @@ export function ChromeExtensionHandler() {
       // Store auth data if provided (for future API calls)
       if (data.token) {
         localStorage.setItem('extensionToken', data.token)
+        console.log('[ChromeExtensionHandler] Stored extension token');
       }
       if (data.cookie) {
         localStorage.setItem('extensionCookie', data.cookie)
+        console.log('[ChromeExtensionHandler] Stored extension cookie');
       }
 
-      // Also generate and store a curl command for compatibility with the refresh button
-      if (data.token && data.cookie && data.workspace) {
+      // Generate and store a curl command for compatibility with the refresh button
+      // Now works with partial data - only requires workspace and at least token OR cookie
+      if (data.workspace && (data.token || data.cookie)) {
         const timestamp = Math.floor(Date.now() / 1000)
+        const token = data.token || ''
+        const cookie = data.cookie || ''
         const curlCommand = `curl 'https://${data.workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
           -H 'accept: */*' \
           -H 'accept-language: en-US,en;q=0.9' \
           -H 'cache-control: no-cache' \
           -H 'content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW' \
-          -b '${data.cookie}' \
+          -b '${cookie}' \
           -H 'pragma: no-cache' \
           -H 'sec-fetch-dest: empty' \
           -H 'sec-fetch-mode: cors' \
           -H 'sec-fetch-site: same-origin' \
-          --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${data.token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
+          --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
 
         localStorage.setItem('slackCurlCommand', curlCommand)
         console.log('[ChromeExtensionHandler] Generated and stored curl command for refresh')
+      } else {
+        console.log('[ChromeExtensionHandler] Skipping curl command generation - missing workspace or auth data', {
+          hasWorkspace: !!data.workspace,
+          hasToken: !!data.token,
+          hasCookie: !!data.cookie
+        })
       }
 
       console.log(`[ChromeExtensionHandler] Successfully saved synced data`);
