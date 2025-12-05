@@ -308,14 +308,14 @@ export function EmojiProcessingModal({
   }
 
   const modalContent = (
-    <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-out ${
         isOpen ? 'bg-black/80 backdrop-blur-sm' : 'bg-black/0 backdrop-blur-none'
       }`}
       onClick={isProcessingComplete ? onClose : undefined}
     >
-      <div 
-        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ${
+      <div
+        className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ease-out ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         } ${isProcessingComplete ? 'bg-blue-500/30 p-[2px] rounded-xl' : ''}`}
         onClick={(e) => e.stopPropagation()}

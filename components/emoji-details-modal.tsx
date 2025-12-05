@@ -185,21 +185,21 @@ export function EmojiDetailsModal({
 
   const drawerContent = (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-300 ${
+      className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
       {/* Backdrop */}
-      <div 
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+      <div
+        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
         onClick={handleClose}
       />
-      
+
       {/* Drawer */}
       <div
-        className={`absolute bottom-0 left-0 right-0 h-[85vh] bg-card border border-border shadow-lg rounded-t-xl overflow-hidden transition-all duration-300 ${
+        className={`absolute bottom-0 left-0 right-0 h-[85vh] bg-card border border-border shadow-lg rounded-t-xl overflow-hidden transition-all duration-300 ease-out ${
           isVisible ? "translate-y-0" : "translate-y-full"
         }`}
         onClick={(e) => e.stopPropagation()}

@@ -241,7 +241,7 @@ export function DashboardOverlay() {
       <style dangerouslySetInnerHTML={{ __html: rainbowAnimation }} />
       
       <div
-        className={`relative bg-background pt-6 px-2 pb-6 rounded-lg shadow-2xl border border-border w-full max-w-2xl mx-auto my-8 transform transition-all duration-500 ease-in-out \
+        className={`relative bg-background pt-6 px-2 pb-6 rounded-lg shadow-2xl border border-border w-full max-w-2xl mx-auto my-8 transform transition-all duration-300 ease-out \
           ${isAnimatedIn ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
         onClick={(e) => e.stopPropagation()} // Prevent clicks inside content from closing overlay
       >

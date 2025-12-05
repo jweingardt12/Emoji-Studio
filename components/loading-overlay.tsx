@@ -36,7 +36,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
       const timer = setTimeout(() => {
         setShouldRender(false)
         onTransitionComplete?.()
-      }, 500) // Match transition duration
+      }, 300) // Match transition duration
       return () => clearTimeout(timer)
     }
   }, [isOpen, onTransitionComplete])
@@ -45,7 +45,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
 
   return createPortal(
     <div className={cn(
-      "fixed inset-0 z-[9999] transition-all duration-500",
+      "fixed inset-0 z-[9999] transition-all duration-300 ease-out",
       isVisible ? "opacity-100" : "opacity-0"
     )}>
       {/* Full opaque background */}
@@ -67,7 +67,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
       {/* Content overlay */}
       <div className="relative z-10 flex h-full w-full items-center justify-center">
         <div className={cn(
-          "mx-auto max-w-md px-4 transition-all duration-700 delay-100",
+          "mx-auto max-w-md px-4 transition-all duration-300 ease-out",
           isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         )}>
           <div className="text-center space-y-6">
