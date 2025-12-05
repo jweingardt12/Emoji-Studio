@@ -12,7 +12,6 @@ import { ThemeTracker } from "@/components/ThemeTracker";
 import { GlobalExtensionListener } from "@/components/global-extension-listener";
 import { NotificationManager } from "@/components/notification-manager";
 import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
-import { OpenPanelWorkspaceSync } from "@/components/openpanel-workspace-sync";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
 
@@ -49,7 +48,6 @@ export default function RootLayout({
         >
           <ClientBody>
             <EmojiDataProvider>
-              <OpenPanelWorkspaceSync />
               <SidebarProvider
                 style={
                   {
