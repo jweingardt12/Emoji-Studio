@@ -16,53 +16,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { useToast } from "@/components/ui/use-toast"
 import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
-import Marquee from "@/components/ui/marquee"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
-
-// Sample emoji tiles for the background
-const emojiTiles = [
-  { name: "party", src: "🎉" },
-  { name: "fire", src: "🔥" },
-  { name: "rocket", src: "🚀" },
-  { name: "heart", src: "❤️" },
-  { name: "star", src: "⭐" },
-  { name: "smile", src: "😊" },
-  { name: "laugh", src: "😂" },
-  { name: "cool", src: "😎" },
-  { name: "thinking", src: "🤔" },
-  { name: "celebrate", src: "🎊" },
-  { name: "rainbow", src: "🌈" },
-  { name: "pizza", src: "🍕" },
-  { name: "coffee", src: "☕" },
-  { name: "thumbsup", src: "👍" },
-  { name: "clap", src: "👏" },
-  { name: "muscle", src: "💪" },
-  { name: "sparkles", src: "✨" },
-  { name: "money", src: "💰" },
-  { name: "gift", src: "🎁" },
-  { name: "trophy", src: "🏆" },
-];
-
-const EmojiCard = ({ emoji }: { emoji: { name: string; src: string } }) => {
-  return (
-    <div
-      className={cn(
-        "relative size-16 cursor-pointer overflow-hidden rounded-xl border p-3",
-        "bg-white/40 backdrop-blur-[1px] [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-        "transform-gpu dark:bg-white/10 dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]"
-      )}
-    >
-      <span className="text-2xl">{emoji.src}</span>
-    </div>
-  );
-};
 
 function EmojiCreatorPage() {
   const { loading, emojiData } = useEmojiData()
@@ -96,7 +57,13 @@ function EmojiCreatorPage() {
     total: number
     stage: "uploading" | "complete"
   } | null>(null)
-  const [showUploadOverlay, setShowUploadOverlay] = useState(false)
+  const [activeTab, setActiveTab] = useState<"upload" | "browse">("browse")
+  const [extensionBannerDismissed, setExtensionBannerDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('extensionBannerDismissed') === 'true'
+    }
+    return false
+  })
   const { toast } = useToast()
 
   const desktopLayoutRef = useRef<HTMLDivElement | null>(null)
@@ -524,7 +491,7 @@ function EmojiCreatorPage() {
 
     if (files.length > 0) {
       setSelectedFiles(prev => [...prev, ...files])
-      setShowUploadOverlay(true) // Open overlay when files are dropped
+      setActiveTab("upload") // Switch to upload tab when files are dropped
       track("Emoji Creator: Files Dropped", {
         fileCount: files.length,
         fileTypes: files.map(f => f.type)
@@ -1052,6 +1019,12 @@ function EmojiCreatorPage() {
     )
   }
 
+  const handleDismissExtensionBanner = () => {
+    setExtensionBannerDismissed(true)
+    localStorage.setItem('extensionBannerDismissed', 'true')
+    track('Emoji Creator: Extension Banner Dismissed', {})
+  }
+
   return (
     <>
       <div
@@ -1063,47 +1036,250 @@ function EmojiCreatorPage() {
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <div className="flex-1 flex flex-col min-h-0 px-3 sm:px-4 lg:px-6 py-2 sm:py-4 md:py-6">
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow p-2 sm:p-4">
-            <div className="flex-none pb-3 sm:pb-4 flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  <span>Create Slack Emojis</span>
-                </h1>
-                {!isMobile && (
-                  <p className="text-muted-foreground text-sm sm:text-base mt-1">
-                    Browse emoji packs or upload your own files
-                  </p>
-                )}
+        <div className="flex-1 flex flex-col min-h-0 p-4">
+          {/* Chrome Extension Banner - Dismissible */}
+          {!hasSlack && !loading && !extensionBannerDismissed && (
+            <div className="flex-none mb-4 rounded-lg bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border border-border/50 p-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center">
+                    <ChromeIcon className="h-5 w-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Import emojis from any website with our Chrome extension</p>
+                    <p className="text-xs text-muted-foreground">Connect to Slack in one click and add images, GIFs, or videos as emojis</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    asChild
+                  >
+                    <a
+                      href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2"
+                    >
+                      <ChromeIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Get Extension</span>
+                    </a>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleDismissExtensionBanner}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Dismiss</span>
+                  </Button>
+                </div>
               </div>
-              {/* Upload button */}
-              <Button
-                onClick={() => setShowUploadOverlay(true)}
-                variant="outline"
-                className="gap-2 flex-shrink-0"
-              >
-                <Upload className="h-4 w-4" />
-                <span className="hidden sm:inline">Upload Files</span>
-              </Button>
             </div>
+          )}
 
-            {/* Pack Browser - always visible as main content */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_min(400px,30vw)] xl:auto-rows-[minmax(0,1fr)] gap-6 min-w-0 min-h-0">
-                <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-                  <CardHeader className="flex-none">
-                    <div className="flex gap-2 items-center pb-3">
-                      <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search emoji packs..."
-                          value={packBrowser.searchQuery}
-                          onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
-                          className="pl-9"
-                        />
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow">
+            {/* Tab Navigation */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => {
+                setActiveTab(v as "upload" | "browse")
+                track('Emoji Creator: Tab Changed', { tab: v })
+              }}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="flex-none border-b px-4 pt-4">
+                <div className="flex items-center justify-between gap-4 pb-4">
+                  <div className="flex items-center gap-4">
+                    <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                      <Sparkles className="h-5 w-5" />
+                      <span>Create Emojis</span>
+                    </h1>
+                    <TabsList className="grid grid-cols-2 w-[240px]">
+                      <TabsTrigger value="upload" className="gap-2">
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </TabsTrigger>
+                      <TabsTrigger value="browse" className="gap-2">
+                        <Grid3x3 className="h-4 w-4" />
+                        Browse Packs
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
+                  {/* Selection cart button for mobile when on browse tab */}
+                  {activeTab === "browse" && packBrowser.selectedEmojis.length > 0 && (
+                    <Button
+                      onClick={() => updateCartOpen(true, 'toolbar')}
+                      className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm lg:hidden"
+                      size="icon"
+                    >
+                      <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
+                        <SmilePlus className="h-5 w-5 text-primary" />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <Badge
+                        variant="destructive"
+                        className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
+                      >
+                        {packBrowser.selectedEmojis.length}
+                      </Badge>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Tab Content */}
+              <TabsContent value="upload" className="flex-1 min-h-0 m-0 p-4">
+                <div
+                  className={cn(
+                    "h-full rounded-xl border-2 border-dashed transition-all flex flex-col items-center justify-center",
+                    isDragging ? "border-primary bg-primary/10" : "border-muted-foreground/25 hover:border-muted-foreground/50"
+                  )}
+                >
+                  {selectedFiles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center">
+                      <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">Drag and drop files here</h3>
+                      <p className="text-sm text-muted-foreground mb-6 max-w-md">
+                        Drop your images, videos, or GIFs to convert them to Slack-ready emojis
+                      </p>
+                      <input
+                        type="file"
+                        id="file-upload-tab"
+                        className="hidden"
+                        multiple
+                        accept="image/*,video/*,.gif,.webp"
+                        onChange={handleFileSelect}
+                      />
+                      <Button asChild size="lg">
+                        <label htmlFor="file-upload-tab" className="cursor-pointer">
+                          <Upload className="mr-2 h-4 w-4" />
+                          Choose Files
+                        </label>
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-4">
+                        Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex flex-col p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-semibold">Selected Files ({selectedFiles.length})</h4>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const fileCount = selectedFiles.length
+                              const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
+                              setSelectedFiles([])
+                              track("Emoji Creator: All Files Cleared", {
+                                fileCount: fileCount,
+                                totalSize: totalSize
+                              })
+                            }}
+                            disabled={isProcessing}
+                          >
+                            Clear All
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => processFiles()}
+                            disabled={isProcessing}
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Process {selectedFiles.length}
+                          </Button>
+                        </div>
+                      </div>
+                      <ScrollArea className="flex-1 -mx-2 px-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {selectedFiles.map((file, index) => {
+                            const Icon = getFileIcon(file)
+                            const isImage = file.type.startsWith('image/')
+                            const isVideo = file.type.startsWith('video/')
+                            const previewUrl = isImage || isVideo ? URL.createObjectURL(file) : null
+
+                            return (
+                              <div
+                                key={index}
+                                className="relative group rounded-lg border bg-card overflow-hidden aspect-square"
+                              >
+                                {previewUrl ? (
+                                  <div className="h-full w-full">
+                                    {isImage ? (
+                                      <img
+                                        src={previewUrl}
+                                        alt={file.name}
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <video
+                                        src={previewUrl}
+                                        className="h-full w-full object-cover"
+                                        muted
+                                      />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center bg-muted">
+                                    <Icon className="h-8 w-8 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                  <p className="text-xs text-white truncate">{file.name}</p>
+                                </div>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => handleRemoveFile(index)}
+                                  className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </ScrollArea>
+                      <div className="flex justify-center pt-4 mt-4 border-t border-dashed">
+                        <input
+                          type="file"
+                          id="file-upload-tab-more"
+                          className="hidden"
+                          multiple
+                          accept="image/*,video/*,.gif,.webp"
+                          onChange={handleFileSelect}
+                        />
+                        <Button asChild variant="outline">
+                          <label htmlFor="file-upload-tab-more" className="cursor-pointer">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Add More Files
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Browse Packs Tab Content */}
+              <TabsContent value="browse" className="flex-1 min-h-0 m-0">
+                <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(360px,30vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4">
+                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+                    <CardHeader className="flex-none pb-3">
+                      <div className="flex gap-2 items-center">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search emoji packs..."
+                            value={packBrowser.searchQuery}
+                            onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
                         <Button
                           variant="outline"
                           size="icon"
@@ -1120,54 +1296,37 @@ function EmojiCreatorPage() {
                           ) : (
                             <Grid3x3 className="h-4 w-4" />
                           )}
+                          <span className="sr-only">Toggle view mode</span>
                         </Button>
-                        {packBrowser.selectedEmojis.length > 0 && (
-                          <Button
-                            onClick={() => updateCartOpen(true, 'toolbar')}
-                            className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm xl:hidden"
-                            size="icon"
-                          >
-                            <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">
-                              <SmilePlus className="h-5 w-5 text-primary" />
-                            </div>
-                            <Badge
-                              variant="destructive"
-                              className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px]"
-                            >
-                              {packBrowser.selectedEmojis.length}
-                            </Badge>
-                          </Button>
-                        )}
                       </div>
-                    </div>
-                    <div className="mt-6">
-                      <PackBrowserTabs
-                        selectedTab={packBrowser.selectedTab}
-                        onSelectTab={(tab) => {
-                          packBrowser.setSelectedTab(tab)
-                          track('Emoji Creator: Pack Tab Selected', {
-                            tab,
-                          })
-                        }}
-                        searchQuery={packBrowser.searchQuery}
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex-1 overflow-hidden pt-4 min-h-0">
-                    <ScrollArea className="h-full">
-                      <PackEmojiGrid
-                        emojis={packBrowser.currentEmojis}
-                        loading={packBrowser.loading}
-                        viewMode={packBrowser.viewMode}
-                        selectedIds={packBrowser.selectedIds}
-                        onToggleSelection={packBrowser.toggleSelection}
-                      />
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                      <div className="mt-4">
+                        <PackBrowserTabs
+                          selectedTab={packBrowser.selectedTab}
+                          onSelectTab={(tab) => {
+                            packBrowser.setSelectedTab(tab)
+                            track('Emoji Creator: Pack Tab Selected', {
+                              tab,
+                            })
+                          }}
+                          searchQuery={packBrowser.searchQuery}
+                        />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-hidden pt-2 min-h-0">
+                      <ScrollArea className="h-full">
+                        <PackEmojiGrid
+                          emojis={packBrowser.currentEmojis}
+                          loading={packBrowser.loading}
+                          viewMode={packBrowser.viewMode}
+                          selectedIds={packBrowser.selectedIds}
+                          onToggleSelection={packBrowser.toggleSelection}
+                        />
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
 
-                {/* Desktop sidebar - only show on xl screens */}
-                <div className="hidden xl:flex xl:flex-col xl:min-h-0 xl:h-full">
+                  {/* Desktop sidebar - show on lg screens */}
+                  <div className="hidden lg:flex lg:flex-col lg:min-h-0 lg:h-full">
                   <PackSelectionSidebar
                     selectedEmojis={packBrowser.selectedEmojis}
                     maxSelection={20}
@@ -1404,336 +1563,242 @@ function EmojiCreatorPage() {
                     }}
                   />
                 </div>
-
-                {/* Mobile sheet */}
-                <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
-                  <SheetContent side="right" className="w-full sm:max-w-md p-0">
-                    <PackSelectionSidebar
-                        selectedEmojis={packBrowser.selectedEmojis}
-                        maxSelection={20}
-                        nameStatuses={packBrowser.nameStatuses}
-                        editingName={packBrowser.editingName}
-                        editingValue={packBrowser.editingValue}
-                        onSetEditingName={packBrowser.setEditingName}
-                        onSetEditingValue={packBrowser.setEditingValue}
-                        onSaveCustomName={packBrowser.saveCustomName}
-                        customNames={packBrowser.customNames}
-                        onRemove={(emoji) => {
-                          const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
-                          packBrowser.removeFromSelection(emoji)
-                          track('Emoji Creator: Selection Item Removed', {
-                            id: emoji.id,
-                            name: emoji.name,
-                            remainingCount,
-                          })
-                        }}
-                        onClear={() => {
-                          const previousCount = packBrowser.selectedEmojis.length
-                          setDownloadProgress(null)
-                          setUploadProgress(null)
-                          packBrowser.clearSelection()
-                          track('Emoji Creator: Selection Cleared', {
-                            previousCount,
-                          })
-                        }}
-                        hasSlackConnection={hasSlack}
-                        downloadProgress={downloadProgress}
-                        uploadProgress={uploadProgress}
-                        onDownload={async () => {
-                          updateCartOpen(false, 'sheet-action')
-                          // Reuse the same download logic
-                          const selected = packBrowser.getSelectedEmojis()
-                          if (selected.length === 0) return
-
-                          const JSZip = (await import('jszip')).default
-                          const zip = new JSZip()
-
-                          let completed = 0
-                          const total = selected.length
-
-                          setDownloadProgress({ stage: "downloading", completed: 0, total })
-
-                          const progressToast = toast({
-                            title: "Creating zip file...",
-                            description: `Starting download...`,
-                            duration: Infinity,
-                          })
-
-                          const updateProgressToast = (message: string) => {
-                            progressToast.update({
-                              id: progressToast.id,
-                              title: "Creating zip file...",
-                              description: message,
-                              duration: Infinity,
-                            })
-                          }
-
-                          for (const emoji of selected) {
-                            try {
-                              const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.imageURL)}`
-                              const response = await fetch(proxyUrl)
-
-                              if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-                              }
-
-                              const blob = await response.blob()
-                              const ext = emoji.isAnimated ? 'gif' : 'png'
-                              const fileName = `${emoji.name}.${ext}`
-
-                              zip.file(fileName, blob)
-                              completed++
-
-                              setDownloadProgress((prev) =>
-                                prev ? { ...prev, completed } : prev
-                              )
-
-                              if (completed % 5 === 0 || completed === total) {
-                                updateProgressToast(`Downloaded ${completed}/${total} emojis`)
-                              }
-                            } catch (error) {
-                              console.error(`[Download] Failed to download emoji ${emoji.name}:`, error)
-                            }
-                          }
-
-                          if (completed === 0) {
-                            progressToast.dismiss()
-                            setDownloadProgress(null)
-                            toast({
-                              title: "Download failed",
-                              description: "Could not download any emojis",
-                              variant: "destructive",
-                            })
-                            return
-                          }
-
-                          setDownloadProgress((prev) =>
-                            prev ? { ...prev, stage: "finalizing" } : prev
-                          )
-                          updateProgressToast("Finalizing download...")
-
-                          try {
-                            const zipBlob = await zip.generateAsync({ type: 'blob' })
-
-                            const url = URL.createObjectURL(zipBlob)
-                            const a = document.createElement('a')
-                            a.href = url
-                            a.download = `emoji-pack-${Date.now()}.zip`
-                            document.body.appendChild(a)
-                            a.click()
-                            document.body.removeChild(a)
-                            URL.revokeObjectURL(url)
-
-                            progressToast.dismiss()
-                            setDownloadProgress(null)
-                            packBrowser.clearSelectionsAndStorage()
-
-                            toast({
-                              title: "Download complete",
-                              description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
-                            })
-                          } catch (error) {
-                            console.error('Failed to create zip:', error)
-                            progressToast.dismiss()
-                            setDownloadProgress(null)
-                            toast({
-                              title: "Failed to create zip",
-                              description: "Could not create zip file",
-                              variant: "destructive",
-                            })
-                          }
-                        }}
-                        onSendToSlack={async () => {
-                          updateCartOpen(false, 'sheet-action')
-                          // Reuse the same upload logic
-                          const selected = packBrowser.getSelectedEmojis()
-                          if (selected.length === 0) return
-
-                          const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
-
-                          let successCount = 0
-                          let failedCount = 0
-                          const errors: string[] = []
-                          const total = selected.length
-
-                          setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
-
-                          const uploadToast = toast({
-                            title: "Uploading to Slack...",
-                            description: `0/${total} (0%)`,
-                            duration: Infinity,
-                          })
-
-                          const updateUploadToast = (message: string) => {
-                            uploadToast.update({
-                              id: uploadToast.id,
-                              title: "Uploading to Slack...",
-                              description: message,
-                              duration: Infinity,
-                            })
-                          }
-
-                          for (let i = 0; i < selected.length; i++) {
-                            const emoji = selected[i]
-                            try {
-                              const effectiveName = packBrowser.getEffectiveName(emoji)
-                              const result = await uploadPackEmojiToSlack(
-                                emoji.imageURL,
-                                effectiveName,
-                                emoji.isAnimated
-                              )
-
-                              if (result.success) {
-                                successCount++
-                              } else {
-                                failedCount++
-                                errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
-                              }
-
-                              const completed = successCount + failedCount
-                              const percentage = Math.round((completed / total) * 100)
-                              setUploadProgress((prev) =>
-                                prev ? { ...prev, completed, failed: failedCount } : prev
-                              )
-                              updateUploadToast(`${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`)
-                            } catch (error) {
-                              const effectiveName = packBrowser.getEffectiveName(emoji)
-                              console.error(`Failed to upload ${effectiveName}:`, error)
-                              failedCount++
-                              errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                            }
-                          }
-
-                          uploadToast.dismiss()
-                          setUploadProgress((prev) => (prev ? { ...prev, stage: "complete" } : prev))
-
-                          if (successCount > 0) {
-                            packBrowser.clearSelectionsAndStorage()
-                            toast({
-                              title: "Upload complete",
-                              description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
-                              duration: 8000,
-                            })
-                          }
-
-                          if (failedCount > 0) {
-                            console.error('Upload errors:', errors)
-                            toast({
-                              title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
-                              description: errors[0] || 'Unknown error',
-                              variant: "destructive",
-                            })
-                          }
-
-                          if (successCount > 0) {
-                            setTimeout(() => setUploadProgress(null), 3000)
-                          } else {
-                            setUploadProgress(null)
-                          }
-                        }}
-                    />
-                  </SheetContent>
-                </Sheet>
               </div>
-            </div>
-
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
+    </div>
 
-      {((!hasSlack && !loading) || processedEmojis.length > 0) && (
-        <div className="px-3 sm:px-4 lg:px-6 mt-4 sm:mt-6">
-          <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4 space-y-4 sm:space-y-6">
-            {/* Chrome Extension Hero Section */}
-            {!hasSlack && !loading && (
-              <div className="relative overflow-hidden rounded-xl">
-                {/* Scrolling emoji background */}
-                <div className="absolute inset-0 flex w-full flex-col items-center justify-center overflow-hidden">
-                  <Marquee
-                    pauseOnHover
-                    className="[--duration:20s]"
-                    repeat={3}
-                  >
-                    {emojiTiles.slice(0, 10).map((emoji, idx) => (
-                      <EmojiCard key={idx} emoji={emoji} />
-                    ))}
-                  </Marquee>
-                  <Marquee
-                    reverse
-                    pauseOnHover
-                    className="[--duration:30s]"
-                    repeat={3}
-                  >
-                    {emojiTiles.slice(10, 20).map((emoji, idx) => (
-                      <EmojiCard key={idx} emoji={emoji} />
-                    ))}
-                  </Marquee>
-                  <Marquee
-                    pauseOnHover
-                    className="[--duration:25s]"
-                    repeat={3}
-                  >
-                    {emojiTiles.slice(0, 10).map((emoji, idx) => (
-                      <EmojiCard key={idx} emoji={emoji} />
-                    ))}
-                  </Marquee>
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-                </div>
+    {/* Mobile selection sheet - shown on screens smaller than lg */}
+    <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0">
+        <PackSelectionSidebar
+          selectedEmojis={packBrowser.selectedEmojis}
+          maxSelection={20}
+          nameStatuses={packBrowser.nameStatuses}
+          editingName={packBrowser.editingName}
+          editingValue={packBrowser.editingValue}
+          onSetEditingName={packBrowser.setEditingName}
+          onSetEditingValue={packBrowser.setEditingValue}
+          onSaveCustomName={packBrowser.saveCustomName}
+          customNames={packBrowser.customNames}
+          onRemove={(emoji) => {
+            const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
+            packBrowser.removeFromSelection(emoji)
+            track('Emoji Creator: Selection Item Removed', {
+              id: emoji.id,
+              name: emoji.name,
+              remainingCount,
+            })
+          }}
+          onClear={() => {
+            const previousCount = packBrowser.selectedEmojis.length
+            setDownloadProgress(null)
+            setUploadProgress(null)
+            packBrowser.clearSelection()
+            track('Emoji Creator: Selection Cleared', {
+              previousCount,
+            })
+          }}
+          hasSlackConnection={hasSlack}
+          downloadProgress={downloadProgress}
+          uploadProgress={uploadProgress}
+          onDownload={async () => {
+            updateCartOpen(false, 'sheet-action')
+            const selected = packBrowser.getSelectedEmojis()
+            if (selected.length === 0) return
 
-                {/* Content */}
-                <div className="relative px-6 py-16 sm:px-10 sm:py-24 lg:py-32 backdrop-blur-[2px]">
-                  <div className="mx-auto max-w-2xl text-center">
-                    <div className="mb-6 inline-flex items-center rounded-full bg-blue-500/10 backdrop-blur-sm px-3 py-1 text-sm">
-                      <Sparkles className="mr-1.5 h-3.5 w-3.5 text-blue-500" />
-                      <span className="font-medium text-blue-600 dark:text-blue-400">New!</span>
-                    </div>
-                    
-                    <h2 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-                      Import Emojis from Any Website
-                    </h2>
-                    
-                    <p className="mx-auto max-w-xl text-lg text-muted-foreground mb-8">
-                      Connect to your Slack in one click. Add any image, GIF, or video as a perfectly formatted emoji. 
-                    </p>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                      <Button
-                        size="lg"
-                        className="min-w-[200px] shadow-lg hover:shadow-xl transition-shadow bg-primary hover:bg-primary/90"
-                        asChild
-                      >
-                        <a 
-                          href="https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2"
-                        >
-                          <ChromeIcon className="h-5 w-5 text-blue-500" />
-                          Get Chrome Extension
-                        </a>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            const JSZip = (await import('jszip')).default
+            const zip = new JSZip()
 
-            {/* Processed Emojis */}
-            {processedEmojis.length > 0 && (
-              <EmojiProcessorPreview
-                emojis={processedEmojis}
-                onRemove={handleRemoveProcessed}
-                onDownload={handleDownloadEmoji}
-                onDownloadAll={handleDownloadAll}
-                onUpdateName={handleUpdateEmojiName}
-                onEdit={handleEditEmoji}
-              />
-            )}
-          </div>
-        </div>
-      )}
+            let completed = 0
+            const total = selected.length
 
-      <EmojiProcessingModal
+            setDownloadProgress({ stage: "downloading", completed: 0, total })
+
+            const progressToast = toast({
+              title: "Creating zip file...",
+              description: `Starting download...`,
+              duration: Infinity,
+            })
+
+            const updateProgressToast = (message: string) => {
+              progressToast.update({
+                id: progressToast.id,
+                title: "Creating zip file...",
+                description: message,
+                duration: Infinity,
+              })
+            }
+
+            for (const emoji of selected) {
+              try {
+                const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.imageURL)}`
+                const response = await fetch(proxyUrl)
+
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+                }
+
+                const blob = await response.blob()
+                const ext = emoji.isAnimated ? 'gif' : 'png'
+                const fileName = `${emoji.name}.${ext}`
+
+                zip.file(fileName, blob)
+                completed++
+
+                setDownloadProgress((prev) =>
+                  prev ? { ...prev, completed } : prev
+                )
+
+                if (completed % 5 === 0 || completed === total) {
+                  updateProgressToast(`Downloaded ${completed}/${total} emojis`)
+                }
+              } catch (error) {
+                console.error(`[Download] Failed to download emoji ${emoji.name}:`, error)
+              }
+            }
+
+            if (completed === 0) {
+              progressToast.dismiss()
+              setDownloadProgress(null)
+              toast({
+                title: "Download failed",
+                description: "Could not download any emojis",
+                variant: "destructive",
+              })
+              return
+            }
+
+            setDownloadProgress((prev) =>
+              prev ? { ...prev, stage: "finalizing" } : prev
+            )
+            updateProgressToast("Finalizing download...")
+
+            try {
+              const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+              const url = URL.createObjectURL(zipBlob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `emoji-pack-${Date.now()}.zip`
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              URL.revokeObjectURL(url)
+
+              progressToast.dismiss()
+              setDownloadProgress(null)
+              packBrowser.clearSelectionsAndStorage()
+
+              toast({
+                title: "Download complete",
+                description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
+              })
+            } catch (error) {
+              console.error('Failed to create zip:', error)
+              progressToast.dismiss()
+              setDownloadProgress(null)
+              toast({
+                title: "Failed to create zip",
+                description: "Could not create zip file",
+                variant: "destructive",
+              })
+            }
+          }}
+          onSendToSlack={async () => {
+            updateCartOpen(false, 'sheet-action')
+            const selected = packBrowser.getSelectedEmojis()
+            if (selected.length === 0) return
+
+            const { uploadPackEmojiToSlack } = await import('@/lib/utils/slack-upload')
+
+            let successCount = 0
+            let failedCount = 0
+            const errors: string[] = []
+            const total = selected.length
+
+            setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
+
+            const uploadToast = toast({
+              title: "Uploading to Slack...",
+              description: `0/${total} (0%)`,
+              duration: Infinity,
+            })
+
+            const updateUploadToast = (message: string) => {
+              uploadToast.update({
+                id: uploadToast.id,
+                title: "Uploading to Slack...",
+                description: message,
+                duration: Infinity,
+              })
+            }
+
+            for (let i = 0; i < selected.length; i++) {
+              const emoji = selected[i]
+              try {
+                const effectiveName = packBrowser.getEffectiveName(emoji)
+                const result = await uploadPackEmojiToSlack(
+                  emoji.imageURL,
+                  effectiveName,
+                  emoji.isAnimated
+                )
+
+                if (result.success) {
+                  successCount++
+                } else {
+                  failedCount++
+                  errors.push(`${effectiveName}: ${result.error || 'Unknown error'}`)
+                }
+
+                const completed = successCount + failedCount
+                const percentage = Math.round((completed / total) * 100)
+                setUploadProgress((prev) =>
+                  prev ? { ...prev, completed, failed: failedCount } : prev
+                )
+                updateUploadToast(`${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`)
+              } catch (error) {
+                const effectiveName = packBrowser.getEffectiveName(emoji)
+                console.error(`Failed to upload ${effectiveName}:`, error)
+                failedCount++
+                errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+              }
+            }
+
+            uploadToast.dismiss()
+            setUploadProgress((prev) => (prev ? { ...prev, stage: "complete" } : prev))
+
+            if (successCount > 0) {
+              packBrowser.clearSelectionsAndStorage()
+              toast({
+                title: "Upload complete",
+                description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
+                duration: 8000,
+              })
+            }
+
+            if (failedCount > 0) {
+              console.error('Upload errors:', errors)
+              toast({
+                title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
+                description: errors[0] || 'Unknown error',
+                variant: "destructive",
+              })
+            }
+
+            if (successCount > 0) {
+              setTimeout(() => setUploadProgress(null), 3000)
+            } else {
+              setUploadProgress(null)
+            }
+          }}
+        />
+      </SheetContent>
+    </Sheet>
+
+    <EmojiProcessingModal
         isOpen={isProcessing}
         files={processingFiles}
         processedEmojis={processedEmojis}
@@ -1800,170 +1865,10 @@ function EmojiCreatorPage() {
         />
       )}
 
-      {/* Upload Overlay Dialog */}
-      <Dialog open={showUploadOverlay} onOpenChange={setShowUploadOverlay}>
-        <DialogContent className="max-w-2xl p-0 gap-0">
-          <div
-            className={`flex flex-col items-center justify-center p-12 transition-all min-h-[400px] ${
-              isDragging ? 'border-primary bg-primary/10 border-4' : 'border-dashed border-2'
-            } m-6 rounded-xl`}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => {
-              handleDrop(e)
-              if (selectedFiles.length > 0 || (e.dataTransfer.files && e.dataTransfer.files.length > 0)) {
-                // Keep overlay open to show selected files
-              }
-            }}
-          >
-            {selectedFiles.length === 0 ? (
-              <>
-                <Upload className="mx-auto h-20 w-20 text-muted-foreground mb-6" />
-                <h3 className="text-xl font-semibold mb-2">Drag and Drop Files Here</h3>
-                <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-                  Drop your images, videos, or GIFs to convert them to Slack emojis
-                </p>
-                <input
-                  type="file"
-                  id="file-upload-overlay"
-                  className="hidden"
-                  multiple
-                  accept="image/*,video/*,.gif,.webp"
-                  onChange={handleFileSelect}
-                />
-                <Button asChild size="lg">
-                  <label htmlFor="file-upload-overlay" className="cursor-pointer">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Choose Files
-                  </label>
-                </Button>
-                <p className="text-xs text-muted-foreground mt-4">
-                  Supports: JPG, PNG, GIF, WebP, MP4, MOV, WebM
-                </p>
-              </>
-            ) : (
-              <div className="w-full">
-                <div className="flex items-center justify-between mb-6">
-                  <h4 className="font-semibold text-lg">Selected Files ({selectedFiles.length})</h4>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const fileCount = selectedFiles.length
-                        const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0)
-                        setSelectedFiles([])
-                        track("Emoji Creator: All Files Cleared", {
-                          fileCount: fileCount,
-                          totalSize: totalSize
-                        })
-                      }}
-                      disabled={isProcessing}
-                    >
-                      Clear All
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        processFiles()
-                        setShowUploadOverlay(false)
-                      }}
-                      disabled={isProcessing}
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Process {selectedFiles.length}
-                    </Button>
-                  </div>
-                </div>
-                <ScrollArea className="max-h-[350px] -mx-2 px-2">
-                  <div className="space-y-2">
-                    {selectedFiles.map((file, index) => {
-                      const Icon = getFileIcon(file)
-                      const isImage = file.type.startsWith('image/')
-                      const isVideo = file.type.startsWith('video/')
-                      const previewUrl = isImage || isVideo ? URL.createObjectURL(file) : null
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 p-3 rounded-lg border bg-card"
-                        >
-                          {previewUrl ? (
-                            <div className="h-12 w-12 rounded overflow-hidden flex-shrink-0 bg-muted">
-                              {isImage ? (
-                                <img
-                                  src={previewUrl}
-                                  alt={file.name}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <video
-                                  src={previewUrl}
-                                  className="h-full w-full object-cover"
-                                  muted
-                                />
-                              )}
-                            </div>
-                          ) : (
-                            <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                              <Icon className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm truncate">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveFile(index)}
-                            className="h-8 w-8 flex-shrink-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </ScrollArea>
-                <div className="flex justify-center pt-6 mt-6 border-t">
-                  <input
-                    type="file"
-                    id="file-upload-overlay-more"
-                    className="hidden"
-                    multiple
-                    accept="image/*,video/*,.gif,.webp"
-                    onChange={handleFileSelect}
-                  />
-                  <Button asChild variant="outline" size="lg">
-                    <label htmlFor="file-upload-overlay-more" className="cursor-pointer">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Add More Files
-                    </label>
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
     </>
   )
 }
 
 export default function EmojiCreatorPageWrapper() {
   return <EmojiCreatorPage />;
-}
-
-// Add CSS for grid pattern
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style')
-  style.textContent = `
-    .bg-grid-white\\/5 {
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.05)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
-    }
-  `
-  document.head.appendChild(style)
 }
