@@ -8,7 +8,7 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { emojiStorage } from "@/lib/storage/indexed-db"
 import { Emoji } from "@/lib/services/emoji-service"
 import { EmojiImportStatus } from "@/components/emoji-import-status"
-import { useOpenPanel } from '@openpanel/nextjs'
+import { useTrack } from '@/lib/hooks/use-track'
 import { toast } from "sonner"
 
 export function ChromeExtensionHandler() {
@@ -21,7 +21,7 @@ export function ChromeExtensionHandler() {
   const [success, setSuccess] = useState<string | null>(null)
   const hasProcessed = useRef(false)
   const lastSyncTimeProcessed = useRef(0)
-  const op = useOpenPanel()
+  const track = useTrack()
 
   // Function to process synced data from extension storage
   const processSyncedData = useCallback(async (data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
@@ -107,7 +107,7 @@ export function ChromeExtensionHandler() {
       }
 
       // Track event
-      op.track('chrome_extension_synced_data', {
+      track('chrome_extension_synced_data', {
         emojiCount: data.emojiCount,
         nonAliasCount: nonAliasCount,
         workspace: data.workspace,
@@ -133,7 +133,7 @@ export function ChromeExtensionHandler() {
       setProgress(0);
       setLoadingStage("");
     }
-  }, [setEmojiData, setWorkspace, setHasRealData, op, setIsLoading, setProgress, setLoadingStage])
+  }, [setEmojiData, setWorkspace, setHasRealData, track, setIsLoading, setProgress, setLoadingStage])
   
   // Function to process extension data
   const processExtensionData = async (data: SlackAuthData) => {
@@ -193,7 +193,7 @@ export function ChromeExtensionHandler() {
       
       if (!parsedData.isValid || parsedData.error) {
         const errorMessage = parsedData.error || "Invalid authentication data"
-        op.track('chrome_extension_invalid_data', {
+        track('chrome_extension_invalid_data', {
           error: errorMessage,
           hasToken: !!parsedData.token,
           hasCookie: !!parsedData.cookie,
@@ -246,7 +246,7 @@ export function ChromeExtensionHandler() {
           console.error("[ChromeExtensionHandler] API error response:", errorData)
           errorMessage = errorData.error || errorMessage
           
-          op.track('chrome_extension_api_error', {
+          track('chrome_extension_api_error', {
             status: response.status,
             error: errorMessage,
             workspace: workspace,
@@ -307,7 +307,7 @@ export function ChromeExtensionHandler() {
       setSuccess(`Successfully synced emojis from ${workspace}`)
       setIsLoading(false)
 
-      op.track('chrome_extension_emojis_fetched', {
+      track('chrome_extension_emojis_fetched', {
         emojiCount: typedEmojis.length,
         workspace: workspace,
         hasAliases: responseData.emojis.some((e: any) => e.is_alias),

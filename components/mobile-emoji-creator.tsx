@@ -33,7 +33,7 @@ import {
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { formatBytes } from "@/lib/utils"
 import { toast } from "sonner"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 
 type CreationStep = 'select' | 'processing' | 'preview' | 'edit' | 'complete'
@@ -43,10 +43,11 @@ interface MobileEmojiCreatorProps {
   onCancel?: () => void
 }
 
-export function MobileEmojiCreator({ 
-  initialFile, 
-  onCancel 
+export function MobileEmojiCreator({
+  initialFile,
+  onCancel
 }: MobileEmojiCreatorProps) {
+  const track = useTrack();
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState<CreationStep>('select')
   const [selectedFile, setSelectedFile] = useState<File | null>(initialFile || null)
@@ -150,7 +151,7 @@ export function MobileEmojiCreator({
         }))
       }
       
-      openpanel.track("Mobile Emoji Creator: File Processed", {
+      track("Mobile Emoji Creator: File Processed", {
         fileName: file.name,
         fileType: file.type,
         originalSize: file.size,
@@ -182,7 +183,7 @@ export function MobileEmojiCreator({
       toast.success('Emoji downloaded!')
       setCurrentStep('complete')
       
-      openpanel.track("Mobile Emoji Creator: Downloaded", {
+      track("Mobile Emoji Creator: Downloaded", {
         emojiName: emojiName,
         format: processedEmoji.format
       })
@@ -197,7 +198,7 @@ export function MobileEmojiCreator({
     
     setIsUploadingToSlack(true)
     
-    openpanel.track("Mobile Emoji Creator: Slack Upload Started", {
+    track("Mobile Emoji Creator: Slack Upload Started", {
       emojiName: emojiName || processedEmoji.name,
       format: processedEmoji.format,
       size: processedEmoji.processedSize
@@ -209,7 +210,7 @@ export function MobileEmojiCreator({
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack!`)
         
-        openpanel.track("Mobile Emoji Creator: Slack Upload Success", {
+        track("Mobile Emoji Creator: Slack Upload Success", {
           emojiName: result.emojiName,
           format: processedEmoji.format
         })
@@ -219,7 +220,7 @@ export function MobileEmojiCreator({
       } else {
         toast.error(result.error || 'Failed to upload to Slack')
         
-        openpanel.track("Mobile Emoji Creator: Slack Upload Failed", {
+        track("Mobile Emoji Creator: Slack Upload Failed", {
           error: result.error,
           emojiName: emojiName || processedEmoji.name
         })

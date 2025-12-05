@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
-import { useOpenPanel } from '@openpanel/nextjs';
+import { useTrack } from '@/lib/hooks/use-track';
 import { EmojiImportStatus } from "@/components/emoji-import-status"
 import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension";
 import { toast } from "sonner"
@@ -41,7 +41,7 @@ export function SlackCurlInput() {
   const [loadingStage, setLoadingStage] = useState("");
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const op = useOpenPanel();
+  const track = useTrack();
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
 
   useEffect(() => {
@@ -251,7 +251,7 @@ export function SlackCurlInput() {
       setLoadingStage("")
       setIsLoading(false)
 
-      op.track('demo_mode_loaded', {
+      track('demo_mode_loaded', {
         emojiCount: demoData.length,
       });
 
@@ -293,7 +293,7 @@ export function SlackCurlInput() {
       if (!parsedCurl.isValid || parsedCurl.error) {
         const errorMessage = parsedCurl.error || "Invalid cURL command format"
         
-        op.track('slack_curl_invalid', {
+        track('slack_curl_invalid', {
           error: errorMessage,
           hasToken: !!parsedCurl.token,
           hasCookie: !!parsedCurl.cookie,
@@ -351,7 +351,7 @@ export function SlackCurlInput() {
           console.error("API error response:", errorData)
           errorMessage = errorData.error || errorMessage
           
-          op.track('slack_api_error', {
+          track('slack_api_error', {
             status: response.status,
             error: errorMessage,
             workspace: workspace,
@@ -398,7 +398,7 @@ export function SlackCurlInput() {
       setLoadingStage("")
       setIsLoading(false)
 
-      op.track('slack_emojis_fetched', {
+      track('slack_emojis_fetched', {
         emojiCount: typedEmojis.length,
         workspace: workspace,
         hasAliases: data.emojis.some((e: any) => e.is_alias),

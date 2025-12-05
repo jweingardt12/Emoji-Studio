@@ -11,7 +11,7 @@ import { generateDemoData } from "@/lib/demo-data"
 import { BarChartBig, Users, Lock, Wand2, CheckCircle, GithubIcon, MessageSquare, Download, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useAnalytics } from "@/lib/analytics"
-import { useOpenPanel } from '@openpanel/nextjs';
+import { useTrack } from '@/lib/hooks/use-track';
 import { TextShimmer } from '@/components/ui/text-shimmer';
 import { GradientText } from '@/components/ui/gradient-text';
 import {
@@ -74,7 +74,7 @@ export function DashboardOverlay() {
   const [isAnimatedIn, setIsAnimatedIn] = useState(false)
   const [isInitialCheckDone, setIsInitialCheckDone] = useState(false) // New state
   const [showChatBubble, setShowChatBubble] = useState(false) // For chat bubble animation
-  const { track: opTrack } = useOpenPanel();
+  const track = useTrack();
 
   // Function to check local storage for emoji data
   const checkLocalStorage = () => {
@@ -168,7 +168,7 @@ export function DashboardOverlay() {
   }, [isAnimatedIn])
 
   const handleImport = async () => {
-    opTrack('button_click', { 
+    track('button_click', { 
       action: 'use_demo_data',
       source: 'dashboard_overlay' 
     });
@@ -178,7 +178,7 @@ export function DashboardOverlay() {
       console.log("Starting demo data import...")
       
       // Track demo data import event
-      opTrack('demo_data_import_start', {
+      track('demo_data_import_start', {
         source: 'dashboard_overlay'
       })
       
@@ -199,7 +199,7 @@ export function DashboardOverlay() {
       localStorage.setItem("workspace", "Slack Emoji Collection")
       
       // Track successful demo data import
-      opTrack('demo_data_import_success', {
+      track('demo_data_import_success', {
         emoji_count: demoData.length,
         source: 'dashboard_overlay'
       })
@@ -322,7 +322,7 @@ export function DashboardOverlay() {
               size="lg"
               className="w-full sm:w-auto text-base px-8"
               onClick={() => {
-                opTrack('navigate', {
+                track('navigate', {
                   destination: 'settings',
                   source: 'dashboard_overlay_get_started_button'
                 });
@@ -337,7 +337,7 @@ export function DashboardOverlay() {
             <div className="flex items-center gap-4 text-sm">
               <button
                 onClick={() => {
-                  opTrack('navigate', {
+                  track('navigate', {
                     destination: 'emoji_creator',
                     source: 'dashboard_overlay_create_link'
                   });
@@ -377,7 +377,7 @@ export function DashboardOverlay() {
                   variant="link" 
                   className="text-xs text-muted-foreground hover:text-primary"
                   onClick={() => {
-                    opTrack('security_info_click', {
+                    track('security_info_click', {
                       source: 'dashboard_overlay'
                     });
                   }}
@@ -400,7 +400,7 @@ export function DashboardOverlay() {
                   className="w-full rounded-md my-4"
                   muted
                   onPlay={() => {
-                    opTrack('video_play', {
+                    track('video_play', {
                       source: 'dashboard_overlay_security_video',
                       video_src: '/assets/emoji-studio-how-to.mp4'
                     });
@@ -444,7 +444,7 @@ export function DashboardOverlay() {
               className="hover:text-primary transition-colors"
               onClick={() => {
                 // Track creator link click
-                opTrack('external_link_click', {
+                track('external_link_click', {
                   destination: 'creator_website',
                   url: 'https://jwe.in?utm_source=emojistudio',
                   source: 'dashboard_overlay'
@@ -461,7 +461,7 @@ export function DashboardOverlay() {
               className="hover:text-primary transition-colors inline-flex items-center"
               onClick={() => {
                 // Track GitHub link click
-                opTrack('external_link_click', {
+                track('external_link_click', {
                   destination: 'github_repo',
                   url: 'https://github.com/jweingardt12/Emoji-Studio',
                   source: 'dashboard_overlay'

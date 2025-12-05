@@ -2,9 +2,10 @@
 
 import { useEffect } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 
 export function GlobalExtensionListener() {
+  const track = useTrack();
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   
   useEffect(() => {
@@ -13,8 +14,8 @@ export function GlobalExtensionListener() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'EXTENSION_TRACK_EVENT') {
         // Forward tracking events from extension to openpanel
-        if (event.data.eventName && openpanel) {
-          openpanel.track(event.data.eventName, event.data.properties || {})
+        if (event.data.eventName) {
+          track(event.data.eventName, event.data.properties || {})
         }
       } else if (event.data.type === 'EMOJI_STUDIO_CLEAR_DATA_FROM_EXTENSION') {
         console.log('[GlobalExtensionListener] Clear data request received!')
@@ -36,7 +37,7 @@ export function GlobalExtensionListener() {
     return () => {
       window.removeEventListener('message', handleMessage)
     }
-  }, [setEmojiData, setWorkspace, setHasRealData])
+  }, [setEmojiData, setWorkspace, setHasRealData, track])
   
   return null
 }

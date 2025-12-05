@@ -7,9 +7,10 @@ import { PWAInstallPrompt } from "./pwa-install-prompt"
 import { useIOSViewportFix } from "@/hooks/use-ios-viewport-fix"
 import { useAutoRefresh } from "@/hooks/use-auto-refresh"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 
 export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
+  const track = useTrack();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isPWA, setIsPWA] = useState(false)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
@@ -44,7 +45,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
       
       // Track PWA status
       if (pwaStatus) {
-        openpanel.track("PWA: App Opened", {
+        track("PWA: App Opened", {
           displayMode: isStandalone ? "standalone" : "ios-standalone",
           hasServiceWorker: 'serviceWorker' in navigator,
           protocol: window.location.protocol,
@@ -61,7 +62,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
         .then((registration) => {
           console.log('Service Worker registered successfully')
           
-          openpanel.track("PWA: Service Worker Registered", {
+          track("PWA: Service Worker Registered", {
             scope: registration.scope
           })
           
@@ -72,7 +73,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   console.log('New service worker available, refresh to update')
-                  openpanel.track("PWA: Update Available", {})
+                  track("PWA: Update Available", {})
                   // Could show a toast here to notify user
                 }
               })
@@ -81,7 +82,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
         })
         .catch((error) => {
           console.warn('Service Worker registration failed:', error)
-          openpanel.track("PWA: Service Worker Registration Failed", {
+          track("PWA: Service Worker Registration Failed", {
             error: error.message
           })
           // Don't break the app if SW fails, it's an enhancement
@@ -94,7 +95,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      openpanel.track("PWA: Install Prompt Available", {})
+      track("PWA: Install Prompt Available", {})
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -110,12 +111,12 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
   const installPWA = async () => {
     if (!deferredPrompt) return
 
-    openpanel.track("PWA: Install Prompt Shown", {})
+    track("PWA: Install Prompt Shown", {})
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
     console.log(`User response to install prompt: ${outcome}`)
     
-    openpanel.track("PWA: Install Prompt Response", {
+    track("PWA: Install Prompt Response", {
       outcome: outcome,
       accepted: outcome === 'accepted'
     })

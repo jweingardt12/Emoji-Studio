@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor";
 import { formatBytes } from "@/lib/utils";
 import { toast } from "sonner";
-import { openpanel } from "@/lib/safe-openpanel";
+import { useTrack } from "@/lib/hooks/use-track";
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -65,6 +65,7 @@ interface MobileEmojiDrawerProps {
 }
 
 export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps) {
+  const track = useTrack();
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<CreationStep>('select');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -141,7 +142,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     }
     
     // Track file input action
-    openpanel.track("Mobile Emoji Drawer: Input Method Selected", {
+    track("Mobile Emoji Drawer: Input Method Selected", {
       method: type,
       step: "select"
     })
@@ -349,7 +350,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       
       setCurrentStep('preview');
       
-      openpanel.track("Mobile Emoji Drawer: File Processed", {
+      track("Mobile Emoji Drawer: File Processed", {
         fileName: file.name,
         fileType: file.type,
         originalSize: file.size,
@@ -377,7 +378,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       toast.success('Emoji downloaded!');
       setCurrentStep('complete');
       
-      openpanel.track("Mobile Emoji Drawer: Downloaded", {
+      track("Mobile Emoji Drawer: Downloaded", {
         emojiName: emojiName,
         format: processedEmoji.format
       });
@@ -404,7 +405,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           setEmojiName(result.emojiName || processedEmoji.name);
         }
         
-        openpanel.track("Mobile Emoji Drawer: Slack Upload Success", {
+        track("Mobile Emoji Drawer: Slack Upload Success", {
           emojiName: result.emojiName,
           format: processedEmoji.format
         });
@@ -446,7 +447,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     setIsApplyingEdits(true);
     
     // Track video edit application
-    openpanel.track("Mobile Emoji Drawer: Video Edits Applied", {
+    track("Mobile Emoji Drawer: Video Edits Applied", {
       speed: videoAdjustments.speed,
       scaleMode: videoAdjustments.scaleMode
     })
@@ -485,7 +486,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     setIsApplyingEdits(true);
     
     // Track image edit application
-    openpanel.track("Mobile Emoji Drawer: Image Edits Applied", {
+    track("Mobile Emoji Drawer: Image Edits Applied", {
       brightness: editAdjustments.brightness,
       contrast: editAdjustments.contrast,
       saturation: editAdjustments.saturation,
@@ -859,7 +860,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
               <Button 
                 variant="outline" 
                 onClick={() => {
-                  openpanel.track("Mobile Emoji Drawer: Edit Started", {
+                  track("Mobile Emoji Drawer: Edit Started", {
                     format: processedEmoji?.format
                   })
                   // Reset edit adjustments when entering edit mode
@@ -1129,7 +1130,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                             setBackgroundRemovedPreview(null);
                             setPreserveHDR(false);
                           }
-                          openpanel.track("Mobile Emoji Drawer: Reset Edits", {
+                          track("Mobile Emoji Drawer: Reset Edits", {
                             type: isAnimated ? "video" : "image"
                           })
                         }}
@@ -1289,7 +1290,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
             >
               <Button 
                 onClick={() => {
-                  openpanel.track("Mobile Emoji Drawer: Create Another", {})
+                  track("Mobile Emoji Drawer: Create Another", {})
                   handleStartOver()
                 }} 
                 className="w-full" 

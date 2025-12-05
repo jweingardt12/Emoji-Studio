@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-extension"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
-import { useOpenPanel } from '@openpanel/nextjs'
+import { useTrack } from '@/lib/hooks/use-track'
 import { EmojiImportStatus } from "@/components/emoji-import-status"
 
 export function ChromeExtensionOption() {
@@ -21,7 +21,7 @@ export function ChromeExtensionOption() {
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [loadingStage, setLoadingStage] = useState("")
   const { setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
-  const op = useOpenPanel()
+  const track = useTrack()
   const isConnectingRef = useRef(false)
 
   useEffect(() => {
@@ -182,7 +182,7 @@ export function ChromeExtensionOption() {
       // Fire event to notify other components that emoji data has been updated
       window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
-      op.track('chrome_extension_emoji_fetch', {
+      track('chrome_extension_emoji_fetch', {
         emojiCount: responseData.emojis.length,
         workspace: workspace,
       })
@@ -244,7 +244,7 @@ export function ChromeExtensionOption() {
     // Send message to extension to start the auth process
     window.postMessage({ type: 'START_SLACK_AUTH' }, '*')
 
-    op.track('chrome_extension_connect_attempt', {})
+    track('chrome_extension_connect_attempt', {})
 
     // Set a timeout for the connection attempt
     setTimeout(() => {

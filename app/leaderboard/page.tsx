@@ -9,13 +9,14 @@ import UserOverlay, { UserWithEmojiCount } from "@/components/user-overlay"
 import { RequireData } from "@/components/require-data"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
+  const track = useTrack();
   // Add client-side only rendering
   const [isClient, setIsClient] = useState(false)
   const isMobile = useIsMobile()
@@ -104,7 +105,7 @@ function LeaderboardPage() {
 
   const setShowInactiveUsers = (value: boolean) => {
     setShowInactiveUsersState(value);
-    openpanel.track("Leaderboard: Toggle Show Inactive Users", { active: value });
+    track("Leaderboard: Toggle Show Inactive Users", { active: value });
   };
 
   if (!isClient || !now) return null;

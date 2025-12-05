@@ -13,13 +13,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle as AlertCircleIcon, Camera, Loader2, X } from "lucide-react"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 
 export function QrScanDrawer({ open, onOpenChange, onDetected }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   onDetected: (text: string) => void
 }) {
+  const track = useTrack();
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number | null>(null)
@@ -53,7 +54,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       return
     }
     // Track QR scanner opened
-    openpanel.track("Mobile QR Scanner: Opened", {
+    track("Mobile QR Scanner: Opened", {
       supported: supported,
       fallback: !supported
     })
@@ -120,7 +121,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       console.log("Camera started successfully")
       
       // Track camera access granted
-      openpanel.track("Mobile QR Scanner: Camera Access Granted", {
+      track("Mobile QR Scanner: Camera Access Granted", {
         usingFallback: !supported,
         facingMode: "environment"
       })
@@ -136,7 +137,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
               const text = codes[0].rawValue || codes[0].raw || codes[0].value || ""
               if (text) {
                 console.log("QR code detected:", text)
-                openpanel.track("Mobile QR Scanner: Code Detected", {
+                track("Mobile QR Scanner: Code Detected", {
                   method: "native",
                   contentType: text.includes("sid=") ? "pairing" : "other"
                 })
@@ -196,7 +197,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
             
             if (code && code.data) {
               console.log("QR code detected via jsQR:", code.data)
-              openpanel.track("Mobile QR Scanner: Code Detected", {
+              track("Mobile QR Scanner: Code Detected", {
                 method: "jsQR",
                 contentType: code.data.includes("sid=") ? "pairing" : "other"
               })
@@ -220,7 +221,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       setCameraStatus('error')
       
       // Track camera access failure
-      openpanel.track("Mobile QR Scanner: Camera Access Failed", {
+      track("Mobile QR Scanner: Camera Access Failed", {
         errorType: e.name,
         errorMessage: e.message
       })
@@ -354,7 +355,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
 
         <DrawerFooter>
           <Button variant="outline" onClick={() => {
-            openpanel.track("Mobile QR Scanner: Cancelled", {
+            track("Mobile QR Scanner: Cancelled", {
               cameraStatus: cameraStatus
             })
             onOpenChange(false)

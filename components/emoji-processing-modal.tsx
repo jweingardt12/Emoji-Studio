@@ -13,7 +13,7 @@ import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 import { toast } from "sonner"
 import Link from "next/link"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { SparklesText } from "@/src/components/magicui/sparkles-text"
 import { isEmojiNameAvailable, type Emoji } from "@/lib/services/emoji-service"
@@ -59,6 +59,7 @@ export function EmojiProcessingModal({
   onUpdateProcessedEmojis,
   emojiData
 }: EmojiProcessingModalProps) {
+  const track = useTrack();
   const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
   const [steps, setSteps] = useState<ProcessingStep[]>([])
@@ -161,7 +162,7 @@ export function EmojiProcessingModal({
 
   const openEIModalThenEdit = () => {
     setShowEIModal(true)
-    openpanel.track("Emoji Intelligence: Modal Opened (Pre-Edit)", {
+    track("Emoji Intelligence: Modal Opened (Pre-Edit)", {
       emojiCount: processedEmojis.length,
     })
   }
@@ -204,7 +205,7 @@ export function EmojiProcessingModal({
     console.log("[handleSlackUpload] Starting upload for emoji at index:", index, "name:", customName || emoji.name)
     setUploadingIndex(index)
 
-    openpanel.track("Slack Upload: Started", {
+    track("Slack Upload: Started", {
       emojiName: customName || emoji.name,
       format: emoji.format,
       size: emoji.processedSize,
@@ -221,7 +222,7 @@ export function EmojiProcessingModal({
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
         setUploadStatuses(prev => ({ ...prev, [index]: 'success' }))
         
-        openpanel.track("Slack Upload: Success", {
+        track("Slack Upload: Success", {
           emojiName: result.emojiName,
           originalName: emoji.name,
           format: emoji.format,
@@ -274,7 +275,7 @@ export function EmojiProcessingModal({
             }
           })
           
-          openpanel.track("Slack Upload: Failed - Name Taken", {
+          track("Slack Upload: Failed - Name Taken", {
             emojiName: customName || emoji.name,
             format: emoji.format,
             isBulkUpload: uploadingAll
@@ -282,7 +283,7 @@ export function EmojiProcessingModal({
         } else {
           toast.error(result.error || "Failed to upload emoji to Slack")
           
-          openpanel.track("Slack Upload: Failed", {
+          track("Slack Upload: Failed", {
             emojiName: customName || emoji.name,
             format: emoji.format,
             error: result.error || "Unknown error",
@@ -294,7 +295,7 @@ export function EmojiProcessingModal({
       toast.error("An unexpected error occurred")
       setUploadStatuses(prev => ({ ...prev, [index]: 'failed' }))
       
-      openpanel.track("Slack Upload: Error", {
+      track("Slack Upload: Error", {
         emojiName: customName || emoji.name,
         format: emoji.format,
         error: error instanceof Error ? error.message : "Unknown error",
@@ -711,7 +712,7 @@ export function EmojiProcessingModal({
                           const isRetry = Object.values(uploadStatuses).some(status => status === 'failed')
                           const remainingCount = processedEmojis.filter((_, i) => uploadStatuses[i] !== 'success').length
                           
-                          openpanel.track("Slack Upload: Bulk Started", {
+                          track("Slack Upload: Bulk Started", {
                             totalEmojis: processedEmojis.length,
                             remainingEmojis: remainingCount,
                             isRetry: isRetry,
@@ -748,7 +749,7 @@ export function EmojiProcessingModal({
                           if (successCount === processedEmojis.length) {
                             toast.success(`Successfully uploaded ${successCount} emojis to Slack`)
                             
-                            openpanel.track("Slack Upload: Bulk Complete - Success", {
+                            track("Slack Upload: Bulk Complete - Success", {
                               totalEmojis: processedEmojis.length,
                               successCount: successCount,
                               totalSize: processedEmojis.reduce((sum, e) => sum + e.processedSize, 0),
@@ -762,7 +763,7 @@ export function EmojiProcessingModal({
                           } else if (successCount > 0) {
                             toast.warning(`Uploaded ${successCount} of ${processedEmojis.length} emojis. Failed: ${failedEmojis.join(", ")}`)
                             
-                            openpanel.track("Slack Upload: Bulk Complete - Partial", {
+                            track("Slack Upload: Bulk Complete - Partial", {
                               totalEmojis: processedEmojis.length,
                               successCount: successCount,
                               failedCount: failedEmojis.length,
@@ -771,7 +772,7 @@ export function EmojiProcessingModal({
                           } else {
                             toast.error("Failed to upload emojis to Slack")
                             
-                            openpanel.track("Slack Upload: Bulk Complete - Failed", {
+                            track("Slack Upload: Bulk Complete - Failed", {
                               totalEmojis: processedEmojis.length,
                               failedEmojis: failedEmojis
                             })

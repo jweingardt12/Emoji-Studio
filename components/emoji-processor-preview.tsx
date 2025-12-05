@@ -9,7 +9,7 @@ import { Download, X, CheckCircle, AlertCircle, Check, Send, Pencil, Sliders } f
 import { formatBytes, formatSlackEmojiDisplay } from "@/lib/utils"
 import { uploadEmojiToSlack, hasSlackConnection } from "@/lib/utils/slack-upload"
 import { toast } from "sonner"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import Link from "next/link"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 
@@ -22,14 +22,15 @@ interface EmojiProcessorPreviewProps {
   onEdit?: (emoji: ProcessedEmoji, index: number) => void
 }
 
-export function EmojiProcessorPreview({ 
-  emojis, 
-  onRemove, 
+export function EmojiProcessorPreview({
+  emojis,
+  onRemove,
   onDownload,
   onDownloadAll,
   onUpdateName,
   onEdit
 }: EmojiProcessorPreviewProps) {
+  const track = useTrack();
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
@@ -59,7 +60,7 @@ export function EmojiProcessorPreview({
   const handleSlackUpload = async (emoji: ProcessedEmoji, index: number) => {
     setUploadingIndex(index)
     
-    openpanel.track("Slack Upload: Started", {
+    track("Slack Upload: Started", {
       emojiName: emoji.name,
       format: emoji.format,
       size: emoji.processedSize,
@@ -75,7 +76,7 @@ export function EmojiProcessorPreview({
         // Mark this emoji as uploaded
         setUploadedEmojis(prev => new Set(prev).add(index))
         
-        openpanel.track("Slack Upload: Success", {
+        track("Slack Upload: Success", {
           emojiName: result.emojiName,
           originalName: emoji.name,
           format: emoji.format,
@@ -92,14 +93,14 @@ export function EmojiProcessorPreview({
             }
           })
           
-          openpanel.track("Slack Upload: Failed - Name Taken", {
+          track("Slack Upload: Failed - Name Taken", {
             emojiName: emoji.name,
             format: emoji.format
           })
         } else {
           toast.error(result.error || "Failed to upload emoji to Slack")
           
-          openpanel.track("Slack Upload: Failed", {
+          track("Slack Upload: Failed", {
             emojiName: emoji.name,
             format: emoji.format,
             error: result.error || "Unknown error"
@@ -109,7 +110,7 @@ export function EmojiProcessorPreview({
     } catch (error) {
       toast.error("An unexpected error occurred")
       
-      openpanel.track("Slack Upload: Error", {
+      track("Slack Upload: Error", {
         emojiName: emoji.name,
         format: emoji.format,
         error: error instanceof Error ? error.message : "Unknown error"

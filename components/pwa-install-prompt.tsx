@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, Download, Share, Plus, ChevronUp } from "lucide-react"
-import { openpanel } from "@/lib/safe-openpanel"
+import { useTrack } from "@/lib/hooks/use-track"
 import { cn } from "@/lib/utils"
 
 interface PWAInstallPromptProps {
@@ -12,6 +12,7 @@ interface PWAInstallPromptProps {
 }
 
 export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAInstallPromptProps) {
+  const track = useTrack();
   const [isIOS, setIsIOS] = useState(false)
   const [showInstructions, setShowInstructions] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
@@ -38,7 +39,7 @@ export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAIn
   const handleDismiss = () => {
     localStorage.setItem('pwa-install-dismissed', 'true')
     localStorage.setItem('pwa-install-dismissed-time', Date.now().toString())
-    openpanel.track("PWA: Install Prompt Dismissed", {
+    track("PWA: Install Prompt Dismissed", {
       platform: isIOS ? 'ios' : 'android'
     })
     onDismiss()
@@ -47,7 +48,7 @@ export function PWAInstallPrompt({ deferredPrompt, onDismiss, onInstall }: PWAIn
   const handleInstall = () => {
     if (isIOS) {
       setShowInstructions(true)
-      openpanel.track("PWA: iOS Install Instructions Shown", {})
+      track("PWA: iOS Install Instructions Shown", {})
     } else {
       onInstall()
     }
