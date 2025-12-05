@@ -77,10 +77,34 @@ export function SlackCurlInput() {
 
 
   const extractWorkspaceName = (curl: string): string => {
+    // First try the subdomain
     const workspaceUrlMatch = curl.match(/https?:\/\/([^.]+)\.slack\.com/)
-    if (workspaceUrlMatch && workspaceUrlMatch[1]) {
+    if (workspaceUrlMatch && workspaceUrlMatch[1] &&
+        workspaceUrlMatch[1] !== 'app' &&
+        workspaceUrlMatch[1] !== 'api' &&
+        workspaceUrlMatch[1] !== 'files') {
       return workspaceUrlMatch[1]
     }
+
+    // Try slack_route cookie (contains team ID like T0ABC123)
+    const slackRouteMatch = curl.match(/slack_route=([A-Z][A-Z0-9]+)/i)
+    if (slackRouteMatch) {
+      return slackRouteMatch[1]
+    }
+
+    // Try client path like /client/T0ABC123/
+    const clientPathMatch = curl.match(/\/client\/([A-Z][A-Z0-9]+)/i)
+    if (clientPathMatch) {
+      return clientPathMatch[1]
+    }
+
+    // Try team parameter
+    const teamMatch = curl.match(/[?&]team=([^&\s'"]+)/) ||
+                      curl.match(/team_id=([^&\s'"]+)/)
+    if (teamMatch) {
+      return teamMatch[1]
+    }
+
     return "slack-workspace"
   }
   
