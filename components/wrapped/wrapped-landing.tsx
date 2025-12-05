@@ -343,8 +343,8 @@ export function WrappedLanding({
     <div className={`flex flex-col gap-8 md:gap-12 w-full pb-8 transition-all duration-700 ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
     }`}>
-      {/* Confetti effect on page load - skip on mobile for performance */}
-      {pageVisible && !isMobile && <ConfettiSideCannons />}
+      {/* Confetti effect on page load */}
+      {pageVisible && <ConfettiSideCannons />}
       {/* Hero Card - Larger with preview */}
       <div className="px-0 sm:px-4 lg:px-6 pt-4 md:pt-8">
         <Card className="relative overflow-hidden border-muted/40 rounded-none sm:rounded-lg">
