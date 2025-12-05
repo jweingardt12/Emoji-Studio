@@ -49,10 +49,7 @@ export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLEle
         {/* Refresh button and theme toggle on the right */}
         <div className="flex items-center gap-1">
           <RefreshButton />
-          {/* Theme toggle only on desktop - mobile users use Settings */}
-          <div className="hidden md:block">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
         </div>
       </div>
     </header>

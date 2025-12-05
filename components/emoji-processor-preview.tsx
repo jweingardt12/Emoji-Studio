@@ -180,6 +180,7 @@ export function EmojiProcessorPreview({
                         onClick={() => handleSaveEdit(index)}
                       >
                         <Check className="h-3 w-3" />
+                        <span className="sr-only">Save name</span>
                       </Button>
                       <Button
                         size="icon"
@@ -188,6 +189,7 @@ export function EmojiProcessorPreview({
                         onClick={handleCancelEdit}
                       >
                         <X className="h-3 w-3" />
+                        <span className="sr-only">Cancel editing</span>
                       </Button>
                     </div>
                   ) : (
@@ -206,6 +208,7 @@ export function EmojiProcessorPreview({
                         title="Edit name"
                       >
                         <Pencil className="h-3 w-3" />
+                        <span className="sr-only">Edit name</span>
                       </Button>
                     </div>
                   )}

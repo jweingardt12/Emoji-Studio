@@ -847,6 +847,7 @@ export function PackSelectionSidebar({
                         onClick={() => onRemove(emoji)}
                       >
                         <X className="h-4 w-4" />
+                        <span className="sr-only">Remove emoji</span>
                       </Button>
                     </div>
                   </motion.div>

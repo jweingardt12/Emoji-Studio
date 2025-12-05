@@ -633,6 +633,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
               className="h-8 w-8 -ml-1"
             >
               <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Go back</span>
             </Button>
           ) : (
             <div className="w-8" />

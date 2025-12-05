@@ -3,6 +3,9 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus, RefreshCw, Settings } from "lucide-react";
+import Link from "next/link";
 
 export function DashboardHeroSkeleton() {
   return (
@@ -123,9 +126,23 @@ export function EmptyStateEmojis() {
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="mb-4 text-6xl">😢</div>
       <h3 className="text-lg font-semibold mb-2">No Emojis Yet</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">
+      <p className="text-sm text-muted-foreground max-w-sm mb-4">
         Start creating custom emojis to see them appear here. Your workspace's creativity awaits!
       </p>
+      <div className="flex gap-2">
+        <Button asChild>
+          <Link href="/create">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Emoji
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/settings">
+            <Settings className="h-4 w-4 mr-2" />
+            Connect Slack
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
@@ -135,37 +152,50 @@ export function EmptyStateLeaderboard() {
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="mb-4 text-6xl">🏆</div>
       <h3 className="text-lg font-semibold mb-2">No Leaders Yet</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">
+      <p className="text-sm text-muted-foreground max-w-sm mb-4">
         Be the first to create emojis and claim the top spot on the leaderboard!
       </p>
+      <Button asChild>
+        <Link href="/create">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Your First Emoji
+        </Link>
+      </Button>
     </div>
   );
 }
 
-export function EmptyStateSearch() {
+export function EmptyStateSearch({ onClearSearch }: { onClearSearch?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="mb-4 text-6xl">🔍</div>
       <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">
+      <p className="text-sm text-muted-foreground max-w-sm mb-4">
         Try adjusting your search or filters to find what you're looking for.
       </p>
+      {onClearSearch && (
+        <Button variant="outline" onClick={onClearSearch}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Clear Search
+        </Button>
+      )}
     </div>
   );
 }
 
-export function ErrorState({ message = "Something went wrong" }: { message?: string }) {
+export function ErrorState({ message = "Something went wrong", onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <div className="mb-4 text-6xl">⚠️</div>
       <h3 className="text-lg font-semibold mb-2">Oops!</h3>
-      <p className="text-sm text-muted-foreground max-w-sm">{message}</p>
-      <button
-        onClick={() => window.location.reload()}
-        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+      <p className="text-sm text-muted-foreground max-w-sm mb-4">{message}</p>
+      <Button
+        onClick={onRetry || (() => window.location.reload())}
+        variant="default"
       >
+        <RefreshCw className="h-4 w-4 mr-2" />
         Try Again
-      </button>
+      </Button>
     </div>
   );
 }

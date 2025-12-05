@@ -511,6 +511,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmojiCode}>
                               <Link className="h-3 w-3" />
+                              <span className="sr-only">Copy emoji code</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -646,6 +647,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleClose} className="absolute top-3 right-3 z-10">
                   <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
                 </Button>
               </>
             )}
@@ -714,6 +716,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyEmojiCode}>
                               <Link className="h-3 w-3" />
+                              <span className="sr-only">Copy emoji code</span>
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>

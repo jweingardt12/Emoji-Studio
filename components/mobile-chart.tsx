@@ -161,6 +161,7 @@ export function MobileChart({
             disabled={zoomLevel <= 0.5}
           >
             <ZoomOut className="h-4 w-4" />
+            <span className="sr-only">Zoom out</span>
           </Button>
           <Button
             size="icon"
@@ -170,6 +171,7 @@ export function MobileChart({
             disabled={zoomLevel >= 3}
           >
             <ZoomIn className="h-4 w-4" />
+            <span className="sr-only">Zoom in</span>
           </Button>
           <Button
             size="icon"
@@ -178,6 +180,7 @@ export function MobileChart({
             onClick={handleReset}
           >
             <RotateCcw className="h-4 w-4" />
+            <span className="sr-only">Reset zoom</span>
           </Button>
           <Button
             size="icon"
@@ -186,6 +189,7 @@ export function MobileChart({
             onClick={toggleFullscreen}
           >
             <Maximize2 className="h-4 w-4" />
+            <span className="sr-only">Toggle fullscreen</span>
           </Button>
         </div>
 
