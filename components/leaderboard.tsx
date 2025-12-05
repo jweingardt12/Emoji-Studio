@@ -22,7 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 // import { UserWithEmojiCount } from "@shared/schema.js";
 // (Removed: @shared/schema.js is not present. Using fallback type below.)
 
-export type DateRange = "7days" | "30days" | "quarter" | "year" | "all"
+export type DateRange = "7days" | "30days" | "quarter" | "thisyear" | "year" | "all"
 
 export type LeaderboardVariant = "compact" | "expanded"
 
@@ -292,8 +292,9 @@ const Leaderboard = ({
               <SelectContent>
                 <SelectItem value="7days">Last 7 Days</SelectItem>
                 <SelectItem value="30days">Last 30 Days</SelectItem>
-                <SelectItem value="quarter">Last Quarter</SelectItem>
-                <SelectItem value="year">Last Year</SelectItem>
+                <SelectItem value="quarter">Last 90 Days</SelectItem>
+                <SelectItem value="thisyear">This Year</SelectItem>
+                <SelectItem value="year">Last 365 Days</SelectItem>
                 <SelectItem value="all">All Time</SelectItem>
               </SelectContent>
             </Select>

@@ -28,9 +28,35 @@ class IndexedDBStorage {
     // Initialize DB on first use
   }
 
+  // Reset the connection state (call this if database was deleted)
+  reset(): void {
+    if (this.db) {
+      try {
+        this.db.close();
+      } catch (e) {
+        // Ignore close errors
+      }
+    }
+    this.db = null;
+    this.initPromise = null;
+  }
+
   private async init(): Promise<void> {
-    if (this.db) return;
-    
+    // Check if existing connection is still valid
+    if (this.db) {
+      try {
+        // Test if the database is still accessible
+        const tx = this.db.transaction(['emojis'], 'readonly');
+        tx.abort();
+        return;
+      } catch (e) {
+        // Database connection is stale, reset and reconnect
+        console.log('[IndexedDB] Connection stale, reconnecting...');
+        this.db = null;
+        this.initPromise = null;
+      }
+    }
+
     if (this.initPromise) {
       await this.initPromise;
       return;
@@ -46,11 +72,21 @@ class IndexedDBStorage {
 
       request.onerror = () => {
         console.error('Failed to open IndexedDB:', request.error);
+        this.initPromise = null; // Reset so we can retry
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
+
+        // Handle database being deleted while we have it open
+        this.db.onversionchange = () => {
+          console.log('[IndexedDB] Database version change detected, closing connection');
+          this.db?.close();
+          this.db = null;
+          this.initPromise = null;
+        };
+
         console.log('IndexedDB initialized successfully');
         resolve();
       };
@@ -62,7 +98,7 @@ class IndexedDBStorage {
         if (!db.objectStoreNames.contains('emojis')) {
           db.createObjectStore('emojis', { keyPath: 'key' });
         }
-        
+
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings', { keyPath: 'key' });
         }
@@ -101,24 +137,76 @@ class IndexedDBStorage {
   }
 
   async getItem(store: keyof DBStores, key: string): Promise<any> {
-    await this.init();
-    
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
+    // Try to initialize, but don't block on failures
+    try {
+      await this.initWithTimeout(3000);
+    } catch (error) {
+      console.warn('[IndexedDB] Init failed, falling back to localStorage:', error);
+      return null;
+    }
+
+    if (!this.db) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      try {
+        const transaction = this.db!.transaction([store], 'readonly');
+        const objectStore = transaction.objectStore(store);
+        const request = objectStore.get(key);
+
+        request.onsuccess = () => {
+          const result = request.result;
+          resolve(result ? result.value : null);
+        };
+
+        request.onerror = () => {
+          console.warn('[IndexedDB] getItem error:', request.error);
+          resolve(null);
+        };
+
+        transaction.onerror = () => {
+          console.warn('[IndexedDB] Transaction error');
+          resolve(null);
+        };
+      } catch (error) {
+        console.warn('[IndexedDB] Transaction creation failed:', error);
+        // Reset connection for next attempt
+        this.reset();
+        resolve(null);
       }
+    });
+  }
 
-      const transaction = this.db.transaction([store], 'readonly');
-      const objectStore = transaction.objectStore(store);
-      const request = objectStore.get(key);
+  // Initialize with timeout wrapper
+  private async initWithTimeout(ms: number): Promise<void> {
+    if (this.db) {
+      // Verify connection is still valid
+      try {
+        const tx = this.db.transaction(['emojis'], 'readonly');
+        tx.abort();
+        return;
+      } catch (e) {
+        this.reset();
+      }
+    }
 
-      request.onsuccess = () => {
-        const result = request.result;
-        resolve(result ? result.value : null);
-      };
-      
-      request.onerror = () => reject(request.error);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.reset();
+        reject(new Error('IndexedDB init timed out'));
+      }, ms);
+
+      this.init()
+        .then(() => {
+          clearTimeout(timeout);
+          resolve();
+        })
+        .catch((err) => {
+          clearTimeout(timeout);
+          this.reset();
+          reject(err);
+        });
     });
   }
 

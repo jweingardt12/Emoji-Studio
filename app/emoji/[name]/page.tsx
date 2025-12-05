@@ -21,6 +21,8 @@ export default function EmojiDetailPage() {
 
   // Track timeout for empty data state (give time for data to propagate)
   const [emptyDataTimeout, setEmptyDataTimeout] = useState(false)
+  // Track timeout for when we have data but emoji not found (allow time for fresh sync)
+  const [notFoundTimeout, setNotFoundTimeout] = useState(false)
 
   useEffect(() => {
     // Only start timeout if loading is done but we have no data
@@ -41,6 +43,19 @@ export default function EmojiDetailPage() {
       e => e.name.toLowerCase() === emojiName.toLowerCase()
     ) ?? null;
   }, [emojiData, emojiName])
+
+  // Separate timeout for "have data but emoji not found" case
+  useEffect(() => {
+    // If loading is done, we have data, but emoji isn't found - wait before showing "Not Found"
+    if (!loading && emojiData.length > 0 && !emoji) {
+      const timer = setTimeout(() => setNotFoundTimeout(true), 1500)
+      return () => clearTimeout(timer)
+    }
+    // Reset when emoji is found
+    if (emoji) {
+      setNotFoundTimeout(false)
+    }
+  }, [loading, emojiData.length, emoji])
 
   // Find creator and their other emojis
   const { creator, creatorEmojis } = useMemo(() => {
@@ -112,6 +127,10 @@ export default function EmojiDetailPage() {
 
   // No emoji found - check if we have data to search through
   if (emojiData.length > 0) {
+    // Wait for timeout before showing "Not Found" (gives time for fresh sync data to arrive)
+    if (!notFoundTimeout) {
+      return <EmojiDetailSkeleton />
+    }
     // We have data but emoji doesn't exist in it
     return <EmojiNotFound name={emojiName} />
   }

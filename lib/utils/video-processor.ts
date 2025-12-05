@@ -11,8 +11,8 @@ export class VideoProcessor {
     try {
       this.ffmpeg = new FFmpeg()
       
-      // Use the correct CDN URL structure for version 0.12.x
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+      // Use jsdelivr CDN which has proper CORS support
+      const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd'
       
       // Load FFmpeg with proper configuration
       await this.ffmpeg.load({
@@ -146,7 +146,7 @@ export class VideoProcessor {
     timestamp: string = '00:00:00'
   ): Promise<Blob> {
     await this.loadFFmpeg()
-    
+
     if (!this.ffmpeg) throw new Error('FFmpeg not loaded')
 
     const inputName = 'input' + file.name.substring(file.name.lastIndexOf('.'))
@@ -166,11 +166,85 @@ export class VideoProcessor {
 
     // Read output file
     const data = await this.ffmpeg.readFile(outputName)
-    
+
     // Clean up
     await this.ffmpeg.deleteFile(inputName)
     await this.ffmpeg.deleteFile(outputName)
 
     return new Blob([data], { type: 'image/png' })
+  }
+
+  /**
+   * Convert a sequence of PNG frames to an MP4 video
+   * @param frames - Array of PNG blobs representing each frame
+   * @param fps - Frames per second for the output video
+   * @param onProgress - Optional progress callback
+   */
+  static async framesToMp4(
+    frames: Blob[],
+    fps: number = 30,
+    onProgress?: (progress: number) => void
+  ): Promise<Blob> {
+    await this.loadFFmpeg()
+
+    if (!this.ffmpeg) throw new Error('FFmpeg not loaded')
+
+    // Set up progress handling
+    const progressHandler = onProgress ? ({ progress }: { progress: number }) => {
+      // FFmpeg progress goes from 0 to 1 during encoding
+      // We allocate 30% for frame writing, 70% for encoding
+      onProgress(0.3 + progress * 0.7)
+    } : null
+
+    if (progressHandler) {
+      this.ffmpeg.on('progress', progressHandler)
+    }
+
+    try {
+      // Write all frames to the virtual filesystem
+      for (let i = 0; i < frames.length; i++) {
+        const frameData = await frames[i].arrayBuffer()
+        const paddedIndex = String(i).padStart(4, '0')
+        await this.ffmpeg.writeFile(`frame_${paddedIndex}.png`, new Uint8Array(frameData))
+        onProgress?.((i / frames.length) * 0.3) // 30% for writing frames
+      }
+
+      // Convert frames to MP4 using libx264
+      // Using image2 demuxer with pattern matching for the frame sequence
+      await this.ffmpeg.exec([
+        '-framerate', fps.toString(),
+        '-i', 'frame_%04d.png',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p', // Required for compatibility
+        '-preset', 'medium',
+        '-crf', '23', // Good quality/size balance
+        '-movflags', '+faststart', // Enable streaming
+        'output.mp4'
+      ])
+
+      // Read output file
+      const data = await this.ffmpeg.readFile('output.mp4')
+      // Create a new ArrayBuffer copy to ensure compatibility with Blob
+      const uint8Data = new Uint8Array(data as Uint8Array)
+      const blob = new Blob([uint8Data], { type: 'video/mp4' })
+
+      console.log(`MP4 created: ${frames.length} frames at ${fps}fps, size=${blob.size} bytes`)
+
+      // Clean up frames
+      for (let i = 0; i < frames.length; i++) {
+        const paddedIndex = String(i).padStart(4, '0')
+        await this.ffmpeg.deleteFile(`frame_${paddedIndex}.png`)
+      }
+
+      // Clean up output
+      await this.ffmpeg.deleteFile('output.mp4')
+
+      return blob
+    } finally {
+      // Remove progress listener
+      if (progressHandler) {
+        this.ffmpeg.off('progress', progressHandler)
+      }
+    }
   }
 }
