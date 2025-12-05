@@ -218,7 +218,7 @@ export function WrappedLanding({
                   colors={{ first: "#3b82f6", second: "#8b5cf6" }}
                   sparklesCount={10}
                 >
-                  Slack Emoji Wrapped
+                  Slack Emojis Wrapped
                 </SparklesText>
               </motion.div>
 
