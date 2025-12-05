@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useTrack } from "@/lib/hooks/use-track"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { SparklesText } from "@/src/components/magicui/sparkles-text"
 import { RainbowButton } from "@/src/components/magicui/rainbow-button"
 import { FlickeringGrid } from "@/src/components/magicui/flickering-grid"
@@ -16,38 +17,228 @@ import {
   Chrome,
   Play,
   ArrowRight,
-  Users,
-  Calendar,
-  TrendingUp,
   Sparkles,
   Gift,
-  Trophy,
-  Flame,
-  Moon,
   Share2,
   User,
   Smartphone,
   Zap,
   Bell,
+  Mail,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { EmailExtensionModal } from "@/components/email-extension-modal"
+import { GridBackground } from "@/components/ui/grid-background"
+import { GradientText } from "@/components/ui/gradient-text"
 
-// Floating emoji component for visual interest
-function FloatingEmoji({
-  emoji,
+// Sample emojis from Slackmojis for preview cards
+// Using /download URLs which work (CDN domain emojis.slackmojis.com blocks requests)
+const SAMPLE_EMOJIS = [
+  { name: "party-blob", url: "https://slackmojis.com/emojis/7808-party-blob/download" },
+  { name: "meow-party", url: "https://slackmojis.com/emojis/5999-meow_party/download" },
+  { name: "blob-aww", url: "https://slackmojis.com/emojis/6827-blob_aww/download" },
+  { name: "kirby-jam", url: "https://slackmojis.com/emojis/20573-kirby_jam/download" },
+  { name: "dumpster-fire", url: "https://slackmojis.com/emojis/6248-dumpster-fire/download" },
+  { name: "partyparrot", url: "https://slackmojis.com/emojis/7500-partyparrot/download" },
+  { name: "this-is-fine", url: "https://slackmojis.com/emojis/8559-this_is_fine/download" },
+  { name: "stonks", url: "https://slackmojis.com/emojis/9036-stonks/download" },
+]
+
+const SAMPLE_AVATARS = [
+  "https://slackmojis.com/emojis/4979-thinking/download",
+  "https://slackmojis.com/emojis/6843-blob_detective/download",
+  "https://slackmojis.com/emojis/4594-blob-wave/download",
+  "https://slackmojis.com/emojis/3643-cool-doge/download",
+]
+
+// Preview slide data for stacked deck preview
+const PREVIEW_SLIDES = [
+  {
+    id: "count",
+    gradient: "from-blue-900 via-indigo-900 to-purple-900",
+    glowColor: "rgba(147, 51, 234, 0.3)",
+    type: "count" as const,
+  },
+  {
+    id: "peak",
+    gradient: "from-emerald-900 via-teal-900 to-cyan-900",
+    glowColor: "rgba(16, 185, 129, 0.3)",
+    type: "peak" as const,
+  },
+  {
+    id: "stats",
+    gradient: "from-pink-900 via-rose-900 to-red-900",
+    glowColor: "rgba(236, 72, 153, 0.3)",
+    type: "stats" as const,
+  },
+  {
+    id: "creators",
+    gradient: "from-amber-900 via-orange-900 to-red-900",
+    glowColor: "rgba(251, 191, 36, 0.3)",
+    type: "creators" as const,
+  },
+]
+
+// Mini preview content components
+function CountPreviewContent({ isMobile }: { isMobile: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-4">
+      <p className="text-white/60 text-xs mb-1">This year you created</p>
+      <div
+        className={`${isMobile ? 'text-4xl' : 'text-5xl'} font-black text-white`}
+        style={{ textShadow: "0 0 40px rgba(255, 255, 255, 0.3)" }}
+      >
+        847
+      </div>
+      <GradientText
+        colors={["#8b5cf6", "#ec4899", "#6366f1", "#8b5cf6"]}
+        className={`${isMobile ? 'text-base' : 'text-lg'} font-bold`}
+        animationSpeed={4}
+      >
+        custom emojis
+      </GradientText>
+      {/* Mini emoji grid with real emojis */}
+      <div className={`flex flex-wrap justify-center gap-1.5 mt-3 ${isMobile ? 'max-w-[160px]' : 'max-w-[200px]'}`}>
+        {SAMPLE_EMOJIS.map((emoji, i) => (
+          <img
+            key={i}
+            src={emoji.url}
+            alt={emoji.name}
+            className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-md object-contain`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PeakPreviewContent({ isMobile }: { isMobile: boolean }) {
+  const barHeights = [20, 35, 45, 30, 80, 65, 40, 55, 70, 100, 50, 25]
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-4">
+      <p className="text-white/60 text-xs mb-2">Busiest day</p>
+      <div className={`${isMobile ? 'text-3xl' : 'text-4xl'} font-black text-emerald-400`}>47</div>
+      <p className="text-white/50 text-xs">emojis on Dec 15</p>
+      {/* Mini bar chart */}
+      <div className={`flex items-end gap-0.5 ${isMobile ? 'h-10' : 'h-12'} mt-3`}>
+        {barHeights.map((h, i) => (
+          <div
+            key={i}
+            className={`${isMobile ? 'w-2' : 'w-2.5'} rounded-t ${i === 9 ? 'bg-emerald-400' : 'bg-white/30'}`}
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+      <div className={`flex justify-between ${isMobile ? 'w-[104px]' : 'w-[126px]'} text-[8px] text-white/30 mt-1`}>
+        <span>Jan</span><span>Dec</span>
+      </div>
+    </div>
+  )
+}
+
+function StatsPreviewContent({ isMobile }: { isMobile: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <p className="text-white/60 text-xs mb-2">The Stats</p>
+      {/* Mini donut chart */}
+      <div className={`relative ${isMobile ? 'w-14 h-14' : 'w-16 h-16'} mb-2`}>
+        <svg viewBox="0 0 100 100" className="-rotate-90 w-full h-full">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#a855f7" strokeWidth="12"
+            strokeDasharray="220" strokeDashoffset="0" />
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#14b8a6" strokeWidth="12"
+            strokeDasharray="220" strokeDashoffset="143" />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">35%</span>
+      </div>
+      <div className="flex gap-3 text-[10px]">
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-teal-500"/>GIFs</span>
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-purple-500"/>Static</span>
+      </div>
+      {/* Streak */}
+      <div className={`mt-3 px-3 py-1.5 rounded-full bg-white/10 ${isMobile ? 'text-[10px]' : 'text-xs'} text-white/80`}>
+        🔥 <span className="font-bold text-white">12</span> day streak
+      </div>
+    </div>
+  )
+}
+
+function CreatorsPreviewContent({ isMobile }: { isMobile: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <p className="text-white/60 text-xs mb-1">Top Creator</p>
+      <div
+        className={`${isMobile ? 'text-4xl' : 'text-5xl'} font-black text-amber-400`}
+        style={{ textShadow: "0 0 40px rgba(251, 191, 36, 0.3)" }}
+      >
+        #1
+      </div>
+      <GradientText
+        colors={["#fbbf24", "#f59e0b", "#d97706", "#fbbf24"]}
+        className={`${isMobile ? 'text-base' : 'text-lg'} font-bold`}
+        animationSpeed={4}
+      >
+        emoji architect
+      </GradientText>
+      {/* Mini avatars with real emojis */}
+      <div className="flex -space-x-2 mt-3">
+        {SAMPLE_AVATARS.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt={`creator ${i + 1}`}
+            className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} rounded-full bg-white/10 ring-2 ring-white/20 object-contain`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Render content based on slide type
+function renderSlideContent(type: string, isMobile: boolean) {
+  switch (type) {
+    case "count":
+      return <CountPreviewContent isMobile={isMobile} />
+    case "peak":
+      return <PeakPreviewContent isMobile={isMobile} />
+    case "stats":
+      return <StatsPreviewContent isMobile={isMobile} />
+    case "creators":
+      return <CreatorsPreviewContent isMobile={isMobile} />
+    default:
+      return null
+  }
+}
+
+// Floating emoji images from Slackmojis (using /download URLs)
+const FLOATING_EMOJIS = [
+  { url: "https://slackmojis.com/emojis/7808-party-blob/download", name: "party-blob" },
+  { url: "https://slackmojis.com/emojis/7500-partyparrot/download", name: "partyparrot" },
+  { url: "https://slackmojis.com/emojis/5999-meow_party/download", name: "meow-party" },
+  { url: "https://slackmojis.com/emojis/6827-blob_aww/download", name: "blob-aww" },
+  { url: "https://slackmojis.com/emojis/8559-this_is_fine/download", name: "this-is-fine" },
+]
+
+// Floating emoji component using real Slackmoji images
+function FloatingEmojiImage({
+  index,
   delay,
   duration,
   className
 }: {
-  emoji: string
+  index: number
   delay: number
   duration: number
   className?: string
 }) {
+  const emoji = FLOATING_EMOJIS[index % FLOATING_EMOJIS.length]
   return (
-    <motion.div
-      className={`absolute text-2xl sm:text-3xl select-none pointer-events-none ${className}`}
+    <motion.img
+      src={emoji.url}
+      alt={emoji.name}
+      className={`absolute w-8 h-8 sm:w-10 sm:h-10 select-none pointer-events-none object-contain ${className}`}
       initial={{ opacity: 0, scale: 0 }}
       animate={{
         opacity: [0, 1, 1, 0],
@@ -60,41 +251,10 @@ function FloatingEmoji({
         repeat: Infinity,
         repeatDelay: delay,
       }}
-    >
-      {emoji}
-    </motion.div>
+    />
   )
 }
 
-// Mini slide preview component
-function SlidePreview({
-  icon: Icon,
-  label,
-  value,
-  delay
-}: {
-  icon: React.ElementType
-  label: string
-  value: string
-  delay: number
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4 }}
-      className="flex items-center gap-3 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50"
-    >
-      <div className="p-2 rounded-md bg-primary/10">
-        <Icon className="w-4 h-4 text-primary" />
-      </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-sm font-semibold">{value}</p>
-      </div>
-    </motion.div>
-  )
-}
 
 interface WrappedLandingProps {
   hasData?: boolean
@@ -106,8 +266,20 @@ export function WrappedLanding({
   onViewWrapped,
 }: WrappedLandingProps) {
   const track = useTrack()
+  const isMobile = useIsMobile()
   const currentYear = new Date().getFullYear()
   const [pageVisible, setPageVisible] = useState(false)
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0)
+
+  // Cycling preview slides
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentPreviewIndex((prev) => (prev + 1) % PREVIEW_SLIDES.length)
+    }, 4000) // 4 seconds per slide
+
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     // Trigger fade in animation
@@ -159,40 +331,48 @@ export function WrappedLanding({
     )
   }
 
+  const handleEmailExtension = () => {
+    track("wrapped_landing_cta_clicked", {
+      cta: "email_extension",
+      year: currentYear,
+    })
+    setShowEmailModal(true)
+  }
+
   return (
-    <div className={`flex flex-col gap-6 md:gap-8 w-full pb-8 transition-all duration-700 ${
+    <div className={`flex flex-col gap-4 md:gap-8 w-full pb-8 transition-all duration-700 ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
     }`}>
-      {/* Confetti effect on page load */}
-      {pageVisible && <ConfettiSideCannons />}
+      {/* Confetti effect on page load - skip on mobile for performance */}
+      {pageVisible && !isMobile && <ConfettiSideCannons />}
       {/* Hero Card - Larger with preview */}
-      <div className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
-        <Card className="relative overflow-hidden border-muted/40">
-          {/* Flickering grid background */}
+      <div className="px-0 sm:px-4 lg:px-6 pt-0 md:pt-8">
+        <Card className="relative overflow-hidden border-muted/40 rounded-none sm:rounded-lg">
+          {/* Flickering grid background - simplified on mobile */}
           <div className="absolute inset-0 overflow-hidden rounded-lg">
             <FlickeringGrid
               className="absolute inset-0 z-0"
-              squareSize={4}
-              gridGap={6}
+              squareSize={isMobile ? 3 : 4}
+              gridGap={isMobile ? 8 : 6}
               color="rgb(59, 130, 246)"
-              maxOpacity={0.1}
-              flickerChance={0.1}
+              maxOpacity={isMobile ? 0.08 : 0.1}
+              flickerChance={isMobile ? 0.05 : 0.1}
             />
           </div>
 
-          {/* Subtle decorative gradient accents */}
-          <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-violet-500/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl pointer-events-none z-10" />
+          {/* Subtle decorative gradient accents - simpler on mobile */}
+          <div className="absolute -top-32 -right-32 w-48 md:w-64 h-48 md:h-64 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="hidden md:block absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-violet-500/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl pointer-events-none z-10" />
 
-          {/* Floating emojis */}
-          <FloatingEmoji emoji="🎉" delay={0} duration={4} className="top-8 right-8 sm:right-16" />
-          <FloatingEmoji emoji="🏆" delay={1.5} duration={5} className="top-16 right-24 sm:right-40" />
-          <FloatingEmoji emoji="✨" delay={0.8} duration={4.5} className="top-24 right-12 sm:right-24" />
-          <FloatingEmoji emoji="🔥" delay={2} duration={4} className="bottom-24 right-16 sm:right-32 hidden sm:block" />
-          <FloatingEmoji emoji="💜" delay={2.5} duration={5} className="bottom-16 right-8 hidden sm:block" />
+          {/* Floating emojis from Slackmojis - fewer on mobile */}
+          <FloatingEmojiImage index={0} delay={0} duration={4} className="top-4 right-4 sm:top-8 sm:right-16" />
+          <FloatingEmojiImage index={1} delay={0.8} duration={4.5} className="top-12 right-12 sm:top-24 sm:right-24 hidden sm:block" />
+          <FloatingEmojiImage index={2} delay={1.5} duration={5} className="top-16 right-24 sm:right-40 hidden md:block" />
+          <FloatingEmojiImage index={3} delay={2} duration={4} className="bottom-24 right-16 sm:right-32 hidden lg:block" />
+          <FloatingEmojiImage index={4} delay={2.5} duration={5} className="bottom-16 right-8 hidden lg:block" />
 
-          <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 sm:p-8">
+          <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 p-4 sm:p-6 md:p-8">
             {/* Left side - Text content */}
             <div className="flex flex-col justify-center">
               <motion.div
@@ -200,7 +380,7 @@ export function WrappedLanding({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <Badge variant="secondary" className="mb-4 w-fit">
+                <Badge variant="secondary" className="mb-3 md:mb-4 w-fit">
                   <Gift className="w-3 h-3 mr-1" />
                   <AnimatedShinyText className="text-inherit" shimmerWidth={80}>
                     {currentYear} Year in Review
@@ -214,9 +394,9 @@ export function WrappedLanding({
                 transition={{ delay: 0.2 }}
               >
                 <SparklesText
-                  className="text-3xl sm:text-4xl md:text-5xl tracking-tight mb-4"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-tight mb-3 md:mb-4"
                   colors={{ first: "#3b82f6", second: "#8b5cf6" }}
-                  sparklesCount={10}
+                  sparklesCount={isMobile ? 6 : 10}
                 >
                   Slack Emojis Wrapped
                 </SparklesText>
@@ -227,8 +407,8 @@ export function WrappedLanding({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                <CardDescription className="text-base sm:text-lg max-w-md mb-6">
-                  Discover your Slack workspace's emoji story. See top creators, busiest days, and fun stats from your year.
+                <CardDescription className="text-sm sm:text-base md:text-lg max-w-md mb-4 md:mb-6">
+                  Discover your workspace's emoji story. See top creators, busiest days, and fun stats.
                 </CardDescription>
               </motion.div>
 
@@ -237,19 +417,20 @@ export function WrappedLanding({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-3"
+                className="flex flex-col sm:flex-row gap-2 sm:gap-3"
               >
                 {hasData ? (
                   <RainbowButton
-                    size="lg"
+                    size={isMobile ? "default" : "lg"}
                     onClick={handleViewWrapped}
+                    className="w-full sm:w-auto"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     View Your Wrapped
                   </RainbowButton>
                 ) : (
                   <Button
-                    size="lg"
+                    size={isMobile ? "default" : "lg"}
                     className="w-full sm:w-auto font-semibold"
                     onClick={handleGetStarted}
                     asChild
@@ -261,195 +442,246 @@ export function WrappedLanding({
                   </Button>
                 )}
 
+                {/* Desktop: Show Chrome extension button */}
                 <Button
-                  size="lg"
+                  size={isMobile ? "default" : "lg"}
                   variant="outline"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto hidden sm:flex"
                   onClick={handleChromeExtension}
                 >
                   <Chrome className="w-4 h-4 mr-2" />
                   Chrome Extension
                 </Button>
+
+                {/* Mobile: Show email extension link button instead */}
+                <Button
+                  size="default"
+                  variant="outline"
+                  className="w-full sm:hidden"
+                  onClick={handleEmailExtension}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Email Extension Link
+                </Button>
               </motion.div>
+
+              {/* Mobile helper text */}
+              {isMobile && !hasData && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-xs text-muted-foreground text-center sm:hidden mt-2"
+                >
+                  Emoji Studio works best on desktop. Email yourself the extension link.
+                </motion.p>
+              )}
             </div>
 
-            {/* Right side - Preview mockup */}
+            {/* Right side - Stacked deck preview (desktop only in grid) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              className="hidden lg:flex flex-col justify-center"
+              className="hidden lg:flex flex-col justify-center items-center"
             >
-              <div className="relative">
-                {/* Mock wrapped story preview */}
-                <div className="relative bg-gradient-to-br from-muted/80 to-muted/40 backdrop-blur rounded-xl border border-border/50 p-6 shadow-2xl">
-                  {/* Mock story header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-sm">🎊</span>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Your Workspace</p>
-                        <p className="text-sm font-medium">{currentYear} Wrapped</p>
-                      </div>
-                    </div>
-                    {/* Progress dots */}
-                    <div className="flex gap-1">
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <motion.div
-                          key={i}
-                          className={`rounded-full ${i === 0 ? "bg-primary w-4" : "bg-muted-foreground/30 w-1.5"} h-1.5`}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.5 + i * 0.1 }}
+              <div className="relative w-[340px] h-[340px]">
+                {/* Dynamic glow behind deck */}
+                <motion.div
+                  className="absolute inset-0 -z-10 blur-3xl rounded-2xl"
+                  animate={{
+                    background: `radial-gradient(circle, ${PREVIEW_SLIDES[currentPreviewIndex].glowColor} 0%, transparent 70%)`,
+                  }}
+                  transition={{ duration: 0.4 }}
+                />
+
+                {/* Stacked cards */}
+                {PREVIEW_SLIDES.map((slide, i) => {
+                  const position = (i - currentPreviewIndex + PREVIEW_SLIDES.length) % PREVIEW_SLIDES.length
+
+                  return (
+                    <motion.div
+                      key={slide.id}
+                      animate={{
+                        x: position * 8,
+                        y: position * 8,
+                        scale: 1 - position * 0.04,
+                        opacity: 1 - position * 0.15,
+                        zIndex: 40 - position * 10,
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className={`absolute top-0 left-0 w-[300px] h-[300px] rounded-2xl overflow-hidden bg-gradient-to-br ${slide.gradient} shadow-2xl`}
+                    >
+                      {/* Grid background - only on front card */}
+                      {position === 0 && (
+                        <GridBackground
+                          gridSize={24}
+                          gridColor="rgba(255, 255, 255, 0.04)"
+                          glowColor={slide.glowColor}
+                          glowPosition="center"
                         />
-                      ))}
-                    </div>
-                  </div>
+                      )}
 
-                  {/* Preview slides content */}
-                  <div className="space-y-3">
-                    <SlidePreview
-                      icon={TrendingUp}
-                      label="Total Emojis"
-                      value="847 created"
-                      delay={0.6}
-                    />
-                    <SlidePreview
-                      icon={Trophy}
-                      label="Top Creator"
-                      value="#1 in your team"
-                      delay={0.7}
-                    />
-                    <SlidePreview
-                      icon={Flame}
-                      label="Longest Streak"
-                      value="12 days straight"
-                      delay={0.8}
-                    />
-                    <SlidePreview
-                      icon={Moon}
-                      label="Late Night Uploads"
-                      value="23 after midnight"
-                      delay={0.9}
-                    />
-                  </div>
+                      {/* Header */}
+                      <div className="absolute top-4 left-0 right-0 text-center">
+                        <p className="text-white/60 text-[10px] tracking-wider font-medium">SLACK EMOJIS WRAPPED</p>
+                        <p className="text-white/40 text-[9px]">{currentYear}</p>
+                      </div>
 
-                  {/* Decorative corner emojis */}
-                  <motion.div
-                    className="absolute -top-3 -right-3 text-2xl"
-                    initial={{ opacity: 0, rotate: -20 }}
-                    animate={{ opacity: 1, rotate: 0 }}
-                    transition={{ delay: 1, type: "spring" }}
-                  >
-                    🚀
-                  </motion.div>
-                </div>
+                      {/* Content */}
+                      {renderSlideContent(slide.type, false)}
 
-                {/* Glow effect behind preview */}
-                <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 blur-2xl rounded-xl" />
+                      {/* Progress dots - only on front card */}
+                      {position === 0 && (
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+                          {PREVIEW_SLIDES.map((_, idx) => (
+                            <div
+                              key={idx}
+                              className={`rounded-full h-1.5 transition-all duration-300 ${
+                                idx === currentPreviewIndex ? "bg-white w-5" : "bg-white/30 w-1.5"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
               </div>
             </motion.div>
           </div>
 
-          {/* Mobile preview - simplified */}
+          {/* Stacked deck preview (mobile - below CTA) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="lg:hidden relative z-20 px-6 pb-6"
+            className="lg:hidden flex justify-center pb-4"
           >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Emojis</p>
-                  <p className="text-sm font-semibold">847+</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50">
-                <Users className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Creators</p>
-                  <p className="text-sm font-semibold">Top 10</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50">
-                <Flame className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Streaks</p>
-                  <p className="text-sm font-semibold">12 days</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-background/50 backdrop-blur-sm border border-border/50">
-                <Calendar className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Peak Day</p>
-                  <p className="text-sm font-semibold">Friday</p>
-                </div>
-              </div>
+            <div className="relative w-[270px] h-[270px]">
+              {/* Dynamic glow behind deck */}
+              <motion.div
+                className="absolute inset-0 -z-10 blur-3xl rounded-2xl"
+                animate={{
+                  background: `radial-gradient(circle, ${PREVIEW_SLIDES[currentPreviewIndex].glowColor} 0%, transparent 70%)`,
+                }}
+                transition={{ duration: 0.4 }}
+              />
+
+              {/* Stacked cards */}
+              {PREVIEW_SLIDES.map((slide, i) => {
+                const position = (i - currentPreviewIndex + PREVIEW_SLIDES.length) % PREVIEW_SLIDES.length
+
+                return (
+                  <motion.div
+                    key={slide.id}
+                    animate={{
+                      x: position * 6,
+                      y: position * 6,
+                      scale: 1 - position * 0.04,
+                      opacity: 1 - position * 0.15,
+                      zIndex: 40 - position * 10,
+                    }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className={`absolute top-0 left-0 w-[240px] h-[240px] rounded-2xl overflow-hidden bg-gradient-to-br ${slide.gradient} shadow-2xl`}
+                  >
+                    {/* Grid background - only on front card */}
+                    {position === 0 && (
+                      <GridBackground
+                        gridSize={20}
+                        gridColor="rgba(255, 255, 255, 0.04)"
+                        glowColor={slide.glowColor}
+                        glowPosition="center"
+                      />
+                    )}
+
+                    {/* Header */}
+                    <div className="absolute top-3 left-0 right-0 text-center">
+                      <p className="text-white/60 text-[9px] tracking-wider font-medium">SLACK EMOJIS WRAPPED</p>
+                      <p className="text-white/40 text-[8px]">{currentYear}</p>
+                    </div>
+
+                    {/* Content */}
+                    {renderSlideContent(slide.type, true)}
+
+                    {/* Progress dots - only on front card */}
+                    {position === 0 && (
+                      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1">
+                        {PREVIEW_SLIDES.map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={`rounded-full h-1 transition-all duration-300 ${
+                              idx === currentPreviewIndex ? "bg-white w-4" : "bg-white/30 w-1"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              })}
             </div>
           </motion.div>
+
         </Card>
       </div>
 
-      {/* Feature Highlights */}
-      <div className="px-3 sm:px-4 lg:px-6">
+      {/* Feature Highlights - hidden on mobile for cleaner experience */}
+      <div className="hidden sm:block px-0 sm:px-4 lg:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Interactive Story */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
-              <CardContent className="p-5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Play className="w-5 h-5 text-blue-500" />
+              <CardContent className="p-4 sm:p-5">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                  <Play className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                 </div>
-                <h3 className="font-semibold text-sm mb-1">Interactive Story</h3>
-                <p className="text-xs text-muted-foreground">
-                  Tap through slides like Instagram Stories to explore your year
+                <h3 className="font-semibold text-xs sm:text-sm mb-1">Interactive Story</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Tap through slides and learn about your workspace's emoji usage.
                 </p>
               </CardContent>
             </Card>
 
             {/* Shareable Cards */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
-              <CardContent className="p-5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Share2 className="w-5 h-5 text-purple-500" />
+              <CardContent className="p-4 sm:p-5">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                 </div>
-                <h3 className="font-semibold text-sm mb-1">Shareable Cards</h3>
-                <p className="text-xs text-muted-foreground">
-                  Download and share beautiful summary cards on social media
+                <h3 className="font-semibold text-xs sm:text-sm mb-1">Shareable Cards</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Download beautiful summary cards
                 </p>
               </CardContent>
             </Card>
 
             {/* Personal Stats */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
-              <CardContent className="p-5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <User className="w-5 h-5 text-green-500" />
+              <CardContent className="p-4 sm:p-5">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                 </div>
-                <h3 className="font-semibold text-sm mb-1">Personal Stats</h3>
-                <p className="text-xs text-muted-foreground">
-                  See your own rank, contributions, and favorite creation times
+                <h3 className="font-semibold text-xs sm:text-sm mb-1">Personal Stats</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  See your rank and contributions
                 </p>
               </CardContent>
             </Card>
 
             {/* Fun Facts */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
-              <CardContent className="p-5">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                  <Sparkles className="w-5 h-5 text-orange-500" />
+              <CardContent className="p-4 sm:p-5">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
                 </div>
-                <h3 className="font-semibold text-sm mb-1">Fun Facts</h3>
-                <p className="text-xs text-muted-foreground">
-                  Discover streaks, late-night uploads, and quirky patterns
+                <h3 className="font-semibold text-xs sm:text-sm mb-1">Fun Facts</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Discover streaks and patterns
                 </p>
               </CardContent>
             </Card>
@@ -458,7 +690,7 @@ export function WrappedLanding({
       </div>
 
       {/* iOS App Promotion */}
-      <div className="px-3 sm:px-4 lg:px-6">
+      <div className="px-4 sm:px-4 lg:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -570,10 +802,10 @@ export function WrappedLanding({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="px-3 sm:px-4 lg:px-6"
+          className="px-0 sm:px-4 lg:px-6"
         >
-          <Card className="border-muted/40 bg-muted/20">
-            <CardContent className="p-6">
+          <Card className="border-muted/40 bg-muted/20 rounded-none sm:rounded-lg">
+            <CardContent className="p-4 sm:p-6">
               <p className="text-sm font-medium mb-4">How to get your Wrapped</p>
               <ol className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-3">
@@ -593,6 +825,12 @@ export function WrappedLanding({
           </Card>
         </motion.div>
       )}
+
+      {/* Email Extension Modal */}
+      <EmailExtensionModal
+        open={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+      />
     </div>
   )
 }

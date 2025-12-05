@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, RefObject } from "react"
+import { useState, RefObject, useCallback } from "react"
 import { Share2, Copy, Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -19,6 +19,8 @@ interface SlideShareButtonProps {
   workspaceName: string
   year: number
   backgroundColor?: string
+  onCaptureStart?: () => void
+  onCaptureEnd?: () => void
 }
 
 export function SlideShareButton({
@@ -27,26 +29,39 @@ export function SlideShareButton({
   workspaceName,
   year,
   backgroundColor = "#1e1b4b", // Default dark purple
+  onCaptureStart,
+  onCaptureEnd,
 }: SlideShareButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeAction, setActiveAction] = useState<string | null>(null)
   const canShareFiles = canShare()
   const track = useTrack()
 
-  const captureSlide = async (): Promise<Blob | null> => {
+  const captureSlide = useCallback(async (): Promise<Blob | null> => {
     const element = slideRef.current
     if (!element) {
       toast.error("Could not capture slide")
       return null
     }
     try {
-      return await generateImage(element, backgroundColor)
+      // Signal capture start for any parent components that need to switch to static mode
+      onCaptureStart?.()
+      // Small delay to allow React to re-render with captureMode
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      const blob = await generateImage(element, backgroundColor)
+
+      // Signal capture end
+      onCaptureEnd?.()
+
+      return blob
     } catch (error) {
       console.error("Failed to capture slide:", error)
       toast.error("Failed to capture slide")
+      onCaptureEnd?.()
       return null
     }
-  }
+  }, [slideRef, backgroundColor, onCaptureStart, onCaptureEnd])
 
   const handleCopy = async () => {
     setIsGenerating(true)

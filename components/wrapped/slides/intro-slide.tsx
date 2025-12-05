@@ -1,132 +1,192 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useState, useRef } from "react"
+import { useRef } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
+import { SlideHeader } from "../slide-header"
+import { Particles } from "@/components/ui/particles"
+import { SparklesText } from "@/components/ui/sparkles-text"
+import { ShootingStars } from "@/components/ui/shooting-stars"
+import { DotPattern } from "@/components/ui/dot-pattern"
+import { GradientText } from "@/components/ui/gradient-text"
+import { BlurFade } from "@/components/ui/blur-fade"
 
 interface IntroSlideProps {
   year: number
   workspaceName: string
   onContinue: () => void
   customEmojis?: Emoji[]
+  captureMode?: boolean
 }
 
-export function IntroSlide({ year, workspaceName, onContinue, customEmojis = [] }: IntroSlideProps) {
+export function IntroSlide({
+  year,
+  workspaceName,
+  onContinue,
+  customEmojis = [],
+  captureMode = false
+}: IntroSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
-  const [floatingEmojis, setFloatingEmojis] = useState<
-    Array<{ id: number; emoji: Emoji | null; x: number; delay: number; duration: number; size: number }>
-  >([])
 
-  useEffect(() => {
-    // Generate floating emojis on mount using custom workspace emojis
-    const generated = Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      emoji: customEmojis.length > 0 ? customEmojis[i % customEmojis.length] : null,
-      x: Math.random() * 100,
-      delay: Math.random() * 3,
-      duration: 4 + Math.random() * 3,
-      size: 32 + Math.random() * 16, // Random size between 32-48px
-    }))
-    setFloatingEmojis(generated)
-  }, [customEmojis])
-
-  // Get a featured emoji for the center animation
+  // Get the top emoji to feature prominently
   const featuredEmoji = customEmojis[0]
+  // Get more for a prominent showcase (8 emojis instead of 5)
+  const sampleEmojis = customEmojis.slice(1, 9)
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
-      {/* Capturable content - fixed square size for consistent share images */}
-      <div ref={slideRef} className="relative flex flex-col items-center justify-center p-8 w-[600px] h-[600px] overflow-hidden">
-        {/* Floating emojis background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {floatingEmojis.map((item) => (
-          <motion.div
-            key={item.id}
-            className="absolute opacity-40"
-            style={{ left: `${item.x}%` }}
-            initial={{ y: "100vh", rotate: 0 }}
-            animate={{
-              y: "-100vh",
-              rotate: 360,
-            }}
-            transition={{
-              duration: item.duration,
-              delay: item.delay,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          >
-            {item.emoji ? (
-              <img
-                src={proxyImageUrl(item.emoji.url)}
-                alt={item.emoji.name}
-                style={{ width: item.size, height: item.size }}
-                className="object-contain"
-              />
-            ) : (
-              <span className="text-3xl">✨</span>
-            )}
-          </motion.div>
-        ))}
-      </div>
+      {/* Background effects - only show when not in capture mode */}
+      {!captureMode && (
+        <>
+          <Particles
+            className="absolute inset-0"
+            quantity={80}
+            staticity={30}
+            ease={80}
+            color="#ffffff"
+            size={0.6}
+          />
+          <ShootingStars
+            starColor="#9E7AFF"
+            trailColor="#2EB9DF"
+            minSpeed={15}
+            maxSpeed={35}
+            minDelay={1500}
+            maxDelay={4000}
+          />
+          <ShootingStars
+            starColor="#FE8BBB"
+            trailColor="#9E7AFF"
+            minSpeed={10}
+            maxSpeed={25}
+            minDelay={2000}
+            maxDelay={5000}
+          />
+        </>
+      )}
 
-      {/* Main content - Workspace name now more prominent at top */}
-      <motion.p
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="text-2xl md:text-3xl font-bold text-white mb-4"
-        style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
-      >
-        {workspaceName}
-      </motion.p>
+      {/* Dot pattern overlay */}
+      <DotPattern
+        className="absolute inset-0 opacity-20"
+        dotColor="rgba(255, 255, 255, 0.5)"
+        dotOpacity={0.3}
+        width={20}
+        height={20}
+        cr={1}
+      />
 
-      <motion.div
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.2 }}
-        className="text-7xl md:text-9xl font-black text-white mb-4"
-        style={{
-          textShadow: "0 0 60px rgba(255,255,255,0.3), 0 0 100px rgba(147,51,234,0.5)",
-        }}
-      >
-        {year}
-      </motion.div>
+      {/* Capturable content - fixed square size for share images, flexible for live view */}
+      <div ref={slideRef} className={`relative flex flex-col items-center pt-4 pb-4 px-6 w-[600px] ${captureMode ? 'h-[600px]' : 'h-auto min-h-[600px]'} overflow-hidden`}>
+        {/* Consistent header for share images */}
+        <SlideHeader year={year} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-      >
-        <h2 className="text-2xl md:text-3xl font-bold text-white/90">
-          Emoji Wrapped
-        </h2>
-      </motion.div>
+        {/* Workspace name with BlurFade */}
+        {captureMode ? (
+          <p className="text-lg md:text-xl font-semibold text-white/70 mb-2">
+            {workspaceName}
+          </p>
+        ) : (
+          <BlurFade delay={0.2} className="text-lg md:text-xl font-semibold text-white/70 mb-2">
+            {workspaceName}
+          </BlurFade>
+        )}
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.5 }}
-        className="mt-12"
-      >
+        {/* Year with SparklesText */}
         <motion.div
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
+          initial={captureMode ? false : { scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.3 }}
+        >
+          {captureMode ? (
+            <h1
+              className="text-8xl md:text-9xl font-black text-white"
+              style={{
+                textShadow: "0 0 60px rgba(255,255,255,0.3), 0 0 100px rgba(147,51,234,0.5)",
+              }}
+            >
+              {year}
+            </h1>
+          ) : (
+            <SparklesText
+              className="text-8xl md:text-9xl font-black"
+              colors={{ first: "#9E7AFF", second: "#FE8BBB" }}
+              sparklesCount={8}
+            >
+              {year}
+            </SparklesText>
+          )}
+        </motion.div>
+
+        {/* Subtitle with GradientText */}
+        <motion.div
+          initial={captureMode ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="mt-4"
+        >
+          <h2 className="text-2xl md:text-3xl font-bold">
+            <GradientText
+              colors={["#9E7AFF", "#FE8BBB", "#2EB9DF", "#9E7AFF"]}
+              animationSpeed={6}
+            >
+              Emoji Wrapped
+            </GradientText>
+          </h2>
+          <p className="text-white/60 mt-2 text-lg">
+            Let's see what you cooked up...
+          </p>
+        </motion.div>
+
+        {/* Featured emoji with pulsing animation - LARGER */}
+        <motion.div
+          initial={captureMode ? false : { opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1, duration: 0.5 }}
+          className="mt-6"
         >
           {featuredEmoji ? (
-            <img
-              src={proxyImageUrl(featuredEmoji.url)}
-              alt={featuredEmoji.name}
-              className="w-16 h-16 md:w-20 md:h-20 object-contain"
-            />
+            <motion.div
+              animate={captureMode ? {} : { scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="relative"
+            >
+              <img
+                src={proxyImageUrl(featuredEmoji.url)}
+                alt={featuredEmoji.name}
+                className="w-28 h-28 md:w-36 md:h-36 object-contain drop-shadow-2xl"
+              />
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-full bg-white/30 blur-2xl -z-10 scale-150" />
+            </motion.div>
           ) : (
-            <span className="text-5xl">🎁</span>
+            <span className="text-6xl">✨</span>
           )}
-          </motion.div>
         </motion.div>
+
+        {/* Sample emojis showcase - LARGER and more prominent */}
+        {sampleEmojis.length > 0 && (
+          <motion.div
+            initial={captureMode ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.3, duration: 0.5 }}
+            className="mt-6 flex flex-wrap justify-center gap-3 max-w-[400px]"
+          >
+            {sampleEmojis.map((emoji, i) => (
+              <motion.img
+                key={emoji.url}
+                src={proxyImageUrl(emoji.url)}
+                alt={emoji.name}
+                className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-lg shadow-md"
+                initial={captureMode ? false : { y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.4 + i * 0.08 }}
+              />
+            ))}
+          </motion.div>
+        )}
 
         {/* Branding */}
         <SlideBranding />

@@ -139,6 +139,15 @@ module.exports = {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
         },
+        "meteor-effect": {
+          "0%": { transform: "rotate(215deg) translateX(0)", opacity: "1" },
+          "70%": { opacity: "1" },
+          "100%": { transform: "rotate(215deg) translateX(-500px)", opacity: "0" },
+        },
+        gradient: {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -149,6 +158,8 @@ module.exports = {
         shine: "shine var(--duration) linear infinite",
         shimmer: "shimmer 2s linear infinite",
         "spin-slow": "spin 3s linear infinite",
+        "meteor-effect": "meteor-effect 5s linear infinite",
+        gradient: "gradient 8s linear infinite",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

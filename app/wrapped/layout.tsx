@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { WrappedLayoutWrapper } from "@/components/wrapped/wrapped-layout-wrapper"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://emojistudio.xyz"),
@@ -49,5 +50,5 @@ export default function WrappedLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return <WrappedLayoutWrapper>{children}</WrappedLayoutWrapper>
 }

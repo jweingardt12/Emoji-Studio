@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { MobileBottomNav } from "./mobile-bottom-nav"
 import { FloatingCreateButton } from "./floating-create-button"
 import { PWAInstallPrompt } from "./pwa-install-prompt"
@@ -11,10 +12,14 @@ import { useTrack } from "@/lib/hooks/use-track"
 
 export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
   const track = useTrack();
+  const pathname = usePathname()
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isPWA, setIsPWA] = useState(false)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
   const isMobile = useIsMobile()
+
+  // Hide PWA modal on mobile-specific pages
+  const hidePWAOnMobile = pathname?.startsWith('/wrapped') || pathname?.startsWith('/mobile')
   
   // Apply iOS Safari viewport fixes
   useIOSViewportFix()
@@ -131,8 +136,8 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
       <div className="md:hidden" style={{ height: isPWA ? '93px' : '80px' }} />
       <MobileBottomNav isPWA={isPWA} />
       <FloatingCreateButton isPWA={isPWA} />
-      {/* Show install prompt for mobile web users (not PWA) */}
-      {showInstallPrompt && isMobile && !isPWA && (
+      {/* Show install prompt for mobile web users (not PWA) - hidden on certain mobile pages */}
+      {showInstallPrompt && isMobile && !isPWA && !hidePWAOnMobile && (
         <PWAInstallPrompt
           deferredPrompt={deferredPrompt}
           onDismiss={() => {

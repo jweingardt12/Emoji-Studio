@@ -9,14 +9,16 @@ import { IntroSlide } from "./slides/intro-slide"
 import { CountSlide } from "./slides/count-slide"
 import { CreatorsSlide } from "./slides/creators-slide"
 import { PersonalSlide } from "./slides/personal-slide"
+import { QuizSlide } from "./slides/quiz-slide"
 import { PeakSlide } from "./slides/peak-slide"
 import { StatsSlide } from "./slides/stats-slide"
 import { FinaleSlide } from "./slides/finale-slide"
 import { Button } from "@/components/ui/button"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { EmojiGridBackground } from "./emoji-grid-background"
 
 interface WrappedStoryProps {
   stats: WrappedStats
@@ -27,53 +29,12 @@ interface WrappedStoryProps {
   allYearEmojis?: Emoji[] // All emojis from the year for the background grid
 }
 
-// Emoji grid background component
-function EmojiGridBackground({ emojis }: { emojis: Emoji[] }) {
-  // Shuffle emojis for variety and fill enough to cover the screen
-  const shuffledEmojis = useMemo(() => {
-    const shuffled = [...emojis].sort(() => Math.random() - 0.5)
-    // Repeat to fill the grid (need ~100 items for a nice grid)
-    const targetCount = 120
-    const repeated: Emoji[] = []
-    while (repeated.length < targetCount && shuffled.length > 0) {
-      repeated.push(...shuffled)
-    }
-    return repeated.slice(0, targetCount)
-  }, [emojis])
-
-  if (shuffledEmojis.length === 0) return null
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <div className="grid grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-3 p-4 opacity-[0.12]">
-        {shuffledEmojis.map((emoji, i) => (
-          <motion.img
-            key={`bg-${emoji.url}-${i}`}
-            src={proxyImageUrl(emoji.url)}
-            alt=""
-            className="w-8 h-8 md:w-10 md:h-10 object-contain"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              rotate: (Math.random() - 0.5) * 10 // Slight random rotation
-            }}
-            transition={{
-              delay: i * 0.01,
-              duration: 0.3
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const BASE_SLIDES = ["intro", "count", "creators"] as const
 const PERSONAL_SLIDE = ["personal"] as const
+const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
 const END_SLIDES = ["peak", "stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "peak" | "stats" | "finale"
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "peak" | "stats" | "finale"
 
 // Gradient backgrounds for each slide
 const SLIDE_GRADIENTS: Record<SlideType, string> = {
@@ -81,26 +42,40 @@ const SLIDE_GRADIENTS: Record<SlideType, string> = {
   count: "from-blue-900 via-indigo-900 to-purple-900",
   creators: "from-amber-900 via-orange-900 to-red-900",
   personal: "from-cyan-900 via-blue-900 to-indigo-900",
+  "quiz-workspace": "from-indigo-900 via-purple-900 to-violet-900",
+  "quiz-funfacts": "from-cyan-900 via-teal-900 to-emerald-900",
   peak: "from-emerald-900 via-teal-900 to-cyan-900",
   stats: "from-pink-900 via-rose-900 to-red-900",
   finale: "from-violet-900 via-purple-900 to-fuchsia-900",
 }
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
+  const router = useRouter()
   const [currentSlide, setCurrentSlide] = useState(0)
   const [direction, setDirection] = useState(1)
+  const [quizAnswered, setQuizAnswered] = useState<Record<string, boolean>>({})
   const track = useTrack()
   const trackedSlides = useRef<Set<string>>(new Set())
 
   // Build slides array dynamically - include personal slide only if user has data
   const SLIDES: SlideType[] = useMemo(() => {
     if (personalStats) {
-      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...END_SLIDES]
+      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...END_SLIDES]
     }
-    return [...BASE_SLIDES, ...END_SLIDES]
+    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...END_SLIDES]
   }, [personalStats])
 
   const totalSlides = SLIDES.length
+
+  // Check if current slide is a quiz that hasn't been answered
+  const isQuizSlide = (slideType: SlideType) => slideType === "quiz-workspace" || slideType === "quiz-funfacts"
+  const currentSlideType = SLIDES[currentSlide]
+  const isCurrentQuizUnanswered = isQuizSlide(currentSlideType) && !quizAnswered[currentSlideType]
+
+  // Handler for when a quiz is answered
+  const handleQuizAnswered = useCallback((quizType: string) => {
+    setQuizAnswered(prev => ({ ...prev, [quizType]: true }))
+  }, [])
 
   // Track slide views
   useEffect(() => {
@@ -154,6 +129,12 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   }, [stats])
 
   const goToNext = useCallback(() => {
+    // Block navigation if current slide is an unanswered quiz
+    const slideType = SLIDES[currentSlide]
+    if (isQuizSlide(slideType) && !quizAnswered[slideType]) {
+      return
+    }
+
     if (currentSlide < totalSlides - 1) {
       setDirection(1)
       setCurrentSlide((prev) => prev + 1)
@@ -165,10 +146,16 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         year: stats.year,
       })
     } else {
+      // Track story completion
+      track("wrapped_story_completed", {
+        total_slides: totalSlides,
+        slides_viewed: trackedSlides.current.size,
+        year: stats.year,
+      })
       onComplete()
       onSkipToShare()
     }
-  }, [currentSlide, totalSlides, onComplete, onSkipToShare, track, SLIDES, stats.year])
+  }, [currentSlide, totalSlides, onComplete, onSkipToShare, track, SLIDES, stats.year, quizAnswered])
 
   const goToPrev = useCallback(() => {
     if (currentSlide > 0) {
@@ -186,6 +173,14 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
 
   const goToSlide = useCallback(
     (index: number) => {
+      // Block forward navigation if current slide is an unanswered quiz
+      if (index > currentSlide) {
+        const slideType = SLIDES[currentSlide]
+        if (isQuizSlide(slideType) && !quizAnswered[slideType]) {
+          return
+        }
+      }
+
       setDirection(index > currentSlide ? 1 : -1)
       track("wrapped_navigation", {
         action: "jump",
@@ -196,7 +191,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       })
       setCurrentSlide(index)
     },
-    [currentSlide, track, SLIDES, stats.year]
+    [currentSlide, track, SLIDES, stats.year, quizAnswered]
   )
 
   const handleExit = useCallback((method: "close_button" | "escape_key" | "skip_to_share") => {
@@ -214,19 +209,20 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") {
         e.preventDefault()
+        // goToNext already handles quiz blocking
         goToNext()
       } else if (e.key === "ArrowLeft") {
         e.preventDefault()
         goToPrev()
       } else if (e.key === "Escape") {
         handleExit("escape_key")
-        onSkipToShare()
+        router.push("/wrapped")
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToNext, goToPrev, onSkipToShare, handleExit])
+  }, [goToNext, goToPrev, router, handleExit])
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -243,8 +239,6 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     }),
   }
 
-  const currentSlideType = SLIDES[currentSlide]
-
   const renderSlide = () => {
     switch (currentSlideType) {
       case "intro":
@@ -255,6 +249,28 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         return <CreatorsSlide topCreators={stats.topCreators} workspaceName={workspaceName} year={stats.year} />
       case "personal":
         return personalStats ? <PersonalSlide personalStats={personalStats} workspaceName={workspaceName} year={stats.year} /> : null
+      case "quiz-workspace":
+        return (
+          <QuizSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            quizType="workspace"
+            onAnswered={() => handleQuizAnswered("quiz-workspace")}
+          />
+        )
+      case "quiz-funfacts":
+        return (
+          <QuizSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            quizType="funfacts"
+            onAnswered={() => handleQuizAnswered("quiz-funfacts")}
+          />
+        )
       case "peak":
         return (
           <PeakSlide
@@ -266,7 +282,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           />
         )
       case "stats":
-        return <StatsSlide funStats={stats.funStats} overview={stats.overview} growth={stats.growth} workspaceName={workspaceName} year={stats.year} />
+        return <StatsSlide funStats={stats.funStats} overview={stats.overview} growth={stats.growth} workspaceName={workspaceName} year={stats.year} customEmojis={customEmojis} />
       case "finale":
         return (
           <FinaleSlide
@@ -274,6 +290,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             workspaceName={workspaceName}
             onShare={onSkipToShare}
             customEmojis={customEmojis}
+            allYearEmojis={allYearEmojis}
           />
         )
       default:
@@ -317,7 +334,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-8rem)]">
         {/* Top controls */}
         <div className="flex items-center justify-between p-4">
-          <Link href="/wrapped" onClick={(e) => { e.preventDefault(); handleExit("close_button"); window.history.back(); }}>
+          <Link href="/wrapped" onClick={(e) => { e.preventDefault(); handleExit("close_button"); router.push("/wrapped"); }}>
             <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
               <X className="w-5 h-5" />
             </Button>
