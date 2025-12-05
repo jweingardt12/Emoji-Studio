@@ -25,6 +25,7 @@ import { useTrack } from "@/lib/hooks/use-track"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
 import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
+import { OptimizedEmojiImage } from "@/components/optimized-emoji-image"
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -712,19 +713,17 @@ function ExplorerPage() {
 
                           {/* Emoji Image - Larger */}
                           <div className="flex-shrink-0 mb-3 mt-2">
-                            {imageErrors[emoji.name] ? (
-                              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
-                                {emoji.name.slice(0, 2).toUpperCase()}
-                              </div>
-                            ) : (
-                              <img
-                                src={emoji.url || getPlaceholderImage(emoji.name)}
-                                alt={`:${emoji.name}:`}
-                                className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
-                                onError={() => handleImageError(emoji.name)}
-                                loading="lazy"
-                              />
-                            )}
+                            <OptimizedEmojiImage
+                              src={emoji.url || getPlaceholderImage(emoji.name)}
+                              alt={`:${emoji.name}:`}
+                              className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
+                              onError={() => handleImageError(emoji.name)}
+                              fallback={
+                                <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
+                                  {emoji.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              }
+                            />
                           </div>
 
                           {/* Emoji Details */}
