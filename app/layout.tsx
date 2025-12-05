@@ -6,12 +6,13 @@ import { EmojiDataProvider } from "@/lib/hooks/use-emoji-data";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
-import { OpenPanelComponent } from '@openpanel/nextjs';
+import { OpenPanelProvider } from '@/components/openpanel-provider';
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeTracker } from "@/components/ThemeTracker";
 import { GlobalExtensionListener } from "@/components/global-extension-listener";
 import { NotificationManager } from "@/components/notification-manager";
 import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
+import { OpenPanelWorkspaceSync } from "@/components/openpanel-workspace-sync";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
 
@@ -39,12 +40,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
-        <OpenPanelComponent
-          clientId={process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID!}
-          trackScreenViews={true}
-          trackAttributes={true}
-          trackOutgoingLinks={true}
-        />
+        <OpenPanelProvider />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -53,6 +49,7 @@ export default function RootLayout({
         >
           <ClientBody>
             <EmojiDataProvider>
+              <OpenPanelWorkspaceSync />
               <SidebarProvider
                 style={
                   {
