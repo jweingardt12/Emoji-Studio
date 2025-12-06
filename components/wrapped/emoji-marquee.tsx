@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import Marquee from "@/components/ui/marquee"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -53,6 +54,18 @@ export function EmojiMarquee({
   ...props
 }: EmojiMarqueeProps) {
   const shouldReduceAnimations = useShouldReduceAnimations()
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
+  const handleImageError = useCallback((key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }, [])
+
+  const getImageSrc = useCallback((emoji: Emoji, key: string) => {
+    if (failedImages.has(key) || !hasValidUrl(emoji)) {
+      return EMOJI_PLACEHOLDER
+    }
+    return proxyImageUrl(emoji.url)
+  }, [failedImages])
 
   // Speed mappings
   const speedMap = {
@@ -60,6 +73,9 @@ export function EmojiMarquee({
     normal: 25,
     fast: 15,
   }
+
+  // Filter to valid emojis first
+  const validEmojis = emojis.filter(emoji => hasValidUrl(emoji))
 
   // If capture mode or reduced animations, show static grid
   if (captureMode || shouldReduceAnimations) {
@@ -72,20 +88,24 @@ export function EmojiMarquee({
         )}
         {...props}
       >
-        {emojis.slice(0, 12).map((emoji, i) => (
-          <img
-            key={`${emoji.name}-${i}`}
-            src={proxyImageUrl(emoji.url)}
-            alt={`:${emoji.name}:`}
-            className="object-contain rounded"
-          />
-        ))}
+        {validEmojis.slice(0, 12).map((emoji, i) => {
+          const key = `${emoji.name}-${i}`
+          return (
+            <img
+              key={key}
+              src={getImageSrc(emoji, key)}
+              alt={`:${emoji.name}:`}
+              className="object-contain rounded"
+              onError={() => handleImageError(key)}
+            />
+          )
+        })}
       </div>
     )
   }
 
   // Duplicate emojis for seamless loop
-  const duplicatedEmojis = [...emojis, ...emojis]
+  const duplicatedEmojis = [...validEmojis, ...validEmojis]
 
   return (
     <div className={cn(emojiMarqueeVariants({ size, gap }), className)} {...props}>
@@ -95,14 +115,18 @@ export function EmojiMarquee({
         className="[--duration:var(--marquee-duration)]"
         style={{ "--marquee-duration": `${speedMap[speed]}s` } as React.CSSProperties}
       >
-        {duplicatedEmojis.map((emoji, i) => (
-          <img
-            key={`${emoji.name}-${i}`}
-            src={proxyImageUrl(emoji.url)}
-            alt={`:${emoji.name}:`}
-            className="object-contain rounded hover:scale-110 transition-transform"
-          />
-        ))}
+        {duplicatedEmojis.map((emoji, i) => {
+          const key = `${emoji.name}-${i}`
+          return (
+            <img
+              key={key}
+              src={getImageSrc(emoji, key)}
+              alt={`:${emoji.name}:`}
+              className="object-contain rounded hover:scale-110 transition-transform"
+              onError={() => handleImageError(key)}
+            />
+          )
+        })}
       </Marquee>
     </div>
   )

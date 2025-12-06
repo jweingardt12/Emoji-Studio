@@ -5,8 +5,8 @@ import { WrappedStats } from "@/lib/services/wrapped-service"
 import { Emoji } from "@/lib/services/emoji-service"
 import { Button } from "@/components/ui/button"
 import { Share2, Trophy, Users, Zap } from "lucide-react"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
-import { useEffect, useRef } from "react"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
+import { useEffect, useRef, useState } from "react"
 import { Confetti, ConfettiRef } from "@/components/ui/confetti"
 import { SparklesText } from "@/components/ui/sparkles-text"
 import { NumberTicker } from "@/components/ui/number-ticker"
@@ -36,6 +36,7 @@ export function FinaleSlide({
 }: FinaleSlideProps) {
   const confettiRef = useRef<ConfettiRef>(null)
   const shouldReduceAnimations = useShouldReduceAnimations()
+  const [mvpEmojiError, setMvpEmojiError] = useState(false)
 
   // Auto-trigger confetti on mount
   useEffect(() => {
@@ -233,11 +234,12 @@ export function FinaleSlide({
                     {stats.topCreators[0].displayName.split(" ")[0]}
                   </span>
                 </span>
-                {stats.topCreators[0].topEmojis[0] && (
+                {stats.topCreators[0].topEmojis[0] && hasValidUrl(stats.topCreators[0].topEmojis[0]) && (
                   <img
-                    src={proxyImageUrl(stats.topCreators[0].topEmojis[0].url)}
+                    src={mvpEmojiError ? EMOJI_PLACEHOLDER : proxyImageUrl(stats.topCreators[0].topEmojis[0].url)}
                     alt="Top emoji"
                     className="w-7 h-7 rounded-lg shadow-lg object-contain"
+                    onError={() => setMvpEmojiError(true)}
                   />
                 )}
               </motion.div>

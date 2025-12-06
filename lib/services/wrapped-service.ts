@@ -1,4 +1,5 @@
 import { Emoji } from "./emoji-service"
+import { hasValidUrl } from "@/lib/utils/image-proxy"
 
 // ============================================================
 // INTERFACES
@@ -337,6 +338,8 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   const topCreators: TopCreator[] = Object.entries(creatorData)
     .map(([userId, data]) => {
       const firstEmoji = data.emojis[0]
+      // Filter to emojis with valid URLs for display
+      const validEmojis = data.emojis.filter(hasValidUrl)
       return {
         userId,
         displayName: firstEmoji?.user_display_name || userId.slice(0, 8),
@@ -345,7 +348,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
         imageCount: data.images,
         rank: 0,
         percentageOfTotal: Math.round((data.count / sortedEmojis.length) * 100),
-        topEmojis: data.emojis.slice(0, 5),
+        topEmojis: validEmojis.slice(0, 5),
       }
     })
     .sort((a, b) => b.emojiCount - a.emojiCount)
@@ -361,7 +364,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     date: formatDate(new Date(busiestDayEntry.date).getTime() / 1000),
     timestamp: new Date(busiestDayEntry.date).getTime() / 1000,
     count: busiestDayEntry.count,
-    emojis: busiestDayEntry.emojis.slice(0, 5),
+    emojis: busiestDayEntry.emojis.filter(hasValidUrl).slice(0, 5),
   }
 
   // Find busiest week
@@ -373,7 +376,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     date: `Week of ${busiestWeekEntry.week}`,
     timestamp: 0,
     count: busiestWeekEntry.count,
-    emojis: busiestWeekEntry.emojis.slice(0, 5),
+    emojis: busiestWeekEntry.emojis.filter(hasValidUrl).slice(0, 5),
   }
 
   // Peak day of week
@@ -741,6 +744,9 @@ export function calculatePersonalStats(
   const workspaceAverage = yearEmojis.length / totalCreators
   const comparedToAverage = Math.round((sortedUserEmojis.length / workspaceAverage) * 100)
 
+  // Filter top emojis to only those with valid URLs for display
+  const validTopEmojis = sortedUserEmojis.filter(hasValidUrl).slice(-5).reverse()
+
   return {
     userId,
     displayName,
@@ -748,7 +754,7 @@ export function calculatePersonalStats(
     rank: userRank,
     totalCreators,
     percentageOfTotal: Math.round((sortedUserEmojis.length / yearEmojis.length) * 100),
-    topEmojis: sortedUserEmojis.slice(-5).reverse(), // Most recent 5
+    topEmojis: validTopEmojis, // Most recent 5 with valid URLs
     firstEmoji: sortedUserEmojis[0] || null,
     lastEmoji: sortedUserEmojis[sortedUserEmojis.length - 1] || null,
     gifCount,

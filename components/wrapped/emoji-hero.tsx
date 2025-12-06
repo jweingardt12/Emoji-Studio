@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -55,6 +56,7 @@ export function EmojiHero({
 }: EmojiHeroProps) {
   const shouldReduceAnimations = useShouldReduceAnimations()
   const shouldAnimate = animate && !captureMode && !shouldReduceAnimations
+  const [hasError, setHasError] = useState(false)
 
   // Size mappings for the actual image
   const imageSizeMap = {
@@ -65,6 +67,11 @@ export function EmojiHero({
   }
 
   const imageSize = imageSizeMap[size || "lg"]
+
+  // Use placeholder if emoji URL is invalid or image failed to load
+  const imageSrc = hasError || !hasValidUrl(emoji)
+    ? EMOJI_PLACEHOLDER
+    : proxyImageUrl(emoji.url)
 
   return (
     <div className={cn(emojiHeroVariants({ size, glow }), className)} {...props}>
@@ -83,7 +90,7 @@ export function EmojiHero({
 
       {/* Emoji image */}
       <motion.img
-        src={proxyImageUrl(emoji.url)}
+        src={imageSrc}
         alt={`:${emoji.name}:`}
         className={cn(
           imageSize,
@@ -102,6 +109,7 @@ export function EmojiHero({
               }
             : undefined
         }
+        onError={() => setHasError(true)}
       />
     </div>
   )

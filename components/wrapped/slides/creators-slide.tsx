@@ -1,9 +1,9 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { TopCreator } from "@/lib/services/wrapped-service"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
@@ -37,6 +37,11 @@ interface PodiumSpotProps {
 function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: PodiumSpotProps) {
   const isWinner = rank === 1
   const delay = rank === 1 ? 0.3 : rank === 2 ? 0.5 : 0.7
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
+  const handleImageError = useCallback((key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }, [])
 
   // Rank-based styling - responsive heights with xs breakpoint for small phones
   const rankStyles = {
@@ -66,6 +71,9 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
   const style = rankStyles[rank]
   const shouldAnimate = !captureMode && !shouldReduceAnimations
 
+  // Filter to emojis with valid URLs
+  const validHaloEmojis = creator.topEmojis.slice(1, isWinner ? 5 : 3).filter(emoji => hasValidUrl(emoji))
+
   return (
     <motion.div
       className={`flex flex-col items-center ${isWinner ? "order-2" : rank === 2 ? "order-1" : "order-3"}`}
@@ -75,17 +83,22 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
     >
       {/* Emoji halo - creator's top emojis */}
       <div className="flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
-        {creator.topEmojis.slice(1, isWinner ? 5 : 3).map((emoji, i) => (
-          <motion.img
-            key={emoji.name}
-            src={proxyImageUrl(emoji.url)}
-            alt={emoji.name}
-            className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
-            initial={shouldAnimate ? { scale: 0, rotate: -20 } : false}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ delay: delay + 0.1 + i * 0.05 }}
-          />
-        ))}
+        {validHaloEmojis.map((emoji, i) => {
+          const key = `${creator.userId}-${emoji.name}`
+          const hasFailed = failedImages.has(key)
+          return (
+            <motion.img
+              key={key}
+              src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
+              alt={emoji.name}
+              className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
+              initial={shouldAnimate ? { scale: 0, rotate: -20 } : false}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: delay + 0.1 + i * 0.05 }}
+              onError={() => handleImageError(key)}
+            />
+          )
+        })}
       </div>
 
       {/* Top emoji as avatar */}
