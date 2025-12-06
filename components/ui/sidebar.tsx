@@ -195,25 +195,37 @@ const Sidebar = React.forwardRef<
 
     if (isMobile) {
       return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
+        <>
+          {/* Backdrop */}
+          <div
+            className={cn(
+              "fixed inset-0 z-50 bg-black/80 transition-opacity duration-300",
+              openMobile ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+            onClick={() => setOpenMobile(false)}
+          />
+          {/* Sidebar panel */}
+          <div
+            className={cn(
+              "fixed inset-y-0 left-0 z-50 w-[--sidebar-width] bg-sidebar text-sidebar-foreground shadow-xl transition-transform duration-300 ease-out",
+              openMobile ? "translate-x-0" : "-translate-x-full"
+            )}
+            style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
           >
-            {/* Accessible title for dialog - visually hidden */}
-            <SheetPrimitive.Title className="sr-only" id="sidebar-dialog-title">
-              Sidebar Navigation
-            </SheetPrimitive.Title>
-            <div className="flex h-full w-full flex-col" aria-labelledby="sidebar-dialog-title">{children}</div>
-          </SheetContent>
-        </Sheet>
+            <button
+              onClick={() => setOpenMobile(false)}
+              className="absolute top-4 right-4 p-1 rounded-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              aria-label="Close sidebar"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
+            <div className="h-full overflow-y-auto">
+              {children}
+            </div>
+          </div>
+        </>
       )
     }
 

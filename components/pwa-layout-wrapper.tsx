@@ -1,29 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
-import { MobileBottomNav } from "./mobile-bottom-nav"
 import { FloatingCreateButton } from "./floating-create-button"
-import { PWAInstallPrompt } from "./pwa-install-prompt"
 import { useIOSViewportFix } from "@/hooks/use-ios-viewport-fix"
 import { useAutoRefresh } from "@/hooks/use-auto-refresh"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { useTrack } from "@/lib/hooks/use-track"
 
 export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
   const track = useTrack();
-  const pathname = usePathname()
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [isPWA, setIsPWA] = useState(false)
-  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
-  const isMobile = useIsMobile()
 
-  // Hide PWA modal on mobile-specific pages
-  const hidePWAOnMobile = pathname?.startsWith('/wrapped') || pathname?.startsWith('/mobile')
-  
   // Apply iOS Safari viewport fixes
   useIOSViewportFix()
-  
+
   // Enable auto-refresh on app focus
   useAutoRefresh()
 
@@ -34,20 +23,7 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
       const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone
       const pwaStatus = isStandalone || isInStandaloneMode
       setIsPWA(pwaStatus)
-      // Log PWA status for debugging
-      console.log('PWA Status:', pwaStatus)
-      
-      // Show install prompt if on mobile web but not in PWA
-      if (isMobile && !pwaStatus) {
-        const dismissed = localStorage.getItem('pwa-install-dismissed')
-        const dismissedTime = localStorage.getItem('pwa-install-dismissed-time')
-        
-        if (dismissed !== 'true' || !dismissedTime || 
-            (Date.now() - parseInt(dismissedTime)) > (7 * 24 * 60 * 60 * 1000)) {
-          setShowInstallPrompt(true)
-        }
-      }
-      
+
       // Track PWA status
       if (pwaStatus) {
         track("PWA: App Opened", {
@@ -66,11 +42,11 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
           console.log('Service Worker registered successfully')
-          
+
           track("PWA: Service Worker Registered", {
             scope: registration.scope
           })
-          
+
           // Check for updates periodically
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing
@@ -79,7 +55,6 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   console.log('New service worker available, refresh to update')
                   track("PWA: Update Available", {})
-                  // Could show a toast here to notify user
                 }
               })
             }
@@ -90,63 +65,22 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
           track("PWA: Service Worker Registration Failed", {
             error: error.message
           })
-          // Don't break the app if SW fails, it's an enhancement
         })
     } else if (window.location.protocol !== 'https:') {
       console.log('Service Worker requires HTTPS')
     }
 
-    // Handle install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-      track("PWA: Install Prompt Available", {})
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     window.addEventListener('resize', checkPWA)
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
       window.removeEventListener('resize', checkPWA)
     }
-  }, [isMobile])
-
-  // Function to trigger PWA install
-  const installPWA = async () => {
-    if (!deferredPrompt) return
-
-    track("PWA: Install Prompt Shown", {})
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    console.log(`User response to install prompt: ${outcome}`)
-    
-    track("PWA: Install Prompt Response", {
-      outcome: outcome,
-      accepted: outcome === 'accepted'
-    })
-    
-    setDeferredPrompt(null)
-  }
+  }, [])
 
   return (
     <>
       {children}
-      {/* Add spacer for mobile bottom nav */}
-      <div className="md:hidden" style={{ height: isPWA ? '93px' : '80px' }} />
-      <MobileBottomNav isPWA={isPWA} />
       <FloatingCreateButton isPWA={isPWA} />
-      {/* Show install prompt for mobile web users (not PWA) - hidden on certain mobile pages */}
-      {showInstallPrompt && isMobile && !isPWA && !hidePWAOnMobile && (
-        <PWAInstallPrompt
-          deferredPrompt={deferredPrompt}
-          onDismiss={() => {
-            setShowInstallPrompt(false)
-            setDeferredPrompt(null)
-          }}
-          onInstall={installPWA}
-        />
-      )}
     </>
   )
 }

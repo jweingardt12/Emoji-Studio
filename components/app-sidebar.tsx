@@ -770,7 +770,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <div className="pl-4 pt-4 pb-2 hidden md:block">
+        <div className="pl-4 pt-4 pb-2">
           <Link
             href="/dashboard"
             onClick={() => {
@@ -784,7 +784,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <span className="text-xl font-bold">Emoji Studio</span>
           </Link>
         </div>
-        <div className="h-4 md:hidden"></div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col h-full">
         <div className="flex-grow min-h-0 overflow-y-auto overscroll-contain">
@@ -808,12 +807,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </TooltipProvider>
           </div>
           <NavMain items={navItems} onRefresh={handleRefresh} refreshing={refreshing} slackLoaded={slackLoaded} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} />
-          <hr className="my-3 border-muted" />
+          <hr className="my-3 border-sidebar-border" />
           <NavMain items={githubNavItems} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} onFeedback={() => setFeedbackModalOpen(true)} />
         </div>
 
         <div className="mt-auto pt-4">
-          <hr className="mb-3 border-muted" />
+          <hr className="mb-3 border-sidebar-border" />
           <p className="px-3 py-2 text-xs text-muted-foreground text-center">
             This project is neither affiliated nor endorsed by Slack in any way.
           </p>

@@ -158,12 +158,6 @@ body {
       touch-action: manipulation;
     }
 
-    /* Add padding bottom for mobile nav with more space */
-    .mobile-nav-padding {
-      padding-bottom: calc(8.5rem + env(safe-area-inset-bottom));
-      padding-top: env(safe-area-inset-top);
-    }
-
     /* Hide desktop sidebar on mobile */
     .sidebar-hidden-mobile {
       display: none;

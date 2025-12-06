@@ -21,7 +21,7 @@ interface FloatingCreateButtonProps {
 export function FloatingCreateButton({ isPWA = false }: FloatingCreateButtonProps) {
   const pathname = usePathname()
   const [isMobile, setIsMobile] = useState(false)
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768) // md breakpoint
@@ -30,12 +30,12 @@ export function FloatingCreateButton({ isPWA = false }: FloatingCreateButtonProp
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-  
-  // Don't show on create or settings pages
-  if (pathname === "/create" || pathname === "/settings") {
+
+  // Don't show on create, settings, or wrapped pages
+  if (pathname === "/create" || pathname === "/settings" || pathname === "/wrapped") {
     return null
   }
-  
+
   // Only show on mobile
   if (!isMobile) {
     return null
@@ -47,7 +47,7 @@ export function FloatingCreateButton({ isPWA = false }: FloatingCreateButtonProp
       <button
         className={cn(
           "fixed z-50",
-          isPWA ? "bottom-28" : "bottom-24",
+          "bottom-6",
           "right-6",
           "flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
