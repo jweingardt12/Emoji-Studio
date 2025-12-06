@@ -4,6 +4,13 @@ import { Emoji } from "./emoji-service"
 // INTERFACES
 // ============================================================
 
+export interface HourlyDistributionBucket {
+  hour: number // Start hour (0, 3, 6, 9, 12, 15, 18, 21)
+  label: string // Human-readable label
+  count: number
+  percentage: number
+}
+
 export interface WrappedStats {
   year: number
   generatedAt: number
@@ -13,6 +20,7 @@ export interface WrappedStats {
   busiestWeek: BusiestPeriod
   peakDayOfWeek: DayOfWeekStat
   peakHourOfDay: HourOfDayStat
+  hourlyDistribution: HourlyDistributionBucket[] // 8 time buckets for radar chart
   funStats: WrappedFunStats
   growth: WrappedGrowthStats
   monthlyBreakdown: MonthlyCount[]
@@ -124,6 +132,18 @@ export interface PersonalWrappedStats {
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 const STOP_WORDS = new Set(["the", "and", "a", "an", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "this", "that"])
+
+// Labels for 8 time buckets (3-hour intervals)
+const HOUR_BUCKET_LABELS: Record<number, string> = {
+  0: "12-3AM",
+  3: "3-6AM",
+  6: "6-9AM",
+  9: "9AM-12PM",
+  12: "12-3PM",
+  15: "3-6PM",
+  18: "6-9PM",
+  21: "9PM-12AM",
+}
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp * 1000)
@@ -424,6 +444,17 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   // Generate highlights
   const highlights = generateHighlights(overview, topCreators, busiestDay, funStats, growth)
 
+  // Build hourly distribution buckets (8 x 3-hour intervals)
+  const hourlyDistribution: HourlyDistributionBucket[] = [0, 3, 6, 9, 12, 15, 18, 21].map((startHour) => {
+    const count = hourCounts[startHour] + hourCounts[startHour + 1] + hourCounts[startHour + 2]
+    return {
+      hour: startHour,
+      label: HOUR_BUCKET_LABELS[startHour],
+      count,
+      percentage: Math.round((count / sortedEmojis.length) * 100),
+    }
+  })
+
   return {
     year,
     generatedAt: Math.floor(Date.now() / 1000),
@@ -433,6 +464,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     busiestWeek,
     peakDayOfWeek,
     peakHourOfDay,
+    hourlyDistribution,
     funStats,
     growth,
     monthlyBreakdown,

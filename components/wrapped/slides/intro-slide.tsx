@@ -7,14 +7,12 @@ import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
-import { Particles } from "@/components/ui/particles"
+import { EmojiHero } from "../emoji-hero"
+import { EmojiOrbit } from "../emoji-orbit"
 import { SparklesText } from "@/components/ui/sparkles-text"
-import { ShootingStars } from "@/components/ui/shooting-stars"
-import { DotPattern } from "@/components/ui/dot-pattern"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 
 interface IntroSlideProps {
   year: number
@@ -29,167 +27,157 @@ export function IntroSlide({
   workspaceName,
   onContinue,
   customEmojis = [],
-  captureMode = false
+  captureMode = false,
 }: IntroSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
-  const isMobile = useIsMobile()
-  const prefersReducedMotion = useReducedMotion()
-  const shouldReduceAnimations = isMobile || prefersReducedMotion
+  const shouldReduceAnimations = useShouldReduceAnimations()
 
   // Get the top emoji to feature prominently
   const featuredEmoji = customEmojis[0]
-  // Get more for a prominent showcase (8 emojis instead of 5)
-  const sampleEmojis = customEmojis.slice(1, 9)
+  // Get emojis for the orbital ring (12-16 for nice spacing)
+  const orbitEmojis = customEmojis.slice(1, 13)
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
-      {/* Background effects - only show when not in capture mode and not on mobile */}
-      {!captureMode && !shouldReduceAnimations && (
-        <>
-          <Particles
-            className="absolute inset-0"
-            quantity={40}
-            staticity={30}
-            ease={80}
-            color="#ffffff"
-            size={0.6}
-          />
-          <ShootingStars
-            starColor="#9E7AFF"
-            trailColor="#2EB9DF"
-            minSpeed={15}
-            maxSpeed={35}
-            minDelay={2500}
-            maxDelay={5000}
-          />
-          <ShootingStars
-            starColor="#FE8BBB"
-            trailColor="#9E7AFF"
-            minSpeed={10}
-            maxSpeed={25}
-            minDelay={3000}
-            maxDelay={6000}
-          />
-        </>
-      )}
+      {/* Noise texture overlay */}
+      <div className="wrapped-noise absolute inset-0 pointer-events-none" />
 
-      {/* Dot pattern overlay */}
-      <DotPattern
-        className="absolute inset-0 opacity-20"
-        dotColor="rgba(255, 255, 255, 0.5)"
-        dotOpacity={0.3}
-        width={20}
-        height={20}
-        cr={1}
-      />
-
-      {/* Capturable content - fixed square size for share images, flexible for live view */}
-      <div ref={slideRef} className={`relative flex flex-col items-center pt-4 pb-4 px-6 w-[600px] ${captureMode ? 'h-[600px]' : 'h-auto min-h-[600px]'} overflow-hidden`}>
+      {/* Capturable content */}
+      <div
+        ref={slideRef}
+        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
+          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
+        } overflow-hidden`}
+      >
         {/* Consistent header for share images */}
         <SlideHeader year={year} />
 
-        {/* Workspace name with BlurFade */}
+        {/* Workspace name */}
         {captureMode ? (
-          <p className="text-lg md:text-xl font-semibold text-white/70 mb-2">
-            {workspaceName}
-          </p>
+          <p className="wrapped-label mb-4">{workspaceName}</p>
         ) : (
-          <BlurFade delay={0.2} className="text-lg md:text-xl font-semibold text-white/70 mb-2">
+          <BlurFade delay={0.2} className="wrapped-label mb-4">
             {workspaceName}
           </BlurFade>
         )}
 
-        {/* Year with SparklesText */}
-        <motion.div
-          initial={captureMode ? false : { scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20, delay: 0.3 }}
-        >
-          {captureMode ? (
-            <h1
-              className="text-8xl md:text-9xl font-black text-white"
-              style={{
-                textShadow: "0 0 60px rgba(255,255,255,0.3), 0 0 100px rgba(147,51,234,0.5)",
+        {/* Main hero section - Year with orbital emojis */}
+        <div className="relative flex-1 flex items-center justify-center w-full">
+          {/* Orbital emoji ring */}
+          {orbitEmojis.length > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <EmojiOrbit
+                emojis={orbitEmojis}
+                size="lg"
+                emojiSize="md"
+                orbitDuration={40}
+                captureMode={captureMode}
+                centerContent={
+                  <motion.div
+                    initial={captureMode ? false : { scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 20,
+                      delay: 0.3,
+                    }}
+                    className="flex flex-col items-center"
+                  >
+                    {/* Year number */}
+                    {captureMode ? (
+                      <h1 className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl">
+                        {year}
+                      </h1>
+                    ) : (
+                      <SparklesText
+                        className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl"
+                        colors={{
+                          first: "var(--wrapped-accent-purple)",
+                          second: "var(--wrapped-accent-orange)",
+                        }}
+                        sparklesCount={shouldReduceAnimations ? 0 : 10}
+                      >
+                        {year}
+                      </SparklesText>
+                    )}
+                  </motion.div>
+                }
+              />
+            </div>
+          )}
+
+          {/* Fallback if no orbit emojis */}
+          {orbitEmojis.length === 0 && (
+            <motion.div
+              initial={captureMode ? false : { scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+                delay: 0.3,
               }}
             >
-              {year}
-            </h1>
-          ) : (
-            <SparklesText
-              className="text-8xl md:text-9xl font-black"
-              colors={{ first: "#9E7AFF", second: "#FE8BBB" }}
-              sparklesCount={8}
-            >
-              {year}
-            </SparklesText>
+              {captureMode ? (
+                <h1 className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl">
+                  {year}
+                </h1>
+              ) : (
+                <SparklesText
+                  className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl"
+                  colors={{
+                    first: "var(--wrapped-accent-purple)",
+                    second: "var(--wrapped-accent-orange)",
+                  }}
+                  sparklesCount={shouldReduceAnimations ? 0 : 10}
+                >
+                  {year}
+                </SparklesText>
+              )}
+            </motion.div>
           )}
-        </motion.div>
+        </div>
 
         {/* Subtitle with GradientText */}
         <motion.div
           initial={captureMode ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="mt-4"
+          className="mt-6"
         >
-          <h2 className="text-2xl md:text-3xl font-bold">
+          <h2 className="wrapped-headline">
             <GradientText
-              colors={["#9E7AFF", "#FE8BBB", "#2EB9DF", "#9E7AFF"]}
+              colors={[
+                "var(--wrapped-accent-purple)",
+                "var(--wrapped-accent-orange)",
+                "var(--wrapped-accent-cyan)",
+                "var(--wrapped-accent-purple)",
+              ]}
               animationSpeed={6}
             >
               Emoji Wrapped
             </GradientText>
           </h2>
-          <p className="text-white/60 mt-2 text-lg">
-            Let's see what you cooked up...
-          </p>
+          <p className="wrapped-body mt-3">Your emoji journey awaits</p>
         </motion.div>
 
-        {/* Featured emoji with pulsing animation - LARGER */}
-        <motion.div
-          initial={captureMode ? false : { opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 1, duration: 0.5 }}
-          className="mt-6"
-        >
-          {featuredEmoji ? (
-            <motion.div
-              animate={captureMode ? {} : { scale: [1, 1.1, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="relative"
-            >
-              <img
-                src={proxyImageUrl(featuredEmoji.url)}
-                alt={featuredEmoji.name}
-                className="w-28 h-28 md:w-36 md:h-36 object-contain drop-shadow-2xl"
-              />
-              {/* Glow effect */}
-              <div className="absolute inset-0 rounded-full bg-white/30 blur-2xl -z-10 scale-150" />
-            </motion.div>
-          ) : (
-            <span className="text-6xl">✨</span>
-          )}
-        </motion.div>
-
-        {/* Sample emojis showcase - LARGER and more prominent */}
-        {sampleEmojis.length > 0 && (
+        {/* Featured emoji hero */}
+        {featuredEmoji && (
           <motion.div
-            initial={captureMode ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.3, duration: 0.5 }}
-            className="mt-6 flex flex-wrap justify-center gap-3 max-w-[400px]"
+            initial={captureMode ? false : { opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}
+            className="mt-6"
           >
-            {sampleEmojis.map((emoji, i) => (
-              <motion.img
-                key={emoji.url}
-                src={proxyImageUrl(emoji.url)}
-                alt={emoji.name}
-                className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-lg shadow-md"
-                initial={captureMode ? false : { y: 10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 1.4 + i * 0.08 }}
-              />
-            ))}
+            <EmojiHero
+              emoji={featuredEmoji}
+              size="md"
+              glow="purple"
+              animate={!captureMode}
+              captureMode={captureMode}
+              delay={1.2}
+            />
           </motion.div>
         )}
 
@@ -203,7 +191,7 @@ export function IntroSlide({
         slideName="intro"
         workspaceName={workspaceName}
         year={year}
-        backgroundColor="#4c1d95"
+        backgroundColor="var(--wrapped-bg-start)"
       />
     </div>
   )

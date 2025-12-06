@@ -5,14 +5,14 @@ import { motion, AnimatePresence } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { Emoji } from "@/lib/services/emoji-service"
 import { useTrack } from "@/lib/hooks/use-track"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { IntroSlide } from "./slides/intro-slide"
 import { CountSlide } from "./slides/count-slide"
 import { CreatorsSlide } from "./slides/creators-slide"
 import { PersonalSlide } from "./slides/personal-slide"
 import { QuizSlide } from "./slides/quiz-slide"
 import { PeakSlide } from "./slides/peak-slide"
+import { PatternsSlide } from "./slides/patterns-slide"
 import { StatsSlide } from "./slides/stats-slide"
 import { FinaleSlide } from "./slides/finale-slide"
 import { Button } from "@/components/ui/button"
@@ -34,22 +34,9 @@ interface WrappedStoryProps {
 const BASE_SLIDES = ["intro", "count", "creators"] as const
 const PERSONAL_SLIDE = ["personal"] as const
 const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
-const END_SLIDES = ["peak", "stats", "finale"] as const
+const END_SLIDES = ["peak", "patterns", "stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "peak" | "stats" | "finale"
-
-// Gradient backgrounds for each slide
-const SLIDE_GRADIENTS: Record<SlideType, string> = {
-  intro: "from-violet-900 via-purple-900 to-fuchsia-900",
-  count: "from-blue-900 via-indigo-900 to-purple-900",
-  creators: "from-amber-900 via-orange-900 to-red-900",
-  personal: "from-cyan-900 via-blue-900 to-indigo-900",
-  "quiz-workspace": "from-indigo-900 via-purple-900 to-violet-900",
-  "quiz-funfacts": "from-cyan-900 via-teal-900 to-emerald-900",
-  peak: "from-emerald-900 via-teal-900 to-cyan-900",
-  stats: "from-pink-900 via-rose-900 to-red-900",
-  finale: "from-violet-900 via-purple-900 to-fuchsia-900",
-}
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "peak" | "patterns" | "stats" | "finale"
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
   const router = useRouter()
@@ -58,9 +45,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   const [quizAnswered, setQuizAnswered] = useState<Record<string, boolean>>({})
   const track = useTrack()
   const trackedSlides = useRef<Set<string>>(new Set())
-  const isMobile = useIsMobile()
-  const prefersReducedMotion = useReducedMotion()
-  const shouldReduceAnimations = isMobile || prefersReducedMotion
+  const shouldReduceAnimations = useShouldReduceAnimations()
 
   // Build slides array dynamically - include personal slide only if user has data
   const SLIDES: SlideType[] = useMemo(() => {
@@ -293,6 +278,14 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             year={stats.year}
           />
         )
+      case "patterns":
+        return (
+          <PatternsSlide
+            stats={stats}
+            workspaceName={workspaceName}
+            year={stats.year}
+          />
+        )
       case "stats":
         return <StatsSlide funStats={stats.funStats} overview={stats.overview} growth={stats.growth} workspaceName={workspaceName} year={stats.year} customEmojis={customEmojis} />
       case "finale":
@@ -316,32 +309,25 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   return (
     <div
       className={cn(
-        "relative min-h-[calc(100vh-8rem)] -m-4 md:-m-6 bg-gradient-to-br transition-colors duration-1000",
-        "pt-safe pb-safe", // Safe area padding for iOS notch/home indicator
-        SLIDE_GRADIENTS[currentSlideType]
+        "relative min-h-[calc(100vh-8rem)] -m-4 md:-m-6 wrapped-bg",
+        "pt-safe pb-safe" // Safe area padding for iOS notch/home indicator
       )}
     >
       {/* Emoji grid background - layer 1 (above gradient, below content) */}
       <div className="absolute inset-0 overflow-hidden">
-        <EmojiGridBackground emojis={backgroundEmojis} />
+        <EmojiGridBackground emojis={backgroundEmojis} opacity={0.08} />
       </div>
 
       {/* Vignette overlay for depth */}
       <div
         className="absolute inset-0 pointer-events-none z-0"
         style={{
-          background: "radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(0,0,0,0.3) 100%)",
+          background: "radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(0,0,0,0.4) 100%)",
         }}
       />
 
-      {/* Noise texture overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03] z-0"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          backgroundSize: "128px 128px",
-        }}
-      />
+      {/* Noise texture overlay - using CSS class from globals */}
+      <div className="wrapped-noise absolute inset-0 pointer-events-none z-0" />
 
       {/* Main content wrapper */}
       <div className="relative z-10 flex flex-col min-h-[calc(100vh-8rem)]">
@@ -442,7 +428,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         {/* Tap hint on intro */}
         {currentSlide === 0 && (
           <motion.div
-            className="text-center text-white/50 text-sm pb-4"
+            className="text-center text-[var(--wrapped-text-muted)] text-sm pb-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2, duration: 0.5 }}

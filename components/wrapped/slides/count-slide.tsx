@@ -3,18 +3,17 @@
 import { motion } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
+import { DualEmojiMarquee } from "../emoji-marquee"
+import { StatPill } from "../stat-card"
 import { NumberTicker } from "@/components/ui/number-ticker"
 import { Confetti, ConfettiRef } from "@/components/ui/confetti"
-import { GridBackground } from "@/components/ui/grid-background"
-import { Meteors } from "@/components/ui/meteors"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
+import { Users } from "lucide-react"
 
 interface CountSlideProps {
   totalEmojis: number
@@ -31,27 +30,26 @@ export function CountSlide({
   customEmojis = [],
   workspaceName,
   year,
-  captureMode = false
+  captureMode = false,
 }: CountSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
   const confettiRef = useRef<ConfettiRef>(null)
   const [showEmojis, setShowEmojis] = useState(captureMode)
-  const isMobile = useIsMobile()
-  const prefersReducedMotion = useReducedMotion()
-  const shouldReduceAnimations = isMobile || prefersReducedMotion
+  const shouldReduceAnimations = useShouldReduceAnimations()
 
-  // Get sample emojis to showcase (up to 16 for a larger grid)
-  const sampleEmojis = customEmojis.slice(0, 16)
+  // Get sample emojis for marquee (24-32 for nice scrolling)
+  const marqueeEmojis = customEmojis.slice(0, 32)
 
   useEffect(() => {
-    if (captureMode) return
+    if (captureMode || shouldReduceAnimations) return
 
-    // Trigger confetti when number finishes counting (after ~2s)
+    // Trigger confetti when number finishes counting
     const confettiTimer = setTimeout(() => {
       confettiRef.current?.fire({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.5 },
+        colors: ["#a855f7", "#f97316", "#22d3ee"],
       })
     }, 2200)
 
@@ -64,34 +62,23 @@ export function CountSlide({
       clearTimeout(confettiTimer)
       clearTimeout(emojiTimer)
     }
-  }, [captureMode])
+  }, [captureMode, shouldReduceAnimations])
 
   // Playful copy based on emoji count
   const getPlayfulCopy = () => {
-    if (totalEmojis >= 1000) return "Holy smokes! That's LEGENDARY"
-    if (totalEmojis >= 500) return "Holy smokes! That's a LOT"
-    if (totalEmojis >= 200) return "Wow! Y'all were busy"
-    if (totalEmojis >= 100) return "Not bad at all!"
-    return "Quality over quantity!"
+    if (totalEmojis >= 1000) return "Absolutely legendary"
+    if (totalEmojis >= 500) return "That's a whole lot of expression"
+    if (totalEmojis >= 200) return "Y'all were busy creating"
+    if (totalEmojis >= 100) return "Solid emoji game"
+    return "Quality over quantity"
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center text-center">
-      {/* Background effects */}
-      <GridBackground
-        gridSize={32}
-        gridColor="rgba(255, 255, 255, 0.04)"
-        showGlow={true}
-        glowColor="rgba(147, 51, 234, 0.25)"
-        glowPosition="center"
-      />
-      {!captureMode && !shouldReduceAnimations && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Meteors number={10} className="opacity-70" />
-        </div>
-      )}
+    <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
+      {/* Noise texture overlay */}
+      <div className="wrapped-noise absolute inset-0 pointer-events-none" />
 
-      {/* Confetti canvas - only show when not in capture mode */}
+      {/* Confetti canvas */}
       {!captureMode && (
         <Confetti
           ref={confettiRef}
@@ -100,92 +87,82 @@ export function CountSlide({
         />
       )}
 
-      {/* Capturable content - fixed square size for share images, flexible for live view */}
-      <div ref={slideRef} className={`relative flex flex-col items-center pt-4 pb-4 px-6 w-[600px] ${captureMode ? 'h-[600px]' : 'h-auto min-h-[600px]'} overflow-hidden`}>
-        {/* Consistent header for share images */}
+      {/* Capturable content */}
+      <div
+        ref={slideRef}
+        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
+          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
+        } overflow-hidden`}
+      >
+        {/* Consistent header */}
         <SlideHeader year={year} />
 
-        {/* Playful header */}
+        {/* Intro text */}
         {captureMode ? (
-          <p className="text-white/60 text-base mb-1">
-            This year, {workspaceName} created...
-          </p>
+          <p className="wrapped-label mb-2">This year, {workspaceName} created</p>
         ) : (
-          <BlurFade delay={0.2} className="text-white/60 text-base mb-1">
-            This year, {workspaceName} created...
+          <BlurFade delay={0.2} className="wrapped-label mb-2">
+            This year, {workspaceName} created
           </BlurFade>
         )}
 
-        {/* Main number with NumberTicker */}
+        {/* Hero number - MASSIVE */}
         <motion.div
           initial={captureMode ? false : { scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          className="relative"
+          className="relative my-4"
         >
-          <div
-            className="text-7xl md:text-9xl font-black text-white tabular-nums"
-            style={{
-              textShadow: "0 0 60px rgba(255,255,255,0.4), 0 0 100px rgba(99,102,241,0.6)",
-            }}
-          >
-            {captureMode ? (
-              <span>{totalEmojis.toLocaleString()}</span>
-            ) : (
-              <NumberTicker
-                value={totalEmojis}
-                delay={0.5}
-                className="text-7xl md:text-9xl font-black text-white"
-              />
-            )}
-          </div>
+          {captureMode ? (
+            <span className="wrapped-hero-number">{totalEmojis.toLocaleString()}</span>
+          ) : (
+            <NumberTicker
+              value={totalEmojis}
+              delay={0.5}
+              className="wrapped-hero-number"
+            />
+          )}
         </motion.div>
 
-        {/* Label */}
+        {/* Label with gradient */}
         <motion.div
           initial={captureMode ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="mt-4 space-y-2"
+          className="space-y-2"
         >
-          <h2 className="text-2xl md:text-3xl font-bold">
-            <GradientText colors={["#8b5cf6", "#ec4899", "#6366f1", "#8b5cf6"]} animationSpeed={5}>
+          <h2 className="wrapped-headline">
+            <GradientText
+              colors={[
+                "var(--wrapped-accent-purple)",
+                "var(--wrapped-accent-orange)",
+                "var(--wrapped-accent-cyan)",
+                "var(--wrapped-accent-purple)",
+              ]}
+              animationSpeed={5}
+            >
               custom emojis
             </GradientText>
           </h2>
-          <p className="text-lg text-white/80 font-medium">
-            {getPlayfulCopy()}
-          </p>
+          <p className="wrapped-body">{getPlayfulCopy()}</p>
         </motion.div>
 
-        {/* Emoji showcase grid */}
-        {(showEmojis || captureMode) && sampleEmojis.length > 0 && (
+        {/* Dual marquee emoji streams */}
+        {(showEmojis || captureMode) && marqueeEmojis.length > 0 && (
           <motion.div
-            initial={captureMode ? false : { opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={captureMode ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: captureMode ? 0 : 0.3, duration: 0.5 }}
-            className="mt-4 flex flex-wrap justify-center gap-2 max-w-[420px]"
+            className="w-full mt-6 overflow-hidden"
           >
-            {sampleEmojis.map((emoji, i) => (
-              <motion.div
-                key={emoji.url}
-                initial={captureMode ? false : { scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{
-                  delay: captureMode ? 0 : 0.4 + i * 0.04,
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 20,
-                }}
-                className="relative"
-              >
-                <img
-                  src={proxyImageUrl(emoji.url)}
-                  alt={emoji.name}
-                  className="w-12 h-12 md:w-14 md:h-14 object-contain rounded-xl shadow-lg"
-                />
-              </motion.div>
-            ))}
+            <DualEmojiMarquee
+              emojis={marqueeEmojis}
+              size="lg"
+              gap="md"
+              speed="normal"
+              pauseOnHover={!captureMode}
+              captureMode={captureMode}
+            />
           </motion.div>
         )}
 
@@ -194,35 +171,26 @@ export function CountSlide({
           initial={captureMode ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: captureMode ? 0 : 1.8, duration: 0.5 }}
-          className="mt-4 flex items-center gap-3 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20"
+          className="mt-6"
         >
-          {/* Show custom emojis as avatars */}
-          <div className="flex -space-x-2">
-            {customEmojis.slice(0, 3).map((emoji) => (
-              <img
-                key={emoji.url}
-                src={proxyImageUrl(emoji.url)}
-                alt={emoji.name}
-                className="w-8 h-8 rounded-full bg-white/20 object-contain ring-2 ring-white/10"
-              />
-            ))}
-          </div>
-          <span className="text-white/80 font-medium text-sm">
-            by <span className="text-white font-bold">{totalCreators}</span> emoji architects
-          </span>
+          <StatPill
+            value={totalCreators}
+            label="emoji architects"
+            icon={<Users className="w-4 h-4" />}
+          />
         </motion.div>
 
         {/* Branding */}
         <SlideBranding />
       </div>
 
-      {/* Share button - outside capturable area */}
+      {/* Share button */}
       <SlideShareButton
         slideRef={slideRef}
         slideName="count"
         workspaceName={workspaceName}
         year={year}
-        backgroundColor="#1e3a8a"
+        backgroundColor="var(--wrapped-bg-start)"
       />
     </div>
   )

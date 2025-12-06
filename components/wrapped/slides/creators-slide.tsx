@@ -7,12 +7,12 @@ import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
-import { AnimatedList } from "@/components/ui/animated-list"
+import { EmojiHero } from "../emoji-hero"
 import { NumberTicker } from "@/components/ui/number-ticker"
-import { DotPattern } from "@/components/ui/dot-pattern"
-import { ShootingStars } from "@/components/ui/shooting-stars"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
+import { Crown, Medal, Award } from "lucide-react"
 
 interface CreatorsSlideProps {
   topCreators: TopCreator[]
@@ -21,85 +21,121 @@ interface CreatorsSlideProps {
   captureMode?: boolean
 }
 
-const RANK_COLORS = {
-  1: { bg: "bg-gradient-to-br from-yellow-400/20 to-amber-600/20", border: "border-yellow-500/50", text: "text-yellow-400" },
-  2: { bg: "bg-gradient-to-br from-gray-300/20 to-gray-500/20", border: "border-gray-400/50", text: "text-gray-300" },
-  3: { bg: "bg-gradient-to-br from-amber-600/20 to-orange-700/20", border: "border-amber-600/50", text: "text-amber-500" },
-}
-
 function formatName(name: string): string {
   const parts = name.trim().split(" ")
   if (parts.length === 1) return parts[0]
   return `${parts[0]} ${parts[parts.length - 1][0]}.`
 }
 
-interface CreatorCardProps {
+interface PodiumSpotProps {
   creator: TopCreator
+  rank: 1 | 2 | 3
   captureMode: boolean
+  shouldReduceAnimations: boolean
 }
 
-function CreatorCard({ creator, captureMode }: CreatorCardProps) {
-  const rank = creator.rank as 1 | 2 | 3
-  const colors = RANK_COLORS[rank] || { bg: "bg-white/10", border: "border-white/20", text: "text-white" }
+function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: PodiumSpotProps) {
+  const isWinner = rank === 1
+  const delay = rank === 1 ? 0.3 : rank === 2 ? 0.5 : 0.7
+
+  // Rank-based styling
+  const rankStyles = {
+    1: {
+      height: "h-32",
+      bg: "bg-gradient-to-b from-yellow-500/30 to-yellow-600/10",
+      border: "border-yellow-500/50",
+      icon: <Crown className="w-6 h-6 text-yellow-400" />,
+      glow: "shadow-[0_0_40px_rgba(234,179,8,0.3)]",
+    },
+    2: {
+      height: "h-24",
+      bg: "bg-gradient-to-b from-gray-400/20 to-gray-500/10",
+      border: "border-gray-400/40",
+      icon: <Medal className="w-5 h-5 text-gray-300" />,
+      glow: "",
+    },
+    3: {
+      height: "h-20",
+      bg: "bg-gradient-to-b from-amber-600/20 to-amber-700/10",
+      border: "border-amber-600/40",
+      icon: <Award className="w-5 h-5 text-amber-500" />,
+      glow: "",
+    },
+  }
+
+  const style = rankStyles[rank]
+  const shouldAnimate = !captureMode && !shouldReduceAnimations
 
   return (
-    <div
-      className={`w-full rounded-xl p-4 ${colors.bg} border ${colors.border} flex items-center gap-4`}
+    <motion.div
+      className={`flex flex-col items-center ${isWinner ? "order-2" : rank === 2 ? "order-1" : "order-3"}`}
+      initial={shouldAnimate ? { opacity: 0, y: 30 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
     >
-      {/* Rank number */}
-      <div className={`text-3xl font-black ${colors.text} w-10 text-center`}>
-        #{rank}
-      </div>
-
-      {/* Creator's top emoji as avatar - LARGER */}
-      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-        {creator.topEmojis[0] ? (
-          <img
-            src={proxyImageUrl(creator.topEmojis[0].url)}
-            alt={creator.topEmojis[0].name}
-            className="w-12 h-12 object-contain"
+      {/* Emoji halo - creator's top emojis */}
+      <div className="flex justify-center gap-1 mb-2 min-h-[28px]">
+        {creator.topEmojis.slice(1, isWinner ? 6 : 4).map((emoji, i) => (
+          <motion.img
+            key={emoji.name}
+            src={proxyImageUrl(emoji.url)}
+            alt={emoji.name}
+            className={`object-contain rounded ${isWinner ? "w-7 h-7" : "w-5 h-5"}`}
+            initial={shouldAnimate ? { scale: 0, rotate: -20 } : false}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: delay + 0.1 + i * 0.05 }}
           />
-        ) : (
-          <span className="text-2xl">✨</span>
-        )}
+        ))}
       </div>
 
-      {/* Creator info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-white font-semibold text-lg truncate">
-          {formatName(creator.displayName)}
-        </p>
-        <div className="flex items-center gap-2 mt-1">
-          {/* Mini emoji samples - LARGER */}
-          <div className="flex -space-x-1">
-            {creator.topEmojis.slice(1, 5).map((emoji) => (
-              <img
-                key={emoji.name}
-                src={proxyImageUrl(emoji.url)}
-                alt={emoji.name}
-                className="w-8 h-8 rounded object-contain bg-white/10"
-              />
-            ))}
+      {/* Top emoji as avatar */}
+      {creator.topEmojis[0] ? (
+        <div className={`relative ${isWinner ? "mb-3" : "mb-2"}`}>
+          <EmojiHero
+            emoji={creator.topEmojis[0]}
+            size={isWinner ? "md" : "sm"}
+            glow={isWinner ? "orange" : "none"}
+            animate={!captureMode}
+            captureMode={captureMode}
+            delay={delay}
+          />
+          {/* Rank badge */}
+          <div
+            className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center ${style.bg} border ${style.border}`}
+          >
+            {style.icon}
           </div>
         </div>
-      </div>
-
-      {/* Emoji count with NumberTicker */}
-      <div className="text-right">
-        <div className="text-2xl font-bold text-white">
-          {captureMode ? (
-            <span>{creator.emojiCount}</span>
-          ) : (
-            <NumberTicker
-              value={creator.emojiCount}
-              delay={0.5 + (creator.rank - 1) * 0.3}
-              className="text-2xl font-bold text-white"
-            />
-          )}
+      ) : (
+        <div className={`${isWinner ? "w-24 h-24" : "w-16 h-16"} rounded-full bg-white/10 flex items-center justify-center mb-2`}>
+          {style.icon}
         </div>
-        <p className="text-white/50 text-xs">emojis</p>
+      )}
+
+      {/* Creator name */}
+      <p className={`font-semibold text-white truncate max-w-[100px] ${isWinner ? "text-lg" : "text-sm"}`}>
+        {formatName(creator.displayName)}
+      </p>
+
+      {/* Emoji count */}
+      <div className={`font-mono font-bold ${isWinner ? "text-2xl text-yellow-400" : "text-lg text-white/80"}`}>
+        {captureMode ? (
+          <span>{creator.emojiCount}</span>
+        ) : (
+          <NumberTicker
+            value={creator.emojiCount}
+            delay={delay + 0.3}
+            className={isWinner ? "text-2xl text-yellow-400" : "text-lg text-white/80"}
+          />
+        )}
       </div>
-    </div>
+      <span className="wrapped-label text-xs">emojis</span>
+
+      {/* Podium base */}
+      <div
+        className={`mt-3 w-24 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-lg ${style.glow}`}
+      />
+    </motion.div>
   )
 }
 
@@ -107,97 +143,65 @@ export function CreatorsSlide({
   topCreators,
   workspaceName,
   year,
-  captureMode = false
+  captureMode = false,
 }: CreatorsSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
+  const shouldReduceAnimations = useShouldReduceAnimations()
   const top3 = topCreators.slice(0, 3)
 
-  // Collect all top emojis from all creators for the showcase (limit to 8 to prevent overflow)
-  const allCreatorEmojis = top3.flatMap(creator => creator.topEmojis).slice(0, 8)
-
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center text-center">
-      {/* Background effects */}
-      <DotPattern
-        className="absolute inset-0 opacity-15"
-        dotColor="rgba(251, 191, 36, 0.5)"
-        dotOpacity={0.4}
-        width={24}
-        height={24}
-        cr={1}
-      />
-      {!captureMode && (
-        <>
-          <ShootingStars
-            starColor="#fbbf24"
-            trailColor="#f59e0b"
-            minSpeed={12}
-            maxSpeed={28}
-            minDelay={2000}
-            maxDelay={5000}
-          />
-          <ShootingStars
-            starColor="#d97706"
-            trailColor="#fbbf24"
-            minSpeed={8}
-            maxSpeed={20}
-            minDelay={3000}
-            maxDelay={6000}
-          />
-        </>
-      )}
+    <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
+      {/* Noise texture overlay */}
+      <div className="wrapped-noise absolute inset-0 pointer-events-none" />
 
-      {/* Capturable content - fixed square size for share images, flexible for live view */}
-      <div ref={slideRef} className={`relative flex flex-col items-center pt-4 pb-4 px-6 w-[600px] ${captureMode ? 'h-[600px]' : 'h-auto min-h-[600px]'} overflow-hidden`}>
-        {/* Consistent header for share images */}
+      {/* Capturable content */}
+      <div
+        ref={slideRef}
+        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
+          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
+        } overflow-hidden`}
+      >
+        {/* Consistent header */}
         <SlideHeader year={year} />
 
-        {/* Title with GradientText */}
+        {/* Title */}
         {captureMode ? (
-          <div className="mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">
-              The Emoji Architects
-            </h2>
-            <p className="text-white/60 text-sm">
-              Who built {workspaceName}'s emoji empire?
-            </p>
+          <div className="mb-6">
+            <h2 className="wrapped-headline text-white mb-1">The Emoji Architects</h2>
+            <p className="wrapped-body">Who built {workspaceName}'s emoji empire?</p>
           </div>
         ) : (
-          <BlurFade delay={0.1} className="mb-4">
-            <h2 className="text-2xl md:text-3xl font-bold mb-1">
-              <GradientText colors={["#fbbf24", "#f59e0b", "#d97706", "#fbbf24"]} animationSpeed={6}>
+          <BlurFade delay={0.1} className="mb-6">
+            <h2 className="wrapped-headline mb-1">
+              <GradientText
+                colors={[
+                  "var(--wrapped-accent-orange)",
+                  "var(--wrapped-accent-purple)",
+                  "var(--wrapped-accent-cyan)",
+                  "var(--wrapped-accent-orange)",
+                ]}
+                animationSpeed={6}
+              >
                 The Emoji Architects
               </GradientText>
             </h2>
-            <p className="text-white/60 text-sm">
-              Who built {workspaceName}'s emoji empire?
-            </p>
+            <p className="wrapped-body">Who built {workspaceName}'s emoji empire?</p>
           </BlurFade>
         )}
 
-        {/* Animated leaderboard */}
-        <div className="w-full max-w-md space-y-3">
-          {captureMode ? (
-            // Static version for capture
-            top3.map((creator) => (
-              <CreatorCard
+        {/* Podium layout */}
+        <div className="flex-1 flex items-end justify-center w-full">
+          <div className="flex items-end justify-center gap-4 sm:gap-6">
+            {top3.map((creator) => (
+              <PodiumSpot
                 key={creator.userId}
                 creator={creator}
+                rank={creator.rank as 1 | 2 | 3}
                 captureMode={captureMode}
+                shouldReduceAnimations={shouldReduceAnimations}
               />
-            ))
-          ) : (
-            // Animated version for live experience
-            <AnimatedList delay={600} className="w-full gap-3">
-              {top3.map((creator) => (
-                <CreatorCard
-                  key={creator.userId}
-                  creator={creator}
-                  captureMode={captureMode}
-                />
-              ))}
-            </AnimatedList>
-          )}
+            ))}
+          </div>
         </div>
 
         {/* Champion callout for #1 */}
@@ -205,35 +209,19 @@ export function CreatorsSlide({
           <motion.div
             initial={captureMode ? false : { opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: captureMode ? 0 : 2.5 }}
-            className="mt-4 px-5 py-2 rounded-full bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/40"
+            transition={{ delay: captureMode ? 0 : 1.5 }}
+            className="mt-6 wrapped-pill px-5 py-2 rounded-full"
           >
-            <span className="text-yellow-300 font-medium text-sm">
-              <span className="font-bold">{formatName(top3[0].displayName)}</span> created{" "}
-              <span className="font-bold">{top3[0].percentageOfTotal}%</span> of all emojis!
+            <span className="text-white font-medium text-sm">
+              <span className="font-bold text-[var(--wrapped-accent-orange)]">
+                {formatName(top3[0].displayName)}
+              </span>{" "}
+              created{" "}
+              <span className="font-bold text-[var(--wrapped-accent-orange)]">
+                {top3[0].percentageOfTotal}%
+              </span>{" "}
+              of all emojis
             </span>
-          </motion.div>
-        )}
-
-        {/* Emoji showcase from all creators - LARGER */}
-        {allCreatorEmojis.length > 0 && (
-          <motion.div
-            initial={captureMode ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: captureMode ? 0 : 2.8 }}
-            className="mt-4 flex flex-wrap justify-center gap-2 max-w-[400px]"
-          >
-            {allCreatorEmojis.map((emoji, i) => (
-              <motion.img
-                key={`${emoji.name}-${i}`}
-                src={proxyImageUrl(emoji.url)}
-                alt={emoji.name}
-                className="w-10 h-10 md:w-12 md:h-12 object-contain rounded-lg shadow-md"
-                initial={captureMode ? false : { scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: captureMode ? 0 : 2.9 + i * 0.05 }}
-              />
-            ))}
           </motion.div>
         )}
 
@@ -241,13 +229,13 @@ export function CreatorsSlide({
         <SlideBranding />
       </div>
 
-      {/* Share button - outside capturable area */}
+      {/* Share button */}
       <SlideShareButton
         slideRef={slideRef}
         slideName="creators"
         workspaceName={workspaceName}
         year={year}
-        backgroundColor="#78350f"
+        backgroundColor="var(--wrapped-bg-start)"
       />
     </div>
   )

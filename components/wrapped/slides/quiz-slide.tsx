@@ -8,10 +8,11 @@ import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { useTrack } from "@/lib/hooks/use-track"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
+import { EmojiHero } from "../emoji-hero"
 import { Confetti, ConfettiRef } from "@/components/ui/confetti"
-import { GridBackground } from "@/components/ui/grid-background"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 
 interface QuizQuestion {
   question: string
@@ -60,17 +61,67 @@ function getRankCategory(rank: number, totalCreators: number): string {
 
 // Generate personal behavior prediction questions (Quiz 1)
 function generatePersonalPredictionQuestion(stats: WrappedStats, personalStats: PersonalWrappedStats | null | undefined): QuizQuestion {
-  // Fallback - general emoji trivia
-  const fallbackQuestion = (): QuizQuestion => {
-    const options = ["2010", "2015", "1999", "2007"]
+  // Workspace-based fallback questions (when no personal stats)
+  const workspaceFallbacks = [
+    // Total emojis created
+    () => {
+      const total = stats.overview?.totalEmojis
+      if (!total) return null
+      const options = generateNumericOptions(total)
+      return {
+        question: "How many total emojis did the workspace create this year?",
+        options,
+        correctIndex: options.indexOf(total.toLocaleString()),
+      }
+    },
+    // Busiest month
+    () => {
+      if (!stats.monthlyBreakdown || stats.monthlyBreakdown.length < 4) return null
+      const peakMonth = stats.monthlyBreakdown.reduce((max, m) => m.count > max.count ? m : max, stats.monthlyBreakdown[0])
+      const correct = peakMonth.month
+      const wrongAnswers = stats.monthlyBreakdown
+        .filter(m => m.month !== correct)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(m => m.month)
+      const options = [correct, ...wrongAnswers].sort(() => Math.random() - 0.5)
+      return {
+        question: "What was the workspace's busiest month for emoji creation?",
+        options,
+        correctIndex: options.indexOf(correct),
+      }
+    },
+    // Peak day of week
+    () => {
+      const correct = stats.peakDayOfWeek?.day
+      if (!correct) return null
+      const allDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+      const wrongDays = allDays.filter(d => d !== correct).sort(() => Math.random() - 0.5).slice(0, 3)
+      const options = [correct, ...wrongDays].sort(() => Math.random() - 0.5)
+      return {
+        question: "What day of the week had the most emoji creation?",
+        options,
+        correctIndex: options.indexOf(correct),
+      }
+    },
+  ]
+
+  // If no personal stats, use workspace fallback
+  if (!personalStats) {
+    const shuffled = workspaceFallbacks.sort(() => Math.random() - 0.5)
+    for (const generator of shuffled) {
+      const question = generator()
+      if (question) return question
+    }
+    // Ultimate fallback - total emojis (always works)
+    const total = stats.overview?.totalEmojis || 100
+    const options = generateNumericOptions(total)
     return {
-      question: "What year did emoji become a Unicode standard?",
+      question: "How many total emojis did the workspace create this year?",
       options,
-      correctIndex: 0, // 2010 is correct (Unicode 6.0)
+      correctIndex: options.indexOf(total.toLocaleString()),
     }
   }
-
-  if (!personalStats) return fallbackQuestion()
 
   const questionTypes = [
     // Predict your rank
@@ -159,22 +210,102 @@ function generatePersonalPredictionQuestion(stats: WrappedStats, personalStats: 
     if (question) return question
   }
 
-  return fallbackQuestion()
+  // Use workspace fallback if personal questions failed
+  const workspaceShuffled = workspaceFallbacks.sort(() => Math.random() - 0.5)
+  for (const generator of workspaceShuffled) {
+    const question = generator()
+    if (question) return question
+  }
+
+  // Ultimate fallback
+  const total = stats.overview?.totalEmojis || 100
+  const options = generateNumericOptions(total)
+  return {
+    question: "How many total emojis did the workspace create this year?",
+    options,
+    correctIndex: options.indexOf(total.toLocaleString()),
+  }
 }
 
 // Generate personal behavior/pattern questions (Quiz 2)
 function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: PersonalWrappedStats | null | undefined): QuizQuestion {
-  // Fallback - fun emoji trivia
-  const fallbackQuestion = (): QuizQuestion => {
-    const options = ["😂 Face with Tears of Joy", "❤️ Red Heart", "🔥 Fire", "👍 Thumbs Up"]
+  // Workspace-based fallback questions (when no personal stats)
+  const workspaceFallbacks = [
+    // Workspace late night count
+    () => {
+      const lateNight = stats.funStats?.lateNightCount
+      if (!lateNight || lateNight < 1) return null
+      const options = generateNumericOptions(lateNight)
+      return {
+        question: "How many emojis were created after midnight this year?",
+        options,
+        correctIndex: options.indexOf(lateNight.toLocaleString()),
+      }
+    },
+    // Workspace longest streak
+    () => {
+      const streak = stats.funStats?.longestStreak?.days
+      if (!streak || streak < 2) return null
+      const options = generateNumericOptions(streak).map(n => `${n} days`)
+      const correctStr = `${streak.toLocaleString()} days`
+      return {
+        question: "What was the longest streak of consecutive days with new emojis?",
+        options,
+        correctIndex: options.indexOf(correctStr),
+      }
+    },
+    // Most common word
+    () => {
+      if (!stats.funStats?.mostCommonWord) return null
+      const correct = stats.funStats.mostCommonWord.word
+      const topWords = stats.funStats.topWords || []
+      const wrongAnswers = topWords
+        .filter(w => w.word !== correct)
+        .slice(0, 3)
+        .map(w => w.word)
+      while (wrongAnswers.length < 3) {
+        const fillers = ["cat", "dog", "party", "face", "fire", "cool", "love", "happy"]
+        const filler = fillers.find(f => f !== correct && !wrongAnswers.includes(f))
+        if (filler) wrongAnswers.push(filler)
+        else break
+      }
+      const options = [correct, ...wrongAnswers.slice(0, 3)].sort(() => Math.random() - 0.5)
+      return {
+        question: "What's the most common word in emoji names?",
+        options: options.map(o => `"${o}"`),
+        correctIndex: options.findIndex(o => o === correct),
+      }
+    },
+    // GIF percentage
+    () => {
+      const gifPct = stats.overview?.gifPercentage
+      if (gifPct === undefined) return null
+      const options = generateNumericOptions(gifPct).map(n => `${n}%`)
+      const correctStr = `${gifPct.toLocaleString()}%`
+      return {
+        question: "What percentage of the workspace's emojis are GIFs?",
+        options,
+        correctIndex: options.indexOf(correctStr),
+      }
+    },
+  ]
+
+  // If no personal stats, use workspace fallback
+  if (!personalStats) {
+    const shuffled = workspaceFallbacks.sort(() => Math.random() - 0.5)
+    for (const generator of shuffled) {
+      const question = generator()
+      if (question) return question
+    }
+    // Ultimate fallback
+    const lateNight = stats.funStats?.lateNightCount || 10
+    const options = generateNumericOptions(lateNight)
     return {
-      question: "Which emoji is the most used worldwide?",
+      question: "How many emojis were created after midnight this year?",
       options,
-      correctIndex: 0, // Face with tears of joy
+      correctIndex: options.indexOf(lateNight.toLocaleString()),
     }
   }
-
-  if (!personalStats) return fallbackQuestion()
 
   const questionTypes = [
     // Your longest streak
@@ -215,41 +346,69 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
         correctIndex: options.indexOf(correctStr),
       }
     },
-    // Compared to average
+    // Your most common word in emoji names
     () => {
-      const compared = personalStats.comparedToAverage
-      if (!compared) return null
-      const options = generateNumericOptions(compared).map(n => `${n}%`)
-      const correctStr = `${compared.toLocaleString()}%`
+      if (!personalStats.topEmojis || personalStats.topEmojis.length < 5) return null
+
+      // Extract words from user's emoji names
+      const allWords: string[] = []
+      personalStats.topEmojis.forEach(emoji => {
+        const words = emoji.name.split(/[-_]/).filter(w => w.length > 2)
+        allWords.push(...words)
+      })
+
+      // Count word frequency
+      const wordCounts = new Map<string, number>()
+      allWords.forEach(word => {
+        const lower = word.toLowerCase()
+        wordCounts.set(lower, (wordCounts.get(lower) || 0) + 1)
+      })
+
+      // Find most common
+      let mostCommon = ""
+      let maxCount = 0
+      wordCounts.forEach((count, word) => {
+        if (count > maxCount) {
+          maxCount = count
+          mostCommon = word
+        }
+      })
+
+      if (!mostCommon || maxCount < 2) return null
+
+      // Use workspace topWords for wrong answers
+      const workspaceWords = stats.funStats?.topWords || []
+      const wrongAnswers = workspaceWords
+        .filter(w => w.word.toLowerCase() !== mostCommon)
+        .slice(0, 3)
+        .map(w => w.word)
+
+      // Pad with generic words if needed
+      const fillers = ["party", "cat", "face", "fire", "love", "cool", "happy", "dog"]
+      while (wrongAnswers.length < 3) {
+        const filler = fillers.find(f => f !== mostCommon && !wrongAnswers.includes(f))
+        if (filler) wrongAnswers.push(filler)
+        else break
+      }
+
+      const options = [mostCommon, ...wrongAnswers.slice(0, 3)].sort(() => Math.random() - 0.5)
 
       return {
-        question: "How did YOUR emoji count compare to the average creator?",
-        options,
-        correctIndex: options.indexOf(correctStr),
+        question: "What was the most popular word in YOUR emoji names?",
+        options: options.map(o => `"${o}"`),
+        correctIndex: options.findIndex(o => o === mostCommon),
       }
     },
-    // Emoji personality question (no wrong answer)
+    // Your total emojis created
     () => {
-      if (!personalStats.topEmojis || personalStats.topEmojis.length < 4) return null
-      const emojis = personalStats.topEmojis.slice(0, 4)
-      const options = emojis.map(e => `:${e.name}:`)
+      const total = personalStats.totalEmojis
+      if (!total || total < 1) return null
+      const options = generateNumericOptions(total)
 
       return {
-        question: "Which of YOUR emojis best represents your 2024 vibe?",
+        question: "How many emojis did YOU create this year?",
         options,
-        correctIndex: Math.floor(Math.random() * 4), // Any answer is "correct"
-        isPersonalityQuestion: true,
-        emoji: emojis[0],
-      }
-    },
-    // Creator style question (no wrong answer)
-    () => {
-      const options = ["Trendsetter 🚀", "Steady Creator 📊", "Burst Creator ⚡", "Quality over Quantity ✨"]
-      return {
-        question: "What's your emoji creation style?",
-        options,
-        correctIndex: Math.floor(Math.random() * 4), // Any answer is "correct"
-        isPersonalityQuestion: true,
+        correctIndex: options.indexOf(total.toLocaleString()),
       }
     },
   ]
@@ -261,7 +420,21 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     if (question) return question
   }
 
-  return fallbackQuestion()
+  // Use workspace fallback if personal questions failed
+  const workspaceShuffled = workspaceFallbacks.sort(() => Math.random() - 0.5)
+  for (const generator of workspaceShuffled) {
+    const question = generator()
+    if (question) return question
+  }
+
+  // Ultimate fallback
+  const lateNight = stats.funStats?.lateNightCount || 10
+  const options = generateNumericOptions(lateNight)
+  return {
+    question: "How many emojis were created after midnight this year?",
+    options,
+    correctIndex: options.indexOf(lateNight.toLocaleString()),
+  }
 }
 
 // Answer option component
@@ -289,21 +462,34 @@ function AnswerOption({
   // For personality questions, the selected option is always "correct"
   const effectiveIsCorrect = isPersonalityQuestion ? isSelected : isCorrect
 
+  // Determine background style
+  const getBackgroundStyle = () => {
+    if (!showResult) {
+      return "wrapped-glass hover:bg-white/15"
+    }
+    if (isSelected && effectiveIsCorrect) {
+      return isPersonalityQuestion
+        ? "bg-[var(--wrapped-accent-purple)]/30 border-[var(--wrapped-accent-purple)]"
+        : "bg-green-500/30 border-green-500"
+    }
+    if (isSelected && !effectiveIsCorrect) {
+      return "bg-red-500/30 border-red-500"
+    }
+    if (!isSelected && isCorrect && !isPersonalityQuestion) {
+      return "bg-green-500/20 border-green-500/50"
+    }
+    return "wrapped-glass opacity-50"
+  }
+
   return (
     <motion.button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full p-4 rounded-xl border text-left transition-all ${
-        !showResult ? "bg-white/5 border-white/20 hover:bg-white/15 hover:border-white/40" : ""
-      } ${showResult && isSelected && effectiveIsCorrect ? (isPersonalityQuestion ? "bg-purple-500/30 border-purple-500" : "bg-green-500/30 border-green-500") : ""} ${
-        showResult && isSelected && !effectiveIsCorrect ? "bg-red-500/30 border-red-500" : ""
-      } ${showResult && !isSelected && isCorrect && !isPersonalityQuestion ? "bg-green-500/20 border-green-500/50" : ""} ${
-        showResult && !isSelected && (!isCorrect || isPersonalityQuestion) ? "bg-white/5 border-white/10 opacity-50" : ""
-      }`}
+      className={`w-full p-4 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
       initial={captureMode ? false : { opacity: 0, x: -20 }}
       animate={
         showResult && isSelected && !effectiveIsCorrect
-          ? { opacity: 1, x: [0, -10, 10, -10, 10, 0] }
+          ? { opacity: 1, x: [0, -5, 5, -5, 5, 0] }
           : { opacity: 1, x: 0 }
       }
       transition={{
@@ -316,9 +502,11 @@ function AnswerOption({
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            className={`w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-bold ${
               showResult && effectiveIsCorrect && isSelected
-                ? isPersonalityQuestion ? "bg-purple-500 text-white" : "bg-green-500 text-white"
+                ? isPersonalityQuestion
+                  ? "bg-[var(--wrapped-accent-purple)] text-white"
+                  : "bg-green-500 text-white"
                 : showResult && isSelected && !effectiveIsCorrect
                 ? "bg-red-500 text-white"
                 : "bg-white/20 text-white"
@@ -335,9 +523,12 @@ function AnswerOption({
             transition={{ type: "spring", stiffness: 300 }}
           >
             {effectiveIsCorrect ? (
-              <CheckCircle2 className={`w-6 h-6 ${isPersonalityQuestion ? "text-purple-500" : "text-green-500"}`} />
+              <CheckCircle2
+                className={`w-6 h-6 ${isPersonalityQuestion ? "text-[var(--wrapped-accent-purple)]" : "text-green-500"}`}
+                aria-label={isPersonalityQuestion ? "Great choice" : "Correct answer"}
+              />
             ) : (
-              <XCircle className="w-6 h-6 text-red-500" />
+              <XCircle className="w-6 h-6 text-red-500" aria-label="Incorrect answer" />
             )}
           </motion.div>
         )}
@@ -347,7 +538,7 @@ function AnswerOption({
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
           >
-            <CheckCircle2 className="w-6 h-6 text-green-500/70" />
+            <CheckCircle2 className="w-6 h-6 text-green-500/70" aria-label="This was the correct answer" />
           </motion.div>
         )}
       </div>
@@ -368,6 +559,7 @@ export function QuizSlide({
   const confettiRef = useRef<ConfettiRef>(null)
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null)
   const [showResult, setShowResult] = useState(false)
+  const shouldReduceAnimations = useShouldReduceAnimations()
 
   // Generate question based on quiz type (memoized to stay consistent)
   const question = useMemo(() => {
@@ -397,13 +589,14 @@ export function QuizSlide({
       year,
     })
 
-    if (isCorrect) {
+    if (isCorrect && !shouldReduceAnimations) {
       // Fire confetti for correct answer or personality question
       setTimeout(() => {
         confettiRef.current?.fire({
           particleCount: question.isPersonalityQuestion ? 50 : 80,
           spread: 60,
           origin: { y: 0.7 },
+          colors: ["#a855f7", "#f97316", "#22d3ee"],
         })
       }, 200)
     }
@@ -418,24 +611,16 @@ export function QuizSlide({
   const isCorrect = question.isPersonalityQuestion
     ? true
     : selectedAnswer === question.correctIndex
+
   const gradientColors =
     quizType === "workspace"
-      ? ["#818cf8", "#a78bfa", "#c084fc", "#818cf8"]
-      : ["#14b8a6", "#22d3d1", "#06b6d4", "#14b8a6"]
-
-  const glowColor =
-    quizType === "workspace" ? "rgba(129, 140, 248, 0.2)" : "rgba(20, 184, 166, 0.2)"
+      ? ["var(--wrapped-accent-purple)", "var(--wrapped-accent-cyan)", "var(--wrapped-accent-orange)", "var(--wrapped-accent-purple)"]
+      : ["var(--wrapped-accent-cyan)", "var(--wrapped-accent-purple)", "var(--wrapped-accent-orange)", "var(--wrapped-accent-cyan)"]
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center text-center px-4">
-      {/* Background effects */}
-      <GridBackground
-        gridSize={30}
-        gridColor="rgba(255, 255, 255, 0.04)"
-        showGlow={true}
-        glowColor={glowColor}
-        glowPosition="center"
-      />
+    <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
+      {/* Noise texture overlay */}
+      <div className="wrapped-noise absolute inset-0 pointer-events-none" />
 
       {/* Confetti canvas */}
       {!captureMode && (
@@ -448,8 +633,8 @@ export function QuizSlide({
 
       {/* Main content */}
       <div
-        className={`relative flex flex-col items-center pt-4 pb-4 px-6 w-[600px] ${
-          captureMode ? "h-[600px]" : "h-auto min-h-[600px]"
+        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
+          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
         } overflow-hidden`}
       >
         {/* Header */}
@@ -458,21 +643,21 @@ export function QuizSlide({
         {/* Quiz title */}
         {captureMode ? (
           <div className="mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-1">
+            <h2 className="wrapped-headline text-white mb-1">
               {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
             </h2>
-            <p className="text-white/60 text-sm">
+            <p className="wrapped-body">
               {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
             </p>
           </div>
         ) : (
           <BlurFade delay={0.1} className="mb-4">
-            <h2 className="text-xl md:text-2xl font-bold mb-1">
+            <h2 className="wrapped-headline mb-1">
               <GradientText colors={gradientColors} animationSpeed={6}>
                 {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
               </GradientText>
             </h2>
-            <p className="text-white/60 text-sm">
+            <p className="wrapped-body">
               {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
             </p>
           </BlurFade>
@@ -486,10 +671,13 @@ export function QuizSlide({
             transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
             className="mb-4"
           >
-            <img
-              src={proxyImageUrl(question.emoji.url)}
-              alt={question.emoji.name}
-              className="w-20 h-20 rounded-xl shadow-lg object-contain"
+            <EmojiHero
+              emoji={question.emoji}
+              size="sm"
+              glow="purple"
+              animate={!captureMode}
+              captureMode={captureMode}
+              delay={0.3}
             />
           </motion.div>
         )}
@@ -501,11 +689,11 @@ export function QuizSlide({
           transition={{ delay: 0.2 }}
           className="mb-6 max-w-md"
         >
-          <p className="text-xl md:text-2xl font-bold text-white">{question.question}</p>
+          <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">{question.question}</p>
         </motion.div>
 
         {/* Answer options */}
-        <div className="w-full max-w-md space-y-3">
+        <div className="w-full max-w-sm sm:max-w-md space-y-3">
           {question.options.map((option, index) => (
             <AnswerOption
               key={index}
@@ -524,12 +712,15 @@ export function QuizSlide({
         {/* Result message */}
         {showResult && (
           <motion.div
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 300, delay: 0.3 }}
             className={`mt-6 px-6 py-3 rounded-full ${
               question.isPersonalityQuestion
-                ? "bg-purple-500/20 border border-purple-500/40"
+                ? "bg-[var(--wrapped-accent-purple)]/20 border border-[var(--wrapped-accent-purple)]/40"
                 : isCorrect
                   ? "bg-green-500/20 border border-green-500/40"
                   : "bg-red-500/20 border border-red-500/40"
@@ -537,7 +728,7 @@ export function QuizSlide({
           >
             <p className={`text-lg font-bold ${
               question.isPersonalityQuestion
-                ? "text-purple-400"
+                ? "text-[var(--wrapped-accent-purple)]"
                 : isCorrect
                   ? "text-green-400"
                   : "text-red-400"
@@ -557,7 +748,7 @@ export function QuizSlide({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="mt-4 text-white/50 text-sm"
+            className="mt-4 wrapped-label text-sm"
           >
             Tap to continue
           </motion.p>
