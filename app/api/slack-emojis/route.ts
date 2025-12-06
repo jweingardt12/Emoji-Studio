@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     const isEmojiEndpoint =
       curlRequest.url.includes("/emoji.") ||
       curlRequest.url.includes("/api/emoji") ||
+      curlRequest.url.includes("/emojis/") ||  // Edge API format: /cache/{team}/emojis/list
       Boolean(curlRequest.url.match(/emoji\.[a-zA-Z]+/))
 
     if (!isEmojiEndpoint) {
