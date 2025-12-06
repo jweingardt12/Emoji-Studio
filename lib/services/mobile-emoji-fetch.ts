@@ -9,6 +9,7 @@ interface MobileAuthParams {
   token: string
   userId: string
   teamId: string
+  cookie?: string  // Optional: Slack cookie for enhanced auth
 }
 
 /**
@@ -27,29 +28,40 @@ function getWorkspaceUrl(teamId: string): string {
 export async function fetchEmojiDataWithMobileAuth(
   params: MobileAuthParams
 ): Promise<Emoji[]> {
-  const { token, userId, teamId } = params
+  const { token, userId, teamId, cookie } = params
 
   console.log("[MobileFetch] Starting emoji fetch with mobile auth")
   console.log("[MobileFetch] TeamId:", teamId)
   console.log("[MobileFetch] UserId:", userId)
   console.log("[MobileFetch] Token prefix:", token.substring(0, 15) + "...")
+  console.log("[MobileFetch] Cookie present:", !!cookie)
 
   try {
-    // Construct the API URL for emoji.adminList
-    // This endpoint returns detailed emoji info including user_id and can_delete
-    const apiUrl = `https://edgeapi.slack.com/cache/${teamId}/emojis/list?fp=b1`
+    // Use the standard Slack Web API endpoint for emoji.adminList
+    // This endpoint works with token + cookie auth
+    // and returns detailed emoji info including user_id and timestamps
+    const apiUrl = `https://slack.com/api/emoji.adminList`
+
+    // Build headers - include cookie if available
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "application/json",
+    }
+
+    // Add cookie header if provided (required for Slack xoxc token auth)
+    if (cookie) {
+      headers["Cookie"] = cookie
+    }
 
     // Build the curl request structure expected by our API proxy
     const curlRequest = {
       url: apiUrl,
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "application/json",
-      },
+      headers,
       formData: {
         token: token,
         count: "5000", // Request all emojis
+        include_categories: "false",
       },
     }
 

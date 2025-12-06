@@ -29,6 +29,7 @@ function WrappedPageContent() {
   const mobileToken = searchParams.get("token")
   const mobileUserId = searchParams.get("userId")
   const mobileTeamId = searchParams.get("teamId")
+  const mobileCookie = searchParams.get("cookie")
   const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
   const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
@@ -71,6 +72,7 @@ function WrappedPageContent() {
           token: mobileToken!,
           userId: mobileUserId!,
           teamId: mobileTeamId!,
+          cookie: mobileCookie || undefined,
         })
 
         console.log("[Wrapped] Mobile auth fetch completed")
@@ -82,7 +84,7 @@ function WrappedPageContent() {
     }
 
     handleMobileAuth()
-  }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId])
+  }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId, mobileCookie])
 
   useEffect(() => {
     setIsClient(true)
