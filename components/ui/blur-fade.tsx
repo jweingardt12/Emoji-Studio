@@ -24,6 +24,8 @@ interface BlurFadeProps {
   inView?: boolean
   inViewMargin?: MarginType
   blur?: string
+  /** When false, renders plain div without animation (for mobile/WKWebView) */
+  shouldAnimate?: boolean
 }
 
 export function BlurFade({
@@ -36,6 +38,7 @@ export function BlurFade({
   inView = false,
   inViewMargin = "-50px",
   blur = "6px",
+  shouldAnimate = true,
 }: BlurFadeProps) {
   const ref = useRef(null)
   const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
@@ -45,6 +48,12 @@ export function BlurFade({
   useEffect(() => {
     setHydrated(true)
   }, [])
+
+  // When animations are disabled (mobile/WKWebView), render plain div
+  // This completely bypasses framer-motion which may have issues in WKWebView
+  if (!shouldAnimate) {
+    return <div className={className}>{children}</div>
+  }
 
   // During SSR/before hydration, always show as visible to prevent content hiding
   // After hydration, use normal inView detection

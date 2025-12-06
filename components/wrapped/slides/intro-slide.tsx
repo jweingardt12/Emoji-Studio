@@ -69,7 +69,7 @@ export function IntroSlide({
         {captureMode ? (
           <p className="wrapped-label mb-6 text-xl sm:text-2xl truncate max-w-[280px] sm:max-w-sm">{workspaceName}</p>
         ) : (
-          <BlurFade delay={0.2} className="wrapped-label mb-6 text-xl sm:text-2xl truncate max-w-[280px] sm:max-w-sm">
+          <BlurFade delay={0.2} shouldAnimate={shouldAnimate} className="wrapped-label mb-6 text-xl sm:text-2xl truncate max-w-[280px] sm:max-w-sm">
             {workspaceName}
           </BlurFade>
         )}
@@ -87,14 +87,14 @@ export function IntroSlide({
                 captureMode={captureMode}
                 centerContent={
                   <motion.div
-                    initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
-                    animate={shouldAnimate ? { scale: 1, rotate: 0 } : undefined}
+                    initial={shouldAnimate ? { scale: 0, rotate: -180 } : { scale: 1, rotate: 0 }}
+                    animate={{ scale: 1, rotate: 0 }}
                     transition={shouldAnimate ? {
                       type: "spring",
                       stiffness: 200,
                       damping: 20,
                       delay: 0.3,
-                    } : undefined}
+                    } : { duration: 0 }}
                     className="flex flex-col items-center"
                   >
                     {/* Year number */}
@@ -116,14 +116,14 @@ export function IntroSlide({
           {/* Fallback if no orbit emojis */}
           {orbitEmojis.length === 0 && (
             <motion.div
-              initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
-              animate={shouldAnimate ? { scale: 1, rotate: 0 } : undefined}
+              initial={shouldAnimate ? { scale: 0, rotate: -180 } : { scale: 1, rotate: 0 }}
+              animate={{ scale: 1, rotate: 0 }}
               transition={shouldAnimate ? {
                 type: "spring",
                 stiffness: 200,
                 damping: 20,
                 delay: 0.3,
-              } : undefined}
+              } : { duration: 0 }}
             >
               {captureMode ? (
                 <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
@@ -140,9 +140,9 @@ export function IntroSlide({
 
         {/* Subtitle with GradientText */}
         <motion.div
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
-          transition={shouldAnimate ? { delay: 0.6, duration: 0.5 } : undefined}
+          initial={shouldAnimate ? { opacity: 0, y: 20 } : { opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={shouldAnimate ? { delay: 0.6, duration: 0.5 } : { duration: 0 }}
           className="mt-8 sm:mt-12"
         >
           <h2 className="wrapped-headline text-4xl sm:text-5xl md:text-6xl">
@@ -164,9 +164,9 @@ export function IntroSlide({
         {/* Featured emoji hero */}
         {featuredEmoji && (
           <motion.div
-            initial={shouldAnimate ? { opacity: 0, scale: 0.5 } : false}
-            animate={shouldAnimate ? { opacity: 1, scale: 1 } : undefined}
-            transition={shouldAnimate ? { delay: 1, duration: 0.5 } : undefined}
+            initial={shouldAnimate ? { opacity: 0, scale: 0.5 } : { opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={shouldAnimate ? { delay: 1, duration: 0.5 } : { duration: 0 }}
             className="mt-6"
           >
             <EmojiHero
