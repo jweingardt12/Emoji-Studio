@@ -49,10 +49,16 @@ function getDeviceCapabilities(): DeviceCapabilities {
   }
 }
 
-function calculateTier(isMobile: boolean, capabilities: DeviceCapabilities): AnimationTier {
+function calculateTier(isMobile: boolean | null, capabilities: DeviceCapabilities): AnimationTier {
   // If user prefers reduced motion, always use low tier
   if (capabilities.prefersReducedMotion) {
     return "low"
+  }
+
+  // During SSR/hydration (isMobile === null), default to mid tier
+  // This ensures animations initialize properly on both platforms
+  if (isMobile === null) {
+    return "mid"
   }
 
   // Mobile devices get low tier
@@ -117,10 +123,19 @@ export function useReducedMotion(): boolean {
 /**
  * Utility hook that combines mobile detection and reduced motion
  * for simple "should reduce animations" checks
+ *
+ * Returns false during SSR/hydration (when isMobile is null) to ensure
+ * animations initialize properly on first render. After hydration, returns
+ * true if user is on mobile or prefers reduced motion.
  */
 export function useShouldReduceAnimations(): boolean {
   const isMobile = useIsMobile()
   const prefersReducedMotion = useReducedMotion()
+
+  // During SSR/hydration (isMobile === null), default to NOT reducing
+  // This ensures animations initialize properly on both platforms
+  if (isMobile === null) return false
+
   return isMobile || prefersReducedMotion
 }
 

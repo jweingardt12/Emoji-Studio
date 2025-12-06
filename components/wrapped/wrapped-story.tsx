@@ -445,18 +445,19 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           </Button>
         </div>
 
-        {/* Mobile Navigation Overlays - Left/Right tap zones */}
+        {/* Mobile Navigation Overlays - Edge-only tap zones (1/5 width instead of 1/3) */}
+        {/* Reduced zone width prevents accidental navigation when interacting with content */}
         <div className="md:hidden absolute inset-0 flex z-20 pointer-events-none">
+          {/* Left edge - previous slide */}
           <div
-            className="w-1/3 h-full pointer-events-auto active:bg-white/5 transition-colors"
+            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-gradient-to-r from-white/[0.02] to-transparent"
             onClick={(e) => { e.stopPropagation(); goToPrev(); }}
           />
+          {/* Center zone - 60% width, passes clicks through for interactables */}
+          <div className="w-3/5 h-full" />
+          {/* Right edge - next slide */}
           <div
-            className="w-1/3 h-full"
-          /* Center zone passes clicks through for interactables */
-          />
-          <div
-            className="w-1/3 h-full pointer-events-auto active:bg-white/5 transition-colors"
+            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-gradient-to-l from-white/[0.02] to-transparent"
             onClick={(e) => { e.stopPropagation(); goToNext(); }}
           />
         </div>

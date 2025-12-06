@@ -22,6 +22,53 @@ function getWorkspaceUrl(teamId: string): string {
 }
 
 /**
+ * Clear stale emoji data cache before fetching fresh data
+ * This ensures mobile users see consistent data with the iOS app
+ */
+async function clearStaleCaches(): Promise<void> {
+  if (typeof window === "undefined") return
+
+  console.log("[MobileFetch] Clearing stale emoji caches...")
+
+  // Clear localStorage emoji caches
+  const keysToRemove = [
+    "emoji-data-cache",
+    "emojiData",
+    "emoji-cache",
+    "emojis",
+    "slack-emojis",
+  ]
+  keysToRemove.forEach(key => {
+    if (localStorage.getItem(key)) {
+      localStorage.removeItem(key)
+      console.log(`[MobileFetch] Cleared localStorage: ${key}`)
+    }
+  })
+
+  // Clear IndexedDB emoji databases
+  try {
+    // Check for databases method (not available in all browsers)
+    if (window.indexedDB.databases) {
+      const databases = await window.indexedDB.databases()
+      for (const db of databases) {
+        if (db.name && (
+          db.name.includes("emoji") ||
+          db.name.includes("Emoji") ||
+          db.name.includes("slack")
+        )) {
+          window.indexedDB.deleteDatabase(db.name)
+          console.log(`[MobileFetch] Deleted IndexedDB: ${db.name}`)
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[MobileFetch] Could not enumerate IndexedDB databases:", e)
+  }
+
+  console.log("[MobileFetch] Cache clearing complete")
+}
+
+/**
  * Fetch emoji data using mobile-provided credentials
  * This function is called when the iOS app opens the wrapped page with auth params
  */
@@ -35,6 +82,9 @@ export async function fetchEmojiDataWithMobileAuth(
   console.log("[MobileFetch] UserId:", userId)
   console.log("[MobileFetch] Token prefix:", token.substring(0, 15) + "...")
   console.log("[MobileFetch] Cookie present:", !!cookie)
+
+  // Clear stale caches before fetching fresh data to ensure consistency
+  await clearStaleCaches()
 
   try {
     // Use the standard Slack Web API endpoint for emoji.adminList

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
@@ -49,6 +50,13 @@ export function EmojiOrbit({
   const shouldReduceAnimations = useShouldReduceAnimations()
   const shouldAnimate = !captureMode && !shouldReduceAnimations
 
+  // Track hydration to force remount and trigger animations properly
+  // This fixes the issue where animations don't show on first render on mobile
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
   // Size mappings for orbit radius
   const radiusMap = {
     sm: 80,
@@ -80,7 +88,12 @@ export function EmojiOrbit({
   const displayEmojis = emojis.slice(0, 12)
 
   return (
-    <div className={cn(emojiOrbitVariants({ size }), className)} {...props}>
+    <div
+      // Key changes after hydration to force remount and re-trigger animations
+      key={hydrated ? "hydrated" : "ssr"}
+      className={cn(emojiOrbitVariants({ size }), className)}
+      {...props}
+    >
       {/* Center content */}
       {centerContent && (
         <div className="absolute inset-0 flex items-center justify-center z-10">

@@ -275,7 +275,8 @@ interface EmojiOverlayProps {
 export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick, parentRef }: EmojiOverlayProps) {
   const { emojiData } = useEmojiData()
   const analytics = useAnalytics()
-  const isMobile = useIsMobile()
+  const isMobileRaw = useIsMobile()
+  const isMobile = isMobileRaw ?? false // Convert null to false for component props
   const [isVisible, setIsVisible] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [mounted, setMounted] = useState(false)

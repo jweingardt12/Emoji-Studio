@@ -38,27 +38,27 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
   const isWinner = rank === 1
   const delay = rank === 1 ? 0.3 : rank === 2 ? 0.5 : 0.7
 
-  // Rank-based styling - reduced heights for better mobile fit
+  // Rank-based styling - responsive heights with xs breakpoint for small phones
   const rankStyles = {
     1: {
-      height: "h-32 sm:h-40 md:h-52",
+      height: "h-24 xs:h-28 sm:h-40 md:h-52",
       bg: "bg-gradient-to-b from-yellow-500/30 to-yellow-600/10",
       border: "border-yellow-500/50",
-      icon: <Crown className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-400" />,
+      icon: <Crown className="w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-400" />,
       glow: "shadow-[0_0_60px_rgba(234,179,8,0.4)]",
     },
     2: {
-      height: "h-24 sm:h-32 md:h-40",
+      height: "h-18 xs:h-20 sm:h-32 md:h-40",
       bg: "bg-gradient-to-b from-gray-400/20 to-gray-500/10",
       border: "border-gray-400/40",
-      icon: <Medal className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-300" />,
+      icon: <Medal className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-300" />,
       glow: "",
     },
     3: {
-      height: "h-20 sm:h-24 md:h-32",
+      height: "h-14 xs:h-16 sm:h-24 md:h-32",
       bg: "bg-gradient-to-b from-amber-600/20 to-amber-700/10",
       border: "border-amber-600/40",
-      icon: <Award className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-500" />,
+      icon: <Award className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-500" />,
       glow: "",
     },
   }
@@ -74,13 +74,13 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
       transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
     >
       {/* Emoji halo - creator's top emojis */}
-      <div className="flex justify-center gap-1.5 mb-3 min-h-[32px]">
-        {creator.topEmojis.slice(1, isWinner ? 6 : 4).map((emoji, i) => (
+      <div className="flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
+        {creator.topEmojis.slice(1, isWinner ? 5 : 3).map((emoji, i) => (
           <motion.img
             key={emoji.name}
             src={proxyImageUrl(emoji.url)}
             alt={emoji.name}
-            className={`object-contain rounded ${isWinner ? "w-8 h-8 sm:w-10 sm:h-10" : "w-6 h-6 sm:w-8 sm:h-8"}`}
+            className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
             initial={shouldAnimate ? { scale: 0, rotate: -20 } : false}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: delay + 0.1 + i * 0.05 }}
@@ -90,7 +90,7 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
 
       {/* Top emoji as avatar */}
       {creator.topEmojis[0] ? (
-        <div className={`relative ${isWinner ? "mb-4" : "mb-3"}`}>
+        <div className={`relative ${isWinner ? "mb-3 xs:mb-4" : "mb-2 xs:mb-3"}`}>
           <EmojiHero
             emoji={creator.topEmojis[0]}
             size={isWinner ? "lg" : "md"}
@@ -99,41 +99,41 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
             captureMode={captureMode}
             delay={delay}
           />
-          {/* Rank badge */}
+          {/* Rank badge - touch-friendly sizing */}
           <div
-            className={`absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border}`}
+            className={`absolute -top-1 -right-1 xs:-top-2 xs:-right-2 sm:-top-3 sm:-right-3 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border}`}
           >
             {style.icon}
           </div>
         </div>
       ) : (
-        <div className={`${isWinner ? "w-28 h-28 sm:w-36 sm:h-36" : "w-20 h-20 sm:w-24 sm:h-24"} rounded-full bg-white/10 flex items-center justify-center mb-2`}>
+        <div className={`${isWinner ? "w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 md:w-36 md:h-36" : "w-16 h-16 xs:w-18 xs:h-18 sm:w-20 sm:h-20 md:w-24 md:h-24"} rounded-full bg-white/10 flex items-center justify-center mb-2`}>
           {style.icon}
         </div>
       )}
 
       {/* Creator name */}
-      <p className={`font-semibold text-white truncate max-w-[140px] ${isWinner ? "text-xl sm:text-2xl" : "text-base sm:text-lg"}`}>
+      <p className={`font-semibold text-white truncate ${isWinner ? "max-w-[90px] xs:max-w-[100px] sm:max-w-[140px] text-base xs:text-lg sm:text-xl md:text-2xl" : "max-w-[70px] xs:max-w-[80px] sm:max-w-[120px] text-sm xs:text-base sm:text-lg"}`}>
         {formatName(creator.displayName)}
       </p>
 
       {/* Emoji count */}
-      <div className={`font-mono font-bold ${isWinner ? "text-3xl sm:text-4xl text-yellow-400" : "text-xl sm:text-2xl text-white/80"}`}>
+      <div className={`font-mono font-bold ${isWinner ? "text-xl xs:text-2xl sm:text-3xl md:text-4xl text-yellow-400" : "text-lg xs:text-xl sm:text-2xl text-white/80"}`}>
         {captureMode ? (
           <span>{creator.emojiCount}</span>
         ) : (
           <NumberTicker
             value={creator.emojiCount}
             delay={delay + 0.3}
-            className={isWinner ? "text-3xl sm:text-4xl text-yellow-400" : "text-xl sm:text-2xl text-white/80"}
+            className={isWinner ? "text-xl xs:text-2xl sm:text-3xl md:text-4xl text-yellow-400" : "text-lg xs:text-xl sm:text-2xl text-white/80"}
           />
         )}
       </div>
-      <span className="wrapped-label text-sm">emojis</span>
+      <span className="wrapped-label text-xs xs:text-sm">emojis</span>
 
-      {/* Podium base */}
+      {/* Podium base - percentage width on mobile, fixed on larger screens */}
       <div
-        className={`mt-4 w-32 sm:w-44 md:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
+        className={`mt-2 xs:mt-3 sm:mt-4 w-[28%] xs:w-24 sm:w-36 md:w-44 lg:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
       />
     </motion.div>
   )
@@ -199,8 +199,8 @@ export function CreatorsSlide({
 
           {/* Middle Section: Podiums */}
           {/* Pushed to bottom of available space, or just flows if scrolling */}
-          <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-8 mb-8">
-            <div className="flex items-end justify-center gap-4 sm:gap-6 md:gap-8 w-full max-w-4xl px-2">
+          <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-4 xs:mt-6 sm:mt-8 mb-4 xs:mb-6 sm:mb-8">
+            <div className="flex items-end justify-center gap-1 xs:gap-2 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-4xl px-1 xs:px-2 sm:px-4">
               {top3.map((creator) => (
                 <PodiumSpot
                   key={creator.userId}

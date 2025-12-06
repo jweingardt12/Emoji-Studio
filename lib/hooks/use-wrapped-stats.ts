@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
 import {
   WrappedStats,
@@ -59,23 +59,37 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
   }, [emojiData, year, hasMinimumData])
 
   // Calculate personal stats for current user
-  // If userId is provided (mobile auth), filter by user_id instead of can_delete
+  // Uses unified logic: try user_id match first (mobile), then can_delete (desktop fallback)
   const personalStats = useMemo(() => {
     if (!hasMinimumData || !emojiData || emojiData.length === 0) {
       return null
     }
 
-    let userEmojis: Emoji[]
+    let userEmojis: Emoji[] = []
 
+    // Method 1: Filter by explicit userId (mobile auth flow)
     if (options?.userId) {
-      // Mobile auth: filter by user_id field
       userEmojis = emojiData.filter(
         (emoji) => emoji.user_id === options.userId && !emoji.is_alias
       )
-      console.log(`[useWrappedStats] Filtering by userId ${options.userId}: found ${userEmojis.length} emojis`)
-    } else {
-      // Default: use can_delete flag (indicates ownership in browser context)
+      console.log(`[useWrappedStats] Method 1 (userId ${options.userId}): found ${userEmojis.length} emojis`)
+    }
+
+    // Method 2: Fallback to localStorage mobileUserId (for page refreshes)
+    if (userEmojis.length === 0 && typeof window !== "undefined") {
+      const storedMobileUserId = localStorage.getItem("mobileUserId")
+      if (storedMobileUserId) {
+        userEmojis = emojiData.filter(
+          (emoji) => emoji.user_id === storedMobileUserId && !emoji.is_alias
+        )
+        console.log(`[useWrappedStats] Method 2 (stored mobileUserId ${storedMobileUserId}): found ${userEmojis.length} emojis`)
+      }
+    }
+
+    // Method 3: Use can_delete flag (desktop browser context)
+    if (userEmojis.length === 0) {
       userEmojis = emojiData.filter((emoji) => emoji.can_delete === true && !emoji.is_alias)
+      console.log(`[useWrappedStats] Method 3 (can_delete): found ${userEmojis.length} emojis`)
     }
 
     if (userEmojis.length === 0) {
@@ -83,6 +97,26 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
     }
     return calculatePersonalStats(emojiData, userEmojis, year)
   }, [emojiData, year, hasMinimumData, options?.userId])
+
+  // Debug logging for data quality (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development" && emojiData && emojiData.length > 0) {
+      const totalEmojis = emojiData.length
+      const withTimestamp = emojiData.filter(e => e.created && e.created > 0).length
+      const withUserId = emojiData.filter(e => e.user_id).length
+      const yearFiltered = yearEmojis.length
+
+      console.log("[Wrapped Debug] Emoji data quality:", {
+        total: totalEmojis,
+        withTimestamp,
+        withUserId,
+        missingTimestamp: totalEmojis - withTimestamp,
+        missingUserId: totalEmojis - withUserId,
+        yearFiltered,
+        year,
+      })
+    }
+  }, [emojiData, yearEmojis, year])
 
   return {
     stats,
