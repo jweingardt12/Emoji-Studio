@@ -13,6 +13,8 @@ import { GridBackground } from "@/components/ui/grid-background"
 import { Meteors } from "@/components/ui/meteors"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface CountSlideProps {
   totalEmojis: number
@@ -34,6 +36,9 @@ export function CountSlide({
   const slideRef = useRef<HTMLDivElement>(null)
   const confettiRef = useRef<ConfettiRef>(null)
   const [showEmojis, setShowEmojis] = useState(captureMode)
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
 
   // Get sample emojis to showcase (up to 16 for a larger grid)
   const sampleEmojis = customEmojis.slice(0, 16)
@@ -80,9 +85,9 @@ export function CountSlide({
         glowColor="rgba(147, 51, 234, 0.25)"
         glowPosition="center"
       />
-      {!captureMode && (
+      {!captureMode && !shouldReduceAnimations && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Meteors number={15} className="opacity-70" />
+          <Meteors number={10} className="opacity-70" />
         </div>
       )}
 

@@ -14,6 +14,8 @@ import { DotPattern } from "@/components/ui/dot-pattern"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface StatsSlideProps {
   funStats: WrappedFunStats
@@ -127,6 +129,9 @@ export function StatsSlide({
   customEmojis = []
 }: StatsSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
 
   // Get sample emojis for showcase
   const showcaseEmojis = customEmojis.slice(0, 10)
@@ -201,17 +206,15 @@ export function StatsSlide({
         height={22}
         cr={1}
       />
-      {!captureMode && (
-        <>
-          <ShootingStars
-            starColor="#ec4899"
-            trailColor="#a855f7"
-            minSpeed={10}
-            maxSpeed={25}
-            minDelay={2500}
-            maxDelay={5500}
-          />
-        </>
+      {!captureMode && !shouldReduceAnimations && (
+        <ShootingStars
+          starColor="#ec4899"
+          trailColor="#a855f7"
+          minSpeed={10}
+          maxSpeed={25}
+          minDelay={3000}
+          maxDelay={6000}
+        />
       )}
 
       {/* Capturable content - fixed square size for share images, flexible for live view */}

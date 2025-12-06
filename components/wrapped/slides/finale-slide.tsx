@@ -17,6 +17,8 @@ import { DotPattern } from "@/components/ui/dot-pattern"
 import { ShootingStars } from "@/components/ui/shooting-stars"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface FinaleSlideProps {
   stats: WrappedStats
@@ -36,15 +38,18 @@ export function FinaleSlide({
   captureMode = false
 }: FinaleSlideProps) {
   const confettiRef = useRef<ConfettiRef>(null)
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
 
-  // Auto-trigger confetti on mount
+  // Auto-trigger confetti on mount - skip on mobile for performance
   useEffect(() => {
-    if (captureMode) return
+    if (captureMode || shouldReduceAnimations) return
 
     // Initial burst
     const timer1 = setTimeout(() => {
       confettiRef.current?.fire({
-        particleCount: 80,
+        particleCount: 60,
         spread: 60,
         origin: { y: 0.7, x: 0.3 },
       })
@@ -52,7 +57,7 @@ export function FinaleSlide({
 
     const timer2 = setTimeout(() => {
       confettiRef.current?.fire({
-        particleCount: 80,
+        particleCount: 60,
         spread: 60,
         origin: { y: 0.7, x: 0.7 },
       })
@@ -61,7 +66,7 @@ export function FinaleSlide({
     // Celebratory burst
     const timer3 = setTimeout(() => {
       confettiRef.current?.fire({
-        particleCount: 100,
+        particleCount: 80,
         spread: 100,
         origin: { y: 0.5 },
       })
@@ -72,7 +77,7 @@ export function FinaleSlide({
       clearTimeout(timer2)
       clearTimeout(timer3)
     }
-  }, [captureMode])
+  }, [captureMode, shouldReduceAnimations])
 
   // Use all year emojis for background
   const backgroundEmojis = allYearEmojis.length > 0 ? allYearEmojis : customEmojis
@@ -91,23 +96,23 @@ export function FinaleSlide({
         height={28}
         cr={1}
       />
-      {!captureMode && (
+      {!captureMode && !shouldReduceAnimations && (
         <>
           <ShootingStars
             starColor="#FFD700"
             trailColor="#FFA500"
             minSpeed={15}
             maxSpeed={35}
-            minDelay={1500}
-            maxDelay={4000}
+            minDelay={2500}
+            maxDelay={5000}
           />
           <ShootingStars
             starColor="#ec4899"
             trailColor="#8b5cf6"
             minSpeed={10}
             maxSpeed={25}
-            minDelay={2000}
-            maxDelay={5000}
+            minDelay={3000}
+            maxDelay={6000}
           />
         </>
       )}

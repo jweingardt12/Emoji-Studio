@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { Emoji } from "@/lib/services/emoji-service"
 import { useTrack } from "@/lib/hooks/use-track"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import { IntroSlide } from "./slides/intro-slide"
 import { CountSlide } from "./slides/count-slide"
 import { CreatorsSlide } from "./slides/creators-slide"
@@ -56,6 +58,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   const [quizAnswered, setQuizAnswered] = useState<Record<string, boolean>>({})
   const track = useTrack()
   const trackedSlides = useRef<Set<string>>(new Set())
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
 
   // Build slides array dynamically - include personal slide only if user has data
   const SLIDES: SlideType[] = useMemo(() => {
@@ -224,20 +229,27 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [goToNext, goToPrev, router, handleExit])
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-100%",
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      x: direction < 0 ? "100%" : "-100%",
-      opacity: 0,
-    }),
-  }
+  // Simpler fade transitions on mobile for better performance
+  const slideVariants = shouldReduceAnimations
+    ? {
+        enter: { opacity: 0 },
+        center: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
+    : {
+        enter: (direction: number) => ({
+          x: direction > 0 ? "100%" : "-100%",
+          opacity: 0,
+        }),
+        center: {
+          x: 0,
+          opacity: 1,
+        },
+        exit: (direction: number) => ({
+          x: direction < 0 ? "100%" : "-100%",
+          opacity: 0,
+        }),
+      }
 
   const renderSlide = () => {
     switch (currentSlideType) {
@@ -305,6 +317,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     <div
       className={cn(
         "relative min-h-[calc(100vh-8rem)] -m-4 md:-m-6 bg-gradient-to-br transition-colors duration-1000",
+        "pt-safe pb-safe", // Safe area padding for iOS notch/home indicator
         SLIDE_GRADIENTS[currentSlideType]
       )}
     >
@@ -405,8 +418,8 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           </AnimatePresence>
         </div>
 
-        {/* Progress dots */}
-        <div className="flex items-center justify-center gap-2 p-4">
+        {/* Progress dots - larger touch targets on mobile */}
+        <div className="flex items-center justify-center gap-2 md:gap-2 gap-3 p-4 pb-safe">
           {SLIDES.map((_, index) => (
             <button
               key={index}
@@ -417,10 +430,10 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
               className={cn(
                 "rounded-full transition-all duration-300",
                 index === currentSlide
-                  ? "bg-white w-6 h-2"
+                  ? "bg-white w-8 h-3 md:w-6 md:h-2"
                   : index < currentSlide
-                    ? "bg-white/60 w-2 h-2"
-                    : "bg-white/30 w-2 h-2"
+                    ? "bg-white/60 w-3 h-3 md:w-2 md:h-2"
+                    : "bg-white/30 w-3 h-3 md:w-2 md:h-2"
               )}
             />
           ))}

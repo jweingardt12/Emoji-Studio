@@ -13,6 +13,8 @@ import { ShootingStars } from "@/components/ui/shooting-stars"
 import { DotPattern } from "@/components/ui/dot-pattern"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface IntroSlideProps {
   year: number
@@ -30,6 +32,9 @@ export function IntroSlide({
   captureMode = false
 }: IntroSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
 
   // Get the top emoji to feature prominently
   const featuredEmoji = customEmojis[0]
@@ -38,12 +43,12 @@ export function IntroSlide({
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
-      {/* Background effects - only show when not in capture mode */}
-      {!captureMode && (
+      {/* Background effects - only show when not in capture mode and not on mobile */}
+      {!captureMode && !shouldReduceAnimations && (
         <>
           <Particles
             className="absolute inset-0"
-            quantity={80}
+            quantity={40}
             staticity={30}
             ease={80}
             color="#ffffff"
@@ -54,16 +59,16 @@ export function IntroSlide({
             trailColor="#2EB9DF"
             minSpeed={15}
             maxSpeed={35}
-            minDelay={1500}
-            maxDelay={4000}
+            minDelay={2500}
+            maxDelay={5000}
           />
           <ShootingStars
             starColor="#FE8BBB"
             trailColor="#9E7AFF"
             minSpeed={10}
             maxSpeed={25}
-            minDelay={2000}
-            maxDelay={5000}
+            minDelay={3000}
+            maxDelay={6000}
           />
         </>
       )}

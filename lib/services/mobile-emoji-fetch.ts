@@ -99,16 +99,17 @@ export async function fetchEmojiDataWithMobileAuth(
 
     // Dispatch event to notify EmojiDataProvider
     if (emojis.length > 0) {
-      // Store workspace info
-      localStorage.setItem("workspace", teamId)
+      // Store mobile user ID (workspace name is set by page.tsx from URL params)
       localStorage.setItem("mobileUserId", userId)
 
       // Dispatch the emojiDataUpdated event that EmojiDataProvider listens for
+      // Use stored workspace name if available, otherwise fall back to teamId
+      const workspaceName = localStorage.getItem("workspace") || teamId
       window.dispatchEvent(
         new CustomEvent("emojiDataUpdated", {
           detail: {
             emojiData: emojis,
-            workspace: teamId,
+            workspace: workspaceName,
             timestamp: Date.now(),
           },
         })

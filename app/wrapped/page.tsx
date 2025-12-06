@@ -30,6 +30,7 @@ function WrappedPageContent() {
   const mobileUserId = searchParams.get("userId")
   const mobileTeamId = searchParams.get("teamId")
   const mobileCookie = searchParams.get("cookie")
+  const mobileWorkspace = searchParams.get("workspace")
   const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
   const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
@@ -55,12 +56,19 @@ function WrappedPageContent() {
       setMobileAuthLoading(true)
       setCameFromMobile(true)
 
+      // Set workspace name from mobile params if available
+      if (mobileWorkspace) {
+        setWorkspaceName(mobileWorkspace)
+        localStorage.setItem("workspace", mobileWorkspace)
+      }
+
       try {
         // Store mobile auth for future use
         localStorage.setItem("mobileAuth", JSON.stringify({
           token: mobileToken,
           userId: mobileUserId,
           teamId: mobileTeamId,
+          workspace: mobileWorkspace,
           timestamp: Date.now(),
         }))
 
@@ -84,7 +92,7 @@ function WrappedPageContent() {
     }
 
     handleMobileAuth()
-  }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId, mobileCookie])
+  }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId, mobileCookie, mobileWorkspace])
 
   useEffect(() => {
     setIsClient(true)

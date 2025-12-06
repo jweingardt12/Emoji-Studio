@@ -12,6 +12,8 @@ import { GridBackground } from "@/components/ui/grid-background"
 import { Meteors } from "@/components/ui/meteors"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface PersonalSlideProps {
   personalStats: PersonalWrappedStats
@@ -112,6 +114,9 @@ export function PersonalSlide({
   captureMode = false
 }: PersonalSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
+  const prefersReducedMotion = useReducedMotion()
+  const shouldReduceAnimations = isMobile || prefersReducedMotion
   const {
     displayName,
     totalEmojis,
@@ -146,9 +151,9 @@ export function PersonalSlide({
         glowColor="rgba(147, 51, 234, 0.2)"
         glowPosition="center"
       />
-      {!captureMode && (
+      {!captureMode && !shouldReduceAnimations && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <Meteors number={8} className="opacity-60" />
+          <Meteors number={6} className="opacity-60" />
         </div>
       )}
 
