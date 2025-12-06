@@ -340,30 +340,30 @@ export function WrappedLanding({
   }
 
   return (
-    <div className={`flex flex-col gap-4 md:gap-8 w-full pb-8 transition-all duration-700 ${
+    <div className={`flex flex-col gap-8 md:gap-12 w-full pb-8 transition-all duration-700 ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
     }`}>
-      {/* Confetti effect on page load - skip on mobile for performance */}
-      {pageVisible && !isMobile && <ConfettiSideCannons />}
+      {/* Confetti effect on page load */}
+      {pageVisible && <ConfettiSideCannons />}
       {/* Hero Card - Larger with preview */}
-      <div className="px-0 sm:px-4 lg:px-6 pt-0 md:pt-8">
+      <div className="px-0 sm:px-4 lg:px-6 pt-4 md:pt-8">
         <Card className="relative overflow-hidden border-muted/40 rounded-none sm:rounded-lg">
-          {/* Flickering grid background - simplified on mobile */}
+          {/* Flickering grid background - enhanced on mobile */}
           <div className="absolute inset-0 overflow-hidden rounded-lg">
             <FlickeringGrid
               className="absolute inset-0 z-0"
-              squareSize={isMobile ? 3 : 4}
-              gridGap={isMobile ? 8 : 6}
+              squareSize={isMobile ? 4 : 4}
+              gridGap={isMobile ? 6 : 6}
               color="rgb(59, 130, 246)"
-              maxOpacity={isMobile ? 0.08 : 0.1}
-              flickerChance={isMobile ? 0.05 : 0.1}
+              maxOpacity={isMobile ? 0.12 : 0.1}
+              flickerChance={isMobile ? 0.08 : 0.1}
             />
           </div>
 
-          {/* Subtle decorative gradient accents - simpler on mobile */}
-          <div className="absolute -top-32 -right-32 w-48 md:w-64 h-48 md:h-64 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="hidden md:block absolute -bottom-32 -left-32 w-64 h-64 bg-gradient-to-tr from-violet-500/10 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl pointer-events-none z-10" />
+          {/* Decorative gradient accents - enhanced for mobile */}
+          <div className="absolute -top-24 -right-24 w-56 md:w-64 h-56 md:h-64 bg-gradient-to-br from-primary/25 via-primary/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="absolute -bottom-24 -left-24 w-48 md:w-64 h-48 md:h-64 bg-gradient-to-tr from-violet-500/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 md:w-96 h-72 md:h-96 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none z-10" />
 
           {/* Floating emojis from Slackmojis - fewer on mobile */}
           <FloatingEmojiImage index={0} delay={0} duration={4} className="top-4 right-4 sm:top-8 sm:right-16" />
@@ -372,7 +372,7 @@ export function WrappedLanding({
           <FloatingEmojiImage index={3} delay={2} duration={4} className="bottom-24 right-16 sm:right-32 hidden lg:block" />
           <FloatingEmojiImage index={4} delay={2.5} duration={5} className="bottom-16 right-8 hidden lg:block" />
 
-          <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 p-4 sm:p-6 md:p-8">
+          <div className="relative z-20 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 p-6 sm:p-8 md:p-10">
             {/* Left side - Text content */}
             <div className="flex flex-col justify-center">
               <motion.div
@@ -380,7 +380,7 @@ export function WrappedLanding({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <Badge variant="secondary" className="mb-3 md:mb-4 w-fit">
+                <Badge variant="secondary" className="mb-4 md:mb-5 w-fit">
                   <Gift className="w-3 h-3 mr-1" />
                   <AnimatedShinyText className="text-inherit" shimmerWidth={80}>
                     {currentYear} Year in Review
@@ -394,7 +394,7 @@ export function WrappedLanding({
                 transition={{ delay: 0.2 }}
               >
                 <SparklesText
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl tracking-tight mb-3 md:mb-4"
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight mb-4 md:mb-5"
                   colors={{ first: "#3b82f6", second: "#8b5cf6" }}
                   sparklesCount={isMobile ? 6 : 10}
                 >
@@ -407,7 +407,7 @@ export function WrappedLanding({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                <CardDescription className="text-sm sm:text-base md:text-lg max-w-md mb-4 md:mb-6">
+                <CardDescription className="text-base sm:text-lg md:text-xl max-w-md mb-6 md:mb-8">
                   Discover your workspace's emoji story. See top creators, busiest days, and fun stats.
                 </CardDescription>
               </motion.div>
@@ -556,7 +556,7 @@ export function WrappedLanding({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="lg:hidden flex justify-center pb-4"
+            className="lg:hidden flex justify-center pt-4 pb-8"
           >
             <div className="relative w-[270px] h-[270px]">
               {/* Dynamic glow behind deck */}
