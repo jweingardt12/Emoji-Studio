@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
@@ -32,9 +32,20 @@ export function IntroSlide({
   const slideRef = useRef<HTMLDivElement>(null)
   const shouldReduceAnimations = useShouldReduceAnimations()
 
-  // Determine if we should animate - disabled for capture mode or reduced motion
-  // This pattern ensures content is visible even during hydration mismatch
-  const shouldAnimate = !captureMode && !shouldReduceAnimations
+  // Track hydration to prevent SSR/client mismatch
+  // During SSR, shouldAnimate will be false, ensuring content renders visible
+  // After hydration, animations can play on desktop
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  // Only enable animations AFTER hydration is complete AND when animations are wanted
+  // This ensures:
+  // - SSR: shouldAnimate=false → content renders visible (initial={false})
+  // - Mobile after hydration: shouldAnimate=false → content stays visible
+  // - Desktop after hydration: shouldAnimate=true → animations play
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
   // Get the top emoji to feature prominently
   const featuredEmoji = customEmojis[0]
