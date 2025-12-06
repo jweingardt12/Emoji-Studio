@@ -133,7 +133,7 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
 
       {/* Podium base */}
       <div
-        className={`mt-4 w-28 sm:w-40 md:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
+        className={`mt-4 w-32 sm:w-44 md:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
       />
     </motion.div>
   )
@@ -200,7 +200,7 @@ export function CreatorsSlide({
           {/* Middle Section: Podiums */}
           {/* Pushed to bottom of available space, or just flows if scrolling */}
           <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-8 mb-8">
-            <div className="flex items-end justify-center gap-3 sm:gap-6 md:gap-8 w-full max-w-4xl px-2">
+            <div className="flex items-end justify-center gap-4 sm:gap-6 md:gap-8 w-full max-w-4xl px-2">
               {top3.map((creator) => (
                 <PodiumSpot
                   key={creator.userId}

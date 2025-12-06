@@ -800,8 +800,17 @@ export function WrappedShareModal({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
+          <DrawerHeader className="flex items-center justify-between">
             <DrawerTitle>Share Your Wrapped</DrawerTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              aria-label="Close share modal"
+              className="h-8 w-8"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </DrawerHeader>
           <div className="px-4 pb-6 overflow-y-auto">
             {ModalContent}
@@ -814,8 +823,17 @@ export function WrappedShareModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className="flex items-center justify-between">
           <DialogTitle>Share Your Wrapped</DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onOpenChange(false)}
+            aria-label="Close share modal"
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
         {ModalContent}
       </DialogContent>

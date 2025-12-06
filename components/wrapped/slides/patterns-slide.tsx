@@ -222,7 +222,7 @@ export function PatternsSlide({
             className="w-full max-w-3xl rounded-3xl wrapped-glass p-6 sm:p-8 mt-2"
           >
             <h3 className="wrapped-label text-base sm:text-lg mb-6">Work Patterns</h3>
-            <div className="flex items-center justify-center gap-8 sm:gap-16">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-16">
               {/* Late Night Stat */}
               <div className="flex items-center gap-4 sm:gap-6">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)]">
@@ -238,7 +238,7 @@ export function PatternsSlide({
                 </div>
               </div>
 
-              <div className="w-px h-16 bg-white/20" />
+              <div className="hidden sm:block w-px h-16 bg-white/20" />
 
               {/* Weekend Stat */}
               <div className="flex items-center gap-4 sm:gap-6">

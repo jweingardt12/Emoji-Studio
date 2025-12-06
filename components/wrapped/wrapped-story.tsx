@@ -45,6 +45,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   const [currentSlide, setCurrentSlide] = useState(0)
   const [direction, setDirection] = useState(1)
   const [quizAnswered, setQuizAnswered] = useState<Record<string, boolean>>({})
+  const [quizNeedsAttention, setQuizNeedsAttention] = useState(false)
   const track = useTrack()
   const trackedSlides = useRef<Set<string>>(new Set())
   const shouldReduceAnimations = useShouldReduceAnimations()
@@ -196,6 +197,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     // Block navigation if current slide is an unanswered quiz
     const slideType = SLIDES[currentSlide]
     if (isQuizSlide(slideType) && !quizAnswered[slideType]) {
+      // Show visual feedback that quiz needs to be answered
+      setQuizNeedsAttention(true)
+      setTimeout(() => setQuizNeedsAttention(false), 600)
       return
     }
 
@@ -241,6 +245,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       if (index > currentSlide) {
         const slideType = SLIDES[currentSlide]
         if (isQuizSlide(slideType) && !quizAnswered[slideType]) {
+          // Show visual feedback that quiz needs to be answered
+          setQuizNeedsAttention(true)
+          setTimeout(() => setQuizNeedsAttention(false), 600)
           return
         }
       }
@@ -329,6 +336,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             year={stats.year}
             quizType="workspace"
             onAnswered={() => handleQuizAnswered("quiz-workspace")}
+            needsAttention={quizNeedsAttention}
           />
         )
       case "quiz-funfacts":
@@ -340,6 +348,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             year={stats.year}
             quizType="funfacts"
             onAnswered={() => handleQuizAnswered("quiz-funfacts")}
+            needsAttention={quizNeedsAttention}
           />
         )
       case "peak":
@@ -394,7 +403,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
 
       {/* Emoji float background - layer 1 (floating in liquid) */}
       <div className="absolute inset-0 overflow-hidden mix-blend-overlay">
-        <FloatingEmojisBackground emojis={backgroundEmojis} opacity={0.6} />
+        <FloatingEmojisBackground emojis={backgroundEmojis} opacity={shouldReduceAnimations ? 0 : 0.6} />
       </div>
 
       {/* Vignette overlay for depth */}
@@ -413,7 +422,12 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         {/* Top controls */}
         <div className="flex items-center justify-between p-4">
           <Link href="/wrapped" onClick={(e) => { e.preventDefault(); handleExit("close_button"); router.push("/wrapped"); }}>
-            <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
+              aria-label="Close wrapped experience"
+            >
               <X className="w-5 h-5" />
             </Button>
           </Link>
@@ -421,7 +435,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           <Button
             variant="ghost"
             size="sm"
-            className="text-white/70 hover:text-white hover:bg-white/10"
+            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
             onClick={() => {
               handleExit("skip_to_share")
               onSkipToShare()
@@ -454,8 +468,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Previous slide"
               className={cn(
-                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm",
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm focus:ring-2 focus:ring-white focus:outline-none",
                 currentSlide === 0 && "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
@@ -470,8 +485,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Next slide"
               className={cn(
-                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm",
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm focus:ring-2 focus:ring-white focus:outline-none",
                 currentSlide === totalSlides - 1 && "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
@@ -503,8 +519,8 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         </div>
 
         {/* Progress dots - Fixed Absolute Position at Bottom */}
-        <div className="absolute bottom- safe z-30 w-full flex items-center justify-center pointer-events-none pb- safe">
-          <div className="flex items-center justify-center gap-2 p-4 pointer-events-auto">
+        <div className="absolute bottom-safe z-30 w-full flex items-center justify-center pointer-events-none pb-safe">
+          <div className="flex items-center justify-center gap-1 p-4 pointer-events-auto">
             {SLIDES.map((_, index) => (
               <button
                 key={index}
@@ -512,15 +528,20 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
                   e.stopPropagation()
                   goToSlide(index)
                 }}
-                className={cn(
-                  "rounded-full transition-all duration-300 shadow-sm",
-                  index === currentSlide
-                    ? "bg-white w-6 h-1.5 sm:w-8 sm:h-2 box-shadow-glow"
-                    : index < currentSlide
-                      ? "bg-white/60 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/80"
-                      : "bg-white/20 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/40"
-                )}
-              />
+                aria-label={`Go to slide ${index + 1} of ${SLIDES.length}`}
+                className="p-3 -m-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full"
+              >
+                <div
+                  className={cn(
+                    "rounded-full transition-all duration-300 shadow-sm",
+                    index === currentSlide
+                      ? "bg-white w-6 h-1.5 sm:w-8 sm:h-2 box-shadow-glow"
+                      : index < currentSlide
+                        ? "bg-white/60 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/80"
+                        : "bg-white/20 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/40"
+                  )}
+                />
+              </button>
             ))}
           </div>
         </div>

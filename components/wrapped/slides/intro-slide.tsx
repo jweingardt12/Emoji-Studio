@@ -84,11 +84,11 @@ export function IntroSlide({
                   >
                     {/* Year number */}
                     {captureMode ? (
-                      <h1 className="wrapped-hero-number text-[7rem] sm:text-[9rem] md:text-[11rem] leading-none">
+                      <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
                         {year}
                       </h1>
                     ) : (
-                      <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] lg:text-[12rem] leading-none text-refraction">
+                      <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] lg:text-[11rem] leading-none text-refraction">
                         {year}
                       </h1>
                     )}
@@ -111,11 +111,11 @@ export function IntroSlide({
               }}
             >
               {captureMode ? (
-                <h1 className="wrapped-hero-number text-[7rem] sm:text-[9rem] md:text-[11rem] leading-none">
+                <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
                   {year}
                 </h1>
               ) : (
-                <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] lg:text-[12rem] leading-none text-refraction">
+                <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] lg:text-[11rem] leading-none text-refraction">
                   {year}
                 </h1>
               )}

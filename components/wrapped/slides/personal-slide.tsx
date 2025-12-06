@@ -34,8 +34,8 @@ function BentoActivityChart({
 
   return (
     <div className="w-full h-full flex flex-col justify-end">
-      <h3 className="wrapped-label text-xs sm:text-sm mb-2">Monthly Activity</h3>
-      <div className="flex items-end justify-between gap-1 h-12 sm:h-16">
+      <h3 className="wrapped-label text-sm sm:text-base mb-2 sm:mb-3">Monthly Activity</h3>
+      <div className="flex items-end justify-between gap-1.5 sm:gap-2 h-16 sm:h-20 md:h-24">
         {monthlyBreakdown.map((month, i) => {
           const heightPercent = Math.max((month.count / maxCount) * 100, 10)
           return (
@@ -77,10 +77,10 @@ function RankCard({ rank, totalCreators, captureMode }: { rank: number; totalCre
       initial={captureMode ? false : { opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: captureMode ? 0 : 0.4 }}
-      className={`relative overflow-hidden rounded-2xl wrapped-glass border ${style.border} p-3 sm:p-4 flex flex-col items-center justify-center h-full bg-gradient-to-br ${style.color}`}
+      className={`relative overflow-hidden rounded-2xl wrapped-glass border ${style.border} p-4 sm:p-5 flex flex-col items-center justify-center h-full bg-gradient-to-br ${style.color}`}
     >
       <div className="mb-1 sm:mb-2">{style.icon}</div>
-      <div className="text-xs text-[var(--wrapped-text-muted)] text-center leading-tight">
+      <div className="text-sm text-[var(--wrapped-text-muted)] text-center leading-tight">
         Ranked in top {Math.max(1, Math.round((rank / totalCreators) * 100))}%
       </div>
     </motion.div>
@@ -136,11 +136,11 @@ export function PersonalSlide({
           </div>
 
           {/* Bento Grid Layout */}
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 grid-rows-[auto_auto_1fr] sm:grid-rows-4 gap-3 sm:gap-4 w-full h-full min-h-0">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 grid-rows-[auto_1fr_1fr_auto] sm:grid-rows-4 gap-4 sm:gap-5 w-full h-full min-h-0">
 
             {/* 1. HERO CARD (Identity) - Spans 2x2 */}
             <motion.div
-              className="col-span-2 row-span-auto sm:row-span-2 rounded-3xl wrapped-glass p-4 sm:p-6 flex flex-col items-start justify-between relative overflow-hidden group"
+              className="col-span-2 row-span-1 sm:row-span-2 rounded-3xl wrapped-glass p-5 sm:p-6 md:p-8 flex flex-col items-start justify-between relative overflow-hidden group"
               initial={captureMode ? false : { opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: captureMode ? 0 : 0.1, duration: 0.5 }}
@@ -190,40 +190,40 @@ export function PersonalSlide({
 
             {/* Total Count Tile */}
             <motion.div
-              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-3 sm:p-4 flex flex-col justify-center items-center"
+              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center"
               initial={captureMode ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.5 }}
             >
-              <p className="wrapped-label text-xs mb-1">Total Created</p>
-              <div className="font-mono text-xl sm:text-3xl font-black text-white">
+              <p className="wrapped-label text-sm mb-1">Total Created</p>
+              <div className="font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white">
                 {captureMode ? <span>{totalEmojis}</span> : <NumberTicker value={totalEmojis} delay={0.6} />}
               </div>
-              <p className="text-xs text-[var(--wrapped-accent-cyan)]">+{percentageOfTotal}% of workspace</p>
+              <p className="text-sm text-[var(--wrapped-accent-cyan)]">+{percentageOfTotal}% of workspace</p>
             </motion.div>
 
             {/* Streak Tile */}
             <motion.div
-              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-3 sm:p-4 flex flex-col justify-center items-center bg-gradient-to-br from-orange-500/10 to-transparent"
+              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-gradient-to-br from-orange-500/10 to-transparent"
               initial={captureMode ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.6 }}
             >
               <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 mb-1" />
-              <div className="font-mono text-lg sm:text-xl font-bold text-white">{personalStreak.days} Days</div>
-              <p className="text-xs text-white/60">Longest Streak</p>
+              <div className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-white">{personalStreak.days} Days</div>
+              <p className="text-sm text-white/60">Longest Streak</p>
             </motion.div>
 
             {/* GIF % Tile */}
             <motion.div
-              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-3 sm:p-4 flex flex-col justify-center items-center bg-gradient-to-br from-cyan-500/10 to-transparent"
+              className="col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-gradient-to-br from-cyan-500/10 to-transparent"
               initial={captureMode ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.7 }}
             >
               <Film className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400 mb-1" />
-              <div className="font-mono text-lg sm:text-xl font-bold text-white">{gifPercentage}%</div>
-              <p className="text-xs text-white/60">Motion Emojis</p>
+              <div className="font-mono text-xl sm:text-2xl md:text-3xl font-bold text-white">{gifPercentage}%</div>
+              <p className="text-sm text-white/60">Motion Emojis</p>
             </motion.div>
 
             {/* 3. ACTIVITY CHART - Spans Full Width Bottom Row (Col span 2 on mobile, 4 on desktop) */}

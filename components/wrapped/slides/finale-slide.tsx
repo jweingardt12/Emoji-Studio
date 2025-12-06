@@ -117,12 +117,12 @@ export function FinaleSlide({
         >
           {/* Wrap message */}
           {captureMode ? (
-            <h2 className="wrapped-hero-number text-6xl sm:text-7xl md:text-8xl lg:text-9xl mb-4">
+            <h2 className="wrapped-hero-number text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-4">
               That's a Wrap!
             </h2>
           ) : (
             <SparklesText
-              className="wrapped-hero-number text-6xl sm:text-7xl md:text-8xl lg:text-9xl mb-4"
+              className="wrapped-hero-number text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-4"
               colors={{ first: "var(--wrapped-accent-orange)", second: "var(--wrapped-accent-purple)" }}
               sparklesCount={shouldReduceAnimations ? 0 : 12}
             >
@@ -162,7 +162,7 @@ export function FinaleSlide({
             transition={{ delay: captureMode ? 0 : 1 }}
             className="relative z-10 mt-6 sm:mt-10 rounded-3xl wrapped-glass border border-white/20 p-6 sm:p-8 w-full max-w-2xl"
           >
-            <div className="flex items-center justify-around gap-4 sm:gap-8">
+            <div className="flex flex-col sm:flex-row items-center justify-around gap-6 sm:gap-8">
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
                   <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-cyan)]" />
@@ -180,7 +180,7 @@ export function FinaleSlide({
                 </div>
                 <p className="text-[var(--wrapped-text-muted)] text-sm sm:text-base uppercase tracking-wider mt-1">emojis</p>
               </div>
-              <div className="w-px h-16 bg-white/10" />
+              <div className="hidden sm:block w-px h-16 bg-white/10" />
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
                   <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-purple)]" />
@@ -198,7 +198,7 @@ export function FinaleSlide({
                 </div>
                 <p className="text-[var(--wrapped-text-muted)] text-sm sm:text-base uppercase tracking-wider mt-1">creators</p>
               </div>
-              <div className="w-px h-16 bg-white/10" />
+              <div className="hidden sm:block w-px h-16 bg-white/10" />
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
                   <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-orange)]" />

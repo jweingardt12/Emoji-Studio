@@ -99,11 +99,11 @@ export function CountSlide({
         {/* Intro text */}
         {captureMode ? (
           <p className="wrapped-label mb-4 text-xl sm:text-2xl">
-            This year, <span className="truncate max-w-[200px] sm:max-w-xs inline-block align-bottom">{workspaceName}</span> created
+            This year, <span className="truncate max-w-[240px] sm:max-w-xs md:max-w-sm inline-block align-bottom">{workspaceName}</span> created
           </p>
         ) : (
           <BlurFade delay={0.2} className="wrapped-label mb-4 text-xl sm:text-2xl">
-            This year, <span className="truncate max-w-[200px] sm:max-w-xs inline-block align-bottom">{workspaceName}</span> created
+            This year, <span className="truncate max-w-[240px] sm:max-w-xs md:max-w-sm inline-block align-bottom">{workspaceName}</span> created
           </BlurFade>
         )}
 

@@ -53,7 +53,7 @@ function DonutChart({ percentage, captureMode }: { percentage: number; captureMo
 
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-32 h-32 md:w-40 md:h-40">
+      <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
           {/* ... svg content ... */}
           {/* Background circle (faint) */}

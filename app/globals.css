@@ -370,7 +370,7 @@ body {
     --wrapped-accent-cyan: #67e8f9;
     --wrapped-text-primary: #ffffff;
     --wrapped-text-secondary: rgba(255, 255, 255, 0.85);
-    --wrapped-text-muted: rgba(255, 255, 255, 0.5);
+    --wrapped-text-muted: rgba(255, 255, 255, 0.65);
 
     /* Liquid Glass tokens */
     --wrapped-glass-bg: rgba(255, 255, 255, 0.08);

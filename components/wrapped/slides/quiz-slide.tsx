@@ -30,6 +30,7 @@ interface QuizSlideProps {
   quizType: "workspace" | "funfacts"
   onAnswered?: () => void
   captureMode?: boolean
+  needsAttention?: boolean
 }
 
 // Generate plausible wrong answers for numeric questions
@@ -485,7 +486,7 @@ function AnswerOption({
     <motion.button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full p-3 sm:p-4 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
+      className={`w-full p-4 sm:p-5 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
       initial={captureMode ? false : { opacity: 0, x: -20 }}
       animate={
         showResult && isSelected && !effectiveIsCorrect
@@ -513,7 +514,7 @@ function AnswerOption({
           >
             {letters[index]}
           </span>
-          <span className="text-white text-sm sm:text-base md:text-lg font-medium leading-tight line-clamp-2">{label}</span>
+          <span className="text-white text-base sm:text-lg font-medium leading-tight line-clamp-2">{label}</span>
         </div>
         {showResult && isSelected && (
           <motion.div
@@ -553,6 +554,7 @@ export function QuizSlide({
   quizType,
   onAnswered,
   captureMode = false,
+  needsAttention = false,
 }: QuizSlideProps) {
   const track = useTrack()
   const confettiRef = useRef<ConfettiRef>(null)
@@ -617,7 +619,11 @@ export function QuizSlide({
       : ["var(--wrapped-accent-cyan)", "var(--wrapped-accent-purple)", "var(--wrapped-accent-orange)", "var(--wrapped-accent-cyan)"]
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
+    <motion.div
+      className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden"
+      animate={needsAttention ? { x: [0, -10, 10, -10, 10, 0] } : { x: 0 }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+    >
       {/* Noise texture overlay */}
       <div className="wrapped-noise absolute inset-0 pointer-events-none" />
 
@@ -764,6 +770,6 @@ export function QuizSlide({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

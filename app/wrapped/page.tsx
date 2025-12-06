@@ -141,7 +141,7 @@ function WrappedPageContent() {
               <Skeleton className="h-5 w-96" />
             </CardHeader>
             <CardContent>
-              <div className="mb-6 p-4 rounded-lg bg-muted/30">
+              <div className="mb-6 p-4 rounded-lg bg-[var(--wrapped-glass-bg)] border border-[var(--wrapped-glass-border)]">
                 <Skeleton className="h-4 w-40 mx-auto mb-3" />
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">

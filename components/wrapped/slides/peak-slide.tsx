@@ -129,7 +129,7 @@ export function PeakSlide({
 
                 {/* Emoji grid from that day - Larger and more prominent */}
                 {busiestDay.emojis.length > 0 && (
-                  <div className="grid grid-cols-4 gap-3 sm:gap-4 justify-items-center bg-black/20 p-4 rounded-2xl">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 justify-items-center bg-black/20 p-4 rounded-2xl">
                     {busiestDay.emojis.slice(0, 12).map((emoji, i) => (
                       <motion.img
                         key={emoji.name}
@@ -158,7 +158,7 @@ export function PeakSlide({
               <TrendingUp className="w-5 h-5" />
               Monthly Activity
             </h3>
-            <div className="flex items-end justify-between gap-1 sm:gap-2 h-32 sm:h-40 mb-3">
+            <div className="flex items-end justify-between gap-1 sm:gap-2 h-36 sm:h-44 md:h-48 mb-3">
               {normalizedMonths.map((month, i) => (
                 <motion.div
                   key={month.month}
