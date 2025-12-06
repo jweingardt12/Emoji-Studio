@@ -28,7 +28,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { HDRProcessor } from "@/lib/utils/hdr-processor"
-import { openpanel } from "@/lib/safe-openpanel"
 
 interface EmojiEditorProps {
   emoji: ProcessedEmoji | null
