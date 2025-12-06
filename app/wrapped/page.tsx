@@ -22,6 +22,7 @@ function WrappedPageContent() {
   const [showStory, setShowStory] = useState(false)
   const [workspaceName, setWorkspaceName] = useState("")
   const [mobileAuthLoading, setMobileAuthLoading] = useState(false)
+  const [cameFromMobile, setCameFromMobile] = useState(false)
 
   // Read URL params for mobile auth
   const searchParams = useSearchParams()
@@ -51,6 +52,7 @@ function WrappedPageContent() {
     const handleMobileAuth = async () => {
       console.log("[Wrapped] Mobile auth params detected, fetching emoji data...")
       setMobileAuthLoading(true)
+      setCameFromMobile(true)
 
       try {
         // Store mobile auth for future use
@@ -96,6 +98,14 @@ function WrappedPageContent() {
       is_mobile_auth: hasMobileParams,
     })
   }, [])
+
+  // Auto-start wrapped experience when coming from mobile app
+  useEffect(() => {
+    if (cameFromMobile && hasMinimumData && stats && !showStory && !mobileAuthLoading) {
+      console.log("[Wrapped] Auto-starting wrapped experience for mobile user")
+      setShowStory(true)
+    }
+  }, [cameFromMobile, hasMinimumData, stats, showStory, mobileAuthLoading])
 
   // Track when user enters the wrapped experience
   useEffect(() => {
