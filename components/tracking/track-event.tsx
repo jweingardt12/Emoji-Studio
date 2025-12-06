@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useCallback, CSSProperties, ElementType } from "react";
-import { trackEvent } from "@/lib/openpanel-client";
+import { useTrack } from "@/lib/hooks/use-track";
 
 interface TrackEventProps {
   /** The name of the event to track */
@@ -38,23 +38,25 @@ export function TrackEvent({
   trackOnHover = false,
   trackOnFocus = false,
 }: TrackEventProps) {
+  const track = useTrack();
+
   const handleClick = useCallback(() => {
     if (trackOnClick) {
-      trackEvent(eventName, { ...properties, action: "click" });
+      track(eventName, { ...properties, action: "click" });
     }
-  }, [eventName, properties, trackOnClick]);
+  }, [eventName, properties, trackOnClick, track]);
 
   const handleMouseEnter = useCallback(() => {
     if (trackOnHover) {
-      trackEvent(eventName, { ...properties, action: "hover" });
+      track(eventName, { ...properties, action: "hover" });
     }
-  }, [eventName, properties, trackOnHover]);
+  }, [eventName, properties, trackOnHover, track]);
 
   const handleFocus = useCallback(() => {
     if (trackOnFocus) {
-      trackEvent(eventName, { ...properties, action: "focus" });
+      track(eventName, { ...properties, action: "focus" });
     }
-  }, [eventName, properties, trackOnFocus]);
+  }, [eventName, properties, trackOnFocus, track]);
 
   return (
     <Element

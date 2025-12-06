@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { trackPageView } from "@/lib/openpanel-client";
+import { useOpenPanel } from "@openpanel/nextjs";
 
 /**
  * Hook to automatically track page views
@@ -14,6 +14,7 @@ export function usePageView(options?: {
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const op = useOpenPanel();
 
   useEffect(() => {
     // Only track on the client side
@@ -21,15 +22,19 @@ export function usePageView(options?: {
 
     // Get the page name from the pathname
     const pageName = pathname.split("/").pop() || "home";
-    
+
+    // Get workspace from localStorage for consistent tracking
+    const workspace = localStorage.getItem("workspace") || "unknown";
+
     // Track the page view
-    trackPageView(pageName, {
+    op.screenView(pageName, {
       path: pathname,
       url: window.location.href,
       referrer: document.referrer,
+      workspace,
       ...options?.properties,
     });
-  }, [pathname, searchParams, options?.properties]);
+  }, [pathname, searchParams, options?.properties, op]);
 
   return null;
 }

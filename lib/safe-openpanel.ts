@@ -1,3 +1,18 @@
+/**
+ * @deprecated This file is deprecated and should not be used.
+ *
+ * IMPORTANT: This creates a separate OpenPanel instance that is independent
+ * from the one created by OpenPanelComponent in the provider. This means:
+ * - Global properties (workspace) won't be applied
+ * - Events tracked through this instance may not correlate properly
+ *
+ * Use these alternatives instead:
+ * - For React components: import { useTrack } from "@/lib/hooks/use-track"
+ * - For analytics with typed events: import { useAnalytics } from "@/lib/analytics"
+ * - Direct access: import { useOpenPanel } from "@openpanel/nextjs"
+ *
+ * This file is kept for backwards compatibility but will be removed in a future update.
+ */
 // lib/safe-openpanel.ts
 import { OpenPanel } from '@openpanel/nextjs';
 
