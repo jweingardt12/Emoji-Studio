@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useWrappedStats } from "@/lib/hooks/use-wrapped-stats"
 import { useTrack } from "@/lib/hooks/use-track"
@@ -12,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
+import { fetchEmojiDataWithMobileAuth, getMobileUserId } from "@/lib/services/mobile-emoji-fetch"
 
 function WrappedPageContent() {
   const [isClient, setIsClient] = useState(false)
@@ -19,15 +21,66 @@ function WrappedPageContent() {
   const [storyComplete, setStoryComplete] = useState(false)
   const [showStory, setShowStory] = useState(false)
   const [workspaceName, setWorkspaceName] = useState("")
+  const [mobileAuthLoading, setMobileAuthLoading] = useState(false)
+
+  // Read URL params for mobile auth
+  const searchParams = useSearchParams()
+  const mobileToken = searchParams.get("token")
+  const mobileUserId = searchParams.get("userId")
+  const mobileTeamId = searchParams.get("teamId")
+  const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
   const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
   const track = useTrack()
   const currentYear = new Date().getFullYear()
+
+  // Get stored mobile userId for personal stats filtering
+  const storedMobileUserId = isClient ? getMobileUserId() : null
+
   const { stats, personalStats, hasMinimumData, availableYears, emojiCount, yearEmojis, error } = useWrappedStats(emojiData, {
     year: currentYear,
+    userId: storedMobileUserId || undefined,
   })
 
   const hasData = hasRealData || useDemoData
+
+  // Handle mobile auth params on mount
+  useEffect(() => {
+    if (!hasMobileParams) return
+
+    const handleMobileAuth = async () => {
+      console.log("[Wrapped] Mobile auth params detected, fetching emoji data...")
+      setMobileAuthLoading(true)
+
+      try {
+        // Store mobile auth for future use
+        localStorage.setItem("mobileAuth", JSON.stringify({
+          token: mobileToken,
+          userId: mobileUserId,
+          teamId: mobileTeamId,
+          timestamp: Date.now(),
+        }))
+
+        // Clean URL to remove sensitive params from browser history
+        window.history.replaceState({}, "", "/wrapped")
+
+        // Fetch emoji data with mobile credentials
+        await fetchEmojiDataWithMobileAuth({
+          token: mobileToken!,
+          userId: mobileUserId!,
+          teamId: mobileTeamId!,
+        })
+
+        console.log("[Wrapped] Mobile auth fetch completed")
+      } catch (error) {
+        console.error("[Wrapped] Mobile auth fetch failed:", error)
+      } finally {
+        setMobileAuthLoading(false)
+      }
+    }
+
+    handleMobileAuth()
+  }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId])
 
   useEffect(() => {
     setIsClient(true)
@@ -40,6 +93,7 @@ function WrappedPageContent() {
       has_data: hasData,
       has_real_data: hasRealData,
       year: currentYear,
+      is_mobile_auth: hasMobileParams,
     })
   }, [])
 
@@ -56,7 +110,7 @@ function WrappedPageContent() {
   }, [isClient, showStory, hasMinimumData, stats, personalStats, currentYear, track])
 
   // Loading state - match app aesthetic
-  if (!isClient || loading) {
+  if (!isClient || loading || mobileAuthLoading) {
     return (
       <div className="flex flex-col gap-6 md:gap-8 w-full pb-8">
         <div className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
@@ -174,6 +228,47 @@ function WrappedPageContent() {
   )
 }
 
+// Loading fallback for Suspense
+function WrappedLoadingFallback() {
+  return (
+    <div className="flex flex-col gap-6 md:gap-8 w-full pb-8">
+      <div className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
+        <Card className="border-muted/40">
+          <CardHeader>
+            <Skeleton className="h-5 w-32 mb-3" />
+            <Skeleton className="h-10 w-48 mb-2" />
+            <Skeleton className="h-5 w-96" />
+          </CardHeader>
+          <CardContent>
+            <div className="mb-6 p-4 rounded-lg bg-muted/30">
+              <Skeleton className="h-4 w-40 mx-auto mb-3" />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <Skeleton className="h-8 w-16 mx-auto mb-1" />
+                  <Skeleton className="h-3 w-12 mx-auto" />
+                </div>
+                <div className="text-center">
+                  <Skeleton className="h-8 w-16 mx-auto mb-1" />
+                  <Skeleton className="h-3 w-12 mx-auto" />
+                </div>
+                <div className="text-center">
+                  <Skeleton className="h-8 w-16 mx-auto mb-1" />
+                  <Skeleton className="h-3 w-12 mx-auto" />
+                </div>
+              </div>
+            </div>
+            <Skeleton className="h-11 w-48" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
 export default function WrappedPage() {
-  return <WrappedPageContent />
+  return (
+    <Suspense fallback={<WrappedLoadingFallback />}>
+      <WrappedPageContent />
+    </Suspense>
+  )
 }

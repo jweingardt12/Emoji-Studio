@@ -12,6 +12,7 @@ import {
 
 export interface UseWrappedStatsOptions {
   year?: number
+  userId?: string  // Optional: override user identification for mobile auth
 }
 
 export interface UseWrappedStatsResult {
@@ -57,18 +58,31 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
     return calculateWrappedStats(emojiData, year)
   }, [emojiData, year, hasMinimumData])
 
-  // Calculate personal stats for current user (emojis with can_delete === true)
+  // Calculate personal stats for current user
+  // If userId is provided (mobile auth), filter by user_id instead of can_delete
   const personalStats = useMemo(() => {
     if (!hasMinimumData || !emojiData || emojiData.length === 0) {
       return null
     }
-    // Filter to user's own emojis (can_delete indicates ownership)
-    const userEmojis = emojiData.filter((emoji) => emoji.can_delete === true && !emoji.is_alias)
+
+    let userEmojis: Emoji[]
+
+    if (options?.userId) {
+      // Mobile auth: filter by user_id field
+      userEmojis = emojiData.filter(
+        (emoji) => emoji.user_id === options.userId && !emoji.is_alias
+      )
+      console.log(`[useWrappedStats] Filtering by userId ${options.userId}: found ${userEmojis.length} emojis`)
+    } else {
+      // Default: use can_delete flag (indicates ownership in browser context)
+      userEmojis = emojiData.filter((emoji) => emoji.can_delete === true && !emoji.is_alias)
+    }
+
     if (userEmojis.length === 0) {
       return null
     }
     return calculatePersonalStats(emojiData, userEmojis, year)
-  }, [emojiData, year, hasMinimumData])
+  }, [emojiData, year, hasMinimumData, options?.userId])
 
   return {
     stats,
