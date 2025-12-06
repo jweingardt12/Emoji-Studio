@@ -32,6 +32,10 @@ export function IntroSlide({
   const slideRef = useRef<HTMLDivElement>(null)
   const shouldReduceAnimations = useShouldReduceAnimations()
 
+  // Determine if we should animate - disabled for capture mode or reduced motion
+  // This pattern ensures content is visible even during hydration mismatch
+  const shouldAnimate = !captureMode && !shouldReduceAnimations
+
   // Get the top emoji to feature prominently
   const featuredEmoji = customEmojis[0]
   // Get emojis for the orbital ring (12-16 for nice spacing)
@@ -72,14 +76,14 @@ export function IntroSlide({
                 captureMode={captureMode}
                 centerContent={
                   <motion.div
-                    initial={captureMode ? false : { scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{
+                    initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
+                    animate={shouldAnimate ? { scale: 1, rotate: 0 } : undefined}
+                    transition={shouldAnimate ? {
                       type: "spring",
                       stiffness: 200,
                       damping: 20,
                       delay: 0.3,
-                    }}
+                    } : undefined}
                     className="flex flex-col items-center"
                   >
                     {/* Year number */}
@@ -101,14 +105,14 @@ export function IntroSlide({
           {/* Fallback if no orbit emojis */}
           {orbitEmojis.length === 0 && (
             <motion.div
-              initial={captureMode ? false : { scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
+              initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
+              animate={shouldAnimate ? { scale: 1, rotate: 0 } : undefined}
+              transition={shouldAnimate ? {
                 type: "spring",
                 stiffness: 200,
                 damping: 20,
                 delay: 0.3,
-              }}
+              } : undefined}
             >
               {captureMode ? (
                 <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
@@ -125,9 +129,9 @@ export function IntroSlide({
 
         {/* Subtitle with GradientText */}
         <motion.div
-          initial={captureMode ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+          animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+          transition={shouldAnimate ? { delay: 0.6, duration: 0.5 } : undefined}
           className="mt-8 sm:mt-12"
         >
           <h2 className="wrapped-headline text-4xl sm:text-5xl md:text-6xl">
@@ -149,9 +153,9 @@ export function IntroSlide({
         {/* Featured emoji hero */}
         {featuredEmoji && (
           <motion.div
-            initial={captureMode ? false : { opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 1, duration: 0.5 }}
+            initial={shouldAnimate ? { opacity: 0, scale: 0.5 } : false}
+            animate={shouldAnimate ? { opacity: 1, scale: 1 } : undefined}
+            transition={shouldAnimate ? { delay: 1, duration: 0.5 } : undefined}
             className="mt-6"
           >
             <EmojiHero

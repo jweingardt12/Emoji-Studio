@@ -60,6 +60,14 @@ export async function POST(request: NextRequest) {
     // Log the URL for debugging
     console.log("Processing URL:", curlRequest.url)
 
+    // Rewrite emoji.list to emoji.adminList to get full metadata
+    // This ensures desktop gets the same data quality as mobile
+    // (user_id, created timestamps, user_display_name, etc.)
+    if (curlRequest.url.includes('/emoji.list')) {
+      curlRequest.url = curlRequest.url.replace('/emoji.list', '/emoji.adminList')
+      console.log("[Proxy] Rewrote emoji.list to emoji.adminList for full metadata")
+    }
+
     // Check if this is an emoji-related endpoint
     const isEmojiEndpoint =
       curlRequest.url.includes("/emoji.") ||

@@ -128,7 +128,9 @@ export function EmojiOrbit({
                 marginTop: position.y,
                 transform: "translate(-50%, -50%)",
               }}
-              initial={shouldAnimate ? { scale: 0, opacity: 0 } : false}
+              // When not animating, use explicit visible state to ensure content shows
+              // during hydration mismatch (prevents stuck at scale: 0, opacity: 0)
+              initial={shouldAnimate ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
               animate={shouldAnimate ? { scale: 1, opacity: 1 } : undefined}
               transition={
                 shouldAnimate

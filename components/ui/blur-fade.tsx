@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import {
   AnimatePresence,
   motion,
@@ -39,7 +39,16 @@ export function BlurFade({
 }: BlurFadeProps) {
   const ref = useRef(null)
   const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
-  const isInView = !inView || inViewResult
+
+  // Track hydration state to prevent content from being hidden during SSR mismatch
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  // During SSR/before hydration, always show as visible to prevent content hiding
+  // After hydration, use normal inView detection
+  const isInView = !inView || !hydrated || inViewResult
   const defaultVariants: Variants = {
     hidden: { y: yOffset, opacity: 0, filter: `blur(${blur})` },
     visible: { y: -yOffset, opacity: 1, filter: `blur(0px)` },
