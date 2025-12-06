@@ -485,7 +485,7 @@ function AnswerOption({
     <motion.button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full p-4 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
+      className={`w-full p-3 sm:p-4 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
       initial={captureMode ? false : { opacity: 0, x: -20 }}
       animate={
         showResult && isSelected && !effectiveIsCorrect
@@ -499,22 +499,21 @@ function AnswerOption({
       whileHover={!showResult ? { scale: 1.02 } : {}}
       whileTap={!showResult ? { scale: 0.98 } : {}}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <span
-            className={`w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              showResult && effectiveIsCorrect && isSelected
-                ? isPersonalityQuestion
-                  ? "bg-[var(--wrapped-accent-purple)] text-white"
-                  : "bg-green-500 text-white"
-                : showResult && isSelected && !effectiveIsCorrect
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-bold flex-shrink-0 ${showResult && effectiveIsCorrect && isSelected
+              ? isPersonalityQuestion
+                ? "bg-[var(--wrapped-accent-purple)] text-white"
+                : "bg-green-500 text-white"
+              : showResult && isSelected && !effectiveIsCorrect
                 ? "bg-red-500 text-white"
                 : "bg-white/20 text-white"
-            }`}
+              }`}
           >
             {letters[index]}
           </span>
-          <span className="text-white font-medium">{label}</span>
+          <span className="text-white text-sm sm:text-base md:text-lg font-medium leading-tight line-clamp-2">{label}</span>
         </div>
         {showResult && isSelected && (
           <motion.div
@@ -524,11 +523,11 @@ function AnswerOption({
           >
             {effectiveIsCorrect ? (
               <CheckCircle2
-                className={`w-6 h-6 ${isPersonalityQuestion ? "text-[var(--wrapped-accent-purple)]" : "text-green-500"}`}
+                className={`w-6 h-6 sm:w-7 sm:h-7 ${isPersonalityQuestion ? "text-[var(--wrapped-accent-purple)]" : "text-green-500"}`}
                 aria-label={isPersonalityQuestion ? "Great choice" : "Correct answer"}
               />
             ) : (
-              <XCircle className="w-6 h-6 text-red-500" aria-label="Incorrect answer" />
+              <XCircle className="w-6 h-6 sm:w-7 sm:h-7 text-red-500" aria-label="Incorrect answer" />
             )}
           </motion.div>
         )}
@@ -538,7 +537,7 @@ function AnswerOption({
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
           >
-            <CheckCircle2 className="w-6 h-6 text-green-500/70" aria-label="This was the correct answer" />
+            <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 text-green-500/70" aria-label="This was the correct answer" />
           </motion.div>
         )}
       </div>
@@ -633,129 +632,137 @@ export function QuizSlide({
 
       {/* Main content */}
       <div
-        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
-          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
-        } overflow-hidden`}
+        className={`relative w-full max-w-4xl ${captureMode ? "h-[600px] overflow-hidden" : "h-full max-h-full overflow-y-auto scrollbar-hide"}`}
       >
-        {/* Header */}
-        <SlideHeader year={year} />
+        <div className={`flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full ${captureMode ? "h-full justify-between" : "min-h-full justify-between"}`}>
 
-        {/* Quiz title */}
-        {captureMode ? (
-          <div className="mb-4">
-            <h2 className="wrapped-headline text-white mb-1">
-              {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
-            </h2>
-            <p className="wrapped-body">
-              {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
-            </p>
+          {/* Top Section: Header & Title */}
+          <div className="w-full flex flex-col items-center flex-shrink-0">
+            <div className="mb-4">
+              <SlideHeader year={year} />
+            </div>
+
+            {/* Quiz title */}
+            {captureMode ? (
+              <div className="mb-4">
+                <h2 className="wrapped-headline text-white mb-2 text-4xl sm:text-5xl">
+                  {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
+                </h2>
+                <p className="wrapped-body text-lg sm:text-xl">
+                  {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
+                </p>
+              </div>
+            ) : (
+              <BlurFade delay={0.1} className="mb-4">
+                <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl">
+                  <GradientText colors={gradientColors} animationSpeed={6}>
+                    {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
+                  </GradientText>
+                </h2>
+                <p className="wrapped-body text-lg sm:text-xl md:text-2xl">
+                  {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
+                </p>
+              </BlurFade>
+            )}
           </div>
-        ) : (
-          <BlurFade delay={0.1} className="mb-4">
-            <h2 className="wrapped-headline mb-1">
-              <GradientText colors={gradientColors} animationSpeed={6}>
-                {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}
-              </GradientText>
-            </h2>
-            <p className="wrapped-body">
-              {quizType === "workspace" ? "How well do you know your emoji habits?" : "Let's see how you roll"}
-            </p>
-          </BlurFade>
-        )}
 
-        {/* Emoji display if available */}
-        {question.emoji && (
-          <motion.div
-            initial={captureMode ? false : { scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-            className="mb-4"
-          >
-            <EmojiHero
-              emoji={question.emoji}
-              size="sm"
-              glow="purple"
-              animate={!captureMode}
-              captureMode={captureMode}
-              delay={0.3}
-            />
-          </motion.div>
-        )}
+          {/* Middle Section: Emoji, Question, Options */}
+          <div className="flex-1 flex flex-col items-center justify-center w-full my-4">
+            {/* Emoji display if available */}
+            {question.emoji && (
+              <motion.div
+                initial={captureMode ? false : { scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                className="mb-4"
+              >
+                <EmojiHero
+                  emoji={question.emoji}
+                  size="sm"
+                  glow="purple"
+                  animate={!captureMode}
+                  captureMode={captureMode}
+                  delay={0.3}
+                />
+              </motion.div>
+            )}
 
-        {/* Question */}
-        <motion.div
-          initial={captureMode ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 max-w-md"
-        >
-          <p className="text-lg sm:text-xl md:text-2xl font-bold text-white">{question.question}</p>
-        </motion.div>
+            {/* Question */}
+            <motion.div
+              initial={captureMode ? false : { opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6 max-w-2xl"
+            >
+              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight">{question.question}</p>
+            </motion.div>
 
-        {/* Answer options */}
-        <div className="w-full max-w-sm sm:max-w-md space-y-3">
-          {question.options.map((option, index) => (
-            <AnswerOption
-              key={index}
-              label={option}
-              index={index}
-              isSelected={selectedAnswer === index}
-              isCorrect={index === question.correctIndex}
-              showResult={showResult}
-              onClick={() => handleAnswer(index)}
-              captureMode={captureMode}
-              isPersonalityQuestion={question.isPersonalityQuestion}
-            />
-          ))}
+            {/* Answer options - WIDER */}
+            <div className="w-full max-w-md sm:max-w-xl md:max-w-2xl space-y-4">
+              {question.options.map((option, index) => (
+                <AnswerOption
+                  key={index}
+                  label={option}
+                  index={index}
+                  isSelected={selectedAnswer === index}
+                  isCorrect={index === question.correctIndex}
+                  showResult={showResult}
+                  onClick={() => handleAnswer(index)}
+                  captureMode={captureMode}
+                  isPersonalityQuestion={question.isPersonalityQuestion}
+                />
+              ))}
+            </div>
+
+            {/* Result message */}
+            {showResult && (
+              <motion.div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, delay: 0.3 }}
+                className={`mt-6 px-6 py-3 rounded-full ${question.isPersonalityQuestion
+                  ? "bg-[var(--wrapped-accent-purple)]/20 border border-[var(--wrapped-accent-purple)]/40"
+                  : isCorrect
+                    ? "bg-green-500/20 border border-green-500/40"
+                    : "bg-red-500/20 border border-red-500/40"
+                  }`}
+              >
+                <p className={`text-lg font-bold ${question.isPersonalityQuestion
+                  ? "text-[var(--wrapped-accent-purple)]"
+                  : isCorrect
+                    ? "text-green-400"
+                    : "text-red-400"
+                  }`}>
+                  {question.isPersonalityQuestion
+                    ? "Love it! ✨"
+                    : isCorrect
+                      ? "Correct! Nice one!"
+                      : "Not quite!"}
+                </p>
+              </motion.div>
+            )}
+
+            {/* Continue hint */}
+            {showResult && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="mt-4 wrapped-label text-sm"
+              >
+                Tap to continue
+              </motion.p>
+            )}
+          </div>
+
+          {/* Bottom Section: Branding */}
+          <div className="flex-shrink-0 mb-safe">
+            <SlideBranding />
+          </div>
         </div>
-
-        {/* Result message */}
-        {showResult && (
-          <motion.div
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, delay: 0.3 }}
-            className={`mt-6 px-6 py-3 rounded-full ${
-              question.isPersonalityQuestion
-                ? "bg-[var(--wrapped-accent-purple)]/20 border border-[var(--wrapped-accent-purple)]/40"
-                : isCorrect
-                  ? "bg-green-500/20 border border-green-500/40"
-                  : "bg-red-500/20 border border-red-500/40"
-            }`}
-          >
-            <p className={`text-lg font-bold ${
-              question.isPersonalityQuestion
-                ? "text-[var(--wrapped-accent-purple)]"
-                : isCorrect
-                  ? "text-green-400"
-                  : "text-red-400"
-            }`}>
-              {question.isPersonalityQuestion
-                ? "Love it! ✨"
-                : isCorrect
-                  ? "Correct! Nice one!"
-                  : "Not quite!"}
-            </p>
-          </motion.div>
-        )}
-
-        {/* Continue hint */}
-        {showResult && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="mt-4 wrapped-label text-sm"
-          >
-            Tap to continue
-          </motion.p>
-        )}
-
-        {/* Branding */}
-        <SlideBranding />
       </div>
     </div>
   )

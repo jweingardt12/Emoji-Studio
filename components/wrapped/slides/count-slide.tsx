@@ -90,36 +90,37 @@ export function CountSlide({
       {/* Capturable content */}
       <div
         ref={slideRef}
-        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
-          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
-        } overflow-hidden`}
+        className={`relative flex flex-col items-center pt-2 pb-2 px-4 sm:px-6 w-full max-w-4xl ${captureMode ? "h-[600px]" : "h-full max-h-full justify-center overflow-y-auto scrollbar-hide"
+          } overflow-x-hidden`}
       >
         {/* Consistent header */}
         <SlideHeader year={year} />
 
         {/* Intro text */}
         {captureMode ? (
-          <p className="wrapped-label mb-2">This year, {workspaceName} created</p>
+          <p className="wrapped-label mb-4 text-xl sm:text-2xl">
+            This year, <span className="truncate max-w-[200px] sm:max-w-xs inline-block align-bottom">{workspaceName}</span> created
+          </p>
         ) : (
-          <BlurFade delay={0.2} className="wrapped-label mb-2">
-            This year, {workspaceName} created
+          <BlurFade delay={0.2} className="wrapped-label mb-4 text-xl sm:text-2xl">
+            This year, <span className="truncate max-w-[200px] sm:max-w-xs inline-block align-bottom">{workspaceName}</span> created
           </BlurFade>
         )}
 
-        {/* Hero number - MASSIVE */}
+        {/* Hero number - Responsive sizing */}
         <motion.div
           initial={captureMode ? false : { scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          className="relative my-4"
+          className="relative my-4 sm:my-8"
         >
           {captureMode ? (
-            <span className="wrapped-hero-number">{totalEmojis.toLocaleString()}</span>
+            <span className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem]">{totalEmojis.toLocaleString()}</span>
           ) : (
             <NumberTicker
               value={totalEmojis}
               delay={0.5}
-              className="wrapped-hero-number"
+              className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] leading-none tracking-tighter"
             />
           )}
         </motion.div>
@@ -129,9 +130,9 @@ export function CountSlide({
           initial={captureMode ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="space-y-2"
+          className="space-y-3"
         >
-          <h2 className="wrapped-headline">
+          <h2 className="wrapped-headline text-4xl sm:text-5xl md:text-6xl">
             <GradientText
               colors={[
                 "var(--wrapped-accent-purple)",
@@ -144,7 +145,7 @@ export function CountSlide({
               custom emojis
             </GradientText>
           </h2>
-          <p className="wrapped-body">{getPlayfulCopy()}</p>
+          <p className="wrapped-body text-xl sm:text-2xl opacity-90">{getPlayfulCopy()}</p>
         </motion.div>
 
         {/* Dual marquee emoji streams */}
@@ -153,7 +154,7 @@ export function CountSlide({
             initial={captureMode ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: captureMode ? 0 : 0.3, duration: 0.5 }}
-            className="w-full mt-6 overflow-hidden"
+            className="w-full mt-4 sm:mt-6 overflow-hidden"
           >
             <DualEmojiMarquee
               emojis={marqueeEmojis}

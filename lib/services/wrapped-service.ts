@@ -75,13 +75,18 @@ export interface MonthlyCount {
   count: number
 }
 
+export interface WordFrequency {
+  word: string
+  count: number
+}
+
 export interface WrappedFunStats {
   longestName: { emoji: Emoji; length: number } | null
   shortestName: { emoji: Emoji; length: number } | null
   firstEmojiOfYear: Emoji | null
   lastEmojiOfYear: Emoji | null
   mostCommonWord: { word: string; count: number } | null
-  topWords: { word: string; count: number }[]
+  topWords: WordFrequency[]
   lateNightCount: number // Emojis created 12am-5am
   weekendPercentage: number
   longestStreak: { days: number; startDate: string; endDate: string }
@@ -123,6 +128,8 @@ export interface PersonalWrappedStats {
   lateNightCount: number
   weekendPercentage: number
   comparedToAverage: number // User's count vs workspace avg per creator
+  hourlyDistribution: HourlyDistributionBucket[] // 8 time buckets for radar chart
+  topWords: WordFrequency[]
 }
 
 // ============================================================
@@ -631,6 +638,7 @@ export function calculatePersonalStats(
   const weekdayCounts = Array(7).fill(0)
   const hourCounts = Array(24).fill(0)
   const monthlyCounts = Array(12).fill(0)
+  const wordCounts: Record<string, number> = {}
   let gifCount = 0
   let imageCount = 0
   let lateNightCount = 0
@@ -666,7 +674,40 @@ export function calculatePersonalStats(
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       weekendCount++
     }
+
+    // Word frequency
+    const words = parseEmojiNameWords(emoji.name)
+    words.forEach((word) => {
+      wordCounts[word] = (wordCounts[word] || 0) + 1
+    })
   })
+
+  // Calculate top words
+  const topWords: WordFrequency[] = Object.entries(wordCounts)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
+
+  // Calculate hourly distribution buckets (8 buckets of 3 hours)
+  const hourlyDistribution: HourlyDistributionBucket[] = []
+  for (let i = 0; i < 8; i++) {
+    const startHour = i * 3
+    const endHour = startHour + 2
+    const label = `${startHour === 0 ? "12" : startHour > 12 ? startHour - 12 : startHour}${startHour < 12 ? "am" : "pm"}`
+
+    // Sum counts for the 3 hours in this bucket
+    let count = 0
+    for (let h = startHour; h <= endHour; h++) {
+      count += hourCounts[h]
+    }
+
+    hourlyDistribution.push({
+      hour: startHour,
+      label,
+      count,
+      percentage: sortedUserEmojis.length > 0 ? Math.round((count / sortedUserEmojis.length) * 100) : 0,
+    })
+  }
 
   // Peak day of week for user
   const peakDayIndex = weekdayCounts.indexOf(Math.max(...weekdayCounts))
@@ -720,5 +761,7 @@ export function calculatePersonalStats(
     lateNightCount,
     weekendPercentage: Math.round((weekendCount / sortedUserEmojis.length) * 100),
     comparedToAverage,
+    hourlyDistribution,
+    topWords,
   }
 }

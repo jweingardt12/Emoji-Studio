@@ -63,164 +63,165 @@ export function PeakSlide({
       {/* Capturable content */}
       <div
         ref={slideRef}
-        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
-          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
-        } overflow-hidden`}
+        className={`relative w-full max-w-4xl ${captureMode ? "h-[600px] overflow-hidden" : "h-full max-h-full overflow-y-auto scrollbar-hide"}`}
       >
-        {/* Consistent header */}
-        <SlideHeader year={year} />
+        <div className={`flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full ${captureMode ? "h-full justify-between" : "min-h-full justify-between"}`}>
+          {/* Consistent header */}
+          <SlideHeader year={year} />
 
-        {/* Title */}
-        {captureMode ? (
-          <div className="mb-4">
-            <h2 className="wrapped-headline text-white mb-1">When Creativity Peaked</h2>
-            <p className="wrapped-body">The moments that defined {year}</p>
-          </div>
-        ) : (
-          <BlurFade delay={0.1} className="mb-4">
-            <h2 className="wrapped-headline mb-1">
-              <GradientText
-                colors={[
-                  "var(--wrapped-accent-cyan)",
-                  "var(--wrapped-accent-purple)",
-                  "var(--wrapped-accent-orange)",
-                  "var(--wrapped-accent-cyan)",
-                ]}
-                animationSpeed={6}
-              >
-                When Creativity Peaked
-              </GradientText>
-            </h2>
-            <p className="wrapped-body">The moments that defined {year}</p>
-          </BlurFade>
-        )}
-
-        {/* Busiest day spotlight */}
-        <motion.div
-          initial={captureMode ? false : { scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: captureMode ? 0 : 0.3 }}
-          className="w-full max-w-xs sm:max-w-sm rounded-2xl wrapped-glass border border-[var(--wrapped-accent-cyan)]/30 p-4 sm:p-5 mb-4 relative overflow-hidden"
-        >
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--wrapped-accent-cyan)]/10 to-transparent pointer-events-none" />
-
-          <div className="relative">
-            <p className="wrapped-label text-xs mb-1 flex items-center justify-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Best Day
-            </p>
-            <p className="text-2xl font-bold text-white mb-2">{busiestDay.date}</p>
-            <p className="wrapped-body text-sm mb-3">{getPlayfulCopy()}</p>
-            <div className="font-mono text-5xl font-black text-[var(--wrapped-accent-cyan)]">
-              {captureMode ? (
-                <span>{busiestDay.count}</span>
-              ) : (
-                <NumberTicker
-                  value={busiestDay.count}
-                  delay={0.5}
-                  className="font-mono text-5xl font-black text-[var(--wrapped-accent-cyan)]"
-                />
-              )}
-              <span className="text-lg font-normal text-[var(--wrapped-text-secondary)] ml-2">
-                emojis
-              </span>
+          {/* Title */}
+          {captureMode ? (
+            <div className="mb-6">
+              <h2 className="wrapped-headline text-white mb-2 text-4xl sm:text-5xl">When Creativity Peaked</h2>
+              <p className="wrapped-body text-lg sm:text-xl">The moments that defined {year}</p>
             </div>
+          ) : (
+            <BlurFade delay={0.1} className="mb-6">
+              <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl md:text-6xl">
+                <GradientText
+                  colors={[
+                    "var(--wrapped-accent-cyan)",
+                    "var(--wrapped-accent-purple)",
+                    "var(--wrapped-accent-orange)",
+                    "var(--wrapped-accent-cyan)",
+                  ]}
+                  animationSpeed={6}
+                >
+                  When Creativity Peaked
+                </GradientText>
+              </h2>
+              <p className="wrapped-body text-lg sm:text-xl md:text-2xl">The moments that defined {year}</p>
+            </BlurFade>
+          )}
 
-            {/* Emoji grid from that day */}
-            {busiestDay.emojis.length > 0 && (
-              <div className="grid grid-cols-4 gap-2 mt-4 justify-items-center">
-                {busiestDay.emojis.slice(0, 12).map((emoji, i) => (
-                  <motion.img
-                    key={emoji.name}
-                    src={proxyImageUrl(emoji.url)}
-                    alt={emoji.name}
-                    className="w-12 h-12 rounded-lg shadow-lg object-contain"
-                    initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div>
+          {/* Busiest day spotlight - WIDER and BOLDER */}
+          <motion.div
+            initial={captureMode ? false : { scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: captureMode ? 0 : 0.3 }}
+            className="w-full max-w-3xl rounded-3xl wrapped-glass border border-[var(--wrapped-accent-cyan)]/30 p-6 sm:p-8 mb-6 relative overflow-hidden"
+          >
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--wrapped-accent-cyan)]/10 to-transparent pointer-events-none" />
 
-        {/* Monthly activity chart */}
-        <motion.div
-          initial={captureMode ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: captureMode ? 0 : 0.6 }}
-          className="w-full max-w-xs sm:max-w-md rounded-xl wrapped-glass p-3 sm:p-4"
-        >
-          <h3 className="wrapped-label text-xs mb-4 flex items-center justify-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Monthly Activity
-          </h3>
-          <div className="flex items-end justify-between gap-1.5 h-20 mb-2">
-            {normalizedMonths.map((month, i) => (
-              <motion.div
-                key={month.month}
-                className="flex-1 h-full flex flex-col justify-end group relative"
-                initial={captureMode || shouldReduceAnimations ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
-              >
-                {/* Hover tooltip */}
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-                  {month.month}: {month.count}
+            <div className="relative">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12">
+                <div className="text-center md:text-left flex-1">
+                  <p className="wrapped-label text-sm sm:text-base mb-2 flex items-center justify-center md:justify-start gap-2">
+                    <Calendar className="w-5 h-5" />
+                    Best Day
+                  </p>
+                  <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3">{busiestDay.date || "N/A"}</p>
+                  <p className="wrapped-body text-lg sm:text-xl opacity-90 mb-4">{getPlayfulCopy()}</p>
+                  <div className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[var(--wrapped-accent-cyan)] leading-none">
+                    {captureMode ? (
+                      <span>{busiestDay.count}</span>
+                    ) : (
+                      <NumberTicker
+                        value={busiestDay.count}
+                        delay={0.5}
+                        className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[var(--wrapped-accent-cyan)] leading-none tracking-tighter"
+                      />
+                    )}
+                  </div>
+                  <span className="text-xl sm:text-2xl font-normal text-[var(--wrapped-text-secondary)]">emojis created</span>
                 </div>
-                {/* Bar */}
+
+                {/* Emoji grid from that day - Larger and more prominent */}
+                {busiestDay.emojis.length > 0 && (
+                  <div className="grid grid-cols-4 gap-3 sm:gap-4 justify-items-center bg-black/20 p-4 rounded-2xl">
+                    {busiestDay.emojis.slice(0, 12).map((emoji, i) => (
+                      <motion.img
+                        key={emoji.name}
+                        src={proxyImageUrl(emoji.url)}
+                        alt={emoji.name}
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-lg object-contain bg-white/5 p-1"
+                        initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Monthly activity chart - FULL WIDTH */}
+          <motion.div
+            initial={captureMode ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: captureMode ? 0 : 0.6 }}
+            className="w-full max-w-3xl rounded-2xl wrapped-glass p-4 sm:p-6"
+          >
+            <h3 className="wrapped-label text-sm sm:text-base mb-4 flex items-center justify-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Monthly Activity
+            </h3>
+            <div className="flex items-end justify-between gap-1 sm:gap-2 h-32 sm:h-40 mb-3">
+              {normalizedMonths.map((month, i) => (
                 <motion.div
-                  className={`w-full rounded-t transition-colors ${
-                    month.month === peakMonth?.month
+                  key={month.month}
+                  className="flex-1 h-full flex flex-col justify-end group relative"
+                  initial={captureMode || shouldReduceAnimations ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
+                >
+                  {/* Hover tooltip */}
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black/90 text-white text-sm px-3 py-1.5 rounded-lg whitespace-nowrap z-10 border border-white/20">
+                    {month.month}: {month.count}
+                  </div>
+                  {/* Bar */}
+                  <motion.div
+                    className={`w-full rounded-t-md transition-colors ${month.month === peakMonth?.month
                       ? "bg-gradient-to-t from-[var(--wrapped-accent-cyan)] to-[var(--wrapped-accent-purple)]"
                       : "bg-white/20 group-hover:bg-white/40"
-                  }`}
-                  initial={captureMode ? { height: `${Math.max(month.height, 8)}%` } : { height: 0 }}
-                  animate={{ height: `${Math.max(month.height, 8)}%` }}
-                  transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05, duration: 0.5 }}
-                />
-              </motion.div>
-            ))}
-          </div>
-          {/* Month labels */}
-          <div className="flex justify-between text-[10px] text-[var(--wrapped-text-muted)]">
-            {normalizedMonths.map((month) => (
-              <span key={month.month} className="flex-1 text-center">
-                {month.month.slice(0, 3)}
-              </span>
-            ))}
-          </div>
-          {/* Peak month callout */}
-          {peakMonth && (
-            <motion.p
-              initial={captureMode ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: captureMode ? 0 : 1.4 }}
-              className="text-center text-xs text-[var(--wrapped-accent-cyan)] mt-3"
-            >
-              {peakMonth.month} was busiest with {peakMonth.count} emojis
-            </motion.p>
-          )}
-        </motion.div>
+                      }`}
+                    initial={captureMode ? { height: `${Math.max(month.height, 8)}%` } : { height: 0 }}
+                    animate={{ height: `${Math.max(month.height, 8)}%` }}
+                    transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05, duration: 0.5 }}
+                  />
+                </motion.div>
+              ))}
+            </div>
+            {/* Month labels */}
+            <div className="flex justify-between text-xs sm:text-sm text-[var(--wrapped-text-muted)] font-medium">
+              {normalizedMonths.map((month) => (
+                <span key={month.month} className="flex-1 text-center">
+                  {month.month.slice(0, 3)}
+                </span>
+              ))}
+            </div>
+            {/* Peak month callout */}
+            {peakMonth && (
+              <motion.p
+                initial={captureMode ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: captureMode ? 0 : 1.4 }}
+                className="text-center text-sm sm:text-base md:text-lg text-[var(--wrapped-accent-cyan)] mt-4 font-medium"
+              >
+                {peakMonth.month} was busiest with {peakMonth.count} emojis
+              </motion.p>
+            )}
+          </motion.div>
 
-        {/* Peak day of week */}
-        <motion.div
-          initial={captureMode ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: captureMode ? 0 : 1.2 }}
-          className="mt-6"
-        >
-          <StatPill
-            value={peakDayOfWeek.day}
-            label="most active day"
-            icon={<Calendar className="w-4 h-4 text-purple-400" />}
-          />
-        </motion.div>
+          {/* Peak day of week */}
+          <motion.div
+            initial={captureMode ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: captureMode ? 0 : 1.2 }}
+            className="mt-6"
+          >
+            <StatPill
+              value={peakDayOfWeek.day}
+              label="most active day"
+              icon={<Calendar className="w-4 h-4 text-purple-400" />}
+            />
+          </motion.div>
 
-        {/* Branding */}
-        <SlideBranding />
+          {/* Branding */}
+          <SlideBranding />
+        </div>
       </div>
 
       {/* Share button */}

@@ -20,7 +20,9 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { EmojiGridBackground } from "./emoji-grid-background"
+import { FloatingEmojisBackground } from "./floating-emojis-background"
+import { LiquidBackground } from "./liquid-background"
+import { LiquidFilter } from "@/components/ui/liquid-filter"
 
 interface WrappedStoryProps {
   stats: WrappedStats
@@ -84,39 +86,111 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     }
   }, [currentSlide, SLIDES, totalSlides, track, stats.year])
 
-  // Extract custom emojis from stats to use in animations instead of standard Unicode emojis
-  const customEmojis = useMemo(() => {
-    const emojis: Emoji[] = []
+  // Extract and distribute distinct emojis across slides to ensure variety
+  // Prioritize user's own emojis if available
+  const { introEmojis, countEmojis, statsEmojis, finaleEmojis } = useMemo(() => {
+    // 1. GATHER SOURCE EMOJIS
+    const userEmojis: Emoji[] = []
+    const communityEmojis: Emoji[] = []
     const seenUrls = new Set<string>()
 
-    // Collect emojis from top creators
-    stats.topCreators.forEach((creator) => {
-      creator.topEmojis.forEach((emoji) => {
-        if (!seenUrls.has(emoji.url)) {
-          seenUrls.add(emoji.url)
-          emojis.push(emoji)
+    // Helper to add unique emojis
+    const addEmoji = (emoji: Emoji, targetArray: Emoji[]) => {
+      if (emoji && emoji.url && !seenUrls.has(emoji.url)) {
+        seenUrls.add(emoji.url)
+        targetArray.push(emoji)
+      }
+    }
+
+    // A. Collect User Emojis (from allYearEmojis if filtered, or specific stats)
+    if (personalStats?.userId && allYearEmojis.length > 0) {
+      allYearEmojis.forEach(emoji => {
+        if (emoji.user_id === personalStats.userId) {
+          addEmoji(emoji, userEmojis)
         }
       })
-    })
+    }
 
-    // Add emojis from busiest day
-    stats.busiestDay.emojis.forEach((emoji) => {
-      if (!seenUrls.has(emoji.url)) {
-        seenUrls.add(emoji.url)
-        emojis.push(emoji)
+    // B. Collect Community/Top Emojis (from stats)
+    // Top creators' emojis
+    stats.topCreators.forEach((creator) => {
+      creator.topEmojis.forEach((emoji) => addEmoji(emoji, communityEmojis))
+    })
+    // Busiest day emojis
+    stats.busiestDay.emojis.forEach((emoji) => addEmoji(emoji, communityEmojis))
+    // Notable moments
+    if (stats.funStats.firstEmojiOfYear) addEmoji(stats.funStats.firstEmojiOfYear, communityEmojis)
+    if (stats.funStats.lastEmojiOfYear) addEmoji(stats.funStats.lastEmojiOfYear, communityEmojis)
+
+    // Fallback: Fill community pool from allYearEmojis if we're short
+    if (communityEmojis.length < 50 && allYearEmojis.length > 0) {
+      // Shuffle/random pick from allYearEmojis to fill gaps
+      const shuffled = [...allYearEmojis].sort(() => 0.5 - Math.random())
+      for (const emoji of shuffled) {
+        if (communityEmojis.length >= 100) break;
+        addEmoji(emoji, communityEmojis)
       }
-    })
-
-    // Add first and last emoji of year
-    if (stats.funStats.firstEmojiOfYear && !seenUrls.has(stats.funStats.firstEmojiOfYear.url)) {
-      emojis.push(stats.funStats.firstEmojiOfYear)
-    }
-    if (stats.funStats.lastEmojiOfYear && !seenUrls.has(stats.funStats.lastEmojiOfYear.url)) {
-      emojis.push(stats.funStats.lastEmojiOfYear)
     }
 
-    return emojis.slice(0, 30) // Limit for performance
-  }, [stats])
+    // 2. CREATE A MASTER PRIORITY LIST
+    // Interleave user emojis with best community ones, but bias heavily towards user
+    // If user has enough emojis, use them almost exclusively for "Personal" touches
+
+    // Shuffle arrays for randomness on each view
+    const shuffledUser = [...userEmojis].sort(() => 0.5 - Math.random())
+    const shuffledCommunity = [...communityEmojis].sort(() => 0.5 - Math.random())
+
+    // 3. DISTRIBUTE TO SLIDES (Greedy allocation of unique emojis)
+
+    // Intro: Needs ~12-16 high quality ones. 
+    // Mix: 70% User, 30% Community
+    const introSlice = [
+      ...shuffledUser.slice(0, 10),
+      ...shuffledCommunity.slice(0, 6)
+    ].slice(0, 16)
+
+    // Count: Needs ~32 for marquee. 
+    // Use the next batch of user emojis + community filler
+    const usedInIntro = new Set(introSlice.map(e => e.url))
+
+    const availableUserForCount = shuffledUser.filter(e => !usedInIntro.has(e.url))
+    const availableCommForCount = shuffledCommunity.filter(e => !usedInIntro.has(e.url))
+
+    const countSlice = [
+      ...availableUserForCount.slice(0, 20),
+      ...availableCommForCount.slice(0, 20)
+    ].slice(0, 32)
+
+    // Stats: Needs ~8 for showcase
+    const usedInCount = new Set([...countSlice.map(e => e.url), ...introSlice.map(e => e.url)])
+    const availableUserForStats = shuffledUser.filter(e => !usedInCount.has(e.url))
+    const availableCommForStats = shuffledCommunity.filter(e => !usedInCount.has(e.url))
+
+    const statsSlice = [
+      ...availableUserForStats.slice(0, 6),
+      ...availableCommForStats.slice(0, 4)
+    ].slice(0, 8)
+
+    // Finale: Needs "All Year" vibe. Can reuse or pick remaining.
+    // Let's grab a random mix of EVERYTHING to feel like a recap + any unused gems
+    const usedEverywhere = new Set([...usedInCount, ...statsSlice.map(e => e.url)])
+    const unusedUser = shuffledUser.filter(e => !usedEverywhere.has(e.url))
+    const unusedComm = shuffledCommunity.filter(e => !usedEverywhere.has(e.url))
+
+    const finaleSlice = [
+      ...unusedUser,
+      ...unusedComm,
+      ...introSlice, // Reuse hits if we run out
+      ...countSlice
+    ].slice(0, 50)
+
+    return {
+      introEmojis: introSlice,
+      countEmojis: countSlice,
+      statsEmojis: statsSlice,
+      finaleEmojis: finaleSlice
+    }
+  }, [stats, personalStats, allYearEmojis]) // Re-run when base data changes
 
   const goToNext = useCallback(() => {
     // Block navigation if current slide is an unanswered quiz
@@ -217,31 +291,31 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   // Simpler fade transitions on mobile for better performance
   const slideVariants = shouldReduceAnimations
     ? {
-        enter: { opacity: 0 },
-        center: { opacity: 1 },
-        exit: { opacity: 0 },
-      }
+      enter: { opacity: 0 },
+      center: { opacity: 1 },
+      exit: { opacity: 0 },
+    }
     : {
-        enter: (direction: number) => ({
-          x: direction > 0 ? "100%" : "-100%",
-          opacity: 0,
-        }),
-        center: {
-          x: 0,
-          opacity: 1,
-        },
-        exit: (direction: number) => ({
-          x: direction < 0 ? "100%" : "-100%",
-          opacity: 0,
-        }),
-      }
+      enter: (direction: number) => ({
+        x: direction > 0 ? "100%" : "-100%",
+        opacity: 0,
+      }),
+      center: {
+        x: 0,
+        opacity: 1,
+      },
+      exit: (direction: number) => ({
+        x: direction < 0 ? "100%" : "-100%",
+        opacity: 0,
+      }),
+    }
 
   const renderSlide = () => {
     switch (currentSlideType) {
       case "intro":
-        return <IntroSlide year={stats.year} workspaceName={workspaceName} onContinue={goToNext} customEmojis={customEmojis} />
+        return <IntroSlide year={stats.year} workspaceName={workspaceName} onContinue={goToNext} customEmojis={introEmojis} />
       case "count":
-        return <CountSlide totalEmojis={stats.overview.totalEmojis} totalCreators={stats.overview.totalCreators} customEmojis={customEmojis} workspaceName={workspaceName} year={stats.year} />
+        return <CountSlide totalEmojis={stats.overview.totalEmojis} totalCreators={stats.overview.totalCreators} customEmojis={countEmojis} workspaceName={workspaceName} year={stats.year} />
       case "creators":
         return <CreatorsSlide topCreators={stats.topCreators} workspaceName={workspaceName} year={stats.year} />
       case "personal":
@@ -282,19 +356,20 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         return (
           <PatternsSlide
             stats={stats}
+            personalStats={personalStats}
             workspaceName={workspaceName}
             year={stats.year}
           />
         )
       case "stats":
-        return <StatsSlide funStats={stats.funStats} overview={stats.overview} growth={stats.growth} workspaceName={workspaceName} year={stats.year} customEmojis={customEmojis} />
+        return <StatsSlide funStats={stats.funStats} overview={stats.overview} growth={stats.growth} workspaceName={workspaceName} year={stats.year} customEmojis={statsEmojis} />
       case "finale":
         return (
           <FinaleSlide
             stats={stats}
             workspaceName={workspaceName}
             onShare={onSkipToShare}
-            customEmojis={customEmojis}
+            customEmojis={finaleEmojis}
             allYearEmojis={allYearEmojis}
           />
         )
@@ -303,19 +378,23 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
     }
   }
 
-  // Use allYearEmojis for background, fall back to customEmojis if not provided
-  const backgroundEmojis = allYearEmojis.length > 0 ? allYearEmojis : customEmojis
+  // Use allYearEmojis for background, fall back to finaleEmojis (broadest selection)
+  const backgroundEmojis = allYearEmojis.length > 0 ? allYearEmojis : finaleEmojis
 
   return (
     <div
       className={cn(
-        "relative min-h-[calc(100vh-8rem)] -m-4 md:-m-6 wrapped-bg",
+        "relative h-[calc(100vh-3rem)] -m-4 md:-m-6 bg-black overflow-hidden", // Fixed height to fill remaining viewport (100vh - header)
         "pt-safe pb-safe" // Safe area padding for iOS notch/home indicator
       )}
     >
-      {/* Emoji grid background - layer 1 (above gradient, below content) */}
-      <div className="absolute inset-0 overflow-hidden">
-        <EmojiGridBackground emojis={backgroundEmojis} opacity={0.08} />
+      {/* Liquid Background - layer 0 (deepest) */}
+      <LiquidBackground />
+      <LiquidFilter />
+
+      {/* Emoji float background - layer 1 (floating in liquid) */}
+      <div className="absolute inset-0 overflow-hidden mix-blend-overlay">
+        <FloatingEmojisBackground emojis={backgroundEmojis} opacity={0.6} />
       </div>
 
       {/* Vignette overlay for depth */}
@@ -330,7 +409,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       <div className="wrapped-noise absolute inset-0 pointer-events-none z-0" />
 
       {/* Main content wrapper */}
-      <div className="relative z-10 flex flex-col min-h-[calc(100vh-8rem)]">
+      <div className="relative z-10 flex flex-col h-full">
         {/* Top controls */}
         <div className="flex items-center justify-between p-4">
           <Link href="/wrapped" onClick={(e) => { e.preventDefault(); handleExit("close_button"); router.push("/wrapped"); }}>
@@ -352,15 +431,31 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           </Button>
         </div>
 
-        {/* Main slide area - click to advance */}
-        <div className="flex-1 flex items-center justify-center relative" onClick={goToNext}>
-          {/* Navigation arrows (desktop) */}
-          <div className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20">
+        {/* Mobile Navigation Overlays - Left/Right tap zones */}
+        <div className="md:hidden absolute inset-0 flex z-20 pointer-events-none">
+          <div
+            className="w-1/3 h-full pointer-events-auto active:bg-white/5 transition-colors"
+            onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+          />
+          <div
+            className="w-1/3 h-full"
+          /* Center zone passes clicks through for interactables */
+          />
+          <div
+            className="w-1/3 h-full pointer-events-auto active:bg-white/5 transition-colors"
+            onClick={(e) => { e.stopPropagation(); goToNext(); }}
+          />
+        </div>
+
+        {/* Main slide area */}
+        <div className="flex-1 flex items-center justify-center relative w-full h-full">
+          {/* Navigation arrows (desktop) - Always visible, larger */}
+          <div className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30">
             <Button
               variant="ghost"
               size="icon"
               className={cn(
-                "text-white/50 hover:text-white hover:bg-white/10 transition-opacity",
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm",
                 currentSlide === 0 && "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
@@ -371,11 +466,14 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
               <ChevronLeft className="w-8 h-8" />
             </Button>
           </div>
-          <div className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-20">
+          <div className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30">
             <Button
               variant="ghost"
               size="icon"
-              className="text-white/50 hover:text-white hover:bg-white/10"
+              className={cn(
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm",
+                currentSlide === totalSlides - 1 && "opacity-0 pointer-events-none"
+              )}
               onClick={(e) => {
                 e.stopPropagation()
                 goToNext()
@@ -397,32 +495,34 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
                 x: { type: "spring", stiffness: 300, damping: 30 },
                 opacity: { duration: 0.2 },
               }}
-              className="w-full h-full flex items-center justify-center p-6"
+              className="w-full h-full flex items-center justify-center p-4 sm:p-6 pb-12 sm:pb-16" // added padding bottom for fixed dots
             >
               {renderSlide()}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Progress dots - larger touch targets on mobile */}
-        <div className="flex items-center justify-center gap-2 md:gap-2 gap-3 p-4 pb-safe">
-          {SLIDES.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation()
-                goToSlide(index)
-              }}
-              className={cn(
-                "rounded-full transition-all duration-300",
-                index === currentSlide
-                  ? "bg-white w-8 h-3 md:w-6 md:h-2"
-                  : index < currentSlide
-                    ? "bg-white/60 w-3 h-3 md:w-2 md:h-2"
-                    : "bg-white/30 w-3 h-3 md:w-2 md:h-2"
-              )}
-            />
-          ))}
+        {/* Progress dots - Fixed Absolute Position at Bottom */}
+        <div className="absolute bottom- safe z-30 w-full flex items-center justify-center pointer-events-none pb- safe">
+          <div className="flex items-center justify-center gap-2 p-4 pointer-events-auto">
+            {SLIDES.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  goToSlide(index)
+                }}
+                className={cn(
+                  "rounded-full transition-all duration-300 shadow-sm",
+                  index === currentSlide
+                    ? "bg-white w-6 h-1.5 sm:w-8 sm:h-2 box-shadow-glow"
+                    : index < currentSlide
+                      ? "bg-white/60 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/80"
+                      : "bg-white/20 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/40"
+                )}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Tap hint on intro */}

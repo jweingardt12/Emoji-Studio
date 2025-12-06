@@ -4,12 +4,14 @@
 
 /* Responsive Sonner toast positioning */
 [data-sonner-toaster] {
-  bottom: 20px !important; /* Desktop: close to bottom */
+  bottom: 20px !important;
+  /* Desktop: close to bottom */
 }
 
 @media (max-width: 768px) {
   [data-sonner-toaster] {
-    bottom: calc(env(safe-area-inset-bottom) + 80px) !important; /* Mobile: above bottom nav */
+    bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
+    /* Mobile: above bottom nav */
   }
 }
 
@@ -71,18 +73,18 @@ body {
   display: none;
 }
 
-  /* Lock app frame for native feel */
-  .app-frame-locked {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    touch-action: manipulation;
-  }
+/* Lock app frame for native feel */
+.app-frame-locked {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
 
 *::-webkit-scrollbar {
   display: none;
@@ -103,9 +105,11 @@ body {
   0% {
     transform: translateX(-100%);
   }
+
   50% {
     transform: translateX(calc(100% + 100vw));
   }
+
   100% {
     transform: translateX(calc(100% + 100vw));
   }
@@ -126,7 +130,10 @@ body {
   }
 
   /* Allow text selection only for specific elements */
-  input, textarea, [contenteditable], .selectable {
+  input,
+  textarea,
+  [contenteditable],
+  .selectable {
     -webkit-user-select: text;
     user-select: text;
   }
@@ -136,14 +143,16 @@ body {
   .animate-fade-up {
     opacity: 0;
     transform: translateY(20px);
-    animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+    animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   }
+
   .text-balance {
     text-wrap: balance;
   }
 
   /* Mobile PWA adjustments */
   @media (max-width: 768px) {
+
     /* Prevent zooming on inputs - iOS requires 16px minimum */
     input[type="text"],
     input[type="email"],
@@ -164,7 +173,9 @@ body {
     }
 
     /* Native app-like touch targets (minimum 44px) */
-    button, a, [role="button"] {
+    button,
+    a,
+    [role="button"] {
       min-height: 44px;
       min-width: 44px;
     }
@@ -204,14 +215,18 @@ body {
     }
 
     /* Native-style active states */
-    button:active, a:active, [role="button"]:active {
+    button:active,
+    a:active,
+    [role="button"]:active {
       transform: scale(0.97);
       transition: transform 0.1s ease;
     }
 
     /* Disable hover effects on touch devices */
     @media (hover: none) {
-      button:hover, a:hover {
+
+      button:hover,
+      a:hover {
         background-color: inherit;
       }
     }
@@ -259,6 +274,7 @@ body {
 
   /* iOS Safari viewport fixes */
   @supports (-webkit-touch-callout: none) {
+
     /* iOS Safari specific styles */
     .ios-viewport-fix {
       height: -webkit-fill-available;
@@ -276,6 +292,7 @@ body {
 
   /* Additional iOS Safari bottom nav fixes */
   @media screen and (max-width: 768px) {
+
     /* Ensure bottom nav is always visible above Safari UI */
     .mobile-bottom-nav {
       bottom: 0;
@@ -302,13 +319,14 @@ body {
   .animation-delay-2000 {
     animation-delay: 2s;
   }
+
   .animation-delay-4000 {
     animation-delay: 4s;
   }
 
   /* Grid pattern background */
   .bg-grid-pattern {
-    background-image: 
+    background-image:
       linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
     background-size: 50px 50px;
@@ -331,27 +349,36 @@ body {
 
 @layer base {
   :root {
-    --color-1: oklch(66.2% 0.225 25.9); /* Dark Neon Pink */
-    --color-2: oklch(60.4% 0.26 302); /* Bright Electric Green */
-    --color-3: oklch(69.6% 0.165 251); /* Deep Neon Blue */
-    --color-4: oklch(80.2% 0.134 225); /* Light Neon Yellow */
-    --color-5: oklch(90.7% 0.231 133); /* Dark Neon Purple */
-    --brand: 50 100% 50%; /* Bright, punchy yellow */
+    --color-1: oklch(66.2% 0.225 25.9);
+    /* Dark Neon Pink */
+    --color-2: oklch(60.4% 0.26 302);
+    /* Bright Electric Green */
+    --color-3: oklch(69.6% 0.165 251);
+    /* Deep Neon Blue */
+    --color-4: oklch(80.2% 0.134 225);
+    /* Light Neon Yellow */
+    --color-5: oklch(90.7% 0.231 133);
+    /* Dark Neon Purple */
+    --brand: 50 100% 50%;
+    /* Bright, punchy yellow */
 
-    /* Wrapped Experience Design System */
-    --wrapped-bg-start: #1a0a2e;
-    --wrapped-bg-end: #0f0f23;
-    --wrapped-accent-purple: #a855f7;
-    --wrapped-accent-orange: #f97316;
-    --wrapped-accent-cyan: #22d3ee;
+    /* Wrapped Experience Design System - iOS 26 Liquid Glass */
+    --wrapped-bg-start: #0a0a0f;
+    --wrapped-bg-end: #050508;
+    --wrapped-accent-purple: #c084fc;
+    --wrapped-accent-orange: #fb923c;
+    --wrapped-accent-cyan: #67e8f9;
     --wrapped-text-primary: #ffffff;
-    --wrapped-text-secondary: rgba(255, 255, 255, 0.7);
-    --wrapped-text-muted: rgba(255, 255, 255, 0.4);
-    --wrapped-glass-bg: rgba(255, 255, 255, 0.03);
-    --wrapped-glass-border: rgba(255, 255, 255, 0.06);
-    --wrapped-glow-purple: rgba(168, 85, 247, 0.5);
-    --wrapped-glow-orange: rgba(249, 115, 22, 0.4);
-    --wrapped-glow-cyan: rgba(34, 211, 238, 0.4);
+    --wrapped-text-secondary: rgba(255, 255, 255, 0.85);
+    --wrapped-text-muted: rgba(255, 255, 255, 0.5);
+
+    /* Liquid Glass tokens */
+    --wrapped-glass-bg: rgba(255, 255, 255, 0.08);
+    --wrapped-glass-border: rgba(255, 255, 255, 0.15);
+    --wrapped-glass-highlight: rgba(255, 255, 255, 0.25);
+    --wrapped-glow-purple: rgba(192, 132, 252, 0.6);
+    --wrapped-glow-orange: rgba(251, 146, 60, 0.5);
+    --wrapped-glow-cyan: rgba(103, 232, 249, 0.5);
 
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -387,13 +414,20 @@ body {
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .dark {
-    --color-1: oklch(66.2% 0.225 25.9); /* Dark Neon Pink */
-    --color-2: oklch(60.4% 0.26 302); /* Bright Electric Green */
-    --color-3: oklch(69.6% 0.165 251); /* Deep Neon Blue */
-    --color-4: oklch(80.2% 0.134 225); /* Light Neon Yellow */
-    --color-5: oklch(90.7% 0.231 133); /* Dark Neon Purple */
-    --brand: 50 100% 50%; /* Bright, punchy yellow */
+    --color-1: oklch(66.2% 0.225 25.9);
+    /* Dark Neon Pink */
+    --color-2: oklch(60.4% 0.26 302);
+    /* Bright Electric Green */
+    --color-3: oklch(69.6% 0.165 251);
+    /* Deep Neon Blue */
+    --color-4: oklch(80.2% 0.134 225);
+    /* Light Neon Yellow */
+    --color-5: oklch(90.7% 0.231 133);
+    /* Dark Neon Purple */
+    --brand: 50 100% 50%;
+    /* Bright, punchy yellow */
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
     --card: 0 0% 3.9%;
@@ -427,8 +461,9 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
   .theme {
-    --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+    --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0)*.2s) infinite;
     --animate-shine: shine var(--duration) infinite linear;
     --animate-shiny-text: shiny-text 8s infinite;
     --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
@@ -440,6 +475,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -450,15 +486,19 @@ body {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -466,33 +506,35 @@ body {
 
 .glow-border {
   --border-size: 3px;
-  --border-radius: 50%; /* This was 50%, if it's for a general glow, maybe it should be more flexible or removed if not used for circular items */
+  --border-radius: 50%;
+  /* This was 50%, if it's for a general glow, maybe it should be more flexible or removed if not used for circular items */
   --glow-color: rgba(255, 255, 255, 0.4);
   --glow-spread: 10px;
 
   /* These width/height calculations might be problematic if the parent isn't positioned correctly or if box-sizing is different */
   /* width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
   /* height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
-  /* border-radius: var(--border-radius); */ /* Duplicates the one above, or is intended to be different? */
-  position: absolute; /* Ensure this is intended for all uses of .glow-border */
+  /* border-radius: var(--border-radius); */
+  /* Duplicates the one above, or is intended to be different? */
+  position: absolute;
+  /* Ensure this is intended for all uses of .glow-border */
   /* top: calc(-1 * var(--border-size) - var(--glow-spread)); */
   /* left: calc(-1 * var(--border-size) - var(--glow-spread)); */
-  z-index: 0; /* Ensure this doesn't conflict with other z-indexed elements */
+  z-index: 0;
+  /* Ensure this doesn't conflict with other z-indexed elements */
 
-  background: conic-gradient(
-    from 0deg,
-    rgba(255, 0, 0, 0.8),
-    rgba(255, 154, 0, 0.8),
-    rgba(208, 222, 33, 0.8),
-    rgba(79, 220, 74, 0.8),
-    rgba(63, 218, 216, 0.8),
-    rgba(47, 201, 226, 0.8),
-    rgba(28, 127, 238, 0.8),
-    rgba(95, 21, 242, 0.8),
-    rgba(186, 12, 248, 0.8),
-    rgba(251, 7, 217, 0.8),
-    rgba(255, 0, 0, 0.8)
-  );
+  background: conic-gradient(from 0deg,
+      rgba(255, 0, 0, 0.8),
+      rgba(255, 154, 0, 0.8),
+      rgba(208, 222, 33, 0.8),
+      rgba(79, 220, 74, 0.8),
+      rgba(63, 218, 216, 0.8),
+      rgba(47, 201, 226, 0.8),
+      rgba(28, 127, 238, 0.8),
+      rgba(95, 21, 242, 0.8),
+      rgba(186, 12, 248, 0.8),
+      rgba(251, 7, 217, 0.8),
+      rgba(255, 0, 0, 0.8));
 
   filter: blur(var(--glow-spread));
   animation: rotate 5s linear infinite, pulse 2s ease-in-out infinite;
@@ -511,12 +553,15 @@ body {
     transform: translateY(0) rotate(0deg);
     opacity: 0;
   }
+
   5% {
     opacity: 1;
   }
+
   95% {
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh) rotate(360deg);
     opacity: 0;
@@ -549,25 +594,31 @@ body {
 
 /* Fix for Radix UI Tooltip content z-index issue */
 .radix-tooltip-content-wrapper {
-  z-index: 200 !important; /* Ensure tooltips are above other elements */
+  z-index: 200 !important;
+  /* Ensure tooltips are above other elements */
 }
 
 /* Ensure Radix UI Dialog/Drawer overlays are above other fixed elements */
 .radix-dialog-overlay,
 .radix-drawer-overlay {
-  z-index: 100 !important; /* Higher than most fixed elements */
+  z-index: 100 !important;
+  /* Higher than most fixed elements */
 }
 
 .radix-dialog-content,
 .radix-drawer-content {
-  z-index: 101 !important; /* Above its own overlay */
+  z-index: 101 !important;
+  /* Above its own overlay */
 }
 
 /* Gradient text animation */
 @keyframes gradient-x {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -582,10 +633,12 @@ body {
     transform: translate(-50%, -50%) scale(0.8);
     opacity: 0.5;
   }
+
   50% {
     transform: translate(-50%, -50%) scale(1.1);
     opacity: 0.3;
   }
+
   100% {
     transform: translate(-50%, -50%) scale(0.8);
     opacity: 0.5;
@@ -599,79 +652,103 @@ body {
 
 @theme inline {
   @keyframes shine {
-  0% {
-    background-position: 0% 0%;
+    0% {
+      background-position: 0% 0%;
     }
-  50% {
-    background-position: 100% 100%;
+
+    50% {
+      background-position: 100% 100%;
     }
-  to {
-    background-position: 0% 0%;
+
+    to {
+      background-position: 0% 0%;
     }
   }
+
   @keyframes gradient-shift {
     0% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
+
     100% {
       background-position: 0% 50%;
     }
   }
+
   @keyframes shine-border {
     0% {
       background-position: -100% 50%;
     }
+
     100% {
       background-position: 200% 50%;
     }
   }
+
   @keyframes shiny-text {
-  0%, 90%, 100% {
-    background-position: calc(-100% - var(--shiny-width)) 0;
+
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
     }
-  30%, 60% {
-    background-position: calc(100% + var(--shiny-width)) 0;
+
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
     }
   }
+
   @keyframes rainbow {
-  0% {
-    background-position: 0%;
+    0% {
+      background-position: 0%;
     }
-  100% {
-    background-position: 200%;
+
+    100% {
+      background-position: 200%;
     }
   }
+
   @keyframes ripple {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
     }
-  50% {
-    transform: translate(-50%, -50%) scale(0.9);
+
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
     }
   }
+
   @keyframes aurora {
-  0% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+    0% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
-  25% {
-    background-position: 50% 100%;
-    transform: rotate(5deg) scale(1.1);
+
+    25% {
+      background-position: 50% 100%;
+      transform: rotate(5deg) scale(1.1);
     }
-  50% {
-    background-position: 100% 50%;
-    transform: rotate(-3deg) scale(0.95);
+
+    50% {
+      background-position: 100% 50%;
+      transform: rotate(-3deg) scale(0.95);
     }
-  75% {
-    background-position: 50% 0%;
-    transform: rotate(3deg) scale(1.05);
+
+    75% {
+      background-position: 50% 0%;
+      transform: rotate(3deg) scale(1.05);
     }
-  100% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+
+    100% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
   }
 }
@@ -683,10 +760,10 @@ body {
 
 /* Checkerboard pattern for transparent backgrounds */
 .bg-checkerboard {
-  background-image: 
-    linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
-    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
-    linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
     linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
   background-size: 16px 16px;
   background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
@@ -706,32 +783,26 @@ body {
 
 /* Unified wrapped background gradient */
 .wrapped-bg {
-  background: linear-gradient(
-    180deg,
-    var(--wrapped-bg-start) 0%,
-    var(--wrapped-bg-end) 100%
-  );
+  background: linear-gradient(180deg,
+      var(--wrapped-bg-start) 0%,
+      var(--wrapped-bg-end) 100%);
 }
 
 /* Accent gradient for highlights and stats */
 .wrapped-accent-gradient {
-  background: linear-gradient(
-    135deg,
-    var(--wrapped-accent-purple) 0%,
-    var(--wrapped-accent-orange) 50%,
-    var(--wrapped-accent-cyan) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--wrapped-accent-purple) 0%,
+      var(--wrapped-accent-orange) 50%,
+      var(--wrapped-accent-cyan) 100%);
   background-size: 200% 200%;
 }
 
 /* Text gradient using accent colors */
 .wrapped-text-gradient {
-  background: linear-gradient(
-    135deg,
-    var(--wrapped-accent-purple) 0%,
-    var(--wrapped-accent-orange) 50%,
-    var(--wrapped-accent-cyan) 100%
-  );
+  background: linear-gradient(135deg,
+      var(--wrapped-accent-purple) 0%,
+      var(--wrapped-accent-orange) 50%,
+      var(--wrapped-accent-cyan) 100%);
   background-size: 200% 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -739,38 +810,157 @@ body {
   animation: wrapped-gradient-shift 6s ease infinite;
 }
 
-/* Glass card styling */
-.wrapped-glass {
+/* Glass card styling - Deep Liquid Glass */
+.glass-liquid {
   background: var(--wrapped-glass-bg);
+  /* Double border effect for thickness: lighter top/left, darker bottom/right */
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px var(--wrapped-glass-border);
+  /* Outer definition */
+  backdrop-filter: blur(24px) saturate(220%) contrast(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(220%) contrast(1.1);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  /* For specular overlay */
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+
+/* Specular Highlight Overlay */
+.glass-specular::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 45%,
+      rgba(255, 255, 255, 0.0) 50%,
+      transparent 100%);
+  opacity: 0.6;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  mask-image: linear-gradient(to bottom, black, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+}
+
+/* Chromatic Aberration Hover */
+.glass-chromatic:hover {
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.4),
+    inset -1px -1px 0 0 rgba(255, 255, 255, 0.1),
+    -1px 0 0 0 rgba(34, 211, 238, 0.4),
+    /* Cyan shift */
+    1px 0 0 0 rgba(249, 115, 22, 0.4);
+  /* Orange shift */
+  transform: translateY(-2px) scale(1.005);
+}
+
+.wrapped-glass {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--wrapped-glass-border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Real Refraction using SVG Filter */
+.glass-refractive {
+  /* Apply the improved glass base */
+  background: var(--wrapped-glass-bg);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+
+  /* The Secret Sauce: SVG Displacement */
+  filter: url(#liquid-displacement);
+
+  /* Double border for thickness */
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 1px 1px 0 0 rgba(255, 255, 255, 0.3),
+    inset -1px -1px 0 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px var(--wrapped-glass-border);
+
+  border-radius: 24px;
+  transform: translateZ(0);
+  /* Force hardware acceleration */
+}
+
+/* Hover effect to "calm" the liquid or ripple it */
+.glass-refractive:hover {
+  /* We can't easily animate the SVG filter params via CSS, 
+     but we can slightly scale the element to shift the noise mapping */
+  transform: scale(1.02) translateZ(0);
+  transition: transform 0.4s cubic-bezier(0.25, 0.4, 0.25, 0.9);
+}
+
+/* Fluid background animation */
+@keyframes liquid-flow {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(10%, 10%) rotate(5deg);
+  }
+
+  50% {
+    transform: translate(0, 5%) rotate(0deg);
+  }
+
+  75% {
+    transform: translate(-10%, 10%) rotate(-5deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+.animate-liquid-flow {
+  animation: liquid-flow 20s ease-in-out infinite;
+}
+
+/* Text refraction effect */
+.text-refraction {
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.8) 0%,
+      rgba(255, 255, 255, 0.4) 40%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(255, 255, 255, 0.4) 60%,
+      rgba(255, 255, 255, 0.8) 100%);
+  background-size: 200% auto;
+  animation: shine 5s linear infinite;
 }
 
 /* Stat pill styling */
 .wrapped-pill {
-  background: linear-gradient(
-    135deg,
-    rgba(168, 85, 247, 0.2) 0%,
-    rgba(249, 115, 22, 0.2) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(168, 85, 247, 0.2) 0%,
+      rgba(249, 115, 22, 0.2) 100%);
   border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 /* Glow effects */
 .wrapped-glow-purple {
   box-shadow: 0 0 60px var(--wrapped-glow-purple),
-              0 0 120px var(--wrapped-glow-purple);
+    0 0 120px var(--wrapped-glow-purple);
 }
 
 .wrapped-glow-orange {
   box-shadow: 0 0 60px var(--wrapped-glow-orange),
-              0 0 120px var(--wrapped-glow-orange);
+    0 0 120px var(--wrapped-glow-orange);
 }
 
 .wrapped-glow-cyan {
   box-shadow: 0 0 60px var(--wrapped-glow-cyan),
-              0 0 120px var(--wrapped-glow-cyan);
+    0 0 120px var(--wrapped-glow-cyan);
 }
 
 /* Hero number typography */
@@ -815,6 +1005,7 @@ body {
   from {
     transform: rotate(0deg) translateX(var(--orbit-radius, 120px)) rotate(0deg);
   }
+
   to {
     transform: rotate(360deg) translateX(var(--orbit-radius, 120px)) rotate(-360deg);
   }
@@ -826,9 +1017,12 @@ body {
 
 /* Gradient shift animation */
 @keyframes wrapped-gradient-shift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -836,9 +1030,12 @@ body {
 
 /* Emoji float animation */
 @keyframes wrapped-float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -850,10 +1047,13 @@ body {
 
 /* Emoji pulse animation */
 @keyframes wrapped-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.05);
     opacity: 0.9;
@@ -866,10 +1066,13 @@ body {
 
 /* Glow pulse animation */
 @keyframes wrapped-glow-pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.5;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.1);
@@ -882,10 +1085,13 @@ body {
 
 /* Breathing animation for mosaic emojis */
 @keyframes wrapped-breathe {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 0.15;
   }
+
   50% {
     transform: scale(1.02);
     opacity: 0.2;
@@ -905,4 +1111,32 @@ body {
   opacity: 0.03;
   pointer-events: none;
   mix-blend-mode: overlay;
+}
+
+/* Floating animation for background emojis */
+@keyframes float-slow {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-20vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-float-slow {
+  animation-name: float-slow;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
 }

@@ -45,27 +45,25 @@ export function IntroSlide({
       {/* Capturable content */}
       <div
         ref={slideRef}
-        className={`relative flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full max-w-[600px] ${
-          captureMode ? "h-[600px]" : "h-auto min-h-[500px] sm:min-h-[600px]"
-        } overflow-hidden`}
+        className={`relative flex flex-col items-center pt-2 pb-2 px-4 sm:px-6 w-full max-w-4xl ${captureMode ? "h-[600px]" : "h-full max-h-full justify-center overflow-y-auto scrollbar-hide"} overflow-x-hidden`}
       >
         {/* Consistent header for share images */}
         <SlideHeader year={year} />
 
         {/* Workspace name */}
         {captureMode ? (
-          <p className="wrapped-label mb-4">{workspaceName}</p>
+          <p className="wrapped-label mb-6 text-xl sm:text-2xl truncate max-w-[280px] sm:max-w-sm">{workspaceName}</p>
         ) : (
-          <BlurFade delay={0.2} className="wrapped-label mb-4">
+          <BlurFade delay={0.2} className="wrapped-label mb-6 text-xl sm:text-2xl truncate max-w-[280px] sm:max-w-sm">
             {workspaceName}
           </BlurFade>
         )}
 
         {/* Main hero section - Year with orbital emojis */}
-        <div className="relative flex-1 flex items-center justify-center w-full">
+        <div className="relative flex-1 flex items-center justify-center w-full min-h-[300px] sm:min-h-[400px]">
           {/* Orbital emoji ring */}
           {orbitEmojis.length > 0 && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center scale-110 sm:scale-125 md:scale-150">
               <EmojiOrbit
                 emojis={orbitEmojis}
                 size="lg"
@@ -86,20 +84,13 @@ export function IntroSlide({
                   >
                     {/* Year number */}
                     {captureMode ? (
-                      <h1 className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl">
+                      <h1 className="wrapped-hero-number text-[7rem] sm:text-[9rem] md:text-[11rem] leading-none">
                         {year}
                       </h1>
                     ) : (
-                      <SparklesText
-                        className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl"
-                        colors={{
-                          first: "var(--wrapped-accent-purple)",
-                          second: "var(--wrapped-accent-orange)",
-                        }}
-                        sparklesCount={shouldReduceAnimations ? 0 : 10}
-                      >
+                      <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] lg:text-[12rem] leading-none text-refraction">
                         {year}
-                      </SparklesText>
+                      </h1>
                     )}
                   </motion.div>
                 }
@@ -120,20 +111,13 @@ export function IntroSlide({
               }}
             >
               {captureMode ? (
-                <h1 className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl">
+                <h1 className="wrapped-hero-number text-[7rem] sm:text-[9rem] md:text-[11rem] leading-none">
                   {year}
                 </h1>
               ) : (
-                <SparklesText
-                  className="wrapped-hero-number text-7xl sm:text-8xl md:text-9xl"
-                  colors={{
-                    first: "var(--wrapped-accent-purple)",
-                    second: "var(--wrapped-accent-orange)",
-                  }}
-                  sparklesCount={shouldReduceAnimations ? 0 : 10}
-                >
+                <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] lg:text-[12rem] leading-none text-refraction">
                   {year}
-                </SparklesText>
+                </h1>
               )}
             </motion.div>
           )}
@@ -144,9 +128,9 @@ export function IntroSlide({
           initial={captureMode ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          className="mt-6"
+          className="mt-8 sm:mt-12"
         >
-          <h2 className="wrapped-headline">
+          <h2 className="wrapped-headline text-4xl sm:text-5xl md:text-6xl">
             <GradientText
               colors={[
                 "var(--wrapped-accent-purple)",
@@ -159,7 +143,7 @@ export function IntroSlide({
               Emoji Wrapped
             </GradientText>
           </h2>
-          <p className="wrapped-body mt-3">Your emoji journey awaits</p>
+          <p className="wrapped-body mt-4 text-xl sm:text-2xl">Your emoji journey awaits</p>
         </motion.div>
 
         {/* Featured emoji hero */}
