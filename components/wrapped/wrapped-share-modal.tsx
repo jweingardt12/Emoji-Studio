@@ -128,7 +128,7 @@ export function WrappedShareModal({
   const fullCardRef = useRef<HTMLDivElement>(null)
 
   const [cardType, setCardType] = useState<CardType>("stats")
-  const [backgroundStyle, setBackgroundStyle] = useState<WrappedBackgroundStyle>("purple")
+  const [backgroundStyle, setBackgroundStyle] = useState<WrappedBackgroundStyle>("cosmic")
   const [cardSize, setCardSize] = useState<WrappedCardSize>("square")
   const [exportFormat, setExportFormat] = useState<ExportFormat>("image")
 
@@ -894,23 +894,25 @@ export function WrappedShareModal({
         </div>
       </div>
 
-      {/* Background selection */}
+      {/* Background selection - exciting color picker */}
       <div>
         <label className="text-sm text-muted-foreground mb-2 block">Background</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex justify-between gap-1">
           {(Object.keys(WRAPPED_BACKGROUNDS) as WrappedBackgroundStyle[]).map((style) => (
             <button
               key={style}
               onClick={() => handleBackgroundChange(style)}
               className={cn(
-                "w-8 h-8 rounded-full border-2 transition-all",
+                "flex-1 h-10 rounded-lg border-2 transition-all flex items-center justify-center text-lg",
                 backgroundStyle === style
-                  ? "border-white scale-110 ring-2 ring-white/30"
-                  : "border-transparent hover:border-white/50"
+                  ? "border-white scale-105 ring-2 ring-white/30 shadow-lg"
+                  : "border-transparent hover:border-white/50 hover:scale-102"
               )}
               style={{ background: WRAPPED_BACKGROUNDS[style].gradient }}
               title={WRAPPED_BACKGROUNDS[style].label}
-            />
+            >
+              <span className="drop-shadow-md">{WRAPPED_BACKGROUNDS[style].emoji}</span>
+            </button>
           ))}
         </div>
       </div>
