@@ -119,7 +119,7 @@ export function WrappedPreloader({
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
           style={{
             background: "linear-gradient(135deg, var(--wrapped-bg-start) 0%, var(--wrapped-bg-end) 100%)",
           }}

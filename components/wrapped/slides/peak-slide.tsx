@@ -4,7 +4,6 @@ import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { BusiestPeriod, DayOfWeekStat, MonthlyCount } from "@/lib/services/wrapped-service"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { StatPill } from "../stat-card"
@@ -241,14 +240,6 @@ export function PeakSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="peak"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion"
 import { useEffect, useState, useRef } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { DualEmojiMarquee } from "../emoji-marquee"
@@ -218,14 +217,6 @@ export function CountSlide({
         <SlideBranding />
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="count"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

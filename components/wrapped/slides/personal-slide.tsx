@@ -4,7 +4,6 @@ import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { EmojiHero } from "../emoji-hero"
@@ -255,14 +254,6 @@ export function PersonalSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="personal"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

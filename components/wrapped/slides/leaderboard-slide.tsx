@@ -4,7 +4,6 @@ import { useRef, useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import { TopCreator, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { GradientText } from "@/components/ui/gradient-text"
@@ -289,14 +288,6 @@ export function LeaderboardSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="leaderboard"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

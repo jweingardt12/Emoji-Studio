@@ -452,14 +452,21 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   // Show preloader while assets are loading
   if (isPreloading) {
     return (
-      <WrappedPreloader
-        stats={stats}
-        personalStats={personalStats}
-        allYearEmojis={allYearEmojis}
-        workspaceName={workspaceName}
-        year={stats.year}
-        onComplete={() => setIsPreloading(false)}
-      />
+      <div
+        className={cn(
+          "relative h-[calc(100vh-3rem)] -m-4 md:-m-6 bg-black overflow-hidden",
+          "pt-safe pb-safe"
+        )}
+      >
+        <WrappedPreloader
+          stats={stats}
+          personalStats={personalStats}
+          allYearEmojis={allYearEmojis}
+          workspaceName={workspaceName}
+          year={stats.year}
+          onComplete={() => setIsPreloading(false)}
+        />
+      </div>
     )
   }
 

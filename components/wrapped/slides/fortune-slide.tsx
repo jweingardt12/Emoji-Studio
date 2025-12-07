@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { detectPersona, generateProphecy, Prophecy, Persona } from "@/lib/services/vibe-generator"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { EmojiConstellation } from "../emoji-constellation"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
@@ -460,14 +459,6 @@ export function FortuneSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="fortune"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor={TAROT_COLORS.navy}
-      />
     </div>
   )
 }

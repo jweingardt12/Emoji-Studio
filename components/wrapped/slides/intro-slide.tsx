@@ -4,7 +4,6 @@ import { motion } from "framer-motion"
 import { useRef, useState, useEffect } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { EmojiHero } from "../emoji-hero"
@@ -196,14 +195,6 @@ export function IntroSlide({
         <SlideBranding />
       </div>
 
-      {/* Share button - outside capturable area */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="intro"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

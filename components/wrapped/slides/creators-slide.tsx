@@ -4,7 +4,6 @@ import { useRef, useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import { TopCreator } from "@/lib/services/wrapped-service"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { EmojiHero } from "../emoji-hero"
@@ -168,7 +167,7 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
       {/* Podium base - percentage width on mobile, fixed on larger screens */}
       {/* Winner's podium has spotlight glow animation */}
       <motion.div
-        className={`mt-2 xs:mt-3 sm:mt-4 w-[28%] xs:w-24 sm:w-36 md:w-44 lg:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
+        className={`mt-2 xs:mt-3 sm:mt-4 w-[26%] xs:w-20 sm:w-36 md:w-44 lg:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
         initial={shouldAnimate && isWinner ? { boxShadow: "0 0 0 rgba(234, 179, 8, 0)" } : false}
         animate={shouldAnimate && isWinner ? {
           boxShadow: [
@@ -251,7 +250,7 @@ export function CreatorsSlide({
           {/* Middle Section: Podiums */}
           {/* Pushed to bottom of available space, or just flows if scrolling */}
           <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-4 xs:mt-6 sm:mt-8 mb-4 xs:mb-6 sm:mb-8">
-            <div className="flex items-end justify-center gap-1 xs:gap-2 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-4xl px-1 xs:px-2 sm:px-4">
+            <div className="flex items-end justify-center gap-0.5 xs:gap-1 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-4xl px-0 xs:px-1 sm:px-4">
               {top3.map((creator) => (
                 <PodiumSpot
                   key={creator.userId}
@@ -293,14 +292,6 @@ export function CreatorsSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="creators"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="var(--wrapped-bg-start)"
-      />
     </div>
   )
 }

@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { generateMoviePoster, MoviePoster } from "@/lib/services/vibe-generator"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { Emoji } from "@/lib/services/emoji-service"
@@ -523,14 +522,6 @@ export function MovieSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="movie"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor={VHS_COLORS.black}
-      />
     </div>
   )
 }

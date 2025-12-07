@@ -4,7 +4,6 @@ import { useRef, useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { detectPersona, Persona, PERSONAS } from "@/lib/services/vibe-generator"
-import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { Emoji } from "@/lib/services/emoji-service"
@@ -477,14 +476,6 @@ export function VibeSlide({
         </div>
       </div>
 
-      {/* Share button */}
-      <SlideShareButton
-        slideRef={slideRef}
-        slideName="vibe"
-        workspaceName={workspaceName}
-        year={year}
-        backgroundColor="#0a0a0a"
-      />
     </div>
   )
 }
