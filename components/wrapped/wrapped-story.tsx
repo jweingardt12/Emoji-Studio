@@ -40,9 +40,10 @@ interface WrappedStoryProps {
   allYearEmojis?: Emoji[] // All emojis from the year for the background grid
 }
 
-const BASE_SLIDES = ["intro", "count", "creators"] as const
-const PERSONAL_SLIDE = ["personal"] as const
+const INTRO_SLIDES = ["intro"] as const
 const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
+const REVEAL_SLIDES = ["count", "creators"] as const
+const PERSONAL_SLIDE = ["personal"] as const
 const LEADERBOARD_SLIDE = ["leaderboard"] as const
 const FUN_SLIDES = ["vibe", "haiku", "movie"] as const
 const MIDDLE_SLIDES = ["peak", "emoji-month", "patterns", "fortune"] as const
@@ -62,11 +63,12 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   const shouldReduceAnimations = useShouldReduceAnimations()
 
   // Build slides array dynamically - include personal slide only if user has data
+  // Quiz slides come BEFORE reveal slides so users are quizzed before seeing the answers
   const SLIDES: SlideType[] = useMemo(() => {
     if (personalStats) {
-      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+      return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...PERSONAL_SLIDE, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
     }
-    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+    return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
   }, [personalStats])
 
   const totalSlides = SLIDES.length
