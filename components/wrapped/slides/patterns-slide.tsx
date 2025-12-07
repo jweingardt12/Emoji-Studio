@@ -131,7 +131,7 @@ export function PatternsSlide({
           )}
 
           {/* Two-column layout for charts - WIDER and RESPONSIVE */}
-          <div className="flex flex-col md:flex-row gap-4 sm:gap-6 w-full max-w-3xl mb-4 sm:mb-6 flex-1 min-h-[400px]">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6 w-full max-w-3xl mb-4 sm:mb-6 flex-1 min-h-0">
             {/* Hour-of-Day Radar Chart */}
             <motion.div
               initial={captureMode ? false : { opacity: 0, scale: 0.9 }}
@@ -217,13 +217,15 @@ export function PatternsSlide({
             </motion.div>
           </div>
 
-          {/* Work Pattern Stats */}
+          {/* Work Pattern Stats - Premium Glass */}
           <motion.div
             initial={captureMode ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: captureMode ? 0 : 0.9 }}
-            className="w-full max-w-3xl rounded-3xl wrapped-glass p-6 sm:p-8 mt-2"
+            className="w-full max-w-3xl rounded-3xl wrapped-glass-premium p-6 sm:p-8 mt-2 relative overflow-hidden"
           >
+            {/* Subtle ambient glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-orange-500/5 pointer-events-none" />
             <h3 className="wrapped-label text-base sm:text-lg mb-6">Work Patterns</h3>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-16">
               {/* Late Night Stat */}
@@ -259,7 +261,7 @@ export function PatternsSlide({
               </div>
             </div>
 
-            {/* Playful insight */}
+            {/* Playful absurdist insight */}
             <motion.p
               initial={captureMode ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -267,10 +269,10 @@ export function PatternsSlide({
               className="text-center text-base sm:text-lg md:text-xl text-[var(--wrapped-accent-cyan)] mt-6 font-medium"
             >
               {lateNightPercentage > 20
-                ? "You're a true night owl!"
+                ? `${lateNightPercentage}% after midnight? We're concerned but impressed.`
                 : weekendPercentage > 40
-                  ? "Weekends are your creative time!"
-                  : "You're most creative during work hours"}
+                  ? "Weekends are for creating emojis, apparently."
+                  : "Your work hours are suspiciously productive."}
             </motion.p>
           </motion.div>
 

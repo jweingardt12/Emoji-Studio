@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { generateMoviePoster, MoviePoster } from "@/lib/services/vibe-generator"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
@@ -107,13 +107,15 @@ function StaticBurst({ shouldAnimate }: { shouldAnimate: boolean }) {
   )
 }
 
-// Film strip perforations
-function FilmPerforations({ side }: { side: "left" | "right" }) {
+// Film strip perforations - reduced count on mobile for performance
+function FilmPerforations({ side, reducedCount = false }: { side: "left" | "right"; reducedCount?: boolean }) {
+  const count = reducedCount ? 6 : 12
+
   return (
     <div
-      className={`absolute top-0 ${side}-0 w-4 sm:w-5 h-full opacity-30 pointer-events-none`}
+      className={`absolute top-0 ${side}-0 w-4 sm:w-5 h-full opacity-30 pointer-events-none hidden xs:block`}
     >
-      {[...Array(12)].map((_, i) => (
+      {[...Array(count)].map((_, i) => (
         <div
           key={i}
           className="w-full h-2 sm:h-3 bg-white rounded-sm mb-4 sm:mb-5"
@@ -187,6 +189,12 @@ function VHSMoviePosterCard({
   workspaceName: string
   timestamp: string
 }) {
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+
+  const handleImageError = (key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }
+
   return (
     <motion.div
       initial={captureMode ? false : { opacity: 0, scale: 0.95 }}
@@ -268,34 +276,44 @@ function VHSMoviePosterCard({
               transition={{ delay: captureMode ? 0 : 0.7 }}
               className="flex items-center justify-center gap-2 sm:gap-3"
             >
-              {castEmojis.slice(0, 5).map((emoji, i) => (
-                <motion.div
-                  key={emoji.url}
-                  className="relative"
-                  initial={captureMode ? false : { opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: captureMode ? 0 : 0.8 + i * 0.1 }}
-                >
-                  {/* Chromatic aberration on emoji */}
-                  <img
-                    src={proxyImageUrl(emoji.url)}
-                    alt=""
-                    className="absolute w-8 h-8 sm:w-10 sm:h-10 object-contain opacity-30"
-                    style={{ transform: "translateX(-2px)", filter: "hue-rotate(90deg)" }}
-                  />
-                  <img
-                    src={proxyImageUrl(emoji.url)}
-                    alt=""
-                    className="absolute w-8 h-8 sm:w-10 sm:h-10 object-contain opacity-30"
-                    style={{ transform: "translateX(2px)", filter: "hue-rotate(-90deg)" }}
-                  />
-                  <img
-                    src={proxyImageUrl(emoji.url)}
-                    alt=""
-                    className="relative w-8 h-8 sm:w-10 sm:h-10 object-contain"
-                  />
-                </motion.div>
-              ))}
+              {castEmojis.map((emoji, i) => {
+                const key = `movie-${emoji.name}`
+                const hasFailed = failedImages.has(key)
+                const imgSrc = hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)
+                return (
+                  <motion.div
+                    key={key}
+                    className="relative"
+                    initial={captureMode ? false : { opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: captureMode ? 0 : 0.8 + i * 0.1 }}
+                  >
+                    {/* Chromatic aberration on emoji - desktop only for performance */}
+                    {shouldAnimate && !hasFailed && (
+                      <>
+                        <img
+                          src={imgSrc}
+                          alt=""
+                          className="absolute w-8 h-8 sm:w-10 sm:h-10 object-contain opacity-30 hidden sm:block"
+                          style={{ transform: "translateX(-2px)", filter: "hue-rotate(90deg)" }}
+                        />
+                        <img
+                          src={imgSrc}
+                          alt=""
+                          className="absolute w-8 h-8 sm:w-10 sm:h-10 object-contain opacity-30 hidden sm:block"
+                          style={{ transform: "translateX(2px)", filter: "hue-rotate(-90deg)" }}
+                        />
+                      </>
+                    )}
+                    <img
+                      src={imgSrc}
+                      alt=""
+                      className="relative w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                      onError={() => handleImageError(key)}
+                    />
+                  </motion.div>
+                )
+              })}
             </motion.div>
           )}
 
@@ -432,8 +450,8 @@ export function MovieSlide({
     [stats, personalStats]
   )
 
-  // Get cast emojis
-  const castEmojis = customEmojis.slice(0, 5)
+  // Get cast emojis - filter to valid URLs
+  const castEmojis = customEmojis.slice(0, 5).filter(emoji => hasValidUrl(emoji))
 
   // Generate timestamp
   const timestamp = useMemo(() => formatTimestamp(year), [year])

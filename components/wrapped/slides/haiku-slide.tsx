@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { generateHaiku, Haiku } from "@/lib/services/vibe-generator"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
@@ -191,10 +191,15 @@ export function HaikuSlide({
 
   // Hydration tracking for WKWebView compatibility
   const [hydrated, setHydrated] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   useEffect(() => {
     setHydrated(true)
   }, [])
   const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
+  const handleImageError = (key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }
 
   // Generate haikus
   const workspaceHaiku = useMemo(
@@ -210,8 +215,8 @@ export function HaikuSlide({
     [personalStats?.topWords]
   )
 
-  // Get stamp emojis (3 for decoration)
-  const stampEmojis = customEmojis.slice(0, 3)
+  // Get stamp emojis (3 for decoration) - filter to valid URLs
+  const stampEmojis = customEmojis.slice(0, 3).filter(emoji => hasValidUrl(emoji))
 
   return (
     <div
@@ -393,43 +398,53 @@ export function HaikuSlide({
                 <>
                   {/* Desktop - right side */}
                   <div className="hidden md:flex flex-col gap-4 items-center">
-                    {stampEmojis.map((emoji, i) => (
-                      <motion.div
-                        key={emoji.url}
-                        initial={captureMode ? false : { opacity: 0, rotate: 20, scale: 0 }}
-                        animate={{ opacity: 0.8, rotate: 5 - i * 5, scale: 1 }}
-                        transition={{ delay: captureMode ? 0 : 2.2 + i * 0.15 }}
-                        className="relative"
-                      >
-                        <img
-                          src={proxyImageUrl(emoji.url)}
-                          alt=""
-                          className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                          style={{
-                            filter: "sepia(30%) saturate(80%)",
-                          }}
-                        />
-                      </motion.div>
-                    ))}
+                    {stampEmojis.map((emoji, i) => {
+                      const key = `haiku-${emoji.name}`
+                      const hasFailed = failedImages.has(key)
+                      return (
+                        <motion.div
+                          key={key}
+                          initial={captureMode ? false : { opacity: 0, rotate: 20, scale: 0 }}
+                          animate={{ opacity: 0.8, rotate: 5 - i * 5, scale: 1 }}
+                          transition={{ delay: captureMode ? 0 : 2.2 + i * 0.15 }}
+                          className="relative"
+                        >
+                          <img
+                            src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
+                            alt=""
+                            className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                            style={{
+                              filter: "sepia(30%) saturate(80%)",
+                            }}
+                            onError={() => handleImageError(key)}
+                          />
+                        </motion.div>
+                      )
+                    })}
                   </div>
 
                   {/* Mobile - bottom row */}
                   <div className="flex md:hidden gap-4 items-center justify-center mt-4">
                     <HankoSeal size="small" />
-                    {stampEmojis.slice(0, 2).map((emoji, i) => (
-                      <motion.img
-                        key={emoji.url}
-                        src={proxyImageUrl(emoji.url)}
-                        alt=""
-                        className="w-8 h-8 object-contain opacity-60"
-                        initial={captureMode ? false : { opacity: 0, scale: 0 }}
-                        animate={{ opacity: 0.6, scale: 1 }}
-                        transition={{ delay: captureMode ? 0 : 2 + i * 0.1 }}
-                        style={{
-                          filter: "sepia(30%) saturate(80%)",
-                        }}
-                      />
-                    ))}
+                    {stampEmojis.slice(0, 2).map((emoji, i) => {
+                      const key = `haiku-mobile-${emoji.name}`
+                      const hasFailed = failedImages.has(key)
+                      return (
+                        <motion.img
+                          key={key}
+                          src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
+                          alt=""
+                          className="w-8 h-8 object-contain opacity-60"
+                          initial={captureMode ? false : { opacity: 0, scale: 0 }}
+                          animate={{ opacity: 0.6, scale: 1 }}
+                          transition={{ delay: captureMode ? 0 : 2 + i * 0.1 }}
+                          style={{
+                            filter: "sepia(30%) saturate(80%)",
+                          }}
+                          onError={() => handleImageError(key)}
+                        />
+                      )
+                    })}
                   </div>
                 </>
               )}

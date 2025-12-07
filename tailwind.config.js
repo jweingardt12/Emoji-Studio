@@ -18,6 +18,9 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
         mono: ["var(--font-mono)", ...fontFamily.mono],
+        // Wrapped typography system
+        "wrapped-display": ["'Clash Display'", "var(--font-sans)", ...fontFamily.sans],
+        "wrapped-body": ["'General Sans'", "var(--font-sans)", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",

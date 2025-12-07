@@ -31,6 +31,7 @@ function WrappedPageContent() {
   const mobileTeamId = searchParams.get("teamId")
   const mobileCookie = searchParams.get("cookie")
   const mobileWorkspace = searchParams.get("workspace")
+  const isEmbedded = searchParams.get("embedded") === "true"
   const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
   const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
@@ -108,6 +109,16 @@ function WrappedPageContent() {
       is_mobile_auth: hasMobileParams,
     })
   }, [])
+
+  // Hide app frame (header, sidebar) when embedded in native iOS app
+  useEffect(() => {
+    if (isEmbedded) {
+      document.body.classList.add("wrapped-embedded")
+      return () => {
+        document.body.classList.remove("wrapped-embedded")
+      }
+    }
+  }, [isEmbedded])
 
   // Auto-start wrapped experience when coming from mobile app
   useEffect(() => {

@@ -56,11 +56,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Rocket,
 }
 
-// CRT Scanline overlay component
-function CRTScanlines() {
+// CRT Scanline overlay component - disabled on mobile for performance
+function CRTScanlines({ disabled }: { disabled?: boolean }) {
+  if (disabled) return null
+
   return (
     <div
-      className="absolute inset-0 pointer-events-none z-20"
+      className="absolute inset-0 pointer-events-none z-20 hidden sm:block"
       style={{
         background: `repeating-linear-gradient(
           0deg,
@@ -343,8 +345,8 @@ export function VibeSlide({
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden bg-[#0a0a0a]">
-      {/* CRT Scanlines */}
-      <CRTScanlines />
+      {/* CRT Scanlines - disabled on mobile for performance */}
+      <CRTScanlines disabled={shouldReduceAnimations} />
 
       {/* Arcade cabinet glow effect */}
       <div
@@ -354,10 +356,10 @@ export function VibeSlide({
         }}
       />
 
-      {/* Screen flicker effect */}
-      {shouldAnimate && (
+      {/* Screen flicker effect - only on desktop for performance */}
+      {shouldAnimate && !shouldReduceAnimations && (
         <motion.div
-          className="absolute inset-0 pointer-events-none bg-white/5"
+          className="absolute inset-0 pointer-events-none bg-white/5 hidden sm:block"
           animate={{ opacity: [0, 0.03, 0, 0.02, 0] }}
           transition={{ duration: 0.15, repeat: Infinity, repeatDelay: 3 }}
         />

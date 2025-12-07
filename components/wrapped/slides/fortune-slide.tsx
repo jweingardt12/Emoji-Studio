@@ -4,9 +4,10 @@ import { useRef, useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { detectPersona, generateProphecy, Prophecy, Persona } from "@/lib/services/vibe-generator"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
+import { EmojiConstellation } from "../emoji-constellation"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { Emoji } from "@/lib/services/emoji-service"
 
@@ -58,16 +59,19 @@ function MoonPhases({ size = "medium" }: { size?: "small" | "medium" | "large" }
   )
 }
 
-// Stars decoration for background
-function ConstellationBackground({ starCount = 8 }: { starCount?: number }) {
+// Stars decoration for background - reduced on mobile for performance
+function ConstellationBackground({ starCount = 8, reduceMotion = false }: { starCount?: number; reduceMotion?: boolean }) {
+  // Reduce star count on mobile
+  const effectiveCount = reduceMotion ? Math.min(starCount, 4) : starCount
+
   const stars = useMemo(() => {
-    return [...Array(starCount)].map((_, i) => ({
+    return [...Array(effectiveCount)].map((_, i) => ({
       left: `${10 + Math.random() * 80}%`,
       top: `${10 + Math.random() * 80}%`,
       size: 1 + Math.random() * 2,
       delay: Math.random() * 2,
     }))
-  }, [starCount])
+  }, [effectiveCount])
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -82,10 +86,11 @@ function ConstellationBackground({ starCount = 8 }: { starCount?: number }) {
             height: star.size,
             backgroundColor: TAROT_COLORS.gold,
           }}
-          animate={{
+          animate={reduceMotion ? {} : {
             opacity: [0.3, 0.8, 0.3],
           }}
-          transition={{
+          initial={{ opacity: 0.5 }}
+          transition={reduceMotion ? {} : {
             duration: 3,
             repeat: Infinity,
             delay: star.delay,
@@ -143,6 +148,8 @@ function TarotCard({
   size?: "large" | "small"
 }) {
   const isLarge = size === "large"
+  const [imgError, setImgError] = useState(false)
+  const validEmoji = emoji && hasValidUrl(emoji) && !imgError
 
   return (
     <motion.div
@@ -165,7 +172,7 @@ function TarotCard({
         }}
       >
         <TarotBorder />
-        <ConstellationBackground starCount={isLarge ? 8 : 4} />
+        <ConstellationBackground starCount={isLarge ? 8 : 4} reduceMotion={!shouldAnimate} />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center gap-3 sm:gap-4">
@@ -220,7 +227,7 @@ function TarotCard({
               background: `radial-gradient(circle, ${TAROT_COLORS.deepPurple} 0%, transparent 70%)`,
             }}
           >
-            {emoji ? (
+            {validEmoji ? (
               <img
                 src={proxyImageUrl(emoji.url)}
                 alt=""
@@ -228,6 +235,7 @@ function TarotCard({
                 style={{
                   filter: `drop-shadow(0 0 10px ${TAROT_COLORS.gold}80)`,
                 }}
+                onError={() => setImgError(true)}
               />
             ) : (
               <span className={`${isLarge ? "text-4xl sm:text-5xl" : "text-2xl sm:text-3xl"}`}>
@@ -317,8 +325,21 @@ export function FortuneSlide({
       className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden"
       style={{ backgroundColor: TAROT_COLORS.navy }}
     >
-      {/* Constellation background */}
-      <ConstellationBackground starCount={12} />
+      {/* Simple star constellation background - reduced on mobile */}
+      <ConstellationBackground starCount={12} reduceMotion={shouldReduceAnimations} />
+
+      {/* Emoji constellation - connects user's emojis like stars */}
+      {customEmojis.length >= 3 && !captureMode && (
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          <EmojiConstellation
+            emojis={customEmojis.slice(0, 6)}
+            lineColor={TAROT_COLORS.gold}
+            lineOpacity={0.4}
+            emojiSize={shouldReduceAnimations ? 20 : 24}
+            animated={!shouldReduceAnimations}
+          />
+        </div>
+      )}
 
       {/* Celestial gradient overlay */}
       <div

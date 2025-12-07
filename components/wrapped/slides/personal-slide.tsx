@@ -143,18 +143,19 @@ export function PersonalSlide({
             <SlideHeader year={year} />
           </div>
 
-          {/* Bento Grid Layout */}
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 grid-rows-[auto_1fr_1fr_auto] sm:grid-rows-4 gap-4 sm:gap-5 w-full h-full min-h-0">
+          {/* Bento Grid Layout - min-h ensures cells don't crush on mobile */}
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 grid-rows-[auto_minmax(80px,1fr)_minmax(80px,1fr)_auto] sm:grid-rows-4 gap-3 sm:gap-5 w-full h-full min-h-0">
 
-            {/* 1. HERO CARD (Identity) - Spans 2x2 */}
+            {/* 1. HERO CARD (Identity) - Spans 2x2 - Premium Glass Effect */}
             <motion.div
-              className="col-span-2 row-span-1 sm:row-span-2 rounded-3xl wrapped-glass p-5 sm:p-6 md:p-8 flex flex-col items-start justify-between relative overflow-hidden group"
+              className="col-span-2 row-span-1 sm:row-span-2 rounded-3xl wrapped-glass-premium p-5 sm:p-6 md:p-8 flex flex-col items-start justify-between relative overflow-hidden group"
               initial={captureMode ? false : { opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: captureMode ? 0 : 0.1, duration: 0.5 }}
             >
               {/* Background glow based on top emoji */}
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-[var(--wrapped-accent-purple)]/30 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-[var(--wrapped-accent-purple)]/40 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-[var(--wrapped-accent-cyan)]/20 blur-3xl rounded-full pointer-events-none" />
 
               <div className="relative z-10 text-left">
                 <BlurFade delay={0.2} shouldAnimate={shouldAnimate}>

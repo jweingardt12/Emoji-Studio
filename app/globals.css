@@ -861,10 +861,100 @@ body {
 
 .wrapped-glass {
   background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--wrapped-glass-border);
+}
+
+/* Enhanced textured glass with directional light */
+.wrapped-glass-premium {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.05) 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--wrapped-glass-border);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1)) 1;
+}
+
+/* Frosted edge effect for cards */
+.wrapped-glass-frosted {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 0 60px rgba(255, 255, 255, 0.03),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--wrapped-glass-border);
+  mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 100%);
+}
+
+/* Chromatic aberration effect for peak moments */
+.wrapped-chromatic {
+  position: relative;
+}
+
+.wrapped-chromatic::before,
+.wrapped-chromatic::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.wrapped-chromatic::before {
+  color: var(--wrapped-accent-cyan);
+  transform: translateX(-2px);
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+}
+
+.wrapped-chromatic::after {
+  color: var(--wrapped-accent-orange);
+  transform: translateX(2px);
+  clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+}
+
+/* Animated chromatic aberration on hover */
+@keyframes chromatic-pulse {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-3px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes chromatic-pulse-alt {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(3px);
+    opacity: 0.6;
+  }
+}
+
+.wrapped-chromatic-animated::before {
+  animation: chromatic-pulse 2s ease-in-out infinite;
+}
+
+.wrapped-chromatic-animated::after {
+  animation: chromatic-pulse-alt 2s ease-in-out infinite;
 }
 
 /* Real Refraction using SVG Filter */
@@ -963,41 +1053,54 @@ body {
     0 0 120px var(--wrapped-glow-cyan);
 }
 
-/* Hero number typography */
+/* Hero number typography - Clash Display for maximum impact */
 .wrapped-hero-number {
-  font-family: var(--font-mono);
-  font-size: clamp(5rem, 20vw, 12rem);
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  text-shadow: 0 0 120px var(--wrapped-glow-purple);
+  font-family: 'Clash Display', var(--font-sans);
+  font-size: clamp(3.5rem, 14vw, 10rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  color: white;
+  /* Subtle glow - not blocky */
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 40px var(--wrapped-glow-purple);
 }
 
-/* Headline typography */
+/* Headline typography - Clash Display for section titles */
 .wrapped-headline {
-  font-family: var(--font-sans);
-  font-size: clamp(1.75rem, 5vw, 3rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-family: 'Clash Display', var(--font-sans);
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
-/* Label typography */
+/* Label typography - General Sans uppercase with wide tracking */
 .wrapped-label {
-  font-family: var(--font-sans);
-  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  font-family: 'General Sans', var(--font-sans);
+  font-size: clamp(0.7rem, 1.8vw, 0.875rem);
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--wrapped-text-secondary);
 }
 
-/* Body typography */
+/* Body typography - General Sans for readability */
 .wrapped-body {
-  font-family: var(--font-sans);
-  font-size: clamp(1rem, 3vw, 1.25rem);
-  font-weight: 500;
+  font-family: 'General Sans', var(--font-sans);
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 450;
+  line-height: 1.5;
   color: var(--wrapped-text-secondary);
+}
+
+/* Stat number typography - for smaller stats and counters */
+.wrapped-stat-number {
+  font-family: 'Clash Display', var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
 /* Orbit animation for emojis */
@@ -1139,4 +1242,52 @@ body {
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   animation-fill-mode: both;
+}
+
+/* ========================================
+   Embedded Mode (iOS WKWebView)
+   Hide app frame for full-screen experience
+   ======================================== */
+body.wrapped-embedded {
+  /* Reset mobile body constraints */
+  position: static !important;
+  overflow: hidden !important;
+}
+
+/* Hide the sidebar in embedded mode */
+body.wrapped-embedded [data-sidebar="sidebar"] {
+  display: none !important;
+}
+
+/* Hide the site header in embedded mode */
+body.wrapped-embedded header {
+  display: none !important;
+}
+
+/* Make content full-screen in embedded mode */
+body.wrapped-embedded [data-sidebar="inset"] {
+  margin-left: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Remove all padding from content wrappers */
+body.wrapped-embedded .flex.flex-col.gap-4.p-4,
+body.wrapped-embedded .flex.flex-col.gap-4.p-4.pt-safe,
+body.wrapped-embedded .p-4.pt-safe,
+body.wrapped-embedded .md\\:p-6 {
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+/* Full viewport height for wrapped content container */
+body.wrapped-embedded .h-screen {
+  height: 100vh !important;
+  height: 100dvh !important;
+}
+
+/* Ensure the main scroll container fills viewport */
+body.wrapped-embedded .overflow-y-auto {
+  height: 100vh !important;
+  height: 100dvh !important;
 }

@@ -19,6 +19,7 @@ import { PatternsSlide } from "./slides/patterns-slide"
 import { FortuneSlide } from "./slides/fortune-slide"
 import { StatsSlide } from "./slides/stats-slide"
 import { FinaleSlide } from "./slides/finale-slide"
+import { LeaderboardSlide } from "./slides/leaderboard-slide"
 import { Button } from "@/components/ui/button"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils"
 import { FloatingEmojisBackground } from "./floating-emojis-background"
 import { LiquidBackground } from "./liquid-background"
 import { LiquidFilter } from "@/components/ui/liquid-filter"
+import { WrappedPreloader } from "./wrapped-preloader"
 
 interface WrappedStoryProps {
   stats: WrappedStats
@@ -40,14 +42,16 @@ interface WrappedStoryProps {
 const BASE_SLIDES = ["intro", "count", "creators"] as const
 const PERSONAL_SLIDE = ["personal"] as const
 const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
+const LEADERBOARD_SLIDE = ["leaderboard"] as const
 const FUN_SLIDES = ["vibe", "haiku", "movie"] as const
 const MIDDLE_SLIDES = ["peak", "patterns", "fortune"] as const
 const END_SLIDES = ["stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "vibe" | "haiku" | "movie" | "peak" | "patterns" | "fortune" | "stats" | "finale"
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "vibe" | "haiku" | "movie" | "peak" | "patterns" | "fortune" | "stats" | "finale"
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
   const router = useRouter()
+  const [isPreloading, setIsPreloading] = useState(true)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [direction, setDirection] = useState(1)
   const [quizAnswered, setQuizAnswered] = useState<Record<string, boolean>>({})
@@ -59,9 +63,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   // Build slides array dynamically - include personal slide only if user has data
   const SLIDES: SlideType[] = useMemo(() => {
     if (personalStats) {
-      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
     }
-    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
   }, [personalStats])
 
   const totalSlides = SLIDES.length
@@ -357,6 +361,15 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             needsAttention={quizNeedsAttention}
           />
         )
+      case "leaderboard":
+        return (
+          <LeaderboardSlide
+            topCreators={stats.topCreators}
+            workspaceName={workspaceName}
+            year={stats.year}
+            personalStats={personalStats}
+          />
+        )
       case "vibe":
         return (
           <VibeSlide
@@ -435,6 +448,20 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
 
   // Use allYearEmojis for background, fall back to finaleEmojis (broadest selection)
   const backgroundEmojis = allYearEmojis.length > 0 ? allYearEmojis : finaleEmojis
+
+  // Show preloader while assets are loading
+  if (isPreloading) {
+    return (
+      <WrappedPreloader
+        stats={stats}
+        personalStats={personalStats}
+        allYearEmojis={allYearEmojis}
+        workspaceName={workspaceName}
+        year={stats.year}
+        onComplete={() => setIsPreloading(false)}
+      />
+    )
+  }
 
   return (
     <div

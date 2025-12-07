@@ -32,8 +32,8 @@ export function FloatingEmojisBackground({
     const [mounted, setMounted] = useState(false)
     const [hiddenEmojis, setHiddenEmojis] = useState<Set<string>>(new Set())
 
-    // Adjust count for mobile to maintain performance
-    const displayCount = isMobile ? Math.min(count, 12) : count
+    // Adjust count for mobile to maintain performance (reduced to 6 for better FPS)
+    const displayCount = isMobile ? Math.min(count, 6) : count
 
     useEffect(() => {
         setMounted(true)

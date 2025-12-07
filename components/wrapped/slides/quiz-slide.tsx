@@ -12,7 +12,7 @@ import { EmojiHero } from "../emoji-hero"
 import { Confetti, ConfettiRef } from "@/components/ui/confetti"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
-import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
+import { useShouldReduceAnimations, getStaggerDelay, DRAMATIC_PRESETS } from "@/hooks/use-animation-tier"
 
 interface QuizQuestion {
   question: string
@@ -482,22 +482,32 @@ function AnswerOption({
     return "wrapped-glass opacity-50"
   }
 
+  // Alternating animation direction for dramatic cascade effect
+  const isFromLeft = index % 2 === 0
+  const initialX = isFromLeft ? -50 : 50
+
   return (
     <motion.button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full p-4 sm:p-5 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
-      initial={captureMode ? false : { opacity: 0, x: -20 }}
+      className={`w-full min-h-[56px] p-4 sm:p-5 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
+      initial={captureMode ? false : { opacity: 0, x: initialX, scale: 0.95 }}
       animate={
         showResult && isSelected && !effectiveIsCorrect
-          ? { opacity: 1, x: [0, -5, 5, -5, 5, 0] }
-          : { opacity: 1, x: 0 }
+          ? { opacity: 1, x: [0, -8, 8, -8, 8, 0], scale: 1 }
+          : showResult && isSelected && effectiveIsCorrect
+            ? { opacity: 1, x: 0, scale: [1, 1.03, 1] }
+            : { opacity: 1, x: 0, scale: 1 }
       }
       transition={{
-        delay: captureMode ? 0 : 0.3 + index * 0.1,
-        x: { duration: 0.4 },
+        delay: captureMode ? 0 : getStaggerDelay(index, 0.3, 0.12),
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+        x: { duration: 0.5 },
+        scale: { duration: 0.3 },
       }}
-      whileHover={!showResult ? { scale: 1.02 } : {}}
+      whileHover={!showResult ? { scale: 1.02, x: isFromLeft ? 5 : -5 } : {}}
       whileTap={!showResult ? { scale: 0.98 } : {}}
     >
       <div className="flex items-center justify-between gap-3 sm:gap-4">
@@ -700,14 +710,27 @@ export function QuizSlide({
               </motion.div>
             )}
 
-            {/* Question */}
+            {/* Question - with suspense blur reveal effect */}
             <motion.div
-              initial={captureMode ? false : { opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6 max-w-2xl"
+              initial={captureMode ? false : {
+                opacity: 0,
+                y: 20,
+                filter: shouldAnimate ? "blur(8px)" : "blur(0px)"
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                filter: "blur(0px)"
+              }}
+              transition={{
+                delay: 0.2,
+                duration: 0.8,
+                ease: [0.22, 1, 0.36, 1],
+                filter: { duration: 1 }
+              }}
+              className="mb-6 max-w-2xl px-2"
             >
-              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight">{question.question}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-snug line-clamp-4">{question.question}</p>
             </motion.div>
 
             {/* Answer options - WIDER */}
@@ -727,15 +750,32 @@ export function QuizSlide({
               ))}
             </div>
 
-            {/* Result message */}
+            {/* Result message - dramatic reveal with glow */}
             {showResult && (
               <motion.div
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, delay: 0.3 }}
+                initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  y: 0,
+                  boxShadow: isCorrect || question.isPersonalityQuestion
+                    ? [
+                        "0 0 0 rgba(168, 85, 247, 0)",
+                        "0 0 30px rgba(168, 85, 247, 0.5)",
+                        "0 0 15px rgba(168, 85, 247, 0.3)"
+                      ]
+                    : "0 0 0 rgba(239, 68, 68, 0)"
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 15,
+                  delay: 0.2,
+                  boxShadow: { duration: 0.8, ease: "easeOut" }
+                }}
                 className={`mt-6 px-6 py-3 rounded-full ${question.isPersonalityQuestion
                   ? "bg-[var(--wrapped-accent-purple)]/20 border border-[var(--wrapped-accent-purple)]/40"
                   : isCorrect

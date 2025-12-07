@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { WrappedFunStats, WrappedOverviewStats, WrappedGrowthStats } from "@/lib/services/wrapped-service"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
@@ -128,13 +128,18 @@ export function StatsSlide({
 
   // Hydration tracking for WKWebView compatibility
   const [hydrated, setHydrated] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   useEffect(() => {
     setHydrated(true)
   }, [])
   const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
-  // Get sample emojis for showcase
-  const showcaseEmojis = customEmojis.slice(0, 8)
+  const handleImageError = (key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }
+
+  // Get sample emojis for showcase (filter to valid URLs)
+  const showcaseEmojis = customEmojis.slice(0, 8).filter(emoji => hasValidUrl(emoji))
 
   // Build fun facts list with playful copy
   const funFacts: FunFactProps[] = []
@@ -329,17 +334,22 @@ export function StatsSlide({
                 transition={{ delay: captureMode ? 0 : 3.5 }}
                 className="flex flex-wrap justify-center gap-2 max-w-[280px] sm:max-w-[360px] mb-6"
               >
-                {showcaseEmojis.map((emoji, i) => (
-                  <motion.img
-                    key={emoji.url}
-                    src={proxyImageUrl(emoji.url)}
-                    alt={emoji.name}
-                    className="w-10 h-10 object-contain rounded-lg shadow-md"
-                    initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: captureMode ? 0 : 3.6 + i * 0.05 }}
-                  />
-                ))}
+                {showcaseEmojis.map((emoji, i) => {
+                  const key = `stats-${emoji.name}`
+                  const hasFailed = failedImages.has(key)
+                  return (
+                    <motion.img
+                      key={key}
+                      src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
+                      alt={emoji.name}
+                      className="w-10 h-10 object-contain rounded-lg shadow-md"
+                      initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: captureMode ? 0 : 3.6 + i * 0.05 }}
+                      onError={() => handleImageError(key)}
+                    />
+                  )
+                })}
               </motion.div>
             )}
           </div>

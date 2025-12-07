@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { BusiestPeriod, DayOfWeekStat, MonthlyCount } from "@/lib/services/wrapped-service"
-import { proxyImageUrl } from "@/lib/utils/image-proxy"
+import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
 import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
@@ -36,10 +36,15 @@ export function PeakSlide({
 
   // Hydration tracking for WKWebView compatibility
   const [hydrated, setHydrated] = useState(false)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   useEffect(() => {
     setHydrated(true)
   }, [])
   const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
+  const handleImageError = (key: string) => {
+    setFailedImages((prev) => new Set(prev).add(key))
+  }
 
   // Find peak month
   const peakMonth = monthlyBreakdown.reduce(
@@ -137,17 +142,22 @@ export function PeakSlide({
                 {/* Emoji grid from that day - Larger and more prominent */}
                 {busiestDay.emojis.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 justify-items-center bg-black/20 p-4 rounded-2xl">
-                    {busiestDay.emojis.slice(0, 12).map((emoji, i) => (
-                      <motion.img
-                        key={emoji.name}
-                        src={proxyImageUrl(emoji.url)}
-                        alt={emoji.name}
-                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-lg object-contain bg-white/5 p-1"
-                        initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
-                      />
-                    ))}
+                    {busiestDay.emojis.slice(0, 12).filter(emoji => hasValidUrl(emoji)).map((emoji, i) => {
+                      const key = `peak-${emoji.name}`
+                      const hasFailed = failedImages.has(key)
+                      return (
+                        <motion.img
+                          key={key}
+                          src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
+                          alt={emoji.name}
+                          className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl shadow-lg object-contain bg-white/5 p-1"
+                          initial={captureMode || shouldReduceAnimations ? false : { scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: captureMode ? 0 : 0.8 + i * 0.05 }}
+                          onError={() => handleImageError(key)}
+                        />
+                      )
+                    })}
                   </div>
                 )}
               </div>

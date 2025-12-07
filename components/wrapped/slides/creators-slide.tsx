@@ -8,10 +8,11 @@ import { SlideShareButton } from "../slide-share-button"
 import { SlideBranding } from "../slide-branding"
 import { SlideHeader } from "../slide-header"
 import { EmojiHero } from "../emoji-hero"
+import { EmojiSupernova } from "../emoji-supernova"
 import { NumberTicker } from "@/components/ui/number-ticker"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
-import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
+import { useShouldReduceAnimations, DRAMATIC_PRESETS } from "@/hooks/use-animation-tier"
 import { Crown, Medal, Award } from "lucide-react"
 
 interface CreatorsSlideProps {
@@ -74,12 +75,22 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
   // Filter to emojis with valid URLs
   const validHaloEmojis = creator.topEmojis.slice(1, isWinner ? 5 : 3).filter(emoji => hasValidUrl(emoji))
 
+  // More dramatic rise-up animation - podiums emerge from below
+  // Winner has longer travel distance and more bounce
+  const riseDistance = isWinner ? 100 : rank === 2 ? 70 : 50
+
   return (
     <motion.div
       className={`flex flex-col items-center ${isWinner ? "order-2" : rank === 2 ? "order-1" : "order-3"}`}
-      initial={shouldAnimate ? { opacity: 0, y: 30 } : { opacity: 1, y: 0 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={shouldAnimate ? { delay, type: "spring", stiffness: 200, damping: 20 } : { duration: 0 }}
+      initial={shouldAnimate ? { opacity: 0, y: riseDistance, scale: 0.9 } : { opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={shouldAnimate ? {
+        delay,
+        type: "spring",
+        stiffness: isWinner ? 150 : 200,
+        damping: isWinner ? 12 : 20,
+        mass: isWinner ? 1.2 : 1
+      } : { duration: 0 }}
     >
       {/* Emoji halo - creator's top emojis */}
       <div className="flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
@@ -101,20 +112,30 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
         })}
       </div>
 
-      {/* Top emoji as avatar */}
+      {/* Top emoji as avatar - Supernova effect for winner */}
       {creator.topEmojis[0] ? (
         <div className={`relative ${isWinner ? "mb-3 xs:mb-4" : "mb-2 xs:mb-3"}`}>
-          <EmojiHero
-            emoji={creator.topEmojis[0]}
-            size={isWinner ? "lg" : "md"}
-            glow={isWinner ? "orange" : "none"}
-            animate={!captureMode}
-            captureMode={captureMode}
-            delay={delay}
-          />
+          {isWinner && !captureMode && !shouldReduceAnimations ? (
+            <EmojiSupernova
+              emoji={creator.topEmojis[0]}
+              trigger={true}
+              size="lg"
+              glowColor="var(--wrapped-accent-orange)"
+              particleCount={6}
+            />
+          ) : (
+            <EmojiHero
+              emoji={creator.topEmojis[0]}
+              size={isWinner ? "lg" : "md"}
+              glow={isWinner ? "orange" : "none"}
+              animate={!captureMode}
+              captureMode={captureMode}
+              delay={delay}
+            />
+          )}
           {/* Rank badge - touch-friendly sizing */}
           <div
-            className={`absolute -top-1 -right-1 xs:-top-2 xs:-right-2 sm:-top-3 sm:-right-3 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border}`}
+            className={`absolute -top-1 -right-1 xs:-top-2 xs:-right-2 sm:-top-3 sm:-right-3 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border} z-20`}
           >
             {style.icon}
           </div>
@@ -145,8 +166,18 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
       <span className="wrapped-label text-xs xs:text-sm">emojis</span>
 
       {/* Podium base - percentage width on mobile, fixed on larger screens */}
-      <div
+      {/* Winner's podium has spotlight glow animation */}
+      <motion.div
         className={`mt-2 xs:mt-3 sm:mt-4 w-[28%] xs:w-24 sm:w-36 md:w-44 lg:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
+        initial={shouldAnimate && isWinner ? { boxShadow: "0 0 0 rgba(234, 179, 8, 0)" } : false}
+        animate={shouldAnimate && isWinner ? {
+          boxShadow: [
+            "0 0 0 rgba(234, 179, 8, 0)",
+            "0 0 60px rgba(234, 179, 8, 0.5)",
+            "0 0 40px rgba(234, 179, 8, 0.3)"
+          ]
+        } : {}}
+        transition={{ delay: delay + 0.8, duration: 1.2, ease: "easeOut" }}
       />
     </motion.div>
   )
@@ -211,7 +242,7 @@ export function CreatorsSlide({
                       The Emoji Architects
                     </GradientText>
                   </h2>
-                  <p className="wrapped-body text-lg sm:text-xl md:text-2xl">Who built {workspaceName}'s emoji empire?</p>
+                  <p className="wrapped-body text-lg sm:text-xl md:text-2xl">These people decided what feelings look like here.</p>
                 </BlurFade>
               )}
             </div>

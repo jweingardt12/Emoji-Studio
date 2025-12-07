@@ -105,11 +105,9 @@ export function FinaleSlide({
         />
       )}
 
-      {/* Scrollable content container for small screens */}
-      {/* We use a single scrollable container that includes EVERYTHING except the absolute/fixed elements if needed. 
-          Actually, let's make the main container scrollable like other slides to be safe. */}
+      {/* Content container - scrollable only on mobile if needed */}
       <div
-        className={`relative z-10 w-full max-w-4xl flex flex-col items-center ${captureMode ? "h-[600px] justify-center" : "h-full max-h-full overflow-y-auto scrollbar-hide py-4"}`}
+        className={`relative z-10 w-full max-w-4xl flex flex-col items-center ${captureMode ? "h-[600px] justify-center" : "h-full max-h-full md:overflow-hidden overflow-y-auto scrollbar-hide py-4"}`}
       >
         {/* Consistent header within scroll flow */}
         <div className="flex-shrink-0 mb-4">
@@ -138,12 +136,12 @@ export function FinaleSlide({
             </SparklesText>
           )}
           {captureMode ? (
-            <p className="wrapped-body truncate max-w-[280px] sm:max-w-sm mx-auto">
-              {workspaceName} • {stats.year} was incredible
+            <p className="wrapped-body max-w-md mx-auto px-4">
+              You made it. The emojis are proud. Probably.
             </p>
           ) : (
-            <BlurFade delay={0.5} shouldAnimate={shouldAnimate} className="wrapped-body truncate max-w-[280px] sm:max-w-sm mx-auto">
-              {workspaceName} • {stats.year} was{" "}
+            <BlurFade delay={0.5} shouldAnimate={shouldAnimate} className="wrapped-body max-w-md mx-auto px-4">
+              You made it. The emojis are{" "}
               <GradientText
                 colors={[
                   "var(--wrapped-accent-orange)",
@@ -153,23 +151,26 @@ export function FinaleSlide({
                 ]}
                 animationSpeed={4}
               >
-                incredible
+                proud
               </GradientText>
+              . Probably.
             </BlurFade>
           )}
         </motion.div>
 
         {/* Quick stats summary */}
-        <div className="w-full flex-1 flex flex-col items-center justify-center min-h-[300px]">
+        <div className="w-full flex-1 flex flex-col items-center justify-center min-h-0">
 
 
-          {/* Quick stats summary */}
+          {/* Quick stats summary - Premium Glass */}
           <motion.div
             initial={captureMode ? false : { y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: captureMode ? 0 : 1 }}
-            className="relative z-10 mt-6 sm:mt-10 rounded-3xl wrapped-glass border border-white/20 p-6 sm:p-8 w-full max-w-2xl"
+            className="relative z-10 mt-4 sm:mt-6 rounded-3xl wrapped-glass-premium border border-white/20 p-5 sm:p-6 w-full max-w-2xl overflow-hidden"
           >
+            {/* Subtle gradient glow behind stats */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--wrapped-accent-purple)]/10 via-transparent to-[var(--wrapped-accent-cyan)]/10 pointer-events-none" />
             <div className="flex flex-col sm:flex-row items-center justify-around gap-6 sm:gap-8">
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
@@ -258,7 +259,7 @@ export function FinaleSlide({
             initial={captureMode ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: captureMode ? 0 : 2 }}
-            className="relative z-10 mt-8 mb-8 space-y-3"
+            className="relative z-10 mt-6 mb-4 space-y-2"
             onClick={(e) => e.stopPropagation()}
           >
             <Button

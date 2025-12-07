@@ -12,7 +12,7 @@ import { NumberTicker } from "@/components/ui/number-ticker"
 import { Confetti, ConfettiRef } from "@/components/ui/confetti"
 import { GradientText } from "@/components/ui/gradient-text"
 import { BlurFade } from "@/components/ui/blur-fade"
-import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
+import { useShouldReduceAnimations, DRAMATIC_PRESETS } from "@/hooks/use-animation-tier"
 import { Users } from "lucide-react"
 
 interface CountSlideProps {
@@ -71,13 +71,13 @@ export function CountSlide({
     }
   }, [captureMode, shouldReduceAnimations])
 
-  // Playful copy based on emoji count
+  // Playful absurdist copy based on emoji count
   const getPlayfulCopy = () => {
-    if (totalEmojis >= 1000) return "Absolutely legendary"
-    if (totalEmojis >= 500) return "That's a whole lot of expression"
-    if (totalEmojis >= 200) return "Y'all were busy creating"
-    if (totalEmojis >= 100) return "Solid emoji game"
-    return "Quality over quantity"
+    if (totalEmojis >= 1000) return "Somehow that's a personality type now."
+    if (totalEmojis >= 500) return "Your keyboard has been through things."
+    if (totalEmojis >= 200) return "That's approximately one feeling per day. Healthy."
+    if (totalEmojis >= 100) return "Your emoji fingerprint is legally distinctive."
+    return "Curated chaos. We respect it."
   }
 
   return (
@@ -114,20 +114,46 @@ export function CountSlide({
           </BlurFade>
         )}
 
-        {/* Hero number - Responsive sizing */}
+        {/* Hero number - Responsive sizing with overflow protection */}
+        {/* Uses DRAMATIC_PRESETS.suspense for blur-to-focus reveal effect */}
         <motion.div
-          initial={captureMode ? false : { scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          className="relative my-4 sm:my-8"
+          initial={captureMode ? false : {
+            scale: 0.8,
+            opacity: 0,
+            filter: shouldAnimate ? "blur(12px)" : "blur(0px)"
+          }}
+          animate={{
+            scale: 1,
+            opacity: 1,
+            filter: "blur(0px)"
+          }}
+          transition={{
+            duration: 1.2,
+            ease: [0.22, 1, 0.36, 1],
+            filter: { duration: 1.5 }
+          }}
+          className="relative my-4 sm:my-8 w-full max-w-full overflow-visible px-4"
         >
+          {/* Dark backdrop for readability against floating emojis */}
+          <div
+            className="absolute inset-0 -inset-x-16 -inset-y-4 rounded-3xl"
+            style={{
+              background: "radial-gradient(ellipse 80% 120% at center, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)",
+            }}
+          />
           {captureMode ? (
-            <span className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem]">{totalEmojis.toLocaleString()}</span>
+            <span
+              className="wrapped-hero-number text-[3.5rem] sm:text-[5rem] md:text-[7rem] lg:text-[9rem] block text-center relative z-10"
+              style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6)" }}
+            >
+              {totalEmojis.toLocaleString()}
+            </span>
           ) : (
             <NumberTicker
               value={totalEmojis}
               delay={0.5}
-              className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] leading-none tracking-tighter"
+              className="wrapped-hero-number text-[3.5rem] sm:text-[5rem] md:text-[7rem] lg:text-[9rem] leading-none tracking-tighter block text-center relative z-10"
+              style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8), 0 4px 24px rgba(0,0,0,0.6)" }}
             />
           )}
         </motion.div>

@@ -75,10 +75,22 @@ export function IntroSlide({
         )}
 
         {/* Main hero section - Year with orbital emojis */}
-        <div className="relative flex-1 flex items-center justify-center w-full min-h-[300px] sm:min-h-[400px]">
-          {/* Orbital emoji ring */}
+        <div className="relative flex-1 flex items-center justify-center w-full min-h-[200px] sm:min-h-[280px] md:min-h-0">
+          {/* Aurora gradient glow behind hero - creates depth and premium feel */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50 sm:opacity-60 blur-3xl"
+            style={{
+              background: `
+                radial-gradient(ellipse 80% 60% at 50% 40%, var(--wrapped-accent-purple) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 30% 60%, var(--wrapped-accent-cyan) 0%, transparent 40%),
+                radial-gradient(ellipse 50% 50% at 70% 50%, var(--wrapped-accent-orange) 0%, transparent 45%)
+              `,
+            }}
+          />
+
+          {/* Orbital emoji ring - constrained to prevent overflow */}
           {orbitEmojis.length > 0 && (
-            <div className="absolute inset-0 flex items-center justify-center scale-110 sm:scale-125 md:scale-150">
+            <div className="absolute inset-0 flex items-center justify-center scale-100 sm:scale-110 md:scale-125 lg:scale-150 overflow-hidden">
               <EmojiOrbit
                 emojis={orbitEmojis}
                 size="lg"
@@ -97,13 +109,13 @@ export function IntroSlide({
                     } : { duration: 0 }}
                     className="flex flex-col items-center"
                   >
-                    {/* Year number */}
+                    {/* Year number - responsive sizing for mobile */}
                     {captureMode ? (
-                      <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
+                      <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none">
                         {year}
                       </h1>
                     ) : (
-                      <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] lg:text-[11rem] leading-none text-refraction">
+                      <h1 className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] leading-none text-refraction">
                         {year}
                       </h1>
                     )}
@@ -126,11 +138,11 @@ export function IntroSlide({
               } : { duration: 0 }}
             >
               {captureMode ? (
-                <h1 className="wrapped-hero-number text-[6rem] sm:text-[8rem] md:text-[10rem] leading-none">
+                <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] leading-none">
                   {year}
                 </h1>
               ) : (
-                <h1 className="wrapped-hero-number text-[5rem] sm:text-[7rem] md:text-[9rem] lg:text-[11rem] leading-none text-refraction">
+                <h1 className="wrapped-hero-number text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] leading-none text-refraction">
                   {year}
                 </h1>
               )}
@@ -158,7 +170,7 @@ export function IntroSlide({
               Emoji Wrapped
             </GradientText>
           </h2>
-          <p className="wrapped-body mt-4 text-xl sm:text-2xl">Your emoji journey awaits</p>
+          <p className="wrapped-body mt-4 text-xl sm:text-2xl">We counted your emojis. It's a lot. It's weird. Let's go.</p>
         </motion.div>
 
         {/* Featured emoji hero */}

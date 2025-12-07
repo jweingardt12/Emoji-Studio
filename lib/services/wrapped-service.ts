@@ -185,6 +185,113 @@ function parseEmojiNameWords(name: string): string[] {
 }
 
 // ============================================================
+// SMART EMOJI SELECTION ALGORITHM
+// ============================================================
+
+// Generic/low-quality name patterns to penalize
+const GENERIC_NAME_PATTERNS = ['test', 'emoji', 'new', 'temp', 'lol', 'asdf', 'test1', 'test2', 'untitled', 'copy']
+
+/**
+ * Calculate a quality score for an emoji based on multiple factors:
+ * - Name creativity (longer, more thoughtful names score higher)
+ * - GIF preference (animated emojis are more engaging)
+ * - Recency bonus (slight preference for newer emojis)
+ * - Penalize generic/test names
+ */
+function scoreEmoji(emoji: Emoji, referenceDate?: number): number {
+  let score = 0
+  const name = emoji.name.toLowerCase()
+
+  // 1. Name Creativity (longer names = more thoughtful)
+  const nameLength = emoji.name.length
+  if (nameLength >= 15) score += 30        // Very creative (e.g., "party-parrot-dancing")
+  else if (nameLength >= 10) score += 20   // Good effort (e.g., "happy-face")
+  else if (nameLength >= 6) score += 10    // Standard (e.g., "smile")
+  // Short names (< 6 chars) get no bonus
+
+  // 2. GIF Preference (animated = more engaging visually)
+  if (emoji.url?.toLowerCase().includes('.gif')) {
+    score += 25
+  }
+
+  // 3. Recency Bonus (newer emojis slightly preferred)
+  if (emoji.created && referenceDate) {
+    const ageInDays = Math.floor((referenceDate - emoji.created) / (24 * 60 * 60))
+    if (ageInDays < 30) score += 15          // Last month
+    else if (ageInDays < 90) score += 10     // Last quarter
+    else if (ageInDays < 180) score += 5     // Last 6 months
+    // Older emojis get no recency bonus
+  }
+
+  // 4. Name Uniqueness - penalize generic/test names
+  if (GENERIC_NAME_PATTERNS.some(pattern => name.includes(pattern))) {
+    score -= 20
+  }
+
+  // 5. Name has meaningful words (contains underscores/hyphens = compound name)
+  if (name.includes('-') || name.includes('_')) {
+    score += 10  // Compound names like "party-parrot" show more thought
+  }
+
+  // 6. Avoid purely numeric names
+  if (/^\d+$/.test(name) || /^[a-z]\d+$/.test(name)) {
+    score -= 15  // Names like "123" or "a1" are low quality
+  }
+
+  return score
+}
+
+/**
+ * Select top emojis using smart scoring with diversity filtering
+ * Ensures variety by avoiding emojis with similar name prefixes
+ */
+function selectTopEmojis(emojis: Emoji[], count: number = 5, referenceDate?: number): Emoji[] {
+  if (emojis.length === 0) return []
+  if (emojis.length <= count) return emojis
+
+  // Use current timestamp if no reference date provided
+  const refDate = referenceDate || Math.floor(Date.now() / 1000)
+
+  // Score all emojis
+  const scored = emojis.map(emoji => ({
+    emoji,
+    score: scoreEmoji(emoji, refDate)
+  }))
+
+  // Sort by score descending
+  scored.sort((a, b) => b.score - a.score)
+
+  // Select top N ensuring diversity (no visual duplicates)
+  const selected: Emoji[] = []
+  const usedPrefixes = new Set<string>()
+
+  for (const { emoji } of scored) {
+    if (selected.length >= count) break
+
+    // Check for diversity: avoid emojis starting with same 3-char prefix
+    // This prevents selecting "parrot1", "parrot2", "parrot3" all at once
+    const prefix = emoji.name.slice(0, 3).toLowerCase()
+
+    if (!usedPrefixes.has(prefix)) {
+      selected.push(emoji)
+      usedPrefixes.add(prefix)
+    }
+  }
+
+  // If we couldn't fill the count due to diversity rules, add more from remaining
+  if (selected.length < count) {
+    for (const { emoji } of scored) {
+      if (selected.length >= count) break
+      if (!selected.includes(emoji)) {
+        selected.push(emoji)
+      }
+    }
+  }
+
+  return selected
+}
+
+// ============================================================
 // MAIN CALCULATION FUNCTIONS
 // ============================================================
 
@@ -335,11 +442,14 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   })
 
   // Calculate top creators
+  const referenceDate = Math.floor(Date.now() / 1000)
   const topCreators: TopCreator[] = Object.entries(creatorData)
     .map(([userId, data]) => {
       const firstEmoji = data.emojis[0]
       // Filter to emojis with valid URLs for display
       const validEmojis = data.emojis.filter(hasValidUrl)
+      // Use smart emoji selection instead of just first 5
+      const selectedEmojis = selectTopEmojis(validEmojis, 5, referenceDate)
       return {
         userId,
         displayName: firstEmoji?.user_display_name || userId.slice(0, 8),
@@ -348,7 +458,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
         imageCount: data.images,
         rank: 0,
         percentageOfTotal: Math.round((data.count / sortedEmojis.length) * 100),
-        topEmojis: validEmojis.slice(0, 5),
+        topEmojis: selectedEmojis,
       }
     })
     .sort((a, b) => b.emojiCount - a.emojiCount)
@@ -744,8 +854,10 @@ export function calculatePersonalStats(
   const workspaceAverage = yearEmojis.length / totalCreators
   const comparedToAverage = Math.round((sortedUserEmojis.length / workspaceAverage) * 100)
 
-  // Filter top emojis to only those with valid URLs for display
-  const validTopEmojis = sortedUserEmojis.filter(hasValidUrl).slice(-5).reverse()
+  // Smart emoji selection: use scoring algorithm for best emojis, not just recency
+  const validUserEmojis = sortedUserEmojis.filter(hasValidUrl)
+  const personalReferenceDate = Math.floor(Date.now() / 1000)
+  const validTopEmojis = selectTopEmojis(validUserEmojis, 5, personalReferenceDate)
 
   return {
     userId,
