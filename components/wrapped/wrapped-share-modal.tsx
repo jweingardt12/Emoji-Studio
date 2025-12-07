@@ -15,13 +15,6 @@ import {
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Loader2, Copy, Download, Share2, Check, Image, Film, Video, Square, Smartphone, Monitor, X, Play, Pause } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -44,21 +37,20 @@ import {
   generateImage,
   copyImageToClipboard,
   downloadImage,
-  shareImage,
-  canShare,
+  shareImageWithResult,
   generateGif,
   downloadGif,
-  shareGif,
+  shareGifWithResult,
   generateVideo,
   downloadVideo,
-  shareVideo,
+  shareVideoWithResult,
   captureElementAsCanvas,
   blobToDataUrl,
   shouldUseInlineFallback,
-  type ClipboardResult,
   type DownloadResult,
+  type ShareResult,
 } from "@/lib/utils/share-image"
-import { isIOS, isWebView, isRestrictedWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
+import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import { VideoProcessor } from "@/lib/utils/video-processor"
 import { cn } from "@/lib/utils"
 
@@ -152,7 +144,6 @@ export function WrappedShareModal({
   const [qualityPreset, setQualityPreset] = useState<QualityPreset>("standard")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [canShareFiles, setCanShareFiles] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
   const [generationStage, setGenerationStage] = useState<"idle" | "capturing" | "encoding" | "finalizing">("idle")
   const [animationProgress, setAnimationProgress] = useState(0)
@@ -164,11 +155,8 @@ export function WrappedShareModal({
   const abortControllerRef = useRef<AbortController | null>(null)
   const previewAnimationRef = useRef<number | null>(null)
 
-  // Check Web Share API support and if we need fallback
+  // Check if we need inline fallback (for restricted WebViews)
   useEffect(() => {
-    const canShareNow = canShare()
-    setCanShareFiles(canShareNow)
-    // Check if we need inline fallback (for restricted WebViews without Web Share)
     setNeedsFallback(shouldUseInlineFallback())
   }, [])
 
@@ -620,7 +608,7 @@ export function WrappedShareModal({
 
       const title = `${workspaceName} Emoji Wrapped ${stats.year}`
       const text = `Check out our emoji stats from ${stats.year}! Created with Emoji Studio`
-      let shared = false
+      let result: ShareResult
 
       const quality = QUALITY_PRESETS[qualityPreset]
 
@@ -644,7 +632,7 @@ export function WrappedShareModal({
         )
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        shared = await shareVideo(blob, title, text)
+        result = await shareVideoWithResult(blob, title, text)
       } else if (exportFormat === "gif") {
         const totalFrames = quality.gifFrames
         const frameDelay = Math.round(1000 / quality.gifFps)
@@ -666,21 +654,31 @@ export function WrappedShareModal({
         )
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        shared = await shareGif(blob, title, text)
+        result = await shareGifWithResult(blob, title, text)
       } else {
         const blob = await generateImage(element)
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        shared = await shareImage(blob, title, text)
+        result = await shareImageWithResult(blob, title, text)
       }
 
-      if (shared) {
+      if (result.success && !result.cancelled) {
+        // Show appropriate message based on the method used
+        if (result.method === "download") {
+          toast.success(result.message, { duration: 4000 })
+        } else {
+          toast.success(result.message)
+        }
+
         track("wrapped_share_shared", {
           year: stats.year,
           format: exportFormat,
           background: backgroundStyle,
           size: cardSize,
+          method: result.method,
         })
+      } else if (!result.success) {
+        toast.error(result.message, { duration: 4000 })
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -694,7 +692,7 @@ export function WrappedShareModal({
       setGenerationStage("idle")
       abortControllerRef.current = null
     }
-  }, [isGenerating, getFullCardElement, captureAnimatedFrame, workspaceName, stats.year, track, backgroundStyle, cardSize, exportFormat, generationStage])
+  }, [isGenerating, getFullCardElement, captureAnimatedFrame, workspaceName, stats.year, track, backgroundStyle, cardSize, exportFormat, generationStage, qualityPreset])
 
   // Handler for WebView fallback - generates image and shows it inline for long-press save
   const handleSaveForWebView = useCallback(async () => {
@@ -1010,13 +1008,6 @@ export function WrappedShareModal({
         </div>
       )}
 
-      {/* iOS hint about share being the best option */}
-      {(isIOS() || isWebView()) && canShareFiles && !needsFallback && (
-        <p className="text-xs text-muted-foreground text-center">
-          On this device, <strong>Share</strong> is the most reliable way to save images.
-        </p>
-      )}
-
       {/* WebView fallback hint */}
       {needsFallback && (
         <p className="text-xs text-muted-foreground text-center">
@@ -1024,12 +1015,12 @@ export function WrappedShareModal({
         </p>
       )}
 
-      {/* Action buttons - Share first on iOS for better UX */}
+      {/* Action buttons */}
       <div className="flex flex-col sm:flex-row gap-2">
         {/* WebView fallback: Primary "Save Image" button that generates inline image */}
-        {needsFallback && (
+        {needsFallback ? (
           <Button
-            className="flex-1 order-first sm:order-first"
+            className="flex-1"
             onClick={handleSaveForWebView}
             disabled={isGenerating}
           >
@@ -1040,87 +1031,62 @@ export function WrappedShareModal({
             )}
             Save Image
           </Button>
-        )}
+        ) : (
+          <>
+            {/* Copy button */}
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleCopy}
+              disabled={isGenerating}
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy
+                </>
+              )}
+            </Button>
 
-        {/* On iOS with Web Share available, show Share button first */}
-        {(isIOS() || isWebView()) && canShareFiles && !needsFallback && (
-          <Button
-            className="flex-1 order-first sm:order-first"
-            onClick={handleShare}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Share2 className="w-4 h-4 mr-2" />
-            )}
-            Share
-          </Button>
-        )}
+            {/* Download/Save button */}
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleDownload}
+              disabled={isGenerating}
+            >
+              {isGenerating && generationProgress > 0 ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {Math.round(generationProgress * 100)}%
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  {(isIOS() || isWebView()) ? "Save" : "Download"}
+                </>
+              )}
+            </Button>
 
-        {/* Copy button - only show if not in restricted WebView */}
-        {!needsFallback && (
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={handleCopy}
-            disabled={isGenerating}
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4 mr-2" />
-                Copied!
-              </>
-            ) : isGenerating ? (
-              <>
+            {/* Share button - always visible, with built-in fallbacks */}
+            <Button
+              className="flex-1"
+              onClick={handleShare}
+              disabled={isGenerating}
+            >
+              {isGenerating ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4 mr-2" />
-                Copy
-              </>
-            )}
-          </Button>
-        )}
-
-        {/* Download/Save button - only show if not in restricted WebView */}
-        {!needsFallback && (
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={handleDownload}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {Math.round(generationProgress * 100)}%
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                {(isIOS() || isWebView()) ? "Save" : "Download"}
-              </>
-            )}
-          </Button>
-        )}
-
-        {/* On non-iOS with Web Share available, show Share button in normal position */}
-        {!(isIOS() || isWebView()) && canShareFiles && (
-          <Button
-            className="flex-1"
-            onClick={handleShare}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Share2 className="w-4 h-4 mr-2" />
-            )}
-            Share
-          </Button>
+              ) : (
+                <Share2 className="w-4 h-4 mr-2" />
+              )}
+              Share
+            </Button>
+          </>
         )}
       </div>
         </>
