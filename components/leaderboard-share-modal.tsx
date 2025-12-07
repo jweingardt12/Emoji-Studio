@@ -43,7 +43,10 @@ import {
   canShare,
   downloadGif,
   shareGif,
+  type ClipboardResult,
+  type DownloadResult,
 } from "@/lib/utils/share-image"
+import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import GIF from "gif.js"
 import { cn } from "@/lib/utils"
 
@@ -190,6 +193,14 @@ export function LeaderboardShareModal({
   }, [])
 
   const handleCopy = useCallback(async () => {
+    // Check if clipboard is supported on this device before even trying
+    if (!supportsClipboardWriteImage() && (isIOS() || isWebView())) {
+      toast.error("Copying images isn't supported on this device. Use Share instead.", {
+        duration: 4000,
+      })
+      return
+    }
+
     const element = getCardElement()
     if (!element) return
 
@@ -203,16 +214,32 @@ export function LeaderboardShareModal({
         // Generate GIF and download (clipboard doesn't support GIF)
         const gifBlob = await generateStaticGif(element)
         const baseFilename = `leaderboard-${workspaceName.toLowerCase().replace(/\s+/g, "-")}-${dateRange}`
-        downloadGif(gifBlob, `${baseFilename}.gif`)
+        const downloadResult = await downloadGif(gifBlob, `${baseFilename}.gif`)
 
         // Also copy PNG to clipboard
         const pngBlob = await generateImage(element)
-        await copyImageToClipboard(pngBlob)
-        toast.success("GIF downloaded & image copied!")
+        const copyResult = await copyImageToClipboard(pngBlob)
+
+        if (downloadResult.success && copyResult.success) {
+          toast.success("GIF downloaded & image copied!")
+        } else if (downloadResult.success) {
+          toast.success(downloadResult.message)
+        } else {
+          toast.error(downloadResult.message, { duration: 4000 })
+        }
       } else {
         const blob = await generateImage(element)
-        await copyImageToClipboard(blob)
-        toast.success("Copied to clipboard!")
+        const result = await copyImageToClipboard(blob)
+
+        if (result.success) {
+          toast.success(result.message)
+        } else if (result.fallbackToShare) {
+          toast.error(result.message, { duration: 4000 })
+          return
+        } else {
+          toast.error(result.message)
+          return
+        }
       }
 
       setCopied(true)
@@ -225,8 +252,12 @@ export function LeaderboardShareModal({
         show_emojis: showEmojis,
       })
     } catch (error) {
-      toast.error("Failed to copy")
-      console.error(error)
+      console.error("Failed to copy:", error)
+      if (isIOS() || isWebView()) {
+        toast.error("Copying failed on this device. Use Share instead.", { duration: 4000 })
+      } else {
+        toast.error("Failed to copy")
+      }
     } finally {
       restoreImages?.()
       setIsGenerating(false)
@@ -245,27 +276,42 @@ export function LeaderboardShareModal({
       restoreImages = await convertImagesToDataUrls(element)
 
       const baseFilename = `leaderboard-${workspaceName.toLowerCase().replace(/\s+/g, "-")}-${dateRange}`
+      let downloadResult: DownloadResult
 
       if (exportFormat === "gif") {
         const gifBlob = await generateStaticGif(element)
-        downloadGif(gifBlob, `${baseFilename}.gif`)
-        toast.success("GIF downloaded!")
+        downloadResult = await downloadGif(gifBlob, `${baseFilename}.gif`)
       } else {
         const blob = await generateImage(element)
-        downloadImage(blob, `${baseFilename}.png`)
-        toast.success("Image downloaded!")
+        downloadResult = await downloadImage(blob, `${baseFilename}.png`)
       }
 
-      track("leaderboard_share_downloaded", {
-        user_count: userCount,
-        background_style: backgroundStyle,
-        date_range: dateRange,
-        format: exportFormat,
-        show_emojis: showEmojis,
-      })
+      if (downloadResult.success) {
+        if (downloadResult.method === "open") {
+          // Special message for iOS fallback where image opens in new tab
+          toast.success(downloadResult.message, { duration: 5000 })
+        } else {
+          toast.success(downloadResult.message)
+        }
+
+        track("leaderboard_share_downloaded", {
+          user_count: userCount,
+          background_style: backgroundStyle,
+          date_range: dateRange,
+          format: exportFormat,
+          show_emojis: showEmojis,
+          method: downloadResult.method,
+        })
+      } else {
+        toast.error(downloadResult.message, { duration: 4000 })
+      }
     } catch (error) {
-      toast.error(`Failed to download ${exportFormat === "gif" ? "GIF" : "image"}`)
-      console.error(error)
+      console.error("Failed to download:", error)
+      if (isIOS() || isWebView()) {
+        toast.error("Download failed. Try using Share instead.", { duration: 4000 })
+      } else {
+        toast.error(`Failed to download ${exportFormat === "gif" ? "GIF" : "image"}`)
+      }
     } finally {
       restoreImages?.()
       setIsGenerating(false)
@@ -331,15 +377,24 @@ export function LeaderboardShareModal({
 
       // Generate PNG image (LinkedIn doesn't support GIF in clipboard paste)
       const blob = await generateImage(element)
+      const baseFilename = `leaderboard-${workspaceName.toLowerCase().replace(/\s+/g, "-")}-${dateRange}`
 
-      // Copy image to clipboard so user can paste directly into LinkedIn
-      try {
-        await copyImageToClipboard(blob)
-      } catch (clipboardError) {
+      // Try to copy image to clipboard so user can paste directly into LinkedIn
+      const copyResult = await copyImageToClipboard(blob)
+      let successMessage = "Image copied! Paste (⌘V) in your LinkedIn post."
+
+      if (!copyResult.success) {
         // Fallback: download the image if clipboard fails
-        const baseFilename = `leaderboard-${workspaceName.toLowerCase().replace(/\s+/g, "-")}-${dateRange}`
-        downloadImage(blob, `${baseFilename}.png`)
-        console.warn("Clipboard copy failed, downloaded instead:", clipboardError)
+        const downloadResult = await downloadImage(blob, `${baseFilename}.png`)
+        console.warn("Clipboard copy failed, downloaded instead")
+
+        if (downloadResult.success) {
+          if (isIOS() || isWebView()) {
+            successMessage = "Image saved! Upload it to your LinkedIn post."
+          } else {
+            successMessage = "Image downloaded! Upload it to your LinkedIn post."
+          }
+        }
       }
 
       // Open LinkedIn share dialog with promotional copy
@@ -349,7 +404,7 @@ export function LeaderboardShareModal({
       const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${linkedInText}`
       window.open(linkedInUrl, "_blank", "noopener,noreferrer")
 
-      toast.success("Image copied! Paste (⌘V) in your LinkedIn post.", { duration: 5000 })
+      toast.success(successMessage, { duration: 5000 })
       track("leaderboard_share_linkedin", {
         user_count: userCount,
         background_style: backgroundStyle,

@@ -53,7 +53,10 @@ import {
   downloadVideo,
   shareVideo,
   captureElementAsCanvas,
+  type ClipboardResult,
+  type DownloadResult,
 } from "@/lib/utils/share-image"
+import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import { VideoProcessor } from "@/lib/utils/video-processor"
 import { cn } from "@/lib/utils"
 
@@ -402,6 +405,16 @@ export function WrappedShareModal({
 
   const handleCopy = useCallback(async () => {
     if (isGenerating) return
+
+    // Check if clipboard is supported on this device before even trying
+    if (!supportsClipboardWriteImage() && (isIOS() || isWebView())) {
+      // On iOS/WebView, clipboard write isn't supported - prompt to use share instead
+      toast.error("Copying images isn't supported on this device. Use the Share button instead.", {
+        duration: 4000,
+      })
+      return
+    }
+
     setIsGenerating(true)
     setCopied(false)
 
@@ -410,20 +423,30 @@ export function WrappedShareModal({
       if (!element) throw new Error("Card element not found")
 
       const blob = await generateImage(element)
-      await copyImageToClipboard(blob)
+      const result = await copyImageToClipboard(blob)
 
-      setCopied(true)
-      toast.success("Copied to clipboard!")
-      track("wrapped_share_copied", {
-        year: stats.year,
-        background: backgroundStyle,
-        size: cardSize,
-      })
-
-      setTimeout(() => setCopied(false), 2000)
+      if (result.success) {
+        setCopied(true)
+        toast.success(result.message)
+        track("wrapped_share_copied", {
+          year: stats.year,
+          background: backgroundStyle,
+          size: cardSize,
+        })
+        setTimeout(() => setCopied(false), 2000)
+      } else if (result.fallbackToShare) {
+        // Suggest using share instead
+        toast.error(result.message, { duration: 4000 })
+      } else {
+        toast.error(result.message)
+      }
     } catch (error) {
       console.error("Failed to copy:", error)
-      toast.error("Failed to copy image")
+      if (isIOS() || isWebView()) {
+        toast.error("Copying failed on this device. Use the Share button instead.", { duration: 4000 })
+      } else {
+        toast.error("Failed to copy image")
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -459,6 +482,7 @@ export function WrappedShareModal({
       const filename = `emoji-wrapped-${stats.year}-${workspaceName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`
 
       const quality = QUALITY_PRESETS[qualityPreset]
+      let downloadResult: DownloadResult
 
       if (exportFormat === "video") {
         // Generate MP4 video with animated content using quality preset
@@ -483,8 +507,7 @@ export function WrappedShareModal({
         )
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        downloadVideo(blob, filename)
-        toast.success("Video downloaded!")
+        downloadResult = await downloadVideo(blob, filename)
       } else if (exportFormat === "gif") {
         // Generate animated GIF with animated content using quality preset
         const totalFrames = quality.gifFrames
@@ -509,35 +532,51 @@ export function WrappedShareModal({
         )
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        downloadGif(blob, filename)
-        toast.success("GIF downloaded!")
+        downloadResult = await downloadGif(blob, filename)
       } else {
         const blob = await generateImage(element)
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setGenerationStage("finalizing")
-        downloadImage(blob, `${filename}.png`)
-        toast.success("Image downloaded!")
+        downloadResult = await downloadImage(blob, `${filename}.png`)
       }
 
-      track("wrapped_share_downloaded", {
-        year: stats.year,
-        format: exportFormat,
-        background: backgroundStyle,
-        size: cardSize,
-      })
+      // Handle the download result with appropriate messaging
+      if (downloadResult.success) {
+        // Show appropriate toast based on the method used
+        if (downloadResult.method === "open") {
+          // Special message for iOS fallback where image opens in new tab
+          toast.success(downloadResult.message, { duration: 5000 })
+        } else {
+          toast.success(downloadResult.message)
+        }
+
+        track("wrapped_share_downloaded", {
+          year: stats.year,
+          format: exportFormat,
+          background: backgroundStyle,
+          size: cardSize,
+          method: downloadResult.method,
+        })
+      } else {
+        toast.error(downloadResult.message, { duration: 4000 })
+      }
     } catch (error) {
       // Don't show error for user-initiated cancellation
       if (error instanceof DOMException && error.name === "AbortError") {
         return
       }
       console.error("Failed to download:", error)
-      toast.error("Failed to download")
+      if (isIOS() || isWebView()) {
+        toast.error("Download failed. Try using the Share button instead.", { duration: 4000 })
+      } else {
+        toast.error("Failed to download")
+      }
     } finally {
       setIsGenerating(false)
       setGenerationProgress(0)
       setGenerationStage("idle")
     }
-  }, [isGenerating, getFullCardElement, captureAnimatedFrame, exportFormat, stats.year, workspaceName, track, backgroundStyle, cardSize, generationStage])
+  }, [isGenerating, getFullCardElement, captureAnimatedFrame, exportFormat, stats.year, workspaceName, track, backgroundStyle, cardSize, generationStage, qualityPreset])
 
   const handleShare = useCallback(async () => {
     if (isGenerating) return
@@ -848,8 +887,31 @@ export function WrappedShareModal({
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* iOS hint about share being the best option */}
+      {(isIOS() || isWebView()) && canShareFiles && (
+        <p className="text-xs text-muted-foreground text-center">
+          On this device, <strong>Share</strong> is the most reliable way to save images.
+        </p>
+      )}
+
+      {/* Action buttons - Share first on iOS for better UX */}
       <div className="flex flex-col sm:flex-row gap-2">
+        {/* On iOS, show Share button first and make it primary */}
+        {(isIOS() || isWebView()) && canShareFiles && (
+          <Button
+            className="flex-1 order-first sm:order-first"
+            onClick={handleShare}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Share2 className="w-4 h-4 mr-2" />
+            )}
+            Share
+          </Button>
+        )}
+
         <Button
           variant="outline"
           className="flex-1"
@@ -888,12 +950,13 @@ export function WrappedShareModal({
           ) : (
             <>
               <Download className="w-4 h-4 mr-2" />
-              Download
+              {(isIOS() || isWebView()) ? "Save" : "Download"}
             </>
           )}
         </Button>
 
-        {canShareFiles && (
+        {/* On non-iOS, show Share button in normal position */}
+        {!(isIOS() || isWebView()) && canShareFiles && (
           <Button
             className="flex-1"
             onClick={handleShare}
