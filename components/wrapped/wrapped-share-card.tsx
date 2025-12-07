@@ -938,3 +938,561 @@ export function WrappedShareCardAnimated({
     </div>
   )
 }
+
+// =============================================================================
+// MY EMOJIS SHARE CARD - Shows all user's emojis in a grid
+// =============================================================================
+
+import { Emoji } from "@/lib/services/emoji-service"
+
+export interface MyEmojisShareCardProps {
+  emojis: Emoji[]
+  workspaceName: string
+  backgroundStyle: WrappedBackgroundStyle
+  size: WrappedCardSize
+  year: number
+  creatorName?: string
+}
+
+// Calculate grid dimensions based on emoji count and card size
+function calculateGridLayout(emojiCount: number, size: WrappedCardSize): { cols: number; rows: number; maxEmojis: number } {
+  // Different grid configurations based on card aspect ratio
+  const configs: Record<WrappedCardSize, { cols: number; rows: number }> = {
+    square: { cols: 8, rows: 8 },   // 64 emojis max
+    story: { cols: 6, rows: 10 },   // 60 emojis max (taller)
+    wide: { cols: 12, rows: 4 },    // 48 emojis max (wider)
+  }
+
+  const config = configs[size]
+  return {
+    cols: config.cols,
+    rows: config.rows,
+    maxEmojis: config.cols * config.rows,
+  }
+}
+
+// Preview version of My Emojis card
+export function MyEmojisShareCard({
+  emojis,
+  workspaceName,
+  backgroundStyle,
+  size,
+  year,
+  creatorName,
+}: MyEmojisShareCardProps) {
+  const bg = WRAPPED_BACKGROUNDS[backgroundStyle]
+  const dimensions = WRAPPED_SIZES[size]
+  const isStory = size === "story"
+  const isWide = size === "wide"
+
+  // Scale for preview
+  const previewWidth = dimensions.width * PREVIEW_SCALE
+  const previewHeight = dimensions.height * PREVIEW_SCALE
+
+  const { cols, rows, maxEmojis } = calculateGridLayout(emojis.length, size)
+  const displayEmojis = emojis.slice(0, maxEmojis)
+
+  // Calculate emoji size based on available space
+  const gridPadding = isStory ? 16 : 12
+  const headerSpace = isStory ? 80 : isWide ? 50 : 60
+  const footerSpace = isStory ? 60 : 50
+  const availableWidth = previewWidth - (gridPadding * 2)
+  const availableHeight = previewHeight - headerSpace - footerSpace - (gridPadding * 2)
+  const emojiSize = Math.min(
+    Math.floor(availableWidth / cols) - 2,
+    Math.floor(availableHeight / rows) - 2
+  )
+
+  return (
+    <div
+      id="my-emojis-share-card"
+      className="relative overflow-hidden"
+      style={{
+        width: previewWidth,
+        height: previewHeight,
+        borderRadius: 16,
+        background: bg.gradient,
+      }}
+    >
+      {/* Highlight overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 50%),
+            linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 30%, transparent 60%, rgba(0,0,0,0.2) 100%)
+          `,
+        }}
+      />
+
+      {/* Grain texture overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundSize: "64px 64px",
+        }}
+      />
+
+      {/* Content */}
+      <div className={cn(
+        "relative flex flex-col h-full",
+        isStory ? "p-4 py-5" : isWide ? "p-3" : "p-3"
+      )}>
+        {/* Header */}
+        <div className={cn(
+          "text-center",
+          isWide ? "mb-2" : "mb-3"
+        )}>
+          <h1 className={cn(
+            "font-black text-white",
+            isStory ? "text-2xl" : isWide ? "text-xl" : "text-lg"
+          )} style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}>
+            {creatorName ? `${creatorName}'s` : "My"} {year} Emojis
+          </h1>
+          <p className={cn(
+            "text-white/80 font-medium",
+            isStory ? "text-sm" : "text-xs"
+          )}>
+            {emojis.length} custom emoji{emojis.length !== 1 ? "s" : ""} created
+          </p>
+        </div>
+
+        {/* Emoji Grid */}
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{ padding: gridPadding }}
+        >
+          <div
+            className="grid gap-0.5"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, ${emojiSize}px)`,
+              gridTemplateRows: `repeat(${rows}, ${emojiSize}px)`,
+            }}
+          >
+            {displayEmojis.map((emoji, index) => (
+              <div
+                key={`${emoji.name}-${index}`}
+                className="flex items-center justify-center"
+                style={{ width: emojiSize, height: emojiSize }}
+              >
+                <img
+                  src={proxyImageUrl(emoji.url)}
+                  alt={emoji.name}
+                  className="object-contain rounded-sm"
+                  style={{
+                    width: emojiSize - 2,
+                    height: emojiSize - 2,
+                    filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+                  }}
+                />
+              </div>
+            ))}
+            {/* Fill remaining cells with empty placeholders for alignment */}
+            {Array.from({ length: Math.max(0, maxEmojis - displayEmojis.length) }).map((_, i) => (
+              <div
+                key={`empty-${i}`}
+                className="flex items-center justify-center opacity-20"
+                style={{ width: emojiSize, height: emojiSize }}
+              >
+                <div
+                  className="rounded-sm bg-white/10"
+                  style={{ width: emojiSize - 4, height: emojiSize - 4 }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer branding with capybara */}
+        <div className={cn(
+          "flex items-center justify-center gap-1.5 mt-auto pt-2",
+          isWide && "pt-1"
+        )}>
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className={cn(
+              "rounded",
+              isStory ? "w-4 h-4" : "w-3 h-3"
+            )}
+          />
+          <span className={cn(
+            "text-white/60 font-medium",
+            isStory ? "text-[10px]" : "text-[8px]"
+          )}>
+            generated with Emoji Studio
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Full export version of My Emojis card
+export function MyEmojisShareCardFull({
+  emojis,
+  workspaceName,
+  backgroundStyle,
+  size,
+  year,
+  creatorName,
+}: MyEmojisShareCardProps) {
+  const bg = WRAPPED_BACKGROUNDS[backgroundStyle]
+  const dimensions = WRAPPED_SIZES[size]
+  const isStory = size === "story"
+  const isWide = size === "wide"
+
+  const scale = dimensions.width / 1080
+  const { cols, rows, maxEmojis } = calculateGridLayout(emojis.length, size)
+  const displayEmojis = emojis.slice(0, maxEmojis)
+
+  // Calculate emoji size based on available space (full size)
+  const gridPadding = isStory ? 50 : 40
+  const headerSpace = isStory ? 200 : isWide ? 140 : 160
+  const footerSpace = isStory ? 120 : 100
+  const availableWidth = dimensions.width - (gridPadding * 2)
+  const availableHeight = dimensions.height - headerSpace - footerSpace - (gridPadding * 2)
+  const emojiSize = Math.min(
+    Math.floor(availableWidth / cols) - 8,
+    Math.floor(availableHeight / rows) - 8
+  )
+
+  return (
+    <div
+      id="my-emojis-share-card-full"
+      className="relative overflow-hidden"
+      style={{
+        width: dimensions.width,
+        height: dimensions.height,
+        borderRadius: 48 * scale,
+        background: bg.gradient,
+      }}
+    >
+      {/* Highlight overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.25) 0%, transparent 50%),
+            linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 30%, transparent 60%, rgba(0,0,0,0.3) 100%)
+          `,
+        }}
+      />
+
+      {/* Grain texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundSize: `${128 * scale}px ${128 * scale}px`,
+        }}
+      />
+
+      {/* Content */}
+      <div
+        className="relative flex flex-col h-full"
+        style={{
+          padding: isStory ? 50 : isWide ? 40 : 45,
+        }}
+      >
+        {/* Header */}
+        <div className="text-center" style={{ marginBottom: isStory ? 30 : 20 }}>
+          <h1
+            className="font-black text-white"
+            style={{
+              fontSize: isStory ? 72 : isWide ? 56 : 64,
+              textShadow: "0 4px 8px rgba(0,0,0,0.3)",
+            }}
+          >
+            {creatorName ? `${creatorName}'s` : "My"} {year} Emojis
+          </h1>
+          <p
+            className="text-white/80 font-medium"
+            style={{ fontSize: isStory ? 32 : 28 }}
+          >
+            {emojis.length} custom emoji{emojis.length !== 1 ? "s" : ""} created
+          </p>
+        </div>
+
+        {/* Emoji Grid */}
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{ padding: gridPadding }}
+        >
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, ${emojiSize}px)`,
+              gridTemplateRows: `repeat(${rows}, ${emojiSize}px)`,
+              gap: 8,
+            }}
+          >
+            {displayEmojis.map((emoji, index) => (
+              <div
+                key={`${emoji.name}-${index}`}
+                className="flex items-center justify-center"
+                style={{ width: emojiSize, height: emojiSize }}
+              >
+                <img
+                  src={proxyImageUrl(emoji.url)}
+                  alt={emoji.name}
+                  className="object-contain rounded"
+                  style={{
+                    width: emojiSize - 4,
+                    height: emojiSize - 4,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
+                  }}
+                />
+              </div>
+            ))}
+            {/* Fill remaining cells */}
+            {Array.from({ length: Math.max(0, maxEmojis - displayEmojis.length) }).map((_, i) => (
+              <div
+                key={`empty-${i}`}
+                className="flex items-center justify-center opacity-15"
+                style={{ width: emojiSize, height: emojiSize }}
+              >
+                <div
+                  className="rounded bg-white/10"
+                  style={{ width: emojiSize - 8, height: emojiSize - 8 }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer branding with capybara */}
+        <div
+          className="flex items-center justify-center mt-auto"
+          style={{ gap: 16, paddingTop: 20 }}
+        >
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className="rounded-lg"
+            style={{ width: isStory ? 48 : 40, height: isStory ? 48 : 40 }}
+          />
+          <span
+            className="text-white/60 font-semibold"
+            style={{ fontSize: isStory ? 28 : 24 }}
+          >
+            generated with Emoji Studio
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Animated version of My Emojis card (emojis cascade in)
+interface MyEmojisShareCardAnimatedProps extends MyEmojisShareCardProps {
+  animationProgress: number // 0-1
+}
+
+export function MyEmojisShareCardAnimated({
+  emojis,
+  workspaceName,
+  backgroundStyle,
+  size,
+  year,
+  creatorName,
+  animationProgress,
+}: MyEmojisShareCardAnimatedProps) {
+  const bg = WRAPPED_BACKGROUNDS[backgroundStyle]
+  const dimensions = WRAPPED_SIZES[size]
+  const isStory = size === "story"
+  const isWide = size === "wide"
+
+  const scale = dimensions.width / 1080
+  const p = animationProgress
+  const { cols, rows, maxEmojis } = calculateGridLayout(emojis.length, size)
+  const displayEmojis = emojis.slice(0, maxEmojis)
+
+  // Animation calculations
+  const titleOpacity = fadeIn(p, 0, 0.1)
+  const titleScale = animateValue(p, 0.9, 1, 0, 0.1)
+  const countValue = Math.round(animateValue(p, 0, emojis.length, 0.1, 0.3))
+
+  // Emojis cascade in over time
+  const emojiRevealProgress = animateValue(p, 0, 1, 0.15, 0.85)
+  const emojisToShow = Math.round(displayEmojis.length * emojiRevealProgress)
+
+  const brandingOpacity = fadeIn(p, 0.85, 0.1)
+
+  // Shimmer position
+  const shimmerX = p >= 0.9 ? animateValue(p, -100, 200, 0.9, 1.0) : -200
+
+  // Calculate emoji size
+  const gridPadding = isStory ? 50 : 40
+  const headerSpace = isStory ? 200 : isWide ? 140 : 160
+  const footerSpace = isStory ? 120 : 100
+  const availableWidth = dimensions.width - (gridPadding * 2)
+  const availableHeight = dimensions.height - headerSpace - footerSpace - (gridPadding * 2)
+  const emojiSize = Math.min(
+    Math.floor(availableWidth / cols) - 8,
+    Math.floor(availableHeight / rows) - 8
+  )
+
+  return (
+    <div
+      id="my-emojis-share-card-animated"
+      className="relative overflow-hidden"
+      style={{
+        width: dimensions.width,
+        height: dimensions.height,
+        borderRadius: 48 * scale,
+        background: bg.gradient,
+      }}
+    >
+      {/* Shimmer overlay */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: 0,
+          left: 0,
+          width: "50%",
+          height: "200%",
+          background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)",
+          transform: `translateX(${shimmerX}%) rotate(15deg)`,
+        }}
+      />
+
+      {/* Highlight overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.25) 0%, transparent 50%),
+            linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 30%, transparent 60%, rgba(0,0,0,0.3) 100%)
+          `,
+        }}
+      />
+
+      {/* Grain texture */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          backgroundSize: `${128 * scale}px ${128 * scale}px`,
+        }}
+      />
+
+      {/* Content */}
+      <div
+        className="relative flex flex-col h-full"
+        style={{
+          padding: isStory ? 50 : isWide ? 40 : 45,
+        }}
+      >
+        {/* Header - animated */}
+        <div
+          className="text-center"
+          style={{
+            marginBottom: isStory ? 30 : 20,
+            opacity: titleOpacity,
+            transform: `scale(${titleScale})`,
+          }}
+        >
+          <h1
+            className="font-black text-white"
+            style={{
+              fontSize: isStory ? 72 : isWide ? 56 : 64,
+              textShadow: "0 4px 8px rgba(0,0,0,0.3)",
+            }}
+          >
+            {creatorName ? `${creatorName}'s` : "My"} {year} Emojis
+          </h1>
+          <p
+            className="text-white/80 font-medium tabular-nums"
+            style={{ fontSize: isStory ? 32 : 28 }}
+          >
+            {countValue} custom emoji{countValue !== 1 ? "s" : ""} created
+          </p>
+        </div>
+
+        {/* Emoji Grid - cascade animation */}
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{ padding: gridPadding }}
+        >
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, ${emojiSize}px)`,
+              gridTemplateRows: `repeat(${rows}, ${emojiSize}px)`,
+              gap: 8,
+            }}
+          >
+            {displayEmojis.map((emoji, index) => {
+              const isVisible = index < emojisToShow
+              const individualProgress = isVisible
+                ? Math.min(1, (emojisToShow - index) / 3) // Fade in over 3 emoji reveals
+                : 0
+
+              return (
+                <div
+                  key={`${emoji.name}-${index}`}
+                  className="flex items-center justify-center"
+                  style={{
+                    width: emojiSize,
+                    height: emojiSize,
+                    opacity: individualProgress,
+                    transform: `scale(${0.5 + individualProgress * 0.5})`,
+                  }}
+                >
+                  <img
+                    src={proxyImageUrl(emoji.url)}
+                    alt={emoji.name}
+                    className="object-contain rounded"
+                    style={{
+                      width: emojiSize - 4,
+                      height: emojiSize - 4,
+                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
+                    }}
+                  />
+                </div>
+              )
+            })}
+            {/* Empty placeholders */}
+            {Array.from({ length: Math.max(0, maxEmojis - displayEmojis.length) }).map((_, i) => (
+              <div
+                key={`empty-${i}`}
+                className="flex items-center justify-center opacity-15"
+                style={{ width: emojiSize, height: emojiSize }}
+              >
+                <div
+                  className="rounded bg-white/10"
+                  style={{ width: emojiSize - 8, height: emojiSize - 8 }}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer branding - fade in at end */}
+        <div
+          className="flex items-center justify-center mt-auto"
+          style={{
+            gap: 16,
+            paddingTop: 20,
+            opacity: brandingOpacity,
+          }}
+        >
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className="rounded-lg"
+            style={{ width: isStory ? 48 : 40, height: isStory ? 48 : 40 }}
+          />
+          <span
+            className="text-white/60 font-semibold"
+            style={{ fontSize: isStory ? 28 : 24 }}
+          >
+            generated with Emoji Studio
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}

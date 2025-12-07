@@ -211,6 +211,8 @@ function WrappedPageContent() {
           onOpenChange={setShowShareModal}
           stats={stats}
           workspaceName={workspaceName}
+          yearEmojis={yearEmojis}
+          creatorName={personalStats?.displayName}
         />
       </>
     )
