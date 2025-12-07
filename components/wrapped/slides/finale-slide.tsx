@@ -38,6 +38,13 @@ export function FinaleSlide({
   const shouldReduceAnimations = useShouldReduceAnimations()
   const [mvpEmojiError, setMvpEmojiError] = useState(false)
 
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
   // Auto-trigger confetti on mount
   useEffect(() => {
     if (captureMode || shouldReduceAnimations) return
@@ -135,7 +142,7 @@ export function FinaleSlide({
               {workspaceName} • {stats.year} was incredible
             </p>
           ) : (
-            <BlurFade delay={0.5} className="wrapped-body truncate max-w-[280px] sm:max-w-sm mx-auto">
+            <BlurFade delay={0.5} shouldAnimate={shouldAnimate} className="wrapped-body truncate max-w-[280px] sm:max-w-sm mx-auto">
               {workspaceName} • {stats.year} was{" "}
               <GradientText
                 colors={[

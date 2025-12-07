@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { PersonalWrappedStats } from "@/lib/services/wrapped-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
@@ -95,6 +95,14 @@ export function PersonalSlide({
   captureMode = false,
 }: PersonalSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
+  const shouldReduceAnimations = useShouldReduceAnimations()
+
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
   const {
     displayName,
@@ -149,7 +157,7 @@ export function PersonalSlide({
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-[var(--wrapped-accent-purple)]/30 blur-3xl rounded-full pointer-events-none" />
 
               <div className="relative z-10 text-left">
-                <BlurFade delay={0.2}>
+                <BlurFade delay={0.2} shouldAnimate={shouldAnimate}>
                   <p className="wrapped-label text-xs mb-1">Your Year As</p>
                   <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight mb-1">{displayName}</h2>
                   <GradientText className="text-sm font-medium opacity-90" colors={["#a855f7", "#22d3ee", "#a855f7"]}>

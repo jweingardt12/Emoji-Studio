@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { WrappedFunStats, WrappedOverviewStats, WrappedGrowthStats } from "@/lib/services/wrapped-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
@@ -126,6 +126,13 @@ export function StatsSlide({
   const slideRef = useRef<HTMLDivElement>(null)
   const shouldReduceAnimations = useShouldReduceAnimations()
 
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
   // Get sample emojis for showcase
   const showcaseEmojis = customEmojis.slice(0, 8)
 
@@ -213,7 +220,7 @@ export function StatsSlide({
                 <p className="wrapped-body text-lg sm:text-xl">Insights from {workspaceName}'s emoji journey</p>
               </div>
             ) : (
-              <BlurFade delay={0.1} className="mb-6 w-full max-w-3xl">
+              <BlurFade delay={0.1} shouldAnimate={shouldAnimate} className="mb-6 w-full max-w-3xl">
                 <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl md:text-6xl">
                   <GradientText
                     colors={[

@@ -35,7 +35,14 @@ export function CountSlide({
   const slideRef = useRef<HTMLDivElement>(null)
   const confettiRef = useRef<ConfettiRef>(null)
   const [showEmojis, setShowEmojis] = useState(captureMode)
+  const [hydrated, setHydrated] = useState(false)
   const shouldReduceAnimations = useShouldReduceAnimations()
+
+  // Hydration tracking for WKWebView compatibility
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
   // Get sample emojis for marquee (24-32 for nice scrolling)
   const marqueeEmojis = customEmojis.slice(0, 32)
@@ -102,7 +109,7 @@ export function CountSlide({
             This year, <span className="truncate max-w-[240px] sm:max-w-xs md:max-w-sm inline-block align-bottom">{workspaceName}</span> created
           </p>
         ) : (
-          <BlurFade delay={0.2} className="wrapped-label mb-4 text-xl sm:text-2xl">
+          <BlurFade delay={0.2} shouldAnimate={shouldAnimate} className="wrapped-label mb-4 text-xl sm:text-2xl">
             This year, <span className="truncate max-w-[240px] sm:max-w-xs md:max-w-sm inline-block align-bottom">{workspaceName}</span> created
           </BlurFade>
         )}

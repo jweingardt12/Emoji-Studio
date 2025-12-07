@@ -42,6 +42,9 @@ export function PatternsSlide({
     setIsClient(true)
   }, [])
 
+  // Hydration-safe animation flag for WKWebView compatibility
+  const shouldAnimate = isClient && !captureMode && !shouldReduceAnimations
+
   // Use personal stats if available, otherwise global stats
   const dataSource = personalStats || stats
 
@@ -109,7 +112,7 @@ export function PatternsSlide({
               <p className="wrapped-body text-lg sm:text-xl">How you create emojis</p>
             </div>
           ) : (
-            <BlurFade delay={0.1} className="mb-6">
+            <BlurFade delay={0.1} shouldAnimate={shouldAnimate} className="mb-6">
               <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl md:text-6xl">
                 <GradientText
                   colors={[

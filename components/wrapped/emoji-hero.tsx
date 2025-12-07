@@ -97,8 +97,8 @@ export function EmojiHero({
           "relative z-10 object-contain drop-shadow-2xl",
           shouldAnimate && "wrapped-float"
         )}
-        initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
-        animate={shouldAnimate ? { scale: 1, rotate: 0 } : undefined}
+        initial={shouldAnimate ? { scale: 0, rotate: -180 } : { scale: 1, rotate: 0 }}
+        animate={{ scale: 1, rotate: 0 }}
         transition={
           shouldAnimate
             ? {
@@ -107,7 +107,7 @@ export function EmojiHero({
                 damping: 20,
                 delay,
               }
-            : undefined
+            : { duration: 0 }
         }
         onError={() => setHasError(true)}
       />

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import { CheckCircle2, XCircle } from "lucide-react"
 import { WrappedStats, PersonalWrappedStats } from "@/lib/services/wrapped-service"
@@ -562,6 +562,13 @@ export function QuizSlide({
   const [showResult, setShowResult] = useState(false)
   const shouldReduceAnimations = useShouldReduceAnimations()
 
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
   // Generate question based on quiz type (memoized to stay consistent)
   const question = useMemo(() => {
     if (quizType === "workspace") {
@@ -659,7 +666,7 @@ export function QuizSlide({
                 </p>
               </div>
             ) : (
-              <BlurFade delay={0.1} className="mb-4">
+              <BlurFade delay={0.1} shouldAnimate={shouldAnimate} className="mb-4">
                 <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl">
                   <GradientText colors={gradientColors} animationSpeed={6}>
                     {quizType === "workspace" ? "Predict Your Stats" : "Know Yourself"}

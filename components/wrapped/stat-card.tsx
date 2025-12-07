@@ -63,8 +63,8 @@ export function StatCard({
   return (
     <motion.div
       className={cn(statCardVariants({ size, variant }), className)}
-      initial={shouldAnimate ? { opacity: 0, y: 20, scale: 0.95 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : undefined}
+      initial={shouldAnimate ? { opacity: 0, y: 20, scale: 0.95 } : { opacity: 1, y: 0, scale: 1 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={
         shouldAnimate
           ? {
@@ -73,7 +73,7 @@ export function StatCard({
               damping: 20,
               delay,
             }
-          : undefined
+          : { duration: 0 }
       }
     >
       {icon && <div className="mb-2 text-2xl">{icon}</div>}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { BusiestPeriod, DayOfWeekStat, MonthlyCount } from "@/lib/services/wrapped-service"
 import { proxyImageUrl } from "@/lib/utils/image-proxy"
@@ -33,6 +33,13 @@ export function PeakSlide({
 }: PeakSlideProps) {
   const slideRef = useRef<HTMLDivElement>(null)
   const shouldReduceAnimations = useShouldReduceAnimations()
+
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
   // Find peak month
   const peakMonth = monthlyBreakdown.reduce(
@@ -76,7 +83,7 @@ export function PeakSlide({
               <p className="wrapped-body text-lg sm:text-xl">The moments that defined {year}</p>
             </div>
           ) : (
-            <BlurFade delay={0.1} className="mb-6">
+            <BlurFade delay={0.1} shouldAnimate={shouldAnimate} className="mb-6">
               <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl md:text-6xl">
                 <GradientText
                   colors={[

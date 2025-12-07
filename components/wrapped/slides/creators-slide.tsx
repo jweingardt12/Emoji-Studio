@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import { TopCreator } from "@/lib/services/wrapped-service"
 import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image-proxy"
@@ -77,9 +77,9 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
   return (
     <motion.div
       className={`flex flex-col items-center ${isWinner ? "order-2" : rank === 2 ? "order-1" : "order-3"}`}
-      initial={shouldAnimate ? { opacity: 0, y: 30 } : false}
+      initial={shouldAnimate ? { opacity: 0, y: 30 } : { opacity: 1, y: 0 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
+      transition={shouldAnimate ? { delay, type: "spring", stiffness: 200, damping: 20 } : { duration: 0 }}
     >
       {/* Emoji halo - creator's top emojis */}
       <div className="flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
@@ -92,9 +92,9 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
               src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
               alt={emoji.name}
               className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
-              initial={shouldAnimate ? { scale: 0, rotate: -20 } : false}
+              initial={shouldAnimate ? { scale: 0, rotate: -20 } : { scale: 1, rotate: 0 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: delay + 0.1 + i * 0.05 }}
+              transition={shouldAnimate ? { delay: delay + 0.1 + i * 0.05 } : { duration: 0 }}
               onError={() => handleImageError(key)}
             />
           )
@@ -162,6 +162,13 @@ export function CreatorsSlide({
   const shouldReduceAnimations = useShouldReduceAnimations()
   const top3 = topCreators.slice(0, 3)
 
+  // Hydration tracking for WKWebView compatibility
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center text-center overflow-hidden">
       {/* Noise texture overlay */}
@@ -190,7 +197,7 @@ export function CreatorsSlide({
                   <p className="wrapped-body text-lg sm:text-xl">Who built {workspaceName}'s emoji empire?</p>
                 </div>
               ) : (
-                <BlurFade delay={0.1}>
+                <BlurFade delay={0.1} shouldAnimate={shouldAnimate}>
                   <h2 className="wrapped-headline mb-2 text-4xl sm:text-5xl md:text-6xl">
                     <GradientText
                       colors={[

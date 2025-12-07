@@ -131,7 +131,7 @@ export function EmojiOrbit({
               // When not animating, use explicit visible state to ensure content shows
               // during hydration mismatch (prevents stuck at scale: 0, opacity: 0)
               initial={shouldAnimate ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-              animate={shouldAnimate ? { scale: 1, opacity: 1 } : undefined}
+              animate={{ scale: 1, opacity: 1 }}
               transition={
                 shouldAnimate
                   ? {
@@ -140,7 +140,7 @@ export function EmojiOrbit({
                       damping: 20,
                       delay: staggerDelay,
                     }
-                  : undefined
+                  : { duration: 0 }
               }
             >
               {/* Counter-rotate to keep emojis upright */}
