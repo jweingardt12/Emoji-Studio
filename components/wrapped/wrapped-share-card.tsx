@@ -43,39 +43,49 @@ function fadeIn(progress: number, startProgress: number, duration: number = 0.1)
   return (progress - startProgress) / duration
 }
 
-// Vibrant gradient backgrounds for Wrapped
+// Vibrant gradient backgrounds for Wrapped - enhanced with richer colors
 export type WrappedBackgroundStyle =
-  | "purple"   // Purple dream
-  | "pink"     // Pink punch
-  | "blue"     // Ocean blue
-  | "sunset"   // Pink to yellow
-  | "teal"     // Fresh teal
-  | "violet"   // Deep violet
+  | "purple"   // Electric Purple
+  | "pink"     // Hot Pink
+  | "blue"     // Electric Blue
+  | "sunset"   // Vibrant Sunset
+  | "teal"     // Neon Teal
+  | "violet"   // Deep Violet
+  | "fire"     // Fire Orange
+  | "aurora"   // Northern Lights
 
 export const WRAPPED_BACKGROUNDS: Record<WrappedBackgroundStyle, { gradient: string; label: string }> = {
   purple: {
-    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    label: "Purple Dream",
+    gradient: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 25%, #D946EF 50%, #EC4899 100%)",
+    label: "Electric Purple",
   },
   pink: {
-    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    label: "Pink Punch",
+    gradient: "linear-gradient(135deg, #FF0080 0%, #FF4D94 30%, #F472B6 60%, #FB7185 100%)",
+    label: "Hot Pink",
   },
   blue: {
-    gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    label: "Ocean Blue",
+    gradient: "linear-gradient(135deg, #0EA5E9 0%, #06B6D4 35%, #22D3EE 70%, #67E8F9 100%)",
+    label: "Electric Blue",
   },
   sunset: {
-    gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-    label: "Sunset",
+    gradient: "linear-gradient(135deg, #F97316 0%, #FB923C 25%, #FBBF24 50%, #FDE047 100%)",
+    label: "Vibrant Sunset",
   },
   teal: {
-    gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-    label: "Fresh Teal",
+    gradient: "linear-gradient(135deg, #14B8A6 0%, #2DD4BF 30%, #5EEAD4 60%, #99F6E4 100%)",
+    label: "Neon Teal",
   },
   violet: {
-    gradient: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+    gradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 30%, #A78BFA 60%, #C4B5FD 100%)",
     label: "Deep Violet",
+  },
+  fire: {
+    gradient: "linear-gradient(135deg, #DC2626 0%, #EA580C 30%, #F97316 60%, #FBBF24 100%)",
+    label: "Fire Orange",
+  },
+  aurora: {
+    gradient: "linear-gradient(135deg, #06B6D4 0%, #8B5CF6 35%, #D946EF 65%, #F472B6 100%)",
+    label: "Aurora",
   },
 }
 
@@ -105,6 +115,45 @@ function formatName(name: string): string {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`
 }
 
+// Collect emojis from creators for background decoration
+function collectBackgroundEmojis(stats: WrappedStats): { url: string; name: string }[] {
+  const emojis: { url: string; name: string }[] = []
+
+  // Get emojis from top creators
+  stats.topCreators.forEach(creator => {
+    creator.topEmojis.forEach(emoji => {
+      if (emoji.url && emojis.length < 12) {
+        emojis.push({ url: proxyImageUrl(emoji.url), name: emoji.name })
+      }
+    })
+  })
+
+  // Add busiest day emojis if available
+  if (stats.busiestDay?.emojis) {
+    stats.busiestDay.emojis.forEach(emoji => {
+      if (emoji.url && emojis.length < 12) {
+        emojis.push({ url: proxyImageUrl(emoji.url), name: emoji.name })
+      }
+    })
+  }
+
+  return emojis.slice(0, 10) // Limit to 10 emojis
+}
+
+// Fixed positions for floating emojis to ensure consistent placement
+const EMOJI_POSITIONS = [
+  { top: '8%', left: '5%', size: 1.2, rotate: -15 },
+  { top: '15%', right: '8%', size: 1.0, rotate: 20 },
+  { top: '35%', left: '3%', size: 0.9, rotate: 10 },
+  { top: '45%', right: '5%', size: 1.1, rotate: -10 },
+  { top: '65%', left: '6%', size: 1.0, rotate: 25 },
+  { top: '70%', right: '4%', size: 0.8, rotate: -20 },
+  { top: '85%', left: '10%', size: 0.9, rotate: 15 },
+  { top: '88%', right: '12%', size: 1.0, rotate: -5 },
+  { top: '25%', left: '85%', size: 0.7, rotate: 30 },
+  { top: '55%', left: '90%', size: 0.8, rotate: -25 },
+]
+
 export function WrappedShareCard({
   stats,
   workspaceName,
@@ -123,6 +172,9 @@ export function WrappedShareCard({
   // Get top 3 creators
   const top3 = stats.topCreators.slice(0, 3)
 
+  // Collect emojis for background
+  const backgroundEmojis = collectBackgroundEmojis(stats)
+
   return (
     <div
       id="wrapped-share-card"
@@ -134,20 +186,45 @@ export function WrappedShareCard({
         background: bg.gradient,
       }}
     >
+      {/* Floating emoji decorations */}
+      {backgroundEmojis.map((emoji, index) => {
+        const pos = EMOJI_POSITIONS[index % EMOJI_POSITIONS.length]
+        const baseSize = isStory ? 24 : isWide ? 20 : 22
+        const emojiSize = baseSize * (pos.size || 1)
+        return (
+          <img
+            key={`${emoji.name}-${index}`}
+            src={emoji.url}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{
+              top: pos.top,
+              left: pos.left,
+              right: pos.right,
+              width: emojiSize,
+              height: emojiSize,
+              transform: `rotate(${pos.rotate}deg)`,
+              opacity: 0.4,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+            }}
+          />
+        )
+      })}
+
       {/* Highlight overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.25) 0%, transparent 50%),
-            linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 30%, transparent 60%, rgba(0,0,0,0.3) 100%)
+            radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255,255,255,0.3) 0%, transparent 50%),
+            linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 30%, transparent 60%, rgba(0,0,0,0.2) 100%)
           `,
         }}
       />
 
       {/* Grain texture overlay */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.04]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: "64px 64px",
@@ -202,36 +279,51 @@ export function WrappedShareCard({
             </p>
           </div>
 
-          {/* Top creators */}
+          {/* Top creators with their emojis */}
           <div className={cn(
             "flex justify-center gap-2",
             isStory ? "gap-3" : ""
           )}>
-            {top3.map((creator, index) => (
-              <div
-                key={creator.userId}
-                className={cn(
-                  "flex flex-col items-center rounded-lg bg-white/15 backdrop-blur-sm",
-                  isStory ? "px-3 py-2" : "px-2 py-1.5"
-                )}
-              >
-                <span className={isStory ? "text-xl" : "text-base"}>
-                  {MEDAL_EMOJIS[index]}
-                </span>
-                <span className={cn(
-                  "text-white font-semibold truncate max-w-[60px]",
-                  isStory ? "text-sm" : "text-xs"
-                )}>
-                  {formatName(creator.displayName)}
-                </span>
-                <span className={cn(
-                  "text-white/70 font-medium",
-                  isStory ? "text-xs" : "text-[10px]"
-                )}>
-                  {creator.emojiCount}
-                </span>
-              </div>
-            ))}
+            {top3.map((creator, index) => {
+              const topEmoji = creator.topEmojis[0]
+              return (
+                <div
+                  key={creator.userId}
+                  className={cn(
+                    "flex flex-col items-center rounded-lg bg-white/20 backdrop-blur-sm border border-white/10",
+                    isStory ? "px-3 py-2" : "px-2 py-1.5"
+                  )}
+                >
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className={isStory ? "text-lg" : "text-sm"}>
+                      {MEDAL_EMOJIS[index]}
+                    </span>
+                    {topEmoji && (
+                      <img
+                        src={proxyImageUrl(topEmoji.url)}
+                        alt=""
+                        className={cn(
+                          "rounded",
+                          isStory ? "w-5 h-5" : "w-4 h-4"
+                        )}
+                      />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-white font-semibold truncate max-w-[60px]",
+                    isStory ? "text-sm" : "text-xs"
+                  )}>
+                    {formatName(creator.displayName)}
+                  </span>
+                  <span className={cn(
+                    "text-white/80 font-bold tabular-nums",
+                    isStory ? "text-xs" : "text-[10px]"
+                  )}>
+                    {creator.emojiCount}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {/* Quick stats row */}
@@ -303,6 +395,20 @@ export function WrappedShareCard({
   )
 }
 
+// Fixed positions for floating emojis (full export version - scaled up)
+const EMOJI_POSITIONS_FULL = [
+  { top: '8%', left: '5%', size: 1.2, rotate: -15 },
+  { top: '15%', right: '8%', size: 1.0, rotate: 20 },
+  { top: '35%', left: '3%', size: 0.9, rotate: 10 },
+  { top: '45%', right: '5%', size: 1.1, rotate: -10 },
+  { top: '65%', left: '6%', size: 1.0, rotate: 25 },
+  { top: '70%', right: '4%', size: 0.8, rotate: -20 },
+  { top: '85%', left: '10%', size: 0.9, rotate: 15 },
+  { top: '88%', right: '12%', size: 1.0, rotate: -5 },
+  { top: '25%', left: '88%', size: 0.7, rotate: 30 },
+  { top: '55%', left: '92%', size: 0.8, rotate: -25 },
+]
+
 // Export version without preview scaling (for actual image generation)
 export function WrappedShareCardFull({
   stats,
@@ -320,6 +426,9 @@ export function WrappedShareCardFull({
   // Scale factors based on size
   const scale = dimensions.width / 1080
 
+  // Collect emojis for background
+  const backgroundEmojis = collectBackgroundEmojis(stats)
+
   return (
     <div
       id="wrapped-share-card-full"
@@ -333,6 +442,31 @@ export function WrappedShareCardFull({
     >
       {/* Inject shimmer animation styles */}
       <style dangerouslySetInnerHTML={{ __html: shimmerStyles }} />
+
+      {/* Floating emoji decorations */}
+      {backgroundEmojis.map((emoji, index) => {
+        const pos = EMOJI_POSITIONS_FULL[index % EMOJI_POSITIONS_FULL.length]
+        const baseSize = isStory ? 64 : isWide ? 48 : 56
+        const emojiSize = baseSize * (pos.size || 1)
+        return (
+          <img
+            key={`bg-emoji-${emoji.name}-${index}`}
+            src={emoji.url}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{
+              top: pos.top,
+              left: pos.left,
+              right: pos.right,
+              width: emojiSize,
+              height: emojiSize,
+              transform: `rotate(${pos.rotate}deg)`,
+              opacity: 0.35,
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+            }}
+          />
+        )
+      })}
 
       {/* Animated shimmer overlay for GIF export */}
       <div
@@ -416,36 +550,49 @@ export function WrappedShareCardFull({
             </p>
           </div>
 
-          {/* Top creators */}
+          {/* Top creators with their emojis */}
           <div
             className="flex justify-center"
             style={{ gap: isStory ? 30 : 20 }}
           >
-            {top3.map((creator, index) => (
-              <div
-                key={creator.userId}
-                className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm"
-                style={{
-                  padding: isStory ? "20px 30px" : "15px 25px",
-                }}
-              >
-                <span style={{ fontSize: isStory ? 48 : 36 }}>
-                  {MEDAL_EMOJIS[index]}
-                </span>
-                <span
-                  className="text-white font-semibold"
-                  style={{ fontSize: isStory ? 28 : 22 }}
+            {top3.map((creator, index) => {
+              const topEmoji = creator.topEmojis[0]
+              return (
+                <div
+                  key={creator.userId}
+                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10"
+                  style={{
+                    padding: isStory ? "20px 30px" : "15px 25px",
+                  }}
                 >
-                  {formatName(creator.displayName)}
-                </span>
-                <span
-                  className="text-white/70 font-medium"
-                  style={{ fontSize: isStory ? 22 : 18 }}
-                >
-                  {creator.emojiCount} emojis
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center" style={{ gap: isStory ? 8 : 6, marginBottom: isStory ? 4 : 2 }}>
+                    <span style={{ fontSize: isStory ? 48 : 36 }}>
+                      {MEDAL_EMOJIS[index]}
+                    </span>
+                    {topEmoji && (
+                      <img
+                        src={proxyImageUrl(topEmoji.url)}
+                        alt=""
+                        className="rounded"
+                        style={{ width: isStory ? 32 : 24, height: isStory ? 32 : 24 }}
+                      />
+                    )}
+                  </div>
+                  <span
+                    className="text-white font-semibold"
+                    style={{ fontSize: isStory ? 28 : 22 }}
+                  >
+                    {formatName(creator.displayName)}
+                  </span>
+                  <span
+                    className="text-white/70 font-medium"
+                    style={{ fontSize: isStory ? 22 : 18 }}
+                  >
+                    {creator.emojiCount} emojis
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {/* Quick stats */}
@@ -527,6 +674,9 @@ export function WrappedShareCardAnimated({
   const scale = dimensions.width / 1080
   const p = animationProgress // shorthand
 
+  // Collect emojis for background
+  const backgroundEmojis = collectBackgroundEmojis(stats)
+
   // Animation calculations
   const titleOpacity = fadeIn(p, 0, 0.15)
   const titleScale = animateValue(p, 0.8, 1, 0, 0.15)
@@ -547,6 +697,9 @@ export function WrappedShareCardAnimated({
   // Shimmer position for the final phase
   const shimmerX = p >= 0.85 ? animateValue(p, -100, 200, 0.85, 1.0) : -200
 
+  // Emoji fade-in animation (fade in with main content)
+  const emojiOpacity = fadeIn(p, 0.1, 0.2)
+
   return (
     <div
       id="wrapped-share-card-animated"
@@ -558,6 +711,31 @@ export function WrappedShareCardAnimated({
         background: bg.gradient,
       }}
     >
+      {/* Floating emoji decorations - fade in with animation */}
+      {backgroundEmojis.map((emoji, index) => {
+        const pos = EMOJI_POSITIONS_FULL[index % EMOJI_POSITIONS_FULL.length]
+        const baseSize = isStory ? 64 : isWide ? 48 : 56
+        const emojiSize = baseSize * (pos.size || 1)
+        return (
+          <img
+            key={`bg-emoji-${emoji.name}-${index}`}
+            src={emoji.url}
+            alt=""
+            className="absolute pointer-events-none"
+            style={{
+              top: pos.top,
+              left: pos.left,
+              right: pos.right,
+              width: emojiSize,
+              height: emojiSize,
+              transform: `rotate(${pos.rotate}deg)`,
+              opacity: 0.35 * emojiOpacity,
+              filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+            }}
+          />
+        )
+      })}
+
       {/* Shimmer overlay */}
       <div
         className="absolute pointer-events-none"
@@ -652,7 +830,7 @@ export function WrappedShareCardAnimated({
             </p>
           </div>
 
-          {/* Top creators - slide in */}
+          {/* Top creators with emojis - slide in */}
           <div
             className="flex justify-center"
             style={{
@@ -661,29 +839,42 @@ export function WrappedShareCardAnimated({
               transform: `translateY(${creatorsY}px)`,
             }}
           >
-            {top3.map((creator, index) => (
-              <div
-                key={creator.userId}
-                className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm"
-                style={{ padding: isStory ? "20px 30px" : "15px 25px" }}
-              >
-                <span style={{ fontSize: isStory ? 48 : 36 }}>
-                  {MEDAL_EMOJIS[index]}
-                </span>
-                <span
-                  className="text-white font-semibold"
-                  style={{ fontSize: isStory ? 28 : 22 }}
+            {top3.map((creator, index) => {
+              const topEmoji = creator.topEmojis[0]
+              return (
+                <div
+                  key={creator.userId}
+                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10"
+                  style={{ padding: isStory ? "20px 30px" : "15px 25px" }}
                 >
-                  {formatName(creator.displayName)}
-                </span>
-                <span
-                  className="text-white/70 font-medium"
-                  style={{ fontSize: isStory ? 22 : 18 }}
-                >
-                  {creator.emojiCount} emojis
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-center" style={{ gap: isStory ? 8 : 6, marginBottom: isStory ? 4 : 2 }}>
+                    <span style={{ fontSize: isStory ? 48 : 36 }}>
+                      {MEDAL_EMOJIS[index]}
+                    </span>
+                    {topEmoji && (
+                      <img
+                        src={proxyImageUrl(topEmoji.url)}
+                        alt=""
+                        className="rounded"
+                        style={{ width: isStory ? 32 : 24, height: isStory ? 32 : 24 }}
+                      />
+                    )}
+                  </div>
+                  <span
+                    className="text-white font-semibold"
+                    style={{ fontSize: isStory ? 28 : 22 }}
+                  >
+                    {formatName(creator.displayName)}
+                  </span>
+                  <span
+                    className="text-white/70 font-medium"
+                    style={{ fontSize: isStory ? 22 : 18 }}
+                  >
+                    {creator.emojiCount} emojis
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           {/* Quick stats - fade in sequentially */}
