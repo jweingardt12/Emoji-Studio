@@ -11,8 +11,12 @@ import { CountSlide } from "./slides/count-slide"
 import { CreatorsSlide } from "./slides/creators-slide"
 import { PersonalSlide } from "./slides/personal-slide"
 import { QuizSlide } from "./slides/quiz-slide"
+import { VibeSlide } from "./slides/vibe-slide"
+import { HaikuSlide } from "./slides/haiku-slide"
+import { MovieSlide } from "./slides/movie-slide"
 import { PeakSlide } from "./slides/peak-slide"
 import { PatternsSlide } from "./slides/patterns-slide"
+import { FortuneSlide } from "./slides/fortune-slide"
 import { StatsSlide } from "./slides/stats-slide"
 import { FinaleSlide } from "./slides/finale-slide"
 import { Button } from "@/components/ui/button"
@@ -36,9 +40,11 @@ interface WrappedStoryProps {
 const BASE_SLIDES = ["intro", "count", "creators"] as const
 const PERSONAL_SLIDE = ["personal"] as const
 const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
-const END_SLIDES = ["peak", "patterns", "stats", "finale"] as const
+const FUN_SLIDES = ["vibe", "haiku", "movie"] as const
+const MIDDLE_SLIDES = ["peak", "patterns", "fortune"] as const
+const END_SLIDES = ["stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "peak" | "patterns" | "stats" | "finale"
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "vibe" | "haiku" | "movie" | "peak" | "patterns" | "fortune" | "stats" | "finale"
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
   const router = useRouter()
@@ -53,9 +59,9 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
   // Build slides array dynamically - include personal slide only if user has data
   const SLIDES: SlideType[] = useMemo(() => {
     if (personalStats) {
-      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...END_SLIDES]
+      return [...BASE_SLIDES, ...PERSONAL_SLIDE, ...QUIZ_SLIDES, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
     }
-    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...END_SLIDES]
+    return [...BASE_SLIDES, ...QUIZ_SLIDES, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
   }, [personalStats])
 
   const totalSlides = SLIDES.length
@@ -351,6 +357,36 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             needsAttention={quizNeedsAttention}
           />
         )
+      case "vibe":
+        return (
+          <VibeSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            customEmojis={statsEmojis}
+          />
+        )
+      case "haiku":
+        return (
+          <HaikuSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            customEmojis={statsEmojis}
+          />
+        )
+      case "movie":
+        return (
+          <MovieSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            customEmojis={introEmojis}
+          />
+        )
       case "peak":
         return (
           <PeakSlide
@@ -368,6 +404,16 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             personalStats={personalStats}
             workspaceName={workspaceName}
             year={stats.year}
+          />
+        )
+      case "fortune":
+        return (
+          <FortuneSlide
+            stats={stats}
+            personalStats={personalStats}
+            workspaceName={workspaceName}
+            year={stats.year}
+            customEmojis={statsEmojis}
           />
         )
       case "stats":
