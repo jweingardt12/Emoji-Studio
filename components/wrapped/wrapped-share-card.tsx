@@ -43,49 +43,57 @@ function fadeIn(progress: number, startProgress: number, duration: number = 0.1)
   return (progress - startProgress) / duration
 }
 
-// Vibrant gradient backgrounds for Wrapped - enhanced with richer colors
+// Vibrant gradient backgrounds for Wrapped - exciting, bold colors
 export type WrappedBackgroundStyle =
-  | "purple"   // Electric Purple
-  | "pink"     // Hot Pink
-  | "blue"     // Electric Blue
-  | "sunset"   // Vibrant Sunset
-  | "teal"     // Neon Teal
-  | "violet"   // Deep Violet
-  | "fire"     // Fire Orange
-  | "aurora"   // Northern Lights
+  | "cosmic"      // Cosmic Purple-Pink
+  | "sunset"      // Golden Sunset
+  | "ocean"       // Deep Ocean
+  | "neon"        // Neon Nights
+  | "mint"        // Fresh Mint
+  | "candy"       // Candy Pop
+  | "fire"        // Blazing Fire
+  | "aurora"      // Northern Lights
 
-export const WRAPPED_BACKGROUNDS: Record<WrappedBackgroundStyle, { gradient: string; label: string }> = {
-  purple: {
-    gradient: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 25%, #D946EF 50%, #EC4899 100%)",
-    label: "Electric Purple",
-  },
-  pink: {
-    gradient: "linear-gradient(135deg, #FF0080 0%, #FF4D94 30%, #F472B6 60%, #FB7185 100%)",
-    label: "Hot Pink",
-  },
-  blue: {
-    gradient: "linear-gradient(135deg, #0EA5E9 0%, #06B6D4 35%, #22D3EE 70%, #67E8F9 100%)",
-    label: "Electric Blue",
+export const WRAPPED_BACKGROUNDS: Record<WrappedBackgroundStyle, { gradient: string; label: string; emoji: string }> = {
+  cosmic: {
+    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 35%, #f472b6 70%, #fbbf24 100%)",
+    label: "Cosmic",
+    emoji: "🌌",
   },
   sunset: {
-    gradient: "linear-gradient(135deg, #F97316 0%, #FB923C 25%, #FBBF24 50%, #FDE047 100%)",
-    label: "Vibrant Sunset",
+    gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 50%, #fa709a 100%)",
+    label: "Sunset",
+    emoji: "🌅",
   },
-  teal: {
-    gradient: "linear-gradient(135deg, #14B8A6 0%, #2DD4BF 30%, #5EEAD4 60%, #99F6E4 100%)",
-    label: "Neon Teal",
+  ocean: {
+    gradient: "linear-gradient(135deg, #0093E9 0%, #80D0C7 50%, #0093E9 100%)",
+    label: "Ocean",
+    emoji: "🌊",
   },
-  violet: {
-    gradient: "linear-gradient(135deg, #7C3AED 0%, #8B5CF6 30%, #A78BFA 60%, #C4B5FD 100%)",
-    label: "Deep Violet",
+  neon: {
+    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%)",
+    label: "Neon",
+    emoji: "✨",
+  },
+  mint: {
+    gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 50%, #11998e 100%)",
+    label: "Mint",
+    emoji: "🌿",
+  },
+  candy: {
+    gradient: "linear-gradient(135deg, #ff6b6b 0%, #feca57 25%, #48dbfb 50%, #ff9ff3 75%, #ff6b6b 100%)",
+    label: "Candy",
+    emoji: "🍬",
   },
   fire: {
-    gradient: "linear-gradient(135deg, #DC2626 0%, #EA580C 30%, #F97316 60%, #FBBF24 100%)",
-    label: "Fire Orange",
+    gradient: "linear-gradient(135deg, #f12711 0%, #f5af19 50%, #f12711 100%)",
+    label: "Fire",
+    emoji: "🔥",
   },
   aurora: {
-    gradient: "linear-gradient(135deg, #06B6D4 0%, #8B5CF6 35%, #D946EF 65%, #F472B6 100%)",
+    gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 25%, #fa709a 50%, #fee140 75%, #43e97b 100%)",
     label: "Aurora",
+    emoji: "🌈",
   },
 }
 
@@ -391,25 +399,6 @@ export function WrappedShareCard({
               Emoji Studio
             </span>
           </div>
-          <div className={cn(
-            "flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20",
-            isStory ? "px-2 py-0.5 gap-1" : "px-1.5 py-0.5 gap-0.5"
-          )}>
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className={cn(
-                "rounded-sm",
-                isStory ? "w-3 h-3" : "w-2.5 h-2.5"
-              )}
-            />
-            <span className={cn(
-              "text-white/90 font-medium",
-              isStory ? "text-[8px]" : "text-[6px]"
-            )}>
-              Available on iOS
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -661,26 +650,6 @@ export function WrappedShareCardFull({
               style={{ fontSize: isStory ? 28 : 22 }}
             >
               Emoji Studio
-            </span>
-          </div>
-          <div
-            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
-            style={{
-              padding: isStory ? "8px 20px" : "6px 16px",
-              gap: isStory ? 8 : 6,
-            }}
-          >
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className="rounded-sm"
-              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
-            />
-            <span
-              className="text-white/90 font-medium"
-              style={{ fontSize: isStory ? 14 : 12 }}
-            >
-              Available on iOS
             </span>
           </div>
         </div>
@@ -978,26 +947,6 @@ export function WrappedShareCardAnimated({
               Emoji Studio
             </span>
           </div>
-          <div
-            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
-            style={{
-              padding: isStory ? "8px 20px" : "6px 16px",
-              gap: isStory ? 8 : 6,
-            }}
-          >
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className="rounded-sm"
-              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
-            />
-            <span
-              className="text-white/90 font-medium"
-              style={{ fontSize: isStory ? 14 : 12 }}
-            >
-              Available on iOS
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -1020,19 +969,55 @@ export interface MyEmojisShareCardProps {
 }
 
 // Calculate grid dimensions based on emoji count and card size
+// Dynamically calculates optimal grid to fit ALL emojis
 function calculateGridLayout(emojiCount: number, size: WrappedCardSize): { cols: number; rows: number; maxEmojis: number } {
-  // Different grid configurations based on card aspect ratio
-  const configs: Record<WrappedCardSize, { cols: number; rows: number }> = {
-    square: { cols: 8, rows: 8 },   // 64 emojis max
-    story: { cols: 6, rows: 10 },   // 60 emojis max (taller)
-    wide: { cols: 12, rows: 4 },    // 48 emojis max (wider)
+  // If no emojis, return minimal grid
+  if (emojiCount <= 0) {
+    return { cols: 1, rows: 1, maxEmojis: 0 }
   }
 
-  const config = configs[size]
+  // Aspect ratio targets for each card size (width/height ratio of the grid area)
+  const aspectRatios: Record<WrappedCardSize, number> = {
+    square: 1.0,      // Square grid area
+    story: 0.5,       // Taller than wide (portrait)
+    wide: 2.5,        // Wider than tall (landscape)
+  }
+
+  const targetRatio = aspectRatios[size]
+
+  // Calculate optimal columns and rows to fit all emojis
+  // We want: cols/rows ≈ targetRatio and cols * rows >= emojiCount
+  // Solving: cols = sqrt(emojiCount * targetRatio), rows = sqrt(emojiCount / targetRatio)
+
+  const sqrtCount = Math.sqrt(emojiCount)
+  let cols = Math.ceil(sqrtCount * Math.sqrt(targetRatio))
+  let rows = Math.ceil(emojiCount / cols)
+
+  // Ensure we have enough cells for all emojis
+  while (cols * rows < emojiCount) {
+    // Add to whichever dimension keeps us closer to target ratio
+    if (cols / rows < targetRatio) {
+      cols++
+    } else {
+      rows++
+    }
+  }
+
+  // Minimum dimensions to ensure decent sizing
+  const minDimensions: Record<WrappedCardSize, { minCols: number; minRows: number }> = {
+    square: { minCols: 3, minRows: 3 },
+    story: { minCols: 3, minRows: 4 },
+    wide: { minCols: 4, minRows: 2 },
+  }
+
+  const { minCols, minRows } = minDimensions[size]
+  cols = Math.max(cols, minCols)
+  rows = Math.max(rows, minRows)
+
   return {
-    cols: config.cols,
-    rows: config.rows,
-    maxEmojis: config.cols * config.rows,
+    cols,
+    rows,
+    maxEmojis: emojiCount, // Show ALL emojis
   }
 }
 
@@ -1169,44 +1154,25 @@ export function MyEmojisShareCard({
           </div>
         </div>
 
-        {/* Promotional footer branding with Apple icon */}
+        {/* Promotional footer branding */}
         <div className={cn(
-          "flex flex-col items-center justify-center gap-0.5 mt-auto pt-2",
+          "flex items-center justify-center gap-1 mt-auto pt-2",
           isWide && "pt-1"
         )}>
-          <div className="flex items-center gap-1">
-            <img
-              src="/logo.png"
-              alt="Emoji Studio"
-              className={cn(
-                "rounded",
-                isStory ? "w-4 h-4" : "w-3 h-3"
-              )}
-            />
-            <span className={cn(
-              "text-white font-semibold",
-              isStory ? "text-[11px]" : "text-[9px]"
-            )}>
-              Emoji Studio
-            </span>
-          </div>
-          <div className={cn(
-            "flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20",
-            isStory ? "px-1.5 py-0.5 gap-0.5" : "px-1 py-0.5 gap-0.5"
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className={cn(
+              "rounded",
+              isStory ? "w-4 h-4" : "w-3 h-3"
+            )}
+          />
+          <span className={cn(
+            "text-white font-semibold",
+            isStory ? "text-[11px]" : "text-[9px]"
           )}>
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className="rounded-sm"
-              style={{ width: isStory ? 10 : 8, height: isStory ? 10 : 8 }}
-            />
-            <span className={cn(
-              "text-white/90 font-medium",
-              isStory ? "text-[6px]" : "text-[5px]"
-            )}>
-              Available on iOS
-            </span>
-          </div>
+            Emoji Studio
+          </span>
         </div>
       </div>
     </div>
@@ -1346,45 +1312,23 @@ export function MyEmojisShareCardFull({
           </div>
         </div>
 
-        {/* Promotional Footer with Apple icon */}
+        {/* Promotional Footer */}
         <div
-          className="flex flex-col items-center justify-center mt-auto"
-          style={{ gap: isStory ? 12 : 8, paddingTop: 20 }}
+          className="flex items-center justify-center mt-auto"
+          style={{ gap: 12, paddingTop: 20 }}
         >
-          <div className="flex items-center" style={{ gap: 12 }}>
-            <img
-              src="/logo.png"
-              alt="Emoji Studio"
-              className="rounded-lg"
-              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
-            />
-            <span
-              className="text-white font-semibold"
-              style={{ fontSize: isStory ? 28 : 22 }}
-            >
-              Emoji Studio
-            </span>
-          </div>
-          <div
-            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
-            style={{
-              padding: isStory ? "8px 20px" : "6px 16px",
-              gap: isStory ? 8 : 6,
-            }}
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className="rounded-lg"
+            style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+          />
+          <span
+            className="text-white font-semibold"
+            style={{ fontSize: isStory ? 28 : 22 }}
           >
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className="rounded-sm"
-              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
-            />
-            <span
-              className="text-white/90 font-medium"
-              style={{ fontSize: isStory ? 14 : 12 }}
-            >
-              Available on iOS
-            </span>
-          </div>
+            Emoji Studio
+          </span>
         </div>
       </div>
     </div>
@@ -1576,49 +1520,27 @@ export function MyEmojisShareCardAnimated({
           </div>
         </div>
 
-        {/* Promotional Footer with Apple icon - fade in at end */}
+        {/* Promotional Footer - fade in at end */}
         <div
-          className="flex flex-col items-center justify-center mt-auto"
+          className="flex items-center justify-center mt-auto"
           style={{
-            gap: isStory ? 12 : 8,
+            gap: 12,
             paddingTop: 20,
             opacity: brandingOpacity,
           }}
         >
-          <div className="flex items-center" style={{ gap: 12 }}>
-            <img
-              src="/logo.png"
-              alt="Emoji Studio"
-              className="rounded-lg"
-              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
-            />
-            <span
-              className="text-white font-semibold"
-              style={{ fontSize: isStory ? 28 : 22 }}
-            >
-              Emoji Studio
-            </span>
-          </div>
-          <div
-            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
-            style={{
-              padding: isStory ? "8px 20px" : "6px 16px",
-              gap: isStory ? 8 : 6,
-            }}
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            className="rounded-lg"
+            style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+          />
+          <span
+            className="text-white font-semibold"
+            style={{ fontSize: isStory ? 28 : 22 }}
           >
-            <img
-              src="/app-icon-1024.png"
-              alt="App Icon"
-              className="rounded-sm"
-              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
-            />
-            <span
-              className="text-white/90 font-medium"
-              style={{ fontSize: isStory ? 14 : 12 }}
-            >
-              Available on iOS
-            </span>
-          </div>
+            Emoji Studio
+          </span>
         </div>
       </div>
     </div>

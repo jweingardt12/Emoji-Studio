@@ -8,14 +8,11 @@ import {
   generateImage,
   copyImageToClipboard,
   downloadImage,
-  shareImage,
-  canShare,
+  shareImageWithResult,
   blobToDataUrl,
   shouldUseInlineFallback,
-  type ClipboardResult,
-  type DownloadResult,
 } from "@/lib/utils/share-image"
-import { isIOS, isWebView, isRestrictedWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
+import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import { useTrack } from "@/lib/hooks/use-track"
 
 interface SlideShareButtonProps {
@@ -42,7 +39,6 @@ export function SlideShareButton({
   const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null)
   const [showFallback, setShowFallback] = useState(false)
   const [needsFallback, setNeedsFallback] = useState(false)
-  const canShareFiles = canShare()
   const track = useTrack()
 
   // Check if we need inline fallback on mount
@@ -166,13 +162,24 @@ export function SlideShareButton({
       if (!blob) return
       const title = `${workspaceName} Emoji Wrapped ${year}`
       const text = `Check out this slide from our Emoji Wrapped! Made with Emoji Studio`
-      const shared = await shareImage(blob, title, text)
-      if (shared) {
+      const result = await shareImageWithResult(blob, title, text)
+
+      if (result.success && !result.cancelled) {
+        // Show appropriate message based on the method used
+        if (result.method === "download") {
+          toast.success(result.message, { duration: 4000 })
+        } else {
+          toast.success(result.message)
+        }
+
         track("wrapped_slide_shared", {
           slide_name: slideName,
           action: "share",
           year,
+          method: result.method,
         })
+      } else if (!result.success) {
+        toast.error(result.message, { duration: 4000 })
       }
     } catch (error) {
       console.error("Failed to share:", error)
@@ -216,9 +223,6 @@ export function SlideShareButton({
     setShowFallback(false)
     setFallbackImageUrl(null)
   }
-
-  // On iOS, prioritize Share button as it's the most reliable
-  const isIOSDevice = isIOS() || isWebView()
 
   // If showing fallback image, render the fallback UI
   if (showFallback && fallbackImageUrl) {
@@ -274,7 +278,7 @@ export function SlideShareButton({
       onClick={(e) => e.stopPropagation()}
     >
       {/* WebView fallback: Primary "Save" button that generates inline image */}
-      {needsFallback && (
+      {needsFallback ? (
         <Button
           variant="ghost"
           size="sm"
@@ -289,78 +293,56 @@ export function SlideShareButton({
           )}
           <span className="text-sm">Save</span>
         </Button>
-      )}
+      ) : (
+        <>
+          {/* Copy button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            disabled={isGenerating}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
+          >
+            {isGenerating && activeAction === "copy" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Copy className="w-4 h-4" />
+            )}
+            <span className="text-sm">Copy</span>
+          </Button>
 
-      {/* On iOS with Web Share, show Share button first */}
-      {isIOSDevice && canShareFiles && !needsFallback && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleShare}
-          disabled={isGenerating}
-          className="bg-white/30 hover:bg-white/40 backdrop-blur-sm text-white border-0 gap-2"
-        >
-          {isGenerating && activeAction === "share" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Share2 className="w-4 h-4" />
-          )}
-          <span className="text-sm">Share</span>
-        </Button>
-      )}
+          {/* Download/Save button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownload}
+            disabled={isGenerating}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
+          >
+            {isGenerating && activeAction === "download" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span className="text-sm">Save</span>
+          </Button>
 
-      {/* Copy button - only show if not in restricted WebView */}
-      {!needsFallback && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          disabled={isGenerating}
-          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
-        >
-          {isGenerating && activeAction === "copy" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Copy className="w-4 h-4" />
-          )}
-          <span className="text-sm">Copy</span>
-        </Button>
-      )}
-
-      {/* Download button - only show if not in restricted WebView */}
-      {!needsFallback && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDownload}
-          disabled={isGenerating}
-          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
-        >
-          {isGenerating && activeAction === "download" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Download className="w-4 h-4" />
-          )}
-          <span className="text-sm">Save</span>
-        </Button>
-      )}
-
-      {/* On non-iOS with Web Share, show Share button in normal position */}
-      {!isIOSDevice && canShareFiles && !needsFallback && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleShare}
-          disabled={isGenerating}
-          className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
-        >
-          {isGenerating && activeAction === "share" ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Share2 className="w-4 h-4" />
-          )}
-          <span className="text-sm">Share</span>
-        </Button>
+          {/* Share button - always visible, with built-in fallbacks */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleShare}
+            disabled={isGenerating}
+            className="bg-white/30 hover:bg-white/40 backdrop-blur-sm text-white border-0 gap-2"
+          >
+            {isGenerating && activeAction === "share" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Share2 className="w-4 h-4" />
+            )}
+            <span className="text-sm">Share</span>
+          </Button>
+        </>
       )}
     </div>
   )

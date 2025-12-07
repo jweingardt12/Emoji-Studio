@@ -1,11 +1,10 @@
-import { toPng, toBlob, toCanvas, toJpeg } from "html-to-image"
+import { toPng, toCanvas } from "html-to-image"
 import GIF from "gif.js"
 import { VideoProcessor } from "./video-processor"
 import {
   isIOS,
   isWebView,
   isRestrictedWebView,
-  supportsDownloadAttribute,
   supportsClipboardWriteImage,
   supportsWebShareWithFiles,
   isEmojiStudioApp,
@@ -277,55 +276,136 @@ export async function downloadImage(blob: Blob, filename: string): Promise<Downl
 }
 
 /**
- * Share an image using the Web Share API
- * Returns true if sharing was successful, false if not supported
+ * Result of share operation
+ */
+export interface ShareResult {
+  success: boolean
+  method: "native" | "webshare" | "download" | "none"
+  message: string
+  cancelled?: boolean
+}
+
+/**
+ * Share an image using the Web Share API with comprehensive fallbacks
+ * Works across all platforms: iOS, Android, Desktop, WebViews
  */
 export async function shareImage(
   blob: Blob,
   title: string,
-  text?: string
+  text?: string,
+  filename?: string
 ): Promise<boolean> {
+  const result = await shareImageWithResult(blob, title, text, filename)
+  return result.success
+}
+
+/**
+ * Share an image with detailed result information
+ * This is the main share function with full fallback support
+ */
+export async function shareImageWithResult(
+  blob: Blob,
+  title: string,
+  text?: string,
+  filename?: string
+): Promise<ShareResult> {
+  const finalFilename = filename || "emoji-studio.png"
+  const shareText = text || "Made with Emoji Studio: https://emojistudio.xyz"
+
   // First try native share if we're in the Emoji Studio iOS app
   if (isEmojiStudioApp() || hasNativeShareHandler()) {
     const nativeShareSuccess = await triggerNativeShare({
       imageBlob: blob,
       title,
-      text: text || "Made with Emoji Studio",
-      filename: "emoji-studio.png",
+      text: shareText,
+      filename: finalFilename,
     })
     if (nativeShareSuccess) {
-      return true
+      return {
+        success: true,
+        method: "native",
+        message: "Sharing...",
+      }
     }
     // If native share failed, continue with fallbacks
   }
 
-  // Check if Web Share API with files is supported
-  if (!navigator.canShare) {
-    return false
-  }
+  // Try Web Share API with files if supported
+  if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], finalFilename, { type: blob.type || "image/png" })
+      const shareData = {
+        title,
+        text: shareText,
+        files: [file],
+      }
 
-  const file = new File([blob], "emoji-studio.png", { type: "image/png" })
-  const shareData = {
-    title,
-    text: text || "Made with Emoji Studio: https://emojistudio.xyz",
-    files: [file],
-  }
-
-  if (!navigator.canShare(shareData)) {
-    return false
-  }
-
-  try {
-    await navigator.share(shareData)
-    return true
-  } catch (error) {
-    // User cancelled or share failed
-    if ((error as Error).name === "AbortError") {
-      // User cancelled - not an error
-      return true
+      if (navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        return {
+          success: true,
+          method: "webshare",
+          message: "Shared successfully!",
+        }
+      }
+    } catch (error) {
+      // User cancelled - that's okay
+      if ((error as Error).name === "AbortError") {
+        return {
+          success: true,
+          method: "webshare",
+          message: "Share cancelled",
+          cancelled: true,
+        }
+      }
+      console.warn("Web Share with files failed, trying fallback:", error)
     }
-    console.error("Share failed:", error)
-    return false
+
+    // Try sharing without files (just URL/text) as a fallback
+    try {
+      const textOnlyShareData = {
+        title,
+        text: shareText,
+        url: "https://emojistudio.xyz",
+      }
+
+      if (navigator.canShare(textOnlyShareData)) {
+        await navigator.share(textOnlyShareData)
+        return {
+          success: true,
+          method: "webshare",
+          message: "Link shared! The image was downloaded separately.",
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        return {
+          success: true,
+          method: "webshare",
+          message: "Share cancelled",
+          cancelled: true,
+        }
+      }
+      console.warn("Web Share text-only also failed:", error)
+    }
+  }
+
+  // Fallback: Download the image instead
+  const downloadResult = await downloadImage(blob, finalFilename)
+  if (downloadResult.success) {
+    return {
+      success: true,
+      method: "download",
+      message: downloadResult.method === "open"
+        ? "Image opened - long-press to save, then share from your photos!"
+        : "Image downloaded! You can now share it from your files.",
+    }
+  }
+
+  return {
+    success: false,
+    method: "none",
+    message: "Unable to share. Please try downloading instead.",
   }
 }
 
@@ -521,51 +601,94 @@ export async function downloadGif(blob: Blob, filename: string): Promise<Downloa
 }
 
 /**
- * Share a GIF using the Web Share API
+ * Share a GIF using the Web Share API with comprehensive fallbacks
  */
 export async function shareGif(
   blob: Blob,
   title: string,
-  text?: string
+  text?: string,
+  filename?: string
 ): Promise<boolean> {
+  const result = await shareGifWithResult(blob, title, text, filename)
+  return result.success
+}
+
+/**
+ * Share a GIF with detailed result information
+ */
+export async function shareGifWithResult(
+  blob: Blob,
+  title: string,
+  text?: string,
+  filename?: string
+): Promise<ShareResult> {
+  const finalFilename = filename || "emoji-studio.gif"
+  const shareText = text || "Made with Emoji Studio: https://emojistudio.xyz"
+
   // First try native share if we're in the Emoji Studio iOS app
   if (isEmojiStudioApp() || hasNativeShareHandler()) {
     const nativeShareSuccess = await triggerNativeShare({
       imageBlob: blob,
       title,
-      text: text || "Made with Emoji Studio",
-      filename: "emoji-studio.gif",
+      text: shareText,
+      filename: finalFilename,
     })
     if (nativeShareSuccess) {
-      return true
+      return {
+        success: true,
+        method: "native",
+        message: "Sharing...",
+      }
     }
-    // If native share failed, continue with fallbacks
   }
 
-  if (!navigator.canShare) {
-    return false
-  }
+  // Try Web Share API with files if supported
+  if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], finalFilename, { type: "image/gif" })
+      const shareData = {
+        title,
+        text: shareText,
+        files: [file],
+      }
 
-  const file = new File([blob], "emoji-studio.gif", { type: "image/gif" })
-  const shareData = {
-    title,
-    text: text || "Made with Emoji Studio: https://emojistudio.xyz",
-    files: [file],
-  }
-
-  if (!navigator.canShare(shareData)) {
-    return false
-  }
-
-  try {
-    await navigator.share(shareData)
-    return true
-  } catch (error) {
-    if ((error as Error).name === "AbortError") {
-      return true
+      if (navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        return {
+          success: true,
+          method: "webshare",
+          message: "Shared successfully!",
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        return {
+          success: true,
+          method: "webshare",
+          message: "Share cancelled",
+          cancelled: true,
+        }
+      }
+      console.warn("Web Share with GIF failed, trying fallback:", error)
     }
-    console.error("Share failed:", error)
-    return false
+  }
+
+  // Fallback: Download the GIF instead
+  const downloadResult = await downloadGif(blob, finalFilename)
+  if (downloadResult.success) {
+    return {
+      success: true,
+      method: "download",
+      message: downloadResult.method === "open"
+        ? "GIF opened - long-press to save, then share from your photos!"
+        : "GIF downloaded! You can now share it from your files.",
+    }
+  }
+
+  return {
+    success: false,
+    method: "none",
+    message: "Unable to share GIF. Please try downloading instead.",
   }
 }
 
@@ -716,50 +839,93 @@ export async function downloadVideo(blob: Blob, filename: string): Promise<Downl
 }
 
 /**
- * Share a video using the Web Share API
+ * Share a video using the Web Share API with comprehensive fallbacks
  */
 export async function shareVideo(
   blob: Blob,
   title: string,
-  text?: string
+  text?: string,
+  filename?: string
 ): Promise<boolean> {
+  const result = await shareVideoWithResult(blob, title, text, filename)
+  return result.success
+}
+
+/**
+ * Share a video with detailed result information
+ */
+export async function shareVideoWithResult(
+  blob: Blob,
+  title: string,
+  text?: string,
+  filename?: string
+): Promise<ShareResult> {
+  const finalFilename = filename || "emoji-studio.mp4"
+  const shareText = text || "Made with Emoji Studio: https://emojistudio.xyz"
+
   // First try native share if we're in the Emoji Studio iOS app
   if (isEmojiStudioApp() || hasNativeShareHandler()) {
     const nativeShareSuccess = await triggerNativeShare({
       imageBlob: blob,
       title,
-      text: text || "Made with Emoji Studio",
-      filename: "emoji-studio.mp4",
+      text: shareText,
+      filename: finalFilename,
     })
     if (nativeShareSuccess) {
-      return true
+      return {
+        success: true,
+        method: "native",
+        message: "Sharing...",
+      }
     }
-    // If native share failed, continue with fallbacks
   }
 
-  if (!navigator.canShare) {
-    return false
-  }
+  // Try Web Share API with files if supported
+  if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    try {
+      const file = new File([blob], finalFilename, { type: "video/mp4" })
+      const shareData = {
+        title,
+        text: shareText,
+        files: [file],
+      }
 
-  const file = new File([blob], "emoji-studio.mp4", { type: "video/mp4" })
-  const shareData = {
-    title,
-    text: text || "Made with Emoji Studio: https://emojistudio.xyz",
-    files: [file],
-  }
-
-  if (!navigator.canShare(shareData)) {
-    return false
-  }
-
-  try {
-    await navigator.share(shareData)
-    return true
-  } catch (error) {
-    if ((error as Error).name === "AbortError") {
-      return true
+      if (navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+        return {
+          success: true,
+          method: "webshare",
+          message: "Shared successfully!",
+        }
+      }
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        return {
+          success: true,
+          method: "webshare",
+          message: "Share cancelled",
+          cancelled: true,
+        }
+      }
+      console.warn("Web Share with video failed, trying fallback:", error)
     }
-    console.error("Share failed:", error)
-    return false
+  }
+
+  // Fallback: Download the video instead
+  const downloadResult = await downloadVideo(blob, finalFilename)
+  if (downloadResult.success) {
+    return {
+      success: true,
+      method: "download",
+      message: downloadResult.method === "open"
+        ? "Video opened - tap and hold to save, then share from your photos!"
+        : "Video downloaded! You can now share it from your files.",
+    }
+  }
+
+  return {
+    success: false,
+    method: "none",
+    message: "Unable to share video. Please try downloading instead.",
   }
 }

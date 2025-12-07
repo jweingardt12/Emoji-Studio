@@ -39,12 +39,11 @@ import {
   generateImage,
   copyImageToClipboard,
   downloadImage,
-  shareImage,
-  canShare,
+  shareImageWithResult,
   downloadGif,
-  shareGif,
-  type ClipboardResult,
+  shareGifWithResult,
   type DownloadResult,
+  type ShareResult,
 } from "@/lib/utils/share-image"
 import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import GIF from "gif.js"
@@ -80,12 +79,6 @@ export function LeaderboardShareModal({
   const [exportFormat, setExportFormat] = useState<ExportFormat>("image")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [canShareFiles, setCanShareFiles] = useState(false)
-
-  // Check Web Share API support on mount
-  useEffect(() => {
-    setCanShareFiles(canShare())
-  }, [])
 
   // Track modal opened
   useEffect(() => {
@@ -329,31 +322,41 @@ export function LeaderboardShareModal({
       // Convert all images to data URLs to ensure correct images are captured
       restoreImages = await convertImagesToDataUrls(element)
 
-      let success = false
+      let result: ShareResult
       if (exportFormat === "gif") {
         const gifBlob = await generateStaticGif(element)
-        success = await shareGif(
+        result = await shareGifWithResult(
           gifBlob,
           `${workspaceName} Emoji Leaderboard`,
           "Made with Emoji Studio: https://emojistudio.xyz"
         )
       } else {
         const blob = await generateImage(element)
-        success = await shareImage(
+        result = await shareImageWithResult(
           blob,
           `${workspaceName} Emoji Leaderboard`,
           "Made with Emoji Studio: https://emojistudio.xyz"
         )
       }
 
-      if (success) {
+      if (result.success && !result.cancelled) {
+        // Show appropriate message based on the method used
+        if (result.method === "download") {
+          toast.success(result.message, { duration: 4000 })
+        } else {
+          toast.success(result.message)
+        }
+
         track("leaderboard_share_shared", {
           user_count: userCount,
           background_style: backgroundStyle,
           date_range: dateRange,
           format: exportFormat,
           show_emojis: showEmojis,
+          method: result.method,
         })
+      } else if (!result.success) {
+        toast.error(result.message, { duration: 4000 })
       }
     } catch (error) {
       toast.error("Failed to share")
@@ -577,16 +580,18 @@ export function LeaderboardShareModal({
           <Download className="w-4 h-4 mr-2" />
           {exportFormat === "gif" ? "Download GIF" : "Download"}
         </Button>
-        {canShareFiles && (
-          <Button
-            className="flex-1"
-            onClick={handleShare}
-            disabled={isGenerating}
-          >
+        <Button
+          className="flex-1"
+          onClick={handleShare}
+          disabled={isGenerating}
+        >
+          {isGenerating ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
             <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </Button>
-        )}
+          )}
+          Share
+        </Button>
       </div>
 
       {/* LinkedIn share button */}
