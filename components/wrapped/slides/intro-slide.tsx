@@ -89,7 +89,7 @@ export function IntroSlide({
 
           {/* Orbital emoji ring - constrained to prevent overflow */}
           {orbitEmojis.length > 0 && (
-            <div className="absolute inset-0 flex items-center justify-center scale-100 sm:scale-110 md:scale-125 lg:scale-150 overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center scale-[0.85] xs:scale-100 sm:scale-110 md:scale-125 lg:scale-150 overflow-hidden">
               <EmojiOrbit
                 emojis={orbitEmojis}
                 size="lg"

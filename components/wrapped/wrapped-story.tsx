@@ -336,7 +336,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       case "creators":
         return <CreatorsSlide topCreators={stats.topCreators} workspaceName={workspaceName} year={stats.year} />
       case "personal":
-        return personalStats ? <PersonalSlide personalStats={personalStats} workspaceName={workspaceName} year={stats.year} /> : null
+        return personalStats ? <PersonalSlide stats={stats} personalStats={personalStats} workspaceName={workspaceName} year={stats.year} /> : null
       case "quiz-workspace":
         return (
           <QuizSlide

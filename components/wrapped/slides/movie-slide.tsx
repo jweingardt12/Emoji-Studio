@@ -8,7 +8,8 @@ import { proxyImageUrl, EMOJI_PLACEHOLDER, hasValidUrl } from "@/lib/utils/image
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { Emoji } from "@/lib/services/emoji-service"
-import { Star } from "lucide-react"
+import { Star, Award, Trophy } from "lucide-react"
+import { detectEdgeCases, getMovieGenreOverride } from "@/lib/utils/wrapped-edge-cases"
 
 interface MovieSlideProps {
   stats: WrappedStats
@@ -172,6 +173,29 @@ function VHSStarRating({ rating, captureMode }: { rating: number; captureMode: b
   )
 }
 
+// Special badge display component
+function MovieBadge({ badge, captureMode }: { badge: { type: string; label: string }; captureMode: boolean }) {
+  return (
+    <motion.div
+      initial={captureMode ? false : { opacity: 0, scale: 0, rotate: -10 }}
+      animate={{ opacity: 1, scale: 1, rotate: -5 }}
+      transition={{ delay: captureMode ? 0 : 2.3, type: "spring" }}
+      className="absolute top-3 right-3 z-30 flex items-center gap-1 px-2 py-1 rounded"
+      style={{
+        background: `linear-gradient(135deg, ${VHS_COLORS.yellow} 0%, #ffa500 100%)`,
+        boxShadow: `0 0 10px ${VHS_COLORS.yellow}60`,
+      }}
+    >
+      {badge.type === "award" ? (
+        <Trophy className="w-3 h-3 text-black" />
+      ) : (
+        <Award className="w-3 h-3 text-black" />
+      )}
+      <span className="text-[10px] font-bold text-black uppercase tracking-wider">{badge.label}</span>
+    </motion.div>
+  )
+}
+
 // VHS Movie Poster Card
 function VHSMoviePosterCard({
   poster,
@@ -180,6 +204,7 @@ function VHSMoviePosterCard({
   shouldAnimate,
   workspaceName,
   timestamp,
+  specialBadge,
 }: {
   poster: MoviePoster
   castEmojis: Emoji[]
@@ -187,6 +212,7 @@ function VHSMoviePosterCard({
   shouldAnimate: boolean
   workspaceName: string
   timestamp: string
+  specialBadge?: { type: string; label: string } | null
 }) {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
 
@@ -208,6 +234,9 @@ function VHSMoviePosterCard({
       {/* VHS tracking overlay */}
       <VHSTrackingLines shouldAnimate={shouldAnimate} />
       <StaticBurst shouldAnimate={shouldAnimate} />
+
+      {/* Special badge for achievements */}
+      {specialBadge && <MovieBadge badge={specialBadge} captureMode={captureMode} />}
 
       {/* Film perforations */}
       <FilmPerforations side="left" />
@@ -443,11 +472,37 @@ export function MovieSlide({
   }, [])
   const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
-  // Generate movie poster
-  const moviePoster = useMemo(
-    () => generateMoviePoster(stats, stats.funStats.topWords, personalStats),
-    [stats, personalStats]
-  )
+  // Detect edge cases
+  const edgeCases = useMemo(() => detectEdgeCases(stats, personalStats), [stats, personalStats])
+
+  // Generate movie poster with edge case overrides
+  const moviePoster = useMemo(() => {
+    const basePoster = generateMoviePoster(stats, stats.funStats.topWords, personalStats)
+    const genreOverride = getMovieGenreOverride(edgeCases, personalStats)
+
+    // Apply edge case overrides if available
+    if (genreOverride) {
+      return {
+        ...basePoster,
+        genre: genreOverride.genre,
+        tagline: genreOverride.tagline,
+      }
+    }
+
+    return basePoster
+  }, [stats, personalStats, edgeCases])
+
+  // Check if user should get special badge on movie poster
+  const specialBadge = useMemo(() => {
+    if (!personalStats) return null
+    if (edgeCases.isPodiumCreator && personalStats.rank === 1) return { type: "award", label: "Award Winning" }
+    if (edgeCases.isPodiumCreator && personalStats.rank <= 3) return { type: "top3", label: "Top 3 Creator" }
+    if (edgeCases.isStreakDemon) return { type: "streak", label: "Streak Master" }
+    if (edgeCases.isMemeGod) return { type: "meme", label: "Animation Master" }
+    if (edgeCases.isPuristExtreme) return { type: "purist", label: "Artisan Award" }
+    if (stats.growth.hasYoYData && stats.growth.growthPercentage > 50) return { type: "growth", label: "Breakout Hit" }
+    return null
+  }, [personalStats, edgeCases, stats.growth])
 
   // Get cast emojis - filter to valid URLs
   const castEmojis = customEmojis.slice(0, 5).filter(emoji => hasValidUrl(emoji))
@@ -512,6 +567,7 @@ export function MovieSlide({
               shouldAnimate={shouldAnimate}
               workspaceName={workspaceName}
               timestamp={timestamp}
+              specialBadge={specialBadge}
             />
           </div>
 

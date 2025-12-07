@@ -7,6 +7,7 @@ import { detectPersona, Persona, PERSONAS } from "@/lib/services/vibe-generator"
 import { SlideBranding } from "../slide-branding"
 import { useShouldReduceAnimations } from "@/hooks/use-animation-tier"
 import { Emoji } from "@/lib/services/emoji-service"
+import { detectEdgeCases, getPersonaElement, ElementType, ELEMENT_COLORS } from "@/lib/utils/wrapped-edge-cases"
 import {
   Moon,
   Crown,
@@ -24,6 +25,8 @@ import {
   Tv,
   Coffee,
   Rocket,
+  Trophy,
+  Sparkles,
 } from "lucide-react"
 
 interface VibeSlideProps {
@@ -109,6 +112,78 @@ function PixelBorder({ children, color }: { children: React.ReactNode; color: st
   )
 }
 
+// Element type badge (Pokemon style)
+function ElementBadge({ element, captureMode }: { element: ElementType; captureMode: boolean }) {
+  const colors = ELEMENT_COLORS[element]
+  const elementLabels: Record<ElementType, string> = {
+    fire: "🔥 FIRE",
+    water: "💧 WATER",
+    electric: "⚡ ELECTRIC",
+    dark: "🌙 DARK",
+    light: "✨ LIGHT",
+    nature: "🌿 NATURE",
+  }
+
+  return (
+    <motion.div
+      initial={captureMode ? false : { opacity: 0, scale: 0, y: -10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ delay: captureMode ? 0 : 0.5, type: "spring" }}
+      className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 z-20 px-2 py-0.5 rounded-sm font-mono text-[10px] uppercase tracking-wider font-bold"
+      style={{
+        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+        boxShadow: `0 0 10px ${colors.primary}80`,
+        color: element === "light" ? "#333" : "#fff",
+      }}
+    >
+      {elementLabels[element]}
+    </motion.div>
+  )
+}
+
+// Champion crown for top 3 creators
+function ChampionCrown({ rank, captureMode }: { rank: number; captureMode: boolean }) {
+  const colors = {
+    1: { bg: "linear-gradient(135deg, #ffd700 0%, #ffaa00 100%)", glow: "#ffd700" },
+    2: { bg: "linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%)", glow: "#c0c0c0" },
+    3: { bg: "linear-gradient(135deg, #cd7f32 0%, #b87333 100%)", glow: "#cd7f32" },
+  }[rank] || { bg: "linear-gradient(135deg, #ffd700 0%, #ffaa00 100%)", glow: "#ffd700" }
+
+  return (
+    <motion.div
+      initial={captureMode ? false : { opacity: 0, scale: 0, rotate: -15 }}
+      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+      transition={{ delay: captureMode ? 0 : 0.6, type: "spring", stiffness: 200 }}
+      className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2 py-1 rounded-sm"
+      style={{
+        background: colors.bg,
+        boxShadow: `0 0 15px ${colors.glow}80`,
+      }}
+    >
+      <Trophy className="w-3 h-3 text-white" />
+      <span className="font-mono text-[10px] font-bold text-white uppercase">
+        #{rank} Creator
+      </span>
+    </motion.div>
+  )
+}
+
+// Newcomer badge for new joiners
+function NewcomerBadge({ captureMode }: { captureMode: boolean }) {
+  return (
+    <motion.div
+      initial={captureMode ? false : { opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: captureMode ? 0 : 0.7 }}
+      className="absolute -top-2 -left-2 sm:-top-3 sm:-left-3 z-20 px-2 py-0.5 rounded-sm font-mono text-[10px] uppercase tracking-wider font-bold bg-cyan-500"
+      style={{ boxShadow: "0 0 10px rgba(0, 229, 255, 0.5)" }}
+    >
+      <Sparkles className="w-3 h-3 inline mr-1" />
+      NEW
+    </motion.div>
+  )
+}
+
 // Arcade stat bar component
 function StatBar({
   label,
@@ -167,6 +242,9 @@ function ArcadePersonaCard({
   shouldAnimate,
   delay = 0,
   size = "large",
+  element,
+  rank,
+  isNewcomer,
 }: {
   persona: Persona
   label: string
@@ -174,11 +252,15 @@ function ArcadePersonaCard({
   shouldAnimate: boolean
   delay?: number
   size?: "large" | "small"
+  element?: ElementType
+  rank?: number
+  isNewcomer?: boolean
 }) {
   const IconComponent = ICON_MAP[persona.icon] || Target
   const isLarge = size === "large"
   const primaryColor = persona.gradient[0]
   const secondaryColor = persona.gradient[1]
+  const isChampion = rank && rank <= 3
 
   return (
     <motion.div
@@ -188,10 +270,18 @@ function ArcadePersonaCard({
         delay: captureMode ? 0 : delay,
         duration: 0.3,
       }}
-      className={isLarge ? "w-full max-w-sm sm:max-w-md" : "w-full max-w-xs"}
+      className={`relative ${isLarge ? "w-full max-w-sm sm:max-w-md" : "w-full max-w-xs"}`}
     >
+      {/* Champion crown for top 3 */}
+      {isChampion && isLarge && <ChampionCrown rank={rank} captureMode={captureMode} />}
+
       <PixelBorder color={secondaryColor}>
-        <div className={`p-4 sm:p-6 ${isLarge ? "md:p-8" : ""}`}>
+        <div className={`relative p-4 sm:p-6 ${isLarge ? "md:p-8" : ""}`}>
+          {/* Element badge */}
+          {element && isLarge && <ElementBadge element={element} captureMode={captureMode} />}
+
+          {/* Newcomer badge */}
+          {isNewcomer && isLarge && <NewcomerBadge captureMode={captureMode} />}
           {/* Label */}
           <motion.div
             className="text-center mb-3 sm:mb-4"
@@ -331,11 +421,36 @@ export function VibeSlide({
   }, [])
   const shouldAnimate = hydrated && !captureMode && !shouldReduceAnimations
 
-  // Detect personas
+  // Detect edge cases
+  const edgeCases = useMemo(() => detectEdgeCases(stats, personalStats), [stats, personalStats])
+
+  // Detect personas with edge case overrides
   const workspacePersona = useMemo(() => detectPersona(stats), [stats])
-  const personalPersona = useMemo(
-    () => (personalStats ? detectPersona(stats, personalStats) : null),
-    [stats, personalStats]
+  const personalPersona = useMemo(() => {
+    if (!personalStats) return null
+
+    // Get base persona
+    let persona = detectPersona(stats, personalStats)
+
+    // Apply edge case overrides for special patterns
+    if (edgeCases.isMemeGod && persona.type !== "meme-lord") {
+      // Force meme-lord for 100% GIF + 50+ emojis
+      persona = { ...PERSONAS["meme-lord"], type: "meme-lord", stats: persona.stats }
+    } else if (edgeCases.isPuristExtreme && persona.type !== "purist") {
+      // Force purist for 0% GIF + 30+ emojis
+      persona = { ...PERSONAS["purist"], type: "purist", stats: persona.stats }
+    } else if (edgeCases.isNightOwl && persona.type !== "insomniac") {
+      // Force insomniac for >50% late night
+      persona = { ...PERSONAS["insomniac"], type: "insomniac", stats: persona.stats }
+    }
+
+    return persona
+  }, [stats, personalStats, edgeCases])
+
+  // Get element type for personal persona
+  const personalElement = useMemo(
+    () => (personalPersona ? getPersonaElement(personalPersona.type) : undefined),
+    [personalPersona]
   )
 
   // Check if personal and workspace have different personas
@@ -424,15 +539,18 @@ export function VibeSlide({
 
           {/* Middle Section: Persona Cards */}
           <div className="flex-1 flex flex-col items-center justify-center w-full gap-4 sm:gap-6 py-4">
-            {personalPersona ? (
+            {personalPersona && personalStats ? (
               <>
                 <ArcadePersonaCard
                   persona={personalPersona}
-                  label="You Are"
+                  label={edgeCases.isPodiumCreator ? "Champion" : "You Are"}
                   captureMode={captureMode}
                   shouldAnimate={shouldAnimate}
                   delay={0.3}
                   size="large"
+                  element={personalElement}
+                  rank={edgeCases.isPodiumCreator ? personalStats.rank : undefined}
+                  isNewcomer={edgeCases.isNewJoiner}
                 />
 
                 {hasDifferentPersonas && (
@@ -465,6 +583,7 @@ export function VibeSlide({
                 shouldAnimate={shouldAnimate}
                 delay={0.3}
                 size="large"
+                element={getPersonaElement(workspacePersona.type)}
               />
             )}
           </div>
