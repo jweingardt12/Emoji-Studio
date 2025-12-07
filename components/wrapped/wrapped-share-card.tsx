@@ -370,25 +370,48 @@ export function WrappedShareCard({
           </div>
         </div>
 
-        {/* Footer branding */}
+        {/* Promotional footer branding with Apple icon */}
         <div className={cn(
-          "flex items-center justify-center gap-1.5 mt-auto pt-2",
+          "flex flex-col items-center justify-center gap-1 mt-auto pt-2",
           isWide && "absolute bottom-2 right-3"
         )}>
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className={cn(
-              "rounded",
-              isStory ? "w-5 h-5" : "w-4 h-4"
-            )}
-          />
-          <span className={cn(
-            "text-white/50 font-medium",
-            isStory ? "text-xs" : "text-[10px]"
+          <div className="flex items-center gap-1.5">
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className={cn(
+                "rounded",
+                isStory ? "w-5 h-5" : "w-4 h-4"
+              )}
+            />
+            <span className={cn(
+              "text-white font-semibold",
+              isStory ? "text-sm" : "text-xs"
+            )}>
+              Emoji Studio
+            </span>
+          </div>
+          <div className={cn(
+            "flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20",
+            isStory ? "px-2 py-0.5 gap-1" : "px-1.5 py-0.5 gap-0.5"
           )}>
-            emojistudio.xyz
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className={cn(
+                "text-white",
+                isStory ? "w-3 h-3" : "w-2.5 h-2.5"
+              )}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span className={cn(
+              "text-white/90 font-medium",
+              isStory ? "text-[8px]" : "text-[6px]"
+            )}>
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -623,23 +646,47 @@ export function WrappedShareCardFull({
           </div>
         </div>
 
-        {/* Branding */}
+        {/* Promotional Footer with Apple icon */}
         <div
-          className="flex items-center justify-center mt-auto"
-          style={{ gap: 12, paddingTop: 20 }}
+          className="flex flex-col items-center justify-center mt-auto"
+          style={{ gap: isStory ? 12 : 8, paddingTop: 20 }}
         >
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className="rounded-lg"
-            style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
-          />
-          <span
-            className="text-white/50 font-medium"
-            style={{ fontSize: isStory ? 24 : 20 }}
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className="rounded-lg"
+              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+            />
+            <span
+              className="text-white font-semibold"
+              style={{ fontSize: isStory ? 28 : 22 }}
+            >
+              Emoji Studio
+            </span>
+          </div>
+          <div
+            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            style={{
+              padding: isStory ? "8px 20px" : "6px 16px",
+              gap: isStory ? 8 : 6,
+            }}
           >
-            emojistudio.xyz
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-white"
+              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span
+              className="text-white/90 font-medium"
+              style={{ fontSize: isStory ? 14 : 12 }}
+            >
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -912,27 +959,51 @@ export function WrappedShareCardAnimated({
           </div>
         </div>
 
-        {/* Branding - fade in at end */}
+        {/* Promotional Footer with Apple icon - fade in at end */}
         <div
-          className="flex items-center justify-center mt-auto"
+          className="flex flex-col items-center justify-center mt-auto"
           style={{
-            gap: 12,
+            gap: isStory ? 12 : 8,
             paddingTop: 20,
             opacity: fadeIn(p, 0.8, 0.1),
           }}
         >
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className="rounded-lg"
-            style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
-          />
-          <span
-            className="text-white/50 font-medium"
-            style={{ fontSize: isStory ? 24 : 20 }}
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className="rounded-lg"
+              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+            />
+            <span
+              className="text-white font-semibold"
+              style={{ fontSize: isStory ? 28 : 22 }}
+            >
+              Emoji Studio
+            </span>
+          </div>
+          <div
+            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            style={{
+              padding: isStory ? "8px 20px" : "6px 16px",
+              gap: isStory ? 8 : 6,
+            }}
           >
-            emojistudio.xyz
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-white"
+              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span
+              className="text-white/90 font-medium"
+              style={{ fontSize: isStory ? 14 : 12 }}
+            >
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -1104,25 +1175,48 @@ export function MyEmojisShareCard({
           </div>
         </div>
 
-        {/* Footer branding with capybara */}
+        {/* Promotional footer branding with Apple icon */}
         <div className={cn(
-          "flex items-center justify-center gap-1.5 mt-auto pt-2",
+          "flex flex-col items-center justify-center gap-0.5 mt-auto pt-2",
           isWide && "pt-1"
         )}>
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className={cn(
-              "rounded",
-              isStory ? "w-4 h-4" : "w-3 h-3"
-            )}
-          />
-          <span className={cn(
-            "text-white/60 font-medium",
-            isStory ? "text-[10px]" : "text-[8px]"
+          <div className="flex items-center gap-1">
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className={cn(
+                "rounded",
+                isStory ? "w-4 h-4" : "w-3 h-3"
+              )}
+            />
+            <span className={cn(
+              "text-white font-semibold",
+              isStory ? "text-[11px]" : "text-[9px]"
+            )}>
+              Emoji Studio
+            </span>
+          </div>
+          <div className={cn(
+            "flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20",
+            isStory ? "px-1.5 py-0.5 gap-0.5" : "px-1 py-0.5 gap-0.5"
           )}>
-            generated with Emoji Studio
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className={cn(
+                "text-white",
+                isStory ? "w-2 h-2" : "w-1.5 h-1.5"
+              )}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span className={cn(
+              "text-white/90 font-medium",
+              isStory ? "text-[6px]" : "text-[5px]"
+            )}>
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -1262,23 +1356,47 @@ export function MyEmojisShareCardFull({
           </div>
         </div>
 
-        {/* Footer branding with capybara */}
+        {/* Promotional Footer with Apple icon */}
         <div
-          className="flex items-center justify-center mt-auto"
-          style={{ gap: 16, paddingTop: 20 }}
+          className="flex flex-col items-center justify-center mt-auto"
+          style={{ gap: isStory ? 12 : 8, paddingTop: 20 }}
         >
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className="rounded-lg"
-            style={{ width: isStory ? 48 : 40, height: isStory ? 48 : 40 }}
-          />
-          <span
-            className="text-white/60 font-semibold"
-            style={{ fontSize: isStory ? 28 : 24 }}
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className="rounded-lg"
+              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+            />
+            <span
+              className="text-white font-semibold"
+              style={{ fontSize: isStory ? 28 : 22 }}
+            >
+              Emoji Studio
+            </span>
+          </div>
+          <div
+            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            style={{
+              padding: isStory ? "8px 20px" : "6px 16px",
+              gap: isStory ? 8 : 6,
+            }}
           >
-            generated with Emoji Studio
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-white"
+              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span
+              className="text-white/90 font-medium"
+              style={{ fontSize: isStory ? 14 : 12 }}
+            >
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -1470,27 +1588,51 @@ export function MyEmojisShareCardAnimated({
           </div>
         </div>
 
-        {/* Footer branding - fade in at end */}
+        {/* Promotional Footer with Apple icon - fade in at end */}
         <div
-          className="flex items-center justify-center mt-auto"
+          className="flex flex-col items-center justify-center mt-auto"
           style={{
-            gap: 16,
+            gap: isStory ? 12 : 8,
             paddingTop: 20,
             opacity: brandingOpacity,
           }}
         >
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            className="rounded-lg"
-            style={{ width: isStory ? 48 : 40, height: isStory ? 48 : 40 }}
-          />
-          <span
-            className="text-white/60 font-semibold"
-            style={{ fontSize: isStory ? 28 : 24 }}
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="Emoji Studio"
+              className="rounded-lg"
+              style={{ width: isStory ? 40 : 32, height: isStory ? 40 : 32 }}
+            />
+            <span
+              className="text-white font-semibold"
+              style={{ fontSize: isStory ? 28 : 22 }}
+            >
+              Emoji Studio
+            </span>
+          </div>
+          <div
+            className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20"
+            style={{
+              padding: isStory ? "8px 20px" : "6px 16px",
+              gap: isStory ? 8 : 6,
+            }}
           >
-            generated with Emoji Studio
-          </span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-white"
+              style={{ width: isStory ? 20 : 16, height: isStory ? 20 : 16 }}
+            >
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            <span
+              className="text-white/90 font-medium"
+              style={{ fontSize: isStory ? 14 : 12 }}
+            >
+              Available on iOS
+            </span>
+          </div>
         </div>
       </div>
     </div>

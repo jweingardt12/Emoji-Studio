@@ -18,6 +18,127 @@ export function isIOS(): boolean {
 }
 
 /**
+ * Detect if running inside the Emoji Studio iOS app's WebView
+ * The app passes mobile auth params via URL and stores them in localStorage
+ */
+export function isEmojiStudioApp(): boolean {
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return false
+
+  // Check if mobile auth data exists (set by the iOS app)
+  try {
+    const mobileAuth = localStorage.getItem("mobileAuth")
+    if (mobileAuth) {
+      const authData = JSON.parse(mobileAuth)
+      // Check if auth was stored recently (within last 24 hours)
+      if (authData.timestamp && Date.now() - authData.timestamp < 24 * 60 * 60 * 1000) {
+        return true
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+
+  // Also check for mobileUserId which is set during mobile auth
+  const mobileUserId = localStorage.getItem("mobileUserId")
+  return !!mobileUserId
+}
+
+/**
+ * Trigger native share in the Emoji Studio iOS app
+ * The iOS app listens for webkit.messageHandlers.share messages
+ */
+export async function triggerNativeShare(data: {
+  imageDataUrl?: string
+  imageBlob?: Blob
+  title?: string
+  text?: string
+  filename?: string
+}): Promise<boolean> {
+  // Check if webkit message handlers are available (iOS WKWebView)
+  const webkit = (window as { webkit?: { messageHandlers?: { share?: { postMessage: (msg: unknown) => void } } } }).webkit
+
+  if (webkit?.messageHandlers?.share) {
+    try {
+      // Convert blob to data URL if needed
+      let dataUrl = data.imageDataUrl
+      if (!dataUrl && data.imageBlob) {
+        dataUrl = await blobToDataUrlInternal(data.imageBlob)
+      }
+
+      webkit.messageHandlers.share.postMessage({
+        type: "share",
+        imageDataUrl: dataUrl,
+        title: data.title || "Emoji Studio",
+        text: data.text || "Made with Emoji Studio",
+        filename: data.filename || "emoji-studio.png",
+      })
+      return true
+    } catch (error) {
+      console.error("Native share failed:", error)
+      return false
+    }
+  }
+
+  return false
+}
+
+/**
+ * Trigger native save to photos in the Emoji Studio iOS app
+ */
+export async function triggerNativeSave(data: {
+  imageDataUrl?: string
+  imageBlob?: Blob
+  filename?: string
+}): Promise<boolean> {
+  const webkit = (window as { webkit?: { messageHandlers?: { saveImage?: { postMessage: (msg: unknown) => void } } } }).webkit
+
+  if (webkit?.messageHandlers?.saveImage) {
+    try {
+      let dataUrl = data.imageDataUrl
+      if (!dataUrl && data.imageBlob) {
+        dataUrl = await blobToDataUrlInternal(data.imageBlob)
+      }
+
+      webkit.messageHandlers.saveImage.postMessage({
+        type: "saveImage",
+        imageDataUrl: dataUrl,
+        filename: data.filename || "emoji-studio.png",
+      })
+      return true
+    } catch (error) {
+      console.error("Native save failed:", error)
+      return false
+    }
+  }
+
+  return false
+}
+
+/**
+ * Check if native share handlers are available
+ */
+export function hasNativeShareHandler(): boolean {
+  const webkit = (window as { webkit?: { messageHandlers?: { share?: unknown; saveImage?: unknown } } }).webkit
+  return !!(webkit?.messageHandlers?.share || webkit?.messageHandlers?.saveImage)
+}
+
+// Internal helper to convert blob to data URL
+function blobToDataUrlInternal(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result)
+      } else {
+        reject(new Error("Failed to convert blob to data URL"))
+      }
+    }
+    reader.onerror = () => reject(new Error("Failed to read blob"))
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
  * Detect if running in a WebView (iOS or Android)
  * This includes in-app browsers from Slack, Discord, Twitter, LinkedIn, Facebook, Instagram, etc.
  */
@@ -190,6 +311,8 @@ export function getPlatformInfo() {
     isRestrictedWebView: isRestrictedWebView(),
     isIOSSafari: isIOSSafari(),
     isIOSChrome: isIOSChrome(),
+    isEmojiStudioApp: isEmojiStudioApp(),
+    hasNativeShareHandler: hasNativeShareHandler(),
     supportsDownload: supportsDownloadAttribute(),
     supportsClipboardImage: supportsClipboardWriteImage(),
     supportsWebShare: supportsWebShareWithFiles(),

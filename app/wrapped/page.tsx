@@ -213,6 +213,7 @@ function WrappedPageContent() {
           workspaceName={workspaceName}
           yearEmojis={yearEmojis}
           creatorName={personalStats?.displayName}
+          userId={personalStats?.userId}
         />
       </>
     )
