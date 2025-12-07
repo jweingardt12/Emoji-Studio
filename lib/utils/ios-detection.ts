@@ -19,6 +19,7 @@ export function isIOS(): boolean {
 
 /**
  * Detect if running in a WebView (iOS or Android)
+ * This includes in-app browsers from Slack, Discord, Twitter, LinkedIn, Facebook, Instagram, etc.
  */
 export function isWebView(): boolean {
   if (typeof navigator === "undefined") return false
@@ -35,7 +36,58 @@ export function isWebView(): boolean {
   // Android WebView detection
   const isAndroidWebView = /wv/.test(ua) || /Android.*Version\/[\d.]+.*Chrome\/[\d.]+ Mobile/.test(ua)
 
-  return isIOSWebView || isStandalone || isAndroidWebView
+  // Detect specific app WebViews that may have limited capabilities
+  // These apps embed web content but may not support full browser APIs
+  const isSlackWebView = /Slack/i.test(ua)
+  const isDiscordWebView = /Discord/i.test(ua)
+  const isTwitterWebView = /Twitter/i.test(ua)
+  const isLinkedInWebView = /LinkedInApp/i.test(ua)
+  const isFacebookWebView = /FBAN|FBAV/i.test(ua)
+  const isInstagramWebView = /Instagram/i.test(ua)
+  const isMessengerWebView = /Messenger/i.test(ua)
+  const isSnapchatWebView = /Snapchat/i.test(ua)
+  const isTikTokWebView = /TikTok/i.test(ua)
+  const isLineWebView = /Line\//i.test(ua)
+  const isWeChatWebView = /MicroMessenger/i.test(ua)
+
+  // Generic in-app browser detection
+  const isGenericInAppBrowser = /InApp/i.test(ua)
+
+  return isIOSWebView || isStandalone || isAndroidWebView ||
+    isSlackWebView || isDiscordWebView || isTwitterWebView ||
+    isLinkedInWebView || isFacebookWebView || isInstagramWebView ||
+    isMessengerWebView || isSnapchatWebView || isTikTokWebView ||
+    isLineWebView || isWeChatWebView || isGenericInAppBrowser
+}
+
+/**
+ * Detect if running in a restricted WebView that likely doesn't support Web Share API
+ * More aggressive detection for environments where we should show fallback UI
+ */
+export function isRestrictedWebView(): boolean {
+  if (typeof navigator === "undefined") return false
+
+  // If basic WebView detection says yes, it's restricted
+  if (isWebView()) return true
+
+  // On iOS, if we don't have Safari in the UA, it's probably a WebView
+  if (isIOS()) {
+    const ua = navigator.userAgent
+    // Safari includes both "Safari" and "Version" in the UA
+    const hasSafari = /Safari/.test(ua) && /Version/.test(ua)
+    // Chrome on iOS has "CriOS"
+    const hasChrome = /CriOS/.test(ua)
+    // Firefox on iOS has "FxiOS"
+    const hasFirefox = /FxiOS/.test(ua)
+    // Edge on iOS has "EdgiOS"
+    const hasEdge = /EdgiOS/.test(ua)
+    // If it's none of these known browsers, it's likely a WebView
+    if (!hasSafari && !hasChrome && !hasFirefox && !hasEdge) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**
@@ -135,6 +187,7 @@ export function getPlatformInfo() {
   return {
     isIOS: isIOS(),
     isWebView: isWebView(),
+    isRestrictedWebView: isRestrictedWebView(),
     isIOSSafari: isIOSSafari(),
     isIOSChrome: isIOSChrome(),
     supportsDownload: supportsDownloadAttribute(),

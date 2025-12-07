@@ -53,10 +53,12 @@ import {
   downloadVideo,
   shareVideo,
   captureElementAsCanvas,
+  blobToDataUrl,
+  shouldUseInlineFallback,
   type ClipboardResult,
   type DownloadResult,
 } from "@/lib/utils/share-image"
-import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
+import { isIOS, isWebView, isRestrictedWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import { VideoProcessor } from "@/lib/utils/video-processor"
 import { cn } from "@/lib/utils"
 
@@ -146,14 +148,28 @@ export function WrappedShareModal({
   const [generationStage, setGenerationStage] = useState<"idle" | "capturing" | "encoding" | "finalizing">("idle")
   const [animationProgress, setAnimationProgress] = useState(0)
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
+  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null)
+  const [showFallbackView, setShowFallbackView] = useState(false)
+  const [needsFallback, setNeedsFallback] = useState(false)
   const animatedCardRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const previewAnimationRef = useRef<number | null>(null)
 
-  // Check Web Share API support
+  // Check Web Share API support and if we need fallback
   useEffect(() => {
-    setCanShareFiles(canShare())
+    const canShareNow = canShare()
+    setCanShareFiles(canShareNow)
+    // Check if we need inline fallback (for restricted WebViews without Web Share)
+    setNeedsFallback(shouldUseInlineFallback())
   }, [])
+
+  // Reset fallback view when modal closes
+  useEffect(() => {
+    if (!open) {
+      setShowFallbackView(false)
+      setFallbackImageUrl(null)
+    }
+  }, [open])
 
   // Preload FFmpeg WASM when modal opens (eliminates 10-20s delay on first video export)
   useEffect(() => {
@@ -671,8 +687,106 @@ export function WrappedShareModal({
     }
   }, [isGenerating, getFullCardElement, captureAnimatedFrame, workspaceName, stats.year, track, backgroundStyle, cardSize, exportFormat, generationStage])
 
+  // Handler for WebView fallback - generates image and shows it inline for long-press save
+  const handleSaveForWebView = useCallback(async () => {
+    if (isGenerating) return
+
+    setIsGenerating(true)
+    setGenerationProgress(0)
+    setGenerationStage("capturing")
+
+    try {
+      const element = getFullCardElement()
+      if (!element) throw new Error("Card element not found")
+
+      // For animated formats in fallback mode, just generate a static image
+      // since GIFs/videos are complex and may not work in WebViews
+      const blob = await generateImage(element)
+      setGenerationStage("finalizing")
+
+      // Convert to data URL for inline display
+      const dataUrl = await blobToDataUrl(blob)
+      setFallbackImageUrl(dataUrl)
+      setShowFallbackView(true)
+
+      track("wrapped_share_fallback_generated", {
+        year: stats.year,
+        background: backgroundStyle,
+        size: cardSize,
+        format: "image", // Always image for fallback
+      })
+
+      toast.success("Image ready! Long-press to save.", { duration: 4000 })
+    } catch (error) {
+      console.error("Failed to generate fallback image:", error)
+      toast.error("Failed to generate image")
+    } finally {
+      setIsGenerating(false)
+      setGenerationProgress(0)
+      setGenerationStage("idle")
+    }
+  }, [isGenerating, getFullCardElement, track, stats.year, backgroundStyle, cardSize])
+
+  // Go back from fallback view to customization
+  const handleBackFromFallback = useCallback(() => {
+    setShowFallbackView(false)
+    setFallbackImageUrl(null)
+  }, [])
+
+  // Fallback view for WebViews - shows generated image inline for long-press save
+  const FallbackView = (
+    <div className="space-y-4">
+      <div className="text-center space-y-2">
+        <h3 className="text-lg font-semibold">Save Your Image</h3>
+        <p className="text-sm text-muted-foreground">
+          Long-press the image below and select "Save Image" or "Add to Photos"
+        </p>
+      </div>
+
+      {/* Generated image for long-press save */}
+      {fallbackImageUrl && (
+        <div className="flex justify-center">
+          <div className="relative rounded-lg overflow-hidden shadow-lg border border-border">
+            <img
+              src={fallbackImageUrl}
+              alt="Your Wrapped share card"
+              className="max-w-full max-h-[60vh] object-contain"
+              style={{ touchAction: "manipulation" }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+        <p className="text-sm font-medium">How to save:</p>
+        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+          <li>Press and hold on the image above</li>
+          <li>Select "Save Image" or "Add to Photos"</li>
+          <li>Find it in your photo library!</li>
+        </ol>
+      </div>
+
+      {/* Back button */}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={handleBackFromFallback}
+        >
+          ← Back to customize
+        </Button>
+      </div>
+    </div>
+  )
+
   const ModalContent = (
     <div className="space-y-4">
+      {/* Show fallback view or customization view */}
+      {showFallbackView ? (
+        FallbackView
+      ) : (
+        <>
       {/* Card Type Selection - only show if we have emojis */}
       {hasEnoughEmojis && (
         <div>
@@ -888,16 +1002,39 @@ export function WrappedShareModal({
       )}
 
       {/* iOS hint about share being the best option */}
-      {(isIOS() || isWebView()) && canShareFiles && (
+      {(isIOS() || isWebView()) && canShareFiles && !needsFallback && (
         <p className="text-xs text-muted-foreground text-center">
           On this device, <strong>Share</strong> is the most reliable way to save images.
         </p>
       )}
 
+      {/* WebView fallback hint */}
+      {needsFallback && (
+        <p className="text-xs text-muted-foreground text-center">
+          Tap <strong>Save Image</strong> below, then long-press to save to your photos.
+        </p>
+      )}
+
       {/* Action buttons - Share first on iOS for better UX */}
       <div className="flex flex-col sm:flex-row gap-2">
-        {/* On iOS, show Share button first and make it primary */}
-        {(isIOS() || isWebView()) && canShareFiles && (
+        {/* WebView fallback: Primary "Save Image" button that generates inline image */}
+        {needsFallback && (
+          <Button
+            className="flex-1 order-first sm:order-first"
+            onClick={handleSaveForWebView}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            Save Image
+          </Button>
+        )}
+
+        {/* On iOS with Web Share available, show Share button first */}
+        {(isIOS() || isWebView()) && canShareFiles && !needsFallback && (
           <Button
             className="flex-1 order-first sm:order-first"
             onClick={handleShare}
@@ -912,50 +1049,56 @@ export function WrappedShareModal({
           </Button>
         )}
 
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={handleCopy}
-          disabled={isGenerating}
-        >
-          {copied ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Copied!
-            </>
-          ) : isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4 mr-2" />
-              Copy
-            </>
-          )}
-        </Button>
+        {/* Copy button - only show if not in restricted WebView */}
+        {!needsFallback && (
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleCopy}
+            disabled={isGenerating}
+          >
+            {copied ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Copied!
+              </>
+            ) : isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 mr-2" />
+                Copy
+              </>
+            )}
+          </Button>
+        )}
 
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={handleDownload}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {Math.round(generationProgress * 100)}%
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4 mr-2" />
-              {(isIOS() || isWebView()) ? "Save" : "Download"}
-            </>
-          )}
-        </Button>
+        {/* Download/Save button - only show if not in restricted WebView */}
+        {!needsFallback && (
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={handleDownload}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {Math.round(generationProgress * 100)}%
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                {(isIOS() || isWebView()) ? "Save" : "Download"}
+              </>
+            )}
+          </Button>
+        )}
 
-        {/* On non-iOS, show Share button in normal position */}
+        {/* On non-iOS with Web Share available, show Share button in normal position */}
         {!(isIOS() || isWebView()) && canShareFiles && (
           <Button
             className="flex-1"
@@ -971,6 +1114,8 @@ export function WrappedShareModal({
           </Button>
         )}
       </div>
+        </>
+      )}
 
       {/* Hidden full-size card for export */}
       {renderFullCard()}
