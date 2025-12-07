@@ -4,6 +4,7 @@ import { VideoProcessor } from "./video-processor"
 import {
   isIOS,
   isWebView,
+  isRestrictedWebView,
   supportsDownloadAttribute,
   supportsClipboardWriteImage,
   supportsWebShareWithFiles,
@@ -63,6 +64,37 @@ export async function generateImageDataUrl(element: HTMLElement): Promise<string
     pixelRatio: 2,
     cacheBust: true,
   })
+}
+
+/**
+ * Convert a Blob to a data URL for inline display
+ * Useful for WebViews where other methods don't work
+ */
+export function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result)
+      } else {
+        reject(new Error("Failed to convert blob to data URL"))
+      }
+    }
+    reader.onerror = () => reject(new Error("Failed to read blob"))
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
+ * Check if we should use inline image fallback (for restricted WebViews)
+ * This is useful when Web Share API isn't available
+ */
+export function shouldUseInlineFallback(): boolean {
+  // If Web Share with files is supported, we don't need inline fallback
+  if (supportsWebShareWithFiles()) return false
+
+  // Use inline fallback for restricted WebViews (Slack, Discord, etc.)
+  return isRestrictedWebView()
 }
 
 /**
