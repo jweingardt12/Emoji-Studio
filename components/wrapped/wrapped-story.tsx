@@ -15,6 +15,7 @@ import { VibeSlide } from "./slides/vibe-slide"
 import { HaikuSlide } from "./slides/haiku-slide"
 import { MovieSlide } from "./slides/movie-slide"
 import { PeakSlide } from "./slides/peak-slide"
+import { EmojiMonthSlide } from "./slides/emoji-month-slide"
 import { PatternsSlide } from "./slides/patterns-slide"
 import { FortuneSlide } from "./slides/fortune-slide"
 import { StatsSlide } from "./slides/stats-slide"
@@ -44,10 +45,10 @@ const PERSONAL_SLIDE = ["personal"] as const
 const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
 const LEADERBOARD_SLIDE = ["leaderboard"] as const
 const FUN_SLIDES = ["vibe", "haiku", "movie"] as const
-const MIDDLE_SLIDES = ["peak", "patterns", "fortune"] as const
+const MIDDLE_SLIDES = ["peak", "emoji-month", "patterns", "fortune"] as const
 const END_SLIDES = ["stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "vibe" | "haiku" | "movie" | "peak" | "patterns" | "fortune" | "stats" | "finale"
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "vibe" | "haiku" | "movie" | "peak" | "emoji-month" | "patterns" | "fortune" | "stats" | "finale"
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
   const router = useRouter()
@@ -408,6 +409,15 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             monthlyBreakdown={stats.monthlyBreakdown}
             workspaceName={workspaceName}
             year={stats.year}
+          />
+        )
+      case "emoji-month":
+        return (
+          <EmojiMonthSlide
+            monthlyTopCreators={stats.monthlyTopCreators}
+            workspaceName={workspaceName}
+            year={stats.year}
+            customEmojis={statsEmojis}
           />
         )
       case "patterns":
