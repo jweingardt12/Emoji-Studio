@@ -13,10 +13,11 @@ const emojiHeroVariants = cva(
   {
     variants: {
       size: {
-        sm: "w-24 h-24",
-        md: "w-36 h-36",
-        lg: "w-48 h-48",
-        xl: "w-64 h-64",
+        xs: "w-12 h-12 xs:w-14 xs:h-14",
+        sm: "w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24",
+        md: "w-20 h-20 xs:w-24 xs:h-24 sm:w-36 sm:h-36",
+        lg: "w-24 h-24 xs:w-28 xs:h-28 sm:w-40 sm:h-40 md:w-48 md:h-48",
+        xl: "w-32 h-32 xs:w-40 xs:h-40 sm:w-56 sm:h-56 md:w-64 md:h-64",
       },
       glow: {
         purple: "wrapped-glow-purple",
@@ -58,12 +59,13 @@ export function EmojiHero({
   const shouldAnimate = animate && !captureMode && !shouldReduceAnimations
   const [hasError, setHasError] = useState(false)
 
-  // Size mappings for the actual image
+  // Size mappings for the actual image (responsive)
   const imageSizeMap = {
-    sm: "w-20 h-20",
-    md: "w-28 h-28",
-    lg: "w-40 h-40",
-    xl: "w-56 h-56",
+    xs: "w-10 h-10 xs:w-12 xs:h-12",
+    sm: "w-14 h-14 xs:w-16 xs:h-16 sm:w-20 sm:h-20",
+    md: "w-16 h-16 xs:w-20 xs:h-20 sm:w-28 sm:h-28",
+    lg: "w-20 h-20 xs:w-24 xs:h-24 sm:w-32 sm:h-32 md:w-40 md:h-40",
+    xl: "w-28 h-28 xs:w-32 xs:h-32 sm:w-48 sm:h-48 md:w-56 md:h-56",
   }
 
   const imageSize = imageSizeMap[size || "lg"]

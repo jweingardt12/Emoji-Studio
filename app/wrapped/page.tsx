@@ -110,15 +110,20 @@ function WrappedPageContent() {
     })
   }, [])
 
-  // Hide app frame (header, sidebar) when embedded in native iOS app
+  // Hide app frame (header, sidebar) when:
+  // - Explicitly embedded via URL param
+  // - Coming from mobile app with auth params
+  // - Actively viewing the wrapped story (for immersive experience)
   useEffect(() => {
-    if (isEmbedded) {
+    const shouldHideFrame = isEmbedded || hasMobileParams || cameFromMobile || showStory
+
+    if (shouldHideFrame) {
       document.body.classList.add("wrapped-embedded")
       return () => {
         document.body.classList.remove("wrapped-embedded")
       }
     }
-  }, [isEmbedded])
+  }, [isEmbedded, hasMobileParams, cameFromMobile, showStory])
 
   // Auto-start wrapped experience when coming from mobile app
   useEffect(() => {
@@ -206,6 +211,8 @@ function WrappedPageContent() {
           onOpenChange={setShowShareModal}
           stats={stats}
           workspaceName={workspaceName}
+          yearEmojis={yearEmojis}
+          creatorName={personalStats?.displayName}
         />
       </>
     )

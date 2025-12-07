@@ -44,7 +44,22 @@ export function EmojiSupernova({
   const [imgError, setImgError] = useState(false)
   const hasTriggered = useRef(false)
 
-  const sizeMap = {
+  // Check if we're on a small screen (this runs client-side)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Responsive size maps - smaller on mobile
+  const sizeMap = isMobile ? {
+    sm: { emoji: 32, container: 80 },
+    md: { emoji: 48, container: 120 },
+    lg: { emoji: 64, container: 160 },
+  } : {
     sm: { emoji: 48, container: 120 },
     md: { emoji: 72, container: 180 },
     lg: { emoji: 96, container: 240 },

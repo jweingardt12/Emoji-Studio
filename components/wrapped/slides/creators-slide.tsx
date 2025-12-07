@@ -43,27 +43,27 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
     setFailedImages((prev) => new Set(prev).add(key))
   }, [])
 
-  // Rank-based styling - responsive heights with xs breakpoint for small phones
+  // Rank-based styling - responsive heights with better mobile scaling
   const rankStyles = {
     1: {
-      height: "h-24 xs:h-28 sm:h-40 md:h-52",
+      height: "h-20 xs:h-24 sm:h-40 md:h-52",
       bg: "bg-gradient-to-b from-yellow-500/30 to-yellow-600/10",
       border: "border-yellow-500/50",
-      icon: <Crown className="w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-400" />,
+      icon: <Crown className="w-4 h-4 xs:w-5 xs:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-400" />,
       glow: "shadow-[0_0_60px_rgba(234,179,8,0.4)]",
     },
     2: {
-      height: "h-18 xs:h-20 sm:h-32 md:h-40",
+      height: "h-14 xs:h-16 sm:h-32 md:h-40",
       bg: "bg-gradient-to-b from-gray-400/20 to-gray-500/10",
       border: "border-gray-400/40",
-      icon: <Medal className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-300" />,
+      icon: <Medal className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-300" />,
       glow: "",
     },
     3: {
-      height: "h-14 xs:h-16 sm:h-24 md:h-32",
+      height: "h-10 xs:h-12 sm:h-24 md:h-32",
       bg: "bg-gradient-to-b from-amber-600/20 to-amber-700/10",
       border: "border-amber-600/40",
-      icon: <Award className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-500" />,
+      icon: <Award className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-500" />,
       glow: "",
     },
   }
@@ -91,8 +91,8 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
         mass: isWinner ? 1.2 : 1
       } : { duration: 0 }}
     >
-      {/* Emoji halo - creator's top emojis */}
-      <div className="flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
+      {/* Emoji halo - creator's top emojis (hidden on very small screens) */}
+      <div className="hidden xs:flex justify-center gap-1 xs:gap-1.5 mb-2 xs:mb-3 min-h-[24px] xs:min-h-[32px]">
         {validHaloEmojis.map((emoji, i) => {
           const key = `${creator.userId}-${emoji.name}`
           const hasFailed = failedImages.has(key)
@@ -101,7 +101,7 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
               key={key}
               src={hasFailed ? EMOJI_PLACEHOLDER : proxyImageUrl(emoji.url)}
               alt={emoji.name}
-              className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-6 xs:h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
+              className={`object-contain rounded ${isWinner ? "w-5 h-5 xs:w-5 xs:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10" : "w-4 h-4 xs:w-4 xs:h-4 sm:w-6 sm:h-6 md:w-8 md:h-8"}`}
               initial={shouldAnimate ? { scale: 0, rotate: -20 } : { scale: 1, rotate: 0 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={shouldAnimate ? { delay: delay + 0.1 + i * 0.05 } : { duration: 0 }}
@@ -134,40 +134,40 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
           )}
           {/* Rank badge - touch-friendly sizing */}
           <div
-            className={`absolute -top-1 -right-1 xs:-top-2 xs:-right-2 sm:-top-3 sm:-right-3 w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border} z-20`}
+            className={`absolute -top-1 -right-1 xs:-top-1 xs:-right-1 sm:-top-3 sm:-right-3 w-5 h-5 xs:w-6 xs:h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center ${style.bg} border ${style.border} z-20`}
           >
             {style.icon}
           </div>
         </div>
       ) : (
-        <div className={`${isWinner ? "w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 md:w-36 md:h-36" : "w-16 h-16 xs:w-18 xs:h-18 sm:w-20 sm:h-20 md:w-24 md:h-24"} rounded-full bg-white/10 flex items-center justify-center mb-2`}>
+        <div className={`${isWinner ? "w-14 h-14 xs:w-16 xs:h-16 sm:w-28 sm:h-28 md:w-36 md:h-36" : "w-12 h-12 xs:w-14 xs:h-14 sm:w-20 sm:h-20 md:w-24 md:h-24"} rounded-full bg-white/10 flex items-center justify-center mb-2`}>
           {style.icon}
         </div>
       )}
 
       {/* Creator name */}
-      <p className={`font-semibold text-white truncate ${isWinner ? "max-w-[90px] xs:max-w-[100px] sm:max-w-[140px] text-base xs:text-lg sm:text-xl md:text-2xl" : "max-w-[70px] xs:max-w-[80px] sm:max-w-[120px] text-sm xs:text-base sm:text-lg"}`}>
+      <p className={`font-semibold text-white truncate ${isWinner ? "max-w-[70px] xs:max-w-[90px] sm:max-w-[140px] text-sm xs:text-base sm:text-xl md:text-2xl" : "max-w-[60px] xs:max-w-[70px] sm:max-w-[120px] text-xs xs:text-sm sm:text-lg"}`}>
         {formatName(creator.displayName)}
       </p>
 
       {/* Emoji count */}
-      <div className={`font-mono font-bold ${isWinner ? "text-xl xs:text-2xl sm:text-3xl md:text-4xl text-yellow-400" : "text-lg xs:text-xl sm:text-2xl text-white/80"}`}>
+      <div className={`font-mono font-bold ${isWinner ? "text-lg xs:text-xl sm:text-3xl md:text-4xl text-yellow-400" : "text-base xs:text-lg sm:text-2xl text-white/80"}`}>
         {captureMode ? (
           <span>{creator.emojiCount}</span>
         ) : (
           <NumberTicker
             value={creator.emojiCount}
             delay={delay + 0.3}
-            className={isWinner ? "text-xl xs:text-2xl sm:text-3xl md:text-4xl text-yellow-400" : "text-lg xs:text-xl sm:text-2xl text-white/80"}
+            className={isWinner ? "text-lg xs:text-xl sm:text-3xl md:text-4xl text-yellow-400" : "text-base xs:text-lg sm:text-2xl text-white/80"}
           />
         )}
       </div>
-      <span className="wrapped-label text-xs xs:text-sm">emojis</span>
+      <span className="wrapped-label text-[10px] xs:text-xs sm:text-sm">emojis</span>
 
-      {/* Podium base - percentage width on mobile, fixed on larger screens */}
+      {/* Podium base - flex-based width for better mobile scaling */}
       {/* Winner's podium has spotlight glow animation */}
       <motion.div
-        className={`mt-2 xs:mt-3 sm:mt-4 w-[28%] min-w-[70px] xs:w-24 sm:w-36 md:w-44 lg:w-52 ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
+        className={`mt-2 xs:mt-3 sm:mt-4 w-full max-w-[80px] xs:max-w-[90px] sm:max-w-[144px] md:max-w-[176px] lg:max-w-[208px] ${style.height} ${style.bg} border-t-2 ${style.border} rounded-t-xl ${style.glow}`}
         initial={shouldAnimate && isWinner ? { boxShadow: "0 0 0 rgba(234, 179, 8, 0)" } : false}
         animate={shouldAnimate && isWinner ? {
           boxShadow: [
@@ -249,8 +249,8 @@ export function CreatorsSlide({
 
           {/* Middle Section: Podiums */}
           {/* Pushed to bottom of available space, or just flows if scrolling */}
-          <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-4 xs:mt-6 sm:mt-8 mb-4 xs:mb-6 sm:mb-8">
-            <div className="flex items-end justify-center gap-1 xs:gap-2 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-4xl px-1 xs:px-2 sm:px-4">
+          <div className="flex-1 flex items-end justify-center w-full min-h-0 mt-2 xs:mt-4 sm:mt-8 mb-2 xs:mb-4 sm:mb-8">
+            <div className="flex items-end justify-center gap-2 xs:gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-4xl px-2 xs:px-3 sm:px-4">
               {top3.map((creator) => (
                 <PodiumSpot
                   key={creator.userId}

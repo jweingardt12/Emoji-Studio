@@ -25,6 +25,7 @@ export interface WrappedStats {
   funStats: WrappedFunStats
   growth: WrappedGrowthStats
   monthlyBreakdown: MonthlyCount[]
+  monthlyTopCreators: MonthlyTopCreator[]
   highlights: WrappedHighlight[]
 }
 
@@ -74,6 +75,18 @@ export interface MonthlyCount {
   month: string
   monthIndex: number
   count: number
+}
+
+export interface MonthlyTopCreator {
+  month: string
+  monthIndex: number
+  topCreator: {
+    userId: string
+    displayName: string
+    count: number
+    topEmoji: Emoji | null
+  } | null
+  totalCount: number
 }
 
 export interface WordFrequency {
@@ -353,6 +366,8 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   const monthlyCounts = Array(12).fill(0)
   const wordCounts: Record<string, number> = {}
   const datesWithEmojis = new Set<string>()
+  // Monthly creator tracking: monthIndex -> { creatorId -> { count, emojis } }
+  const monthlyCreatorData: Record<number, Record<string, { count: number; emojis: Emoji[]; displayName: string }>> = {}
 
   let gifCount = 0
   let imageCount = 0
@@ -415,6 +430,18 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     weekdayCounts[dayOfWeek]++
     hourCounts[hour]++
     monthlyCounts[month]++
+
+    // Monthly creator tracking
+    if (!monthlyCreatorData[month]) {
+      monthlyCreatorData[month] = {}
+    }
+    if (!monthlyCreatorData[month][creatorId]) {
+      monthlyCreatorData[month][creatorId] = { count: 0, emojis: [], displayName: emoji.user_display_name || creatorId.slice(0, 8) }
+    }
+    monthlyCreatorData[month][creatorId].count++
+    if (monthlyCreatorData[month][creatorId].emojis.length < 5) {
+      monthlyCreatorData[month][creatorId].emojis.push(emoji)
+    }
 
     // Weekend count (Saturday = 6, Sunday = 0)
     if (dayOfWeek === 0 || dayOfWeek === 6) {
@@ -514,6 +541,31 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     count: monthlyCounts[index],
   }))
 
+  // Monthly top creators - find who created the most emojis each month
+  const monthlyTopCreators: MonthlyTopCreator[] = MONTH_NAMES.map((month, monthIndex) => {
+    const monthCreators = monthlyCreatorData[monthIndex] || {}
+    const creatorsArray = Object.entries(monthCreators)
+      .map(([userId, data]) => ({ userId, ...data }))
+      .sort((a, b) => b.count - a.count)
+
+    const topCreator = creatorsArray[0]
+    const validEmojis = topCreator?.emojis.filter(hasValidUrl) || []
+
+    return {
+      month,
+      monthIndex,
+      topCreator: topCreator
+        ? {
+            userId: topCreator.userId,
+            displayName: topCreator.displayName,
+            count: topCreator.count,
+            topEmoji: validEmojis[0] || null,
+          }
+        : null,
+      totalCount: monthlyCounts[monthIndex],
+    }
+  })
+
   // Top words
   const sortedWords = Object.entries(wordCounts)
     .map(([word, count]) => ({ word, count }))
@@ -588,6 +640,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     funStats,
     growth,
     monthlyBreakdown,
+    monthlyTopCreators,
     highlights,
   }
 }

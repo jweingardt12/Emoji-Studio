@@ -30,12 +30,16 @@ import {
   WrappedShareCard,
   WrappedShareCardFull,
   WrappedShareCardAnimated,
+  MyEmojisShareCard,
+  MyEmojisShareCardFull,
+  MyEmojisShareCardAnimated,
   WRAPPED_BACKGROUNDS,
   WRAPPED_SIZES,
   type WrappedBackgroundStyle,
   type WrappedCardSize,
 } from "./wrapped-share-card"
 import { WrappedStats } from "@/lib/services/wrapped-service"
+import { Emoji } from "@/lib/services/emoji-service"
 import {
   generateImage,
   copyImageToClipboard,
@@ -58,9 +62,12 @@ interface WrappedShareModalProps {
   onOpenChange: (open: boolean) => void
   stats: WrappedStats
   workspaceName: string
+  yearEmojis?: Emoji[] // All emojis from the year for "My Emojis" card
+  creatorName?: string // Optional creator name for personalized card
 }
 
 type ExportFormat = "image" | "gif" | "video"
+type CardType = "stats" | "my-emojis"
 type QualityPreset = "draft" | "standard" | "premium"
 
 // Quality preset configurations
@@ -113,15 +120,21 @@ export function WrappedShareModal({
   onOpenChange,
   stats,
   workspaceName,
+  yearEmojis = [],
+  creatorName,
 }: WrappedShareModalProps) {
   const isMobile = useIsMobile()
   const track = useTrack()
   const cardRef = useRef<HTMLDivElement>(null)
   const fullCardRef = useRef<HTMLDivElement>(null)
 
+  const [cardType, setCardType] = useState<CardType>("stats")
   const [backgroundStyle, setBackgroundStyle] = useState<WrappedBackgroundStyle>("purple")
   const [cardSize, setCardSize] = useState<WrappedCardSize>("square")
   const [exportFormat, setExportFormat] = useState<ExportFormat>("image")
+
+  // Check if we have enough emojis for the "My Emojis" card
+  const hasEnoughEmojis = yearEmojis.length >= 5
   const [qualityPreset, setQualityPreset] = useState<QualityPreset>("standard")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -245,6 +258,15 @@ export function WrappedShareModal({
     })
   }
 
+  const handleCardTypeChange = (type: CardType) => {
+    setCardType(type)
+    track("wrapped_share_customized", {
+      option: "card_type",
+      value: type,
+      year: stats.year,
+    })
+  }
+
   const handlePreviewToggle = useCallback(() => {
     if (isPreviewPlaying) {
       setIsPreviewPlaying(false)
@@ -256,12 +278,16 @@ export function WrappedShareModal({
   }, [isPreviewPlaying])
 
   const getFullCardElement = useCallback((): HTMLElement | null => {
-    return document.getElementById("wrapped-share-card-full")
-  }, [])
+    return cardType === "my-emojis"
+      ? document.getElementById("my-emojis-share-card-full")
+      : document.getElementById("wrapped-share-card-full")
+  }, [cardType])
 
   const getAnimatedCardElement = useCallback((): HTMLElement | null => {
-    return document.getElementById("wrapped-share-card-animated")
-  }, [])
+    return cardType === "my-emojis"
+      ? document.getElementById("my-emojis-share-card-animated")
+      : document.getElementById("wrapped-share-card-animated")
+  }, [cardType])
 
   // Wait for the next animation frame (browser paint cycle)
   const waitForFrame = useCallback((): Promise<void> => {
@@ -292,42 +318,87 @@ export function WrappedShareModal({
   const renderFullCard = useCallback(() => {
     return (
       <>
-        {/* Static card for image export */}
-        <div
-          ref={fullCardRef}
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "-9999px",
-          }}
-        >
-          <WrappedShareCardFull
-            stats={stats}
-            workspaceName={workspaceName}
-            backgroundStyle={backgroundStyle}
-            size={cardSize}
-          />
-        </div>
-        {/* Animated card for video/GIF export */}
-        <div
-          ref={animatedCardRef}
-          style={{
-            position: "absolute",
-            left: "-9999px",
-            top: "-9999px",
-          }}
-        >
-          <WrappedShareCardAnimated
-            stats={stats}
-            workspaceName={workspaceName}
-            backgroundStyle={backgroundStyle}
-            size={cardSize}
-            animationProgress={animationProgress}
-          />
-        </div>
+        {/* Stats cards */}
+        {cardType === "stats" && (
+          <>
+            {/* Static card for image export */}
+            <div
+              ref={fullCardRef}
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+              }}
+            >
+              <WrappedShareCardFull
+                stats={stats}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+              />
+            </div>
+            {/* Animated card for video/GIF export */}
+            <div
+              ref={animatedCardRef}
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+              }}
+            >
+              <WrappedShareCardAnimated
+                stats={stats}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                animationProgress={animationProgress}
+              />
+            </div>
+          </>
+        )}
+        {/* My Emojis cards */}
+        {cardType === "my-emojis" && (
+          <>
+            {/* Static card for image export */}
+            <div
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+              }}
+            >
+              <MyEmojisShareCardFull
+                emojis={yearEmojis}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                year={stats.year}
+                creatorName={creatorName}
+              />
+            </div>
+            {/* Animated card for video/GIF export */}
+            <div
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                top: "-9999px",
+              }}
+            >
+              <MyEmojisShareCardAnimated
+                emojis={yearEmojis}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                year={stats.year}
+                creatorName={creatorName}
+                animationProgress={animationProgress}
+              />
+            </div>
+          </>
+        )}
       </>
     )
-  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress])
+  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress, cardType, yearEmojis, creatorName])
 
   const handleCopy = useCallback(async () => {
     if (isGenerating) return
@@ -563,25 +634,72 @@ export function WrappedShareModal({
 
   const ModalContent = (
     <div className="space-y-4">
+      {/* Card Type Selection - only show if we have emojis */}
+      {hasEnoughEmojis && (
+        <div>
+          <label className="text-sm text-muted-foreground mb-2 block">Card Type</label>
+          <ToggleGroup
+            type="single"
+            value={cardType}
+            onValueChange={(v) => v && handleCardTypeChange(v as CardType)}
+            className="justify-start"
+          >
+            <ToggleGroupItem value="stats" className="gap-2">
+              <span>📊</span>
+              <span>Stats</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="my-emojis" className="gap-2">
+              <span>🎨</span>
+              <span>My Emojis</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
+
       {/* Preview */}
       <div className="flex justify-center">
         <div className="relative group">
           {/* Show animated card when preview is playing, static otherwise */}
-          {isPreviewPlaying && (exportFormat === "gif" || exportFormat === "video") ? (
-            <WrappedShareCardAnimated
-              stats={stats}
-              workspaceName={workspaceName}
-              backgroundStyle={backgroundStyle}
-              size={cardSize}
-              animationProgress={animationProgress}
-            />
+          {cardType === "my-emojis" ? (
+            // My Emojis card preview
+            isPreviewPlaying && (exportFormat === "gif" || exportFormat === "video") ? (
+              <MyEmojisShareCardAnimated
+                emojis={yearEmojis}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                year={stats.year}
+                creatorName={creatorName}
+                animationProgress={animationProgress}
+              />
+            ) : (
+              <MyEmojisShareCard
+                emojis={yearEmojis}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                year={stats.year}
+                creatorName={creatorName}
+              />
+            )
           ) : (
-            <WrappedShareCard
-              stats={stats}
-              workspaceName={workspaceName}
-              backgroundStyle={backgroundStyle}
-              size={cardSize}
-            />
+            // Stats card preview
+            isPreviewPlaying && (exportFormat === "gif" || exportFormat === "video") ? (
+              <WrappedShareCardAnimated
+                stats={stats}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+                animationProgress={animationProgress}
+              />
+            ) : (
+              <WrappedShareCard
+                stats={stats}
+                workspaceName={workspaceName}
+                backgroundStyle={backgroundStyle}
+                size={cardSize}
+              />
+            )
           )}
 
           {/* Preview play/pause button for animated formats */}
