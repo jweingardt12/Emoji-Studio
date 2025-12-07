@@ -8,6 +8,10 @@ import {
   supportsDownloadAttribute,
   supportsClipboardWriteImage,
   supportsWebShareWithFiles,
+  isEmojiStudioApp,
+  triggerNativeShare,
+  triggerNativeSave,
+  hasNativeShareHandler,
 } from "./ios-detection"
 
 /**
@@ -173,9 +177,24 @@ export interface DownloadResult {
  * On iOS WebView, uses Web Share API or opens image in new tab as fallback
  */
 export async function downloadImage(blob: Blob, filename: string): Promise<DownloadResult> {
-  // On iOS or WebView, try Web Share API first as it's the most reliable way to save images
+  // On iOS or WebView, try various methods to save the image
   if (isIOS() || isWebView()) {
-    // First try Web Share API with files
+    // First, try native save if we're in the Emoji Studio iOS app
+    if (isEmojiStudioApp() || hasNativeShareHandler()) {
+      const nativeSaveSuccess = await triggerNativeSave({
+        imageBlob: blob,
+        filename,
+      })
+      if (nativeSaveSuccess) {
+        return {
+          success: true,
+          method: "share",
+          message: "Saving to Photos...",
+        }
+      }
+    }
+
+    // Try Web Share API with files
     if (supportsWebShareWithFiles()) {
       try {
         const file = new File([blob], filename, { type: blob.type })
@@ -266,6 +285,20 @@ export async function shareImage(
   title: string,
   text?: string
 ): Promise<boolean> {
+  // First try native share if we're in the Emoji Studio iOS app
+  if (isEmojiStudioApp() || hasNativeShareHandler()) {
+    const nativeShareSuccess = await triggerNativeShare({
+      imageBlob: blob,
+      title,
+      text: text || "Made with Emoji Studio",
+      filename: "emoji-studio.png",
+    })
+    if (nativeShareSuccess) {
+      return true
+    }
+    // If native share failed, continue with fallbacks
+  }
+
   // Check if Web Share API with files is supported
   if (!navigator.canShare) {
     return false
@@ -390,8 +423,24 @@ export async function captureElementAsCanvas(element: HTMLElement): Promise<HTML
 export async function downloadGif(blob: Blob, filename: string): Promise<DownloadResult> {
   const finalFilename = filename.endsWith(".gif") ? filename : `${filename}.gif`
 
-  // On iOS or WebView, try Web Share API first
+  // On iOS or WebView, try various methods
   if (isIOS() || isWebView()) {
+    // First, try native save if we're in the Emoji Studio iOS app
+    if (isEmojiStudioApp() || hasNativeShareHandler()) {
+      const nativeSaveSuccess = await triggerNativeSave({
+        imageBlob: blob,
+        filename: finalFilename,
+      })
+      if (nativeSaveSuccess) {
+        return {
+          success: true,
+          method: "share",
+          message: "Saving GIF to Photos...",
+        }
+      }
+    }
+
+    // Try Web Share API
     if (supportsWebShareWithFiles()) {
       try {
         const file = new File([blob], finalFilename, { type: "image/gif" })
@@ -479,11 +528,25 @@ export async function shareGif(
   title: string,
   text?: string
 ): Promise<boolean> {
+  // First try native share if we're in the Emoji Studio iOS app
+  if (isEmojiStudioApp() || hasNativeShareHandler()) {
+    const nativeShareSuccess = await triggerNativeShare({
+      imageBlob: blob,
+      title,
+      text: text || "Made with Emoji Studio",
+      filename: "emoji-studio.gif",
+    })
+    if (nativeShareSuccess) {
+      return true
+    }
+    // If native share failed, continue with fallbacks
+  }
+
   if (!navigator.canShare) {
     return false
   }
 
-  const file = new File([blob], "leaderboard.gif", { type: "image/gif" })
+  const file = new File([blob], "emoji-studio.gif", { type: "image/gif" })
   const shareData = {
     title,
     text: text || "Made with Emoji Studio: https://emojistudio.xyz",
@@ -552,8 +615,27 @@ export async function generateVideo(
 export async function downloadVideo(blob: Blob, filename: string): Promise<DownloadResult> {
   const finalFilename = filename.endsWith(".mp4") ? filename : `${filename}.mp4`
 
-  // On iOS or WebView, try Web Share API first
+  // On iOS or WebView, try various methods
   if (isIOS() || isWebView()) {
+    // First, try native save if we're in the Emoji Studio iOS app
+    // Note: Video saving may not be supported by native handler, so we'll try share instead
+    if (isEmojiStudioApp() || hasNativeShareHandler()) {
+      const nativeShareSuccess = await triggerNativeShare({
+        imageBlob: blob,
+        filename: finalFilename,
+        title: "Save Video",
+        text: "Made with Emoji Studio",
+      })
+      if (nativeShareSuccess) {
+        return {
+          success: true,
+          method: "share",
+          message: "Saving video...",
+        }
+      }
+    }
+
+    // Try Web Share API
     if (supportsWebShareWithFiles()) {
       try {
         const file = new File([blob], finalFilename, { type: "video/mp4" })
@@ -641,11 +723,25 @@ export async function shareVideo(
   title: string,
   text?: string
 ): Promise<boolean> {
+  // First try native share if we're in the Emoji Studio iOS app
+  if (isEmojiStudioApp() || hasNativeShareHandler()) {
+    const nativeShareSuccess = await triggerNativeShare({
+      imageBlob: blob,
+      title,
+      text: text || "Made with Emoji Studio",
+      filename: "emoji-studio.mp4",
+    })
+    if (nativeShareSuccess) {
+      return true
+    }
+    // If native share failed, continue with fallbacks
+  }
+
   if (!navigator.canShare) {
     return false
   }
 
-  const file = new File([blob], "wrapped.mp4", { type: "video/mp4" })
+  const file = new File([blob], "emoji-studio.mp4", { type: "video/mp4" })
   const shareData = {
     title,
     text: text || "Made with Emoji Studio: https://emojistudio.xyz",

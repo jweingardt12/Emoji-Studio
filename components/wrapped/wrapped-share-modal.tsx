@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -69,6 +69,7 @@ interface WrappedShareModalProps {
   workspaceName: string
   yearEmojis?: Emoji[] // All emojis from the year for "My Emojis" card
   creatorName?: string // Optional creator name for personalized card
+  userId?: string // User ID for filtering emojis in "My Emojis" card
 }
 
 type ExportFormat = "image" | "gif" | "video"
@@ -127,6 +128,7 @@ export function WrappedShareModal({
   workspaceName,
   yearEmojis = [],
   creatorName,
+  userId,
 }: WrappedShareModalProps) {
   const isMobile = useIsMobile()
   const track = useTrack()
@@ -138,8 +140,15 @@ export function WrappedShareModal({
   const [cardSize, setCardSize] = useState<WrappedCardSize>("square")
   const [exportFormat, setExportFormat] = useState<ExportFormat>("image")
 
-  // Check if we have enough emojis for the "My Emojis" card
-  const hasEnoughEmojis = yearEmojis.length >= 5
+  // Filter emojis to only show user's emojis for "My Emojis" card
+  const userYearEmojis = useMemo(() => {
+    if (!userId) return []  // Return empty if no user ID - can't show "My Emojis" without knowing the user
+    return yearEmojis.filter(emoji => emoji.user_id === userId)
+  }, [yearEmojis, userId])
+
+  // Check if we have enough user emojis for the "My Emojis" card
+  // Requires both a valid userId AND at least 5 emojis from that user this year
+  const hasEnoughEmojis = userId && userYearEmojis.length >= 5
   const [qualityPreset, setQualityPreset] = useState<QualityPreset>("standard")
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -387,7 +396,7 @@ export function WrappedShareModal({
               }}
             >
               <MyEmojisShareCardFull
-                emojis={yearEmojis}
+                emojis={userYearEmojis}
                 workspaceName={workspaceName}
                 backgroundStyle={backgroundStyle}
                 size={cardSize}
@@ -404,7 +413,7 @@ export function WrappedShareModal({
               }}
             >
               <MyEmojisShareCardAnimated
-                emojis={yearEmojis}
+                emojis={userYearEmojis}
                 workspaceName={workspaceName}
                 backgroundStyle={backgroundStyle}
                 size={cardSize}
@@ -417,7 +426,7 @@ export function WrappedShareModal({
         )}
       </>
     )
-  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress, cardType, yearEmojis, creatorName])
+  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress, cardType, userYearEmojis, creatorName])
 
   const handleCopy = useCallback(async () => {
     if (isGenerating) return
@@ -817,7 +826,7 @@ export function WrappedShareModal({
             // My Emojis card preview
             isPreviewPlaying && (exportFormat === "gif" || exportFormat === "video") ? (
               <MyEmojisShareCardAnimated
-                emojis={yearEmojis}
+                emojis={userYearEmojis}
                 workspaceName={workspaceName}
                 backgroundStyle={backgroundStyle}
                 size={cardSize}
@@ -827,7 +836,7 @@ export function WrappedShareModal({
               />
             ) : (
               <MyEmojisShareCard
-                emojis={yearEmojis}
+                emojis={userYearEmojis}
                 workspaceName={workspaceName}
                 backgroundStyle={backgroundStyle}
                 size={cardSize}
