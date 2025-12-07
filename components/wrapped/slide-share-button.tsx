@@ -10,7 +10,10 @@ import {
   downloadImage,
   shareImage,
   canShare,
+  type ClipboardResult,
+  type DownloadResult,
 } from "@/lib/utils/share-image"
+import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
 import { useTrack } from "@/lib/hooks/use-track"
 
 interface SlideShareButtonProps {
@@ -64,21 +67,41 @@ export function SlideShareButton({
   }, [slideRef, backgroundColor, onCaptureStart, onCaptureEnd])
 
   const handleCopy = async () => {
+    // Check if clipboard is supported on this device before even trying
+    if (!supportsClipboardWriteImage() && (isIOS() || isWebView())) {
+      toast.error("Copying images isn't supported on this device. Use Share instead.", {
+        duration: 4000,
+      })
+      return
+    }
+
     setIsGenerating(true)
     setActiveAction("copy")
     try {
       const blob = await captureSlide()
       if (!blob) return
-      await copyImageToClipboard(blob)
-      toast.success("Copied to clipboard!")
-      track("wrapped_slide_shared", {
-        slide_name: slideName,
-        action: "copy",
-        year,
-      })
+
+      const result = await copyImageToClipboard(blob)
+
+      if (result.success) {
+        toast.success(result.message)
+        track("wrapped_slide_shared", {
+          slide_name: slideName,
+          action: "copy",
+          year,
+        })
+      } else if (result.fallbackToShare) {
+        toast.error(result.message, { duration: 4000 })
+      } else {
+        toast.error(result.message)
+      }
     } catch (error) {
       console.error("Failed to copy:", error)
-      toast.error("Failed to copy to clipboard")
+      if (isIOS() || isWebView()) {
+        toast.error("Copying failed on this device. Use Share instead.", { duration: 4000 })
+      } else {
+        toast.error("Failed to copy to clipboard")
+      }
     } finally {
       setIsGenerating(false)
       setActiveAction(null)
@@ -92,16 +115,33 @@ export function SlideShareButton({
       const blob = await captureSlide()
       if (!blob) return
       const filename = `emoji-wrapped-${year}-${workspaceName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${slideName}`
-      downloadImage(blob, `${filename}.png`)
-      toast.success("Downloaded!")
-      track("wrapped_slide_shared", {
-        slide_name: slideName,
-        action: "download",
-        year,
-      })
+      const result = await downloadImage(blob, `${filename}.png`)
+
+      if (result.success) {
+        // Show appropriate toast based on the method used
+        if (result.method === "open") {
+          // Special message for iOS fallback where image opens in new tab
+          toast.success(result.message, { duration: 5000 })
+        } else {
+          toast.success(result.message)
+        }
+
+        track("wrapped_slide_shared", {
+          slide_name: slideName,
+          action: "download",
+          year,
+          method: result.method,
+        })
+      } else {
+        toast.error(result.message, { duration: 4000 })
+      }
     } catch (error) {
       console.error("Failed to download:", error)
-      toast.error("Failed to download")
+      if (isIOS() || isWebView()) {
+        toast.error("Download failed. Try using Share instead.", { duration: 4000 })
+      } else {
+        toast.error("Failed to download")
+      }
     } finally {
       setIsGenerating(false)
       setActiveAction(null)
@@ -133,11 +173,32 @@ export function SlideShareButton({
     }
   }
 
+  // On iOS, prioritize Share button as it's the most reliable
+  const isIOSDevice = isIOS() || isWebView()
+
   return (
     <div
       className="flex items-center justify-center gap-2 mt-6"
       onClick={(e) => e.stopPropagation()}
     >
+      {/* On iOS, show Share button first */}
+      {isIOSDevice && canShareFiles && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleShare}
+          disabled={isGenerating}
+          className="bg-white/30 hover:bg-white/40 backdrop-blur-sm text-white border-0 gap-2"
+        >
+          {isGenerating && activeAction === "share" ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Share2 className="w-4 h-4" />
+          )}
+          <span className="text-sm">Share</span>
+        </Button>
+      )}
+
       <Button
         variant="ghost"
         size="sm"
@@ -168,7 +229,8 @@ export function SlideShareButton({
         <span className="text-sm">Save</span>
       </Button>
 
-      {canShareFiles && (
+      {/* On non-iOS, show Share button in normal position */}
+      {!isIOSDevice && canShareFiles && (
         <Button
           variant="ghost"
           size="sm"

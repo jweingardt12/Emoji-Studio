@@ -1,6 +1,13 @@
 import { toPng, toBlob, toCanvas, toJpeg } from "html-to-image"
 import GIF from "gif.js"
 import { VideoProcessor } from "./video-processor"
+import {
+  isIOS,
+  isWebView,
+  supportsDownloadAttribute,
+  supportsClipboardWriteImage,
+  supportsWebShareWithFiles,
+} from "./ios-detection"
 
 /**
  * Wait for all images in an element to be fully loaded
@@ -59,34 +66,163 @@ export async function generateImageDataUrl(element: HTMLElement): Promise<string
 }
 
 /**
- * Copy an image blob to the clipboard
+ * Result of clipboard operation - indicates whether copy succeeded or user should use share
  */
-export async function copyImageToClipboard(blob: Blob): Promise<void> {
+export interface ClipboardResult {
+  success: boolean
+  fallbackToShare: boolean
+  message: string
+}
+
+/**
+ * Copy an image blob to the clipboard
+ * On iOS WebView, clipboard write for images is not supported - returns fallbackToShare: true
+ */
+export async function copyImageToClipboard(blob: Blob): Promise<ClipboardResult> {
+  // Check if we're on a platform that doesn't support clipboard image writing
+  if (!supportsClipboardWriteImage()) {
+    // On iOS, we should suggest using share instead
+    if (isIOS() || isWebView()) {
+      return {
+        success: false,
+        fallbackToShare: true,
+        message: "Copying images isn't supported on this device. Use Share instead to save the image.",
+      }
+    }
+    return {
+      success: false,
+      fallbackToShare: false,
+      message: "Your browser doesn't support copying images to clipboard",
+    }
+  }
+
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
         [blob.type]: blob,
       }),
     ])
+    return {
+      success: true,
+      fallbackToShare: false,
+      message: "Copied to clipboard!",
+    }
   } catch (error) {
-    // Fallback for browsers that don't support ClipboardItem with images
     console.error("Failed to copy image to clipboard:", error)
-    throw new Error("Your browser doesn't support copying images to clipboard")
+
+    // On iOS, even if the API exists, it may fail - suggest share
+    if (isIOS() || isWebView()) {
+      return {
+        success: false,
+        fallbackToShare: true,
+        message: "Copying failed on this device. Use Share instead to save the image.",
+      }
+    }
+
+    return {
+      success: false,
+      fallbackToShare: false,
+      message: "Failed to copy image to clipboard",
+    }
   }
 }
 
 /**
- * Download an image blob as a file
+ * Result of download operation
  */
-export function downloadImage(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+export interface DownloadResult {
+  success: boolean
+  method: "download" | "share" | "open" | "none"
+  message: string
+}
+
+/**
+ * Download an image blob as a file
+ * On iOS WebView, uses Web Share API or opens image in new tab as fallback
+ */
+export async function downloadImage(blob: Blob, filename: string): Promise<DownloadResult> {
+  // On iOS or WebView, try Web Share API first as it's the most reliable way to save images
+  if (isIOS() || isWebView()) {
+    // First try Web Share API with files
+    if (supportsWebShareWithFiles()) {
+      try {
+        const file = new File([blob], filename, { type: blob.type })
+        await navigator.share({
+          files: [file],
+          title: "Save Image",
+        })
+        return {
+          success: true,
+          method: "share",
+          message: "Image ready to save!",
+        }
+      } catch (error) {
+        // User cancelled share - that's okay
+        if ((error as Error).name === "AbortError") {
+          return {
+            success: true,
+            method: "share",
+            message: "Share cancelled",
+          }
+        }
+        console.warn("Web Share failed, trying fallback:", error)
+      }
+    }
+
+    // Fallback: Open image in new tab for manual save (long-press to save)
+    try {
+      const url = URL.createObjectURL(blob)
+      const newWindow = window.open(url, "_blank")
+
+      if (newWindow) {
+        // Auto-revoke after 60 seconds
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+        return {
+          success: true,
+          method: "open",
+          message: "Image opened! Long-press and select 'Save Image' to download.",
+        }
+      } else {
+        URL.revokeObjectURL(url)
+        return {
+          success: false,
+          method: "none",
+          message: "Popup blocked. Please allow popups to save images.",
+        }
+      }
+    } catch (error) {
+      console.error("Failed to open image:", error)
+      return {
+        success: false,
+        method: "none",
+        message: "Failed to save image on this device",
+      }
+    }
+  }
+
+  // Standard download for browsers that support it
+  try {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    return {
+      success: true,
+      method: "download",
+      message: "Image downloaded!",
+    }
+  } catch (error) {
+    console.error("Download failed:", error)
+    return {
+      success: false,
+      method: "none",
+      message: "Failed to download image",
+    }
+  }
 }
 
 /**
@@ -217,16 +353,90 @@ export async function captureElementAsCanvas(element: HTMLElement): Promise<HTML
 
 /**
  * Download a GIF blob as a file
+ * On iOS WebView, uses Web Share API or opens in new tab as fallback
  */
-export function downloadGif(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = filename.endsWith(".gif") ? filename : `${filename}.gif`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+export async function downloadGif(blob: Blob, filename: string): Promise<DownloadResult> {
+  const finalFilename = filename.endsWith(".gif") ? filename : `${filename}.gif`
+
+  // On iOS or WebView, try Web Share API first
+  if (isIOS() || isWebView()) {
+    if (supportsWebShareWithFiles()) {
+      try {
+        const file = new File([blob], finalFilename, { type: "image/gif" })
+        await navigator.share({
+          files: [file],
+          title: "Save GIF",
+        })
+        return {
+          success: true,
+          method: "share",
+          message: "GIF ready to save!",
+        }
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return {
+            success: true,
+            method: "share",
+            message: "Share cancelled",
+          }
+        }
+        console.warn("Web Share failed for GIF, trying fallback:", error)
+      }
+    }
+
+    // Fallback: Open GIF in new tab
+    try {
+      const url = URL.createObjectURL(blob)
+      const newWindow = window.open(url, "_blank")
+
+      if (newWindow) {
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+        return {
+          success: true,
+          method: "open",
+          message: "GIF opened! Long-press and select 'Save Image' to download.",
+        }
+      } else {
+        URL.revokeObjectURL(url)
+        return {
+          success: false,
+          method: "none",
+          message: "Popup blocked. Please allow popups to save.",
+        }
+      }
+    } catch (error) {
+      console.error("Failed to open GIF:", error)
+      return {
+        success: false,
+        method: "none",
+        message: "Failed to save GIF on this device",
+      }
+    }
+  }
+
+  // Standard download
+  try {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = finalFilename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    return {
+      success: true,
+      method: "download",
+      message: "GIF downloaded!",
+    }
+  } catch (error) {
+    console.error("GIF download failed:", error)
+    return {
+      success: false,
+      method: "none",
+      message: "Failed to download GIF",
+    }
+  }
 }
 
 /**
@@ -305,16 +515,90 @@ export async function generateVideo(
 
 /**
  * Download a video blob as a file
+ * On iOS WebView, uses Web Share API or opens in new tab as fallback
  */
-export function downloadVideo(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = filename.endsWith(".mp4") ? filename : `${filename}.mp4`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+export async function downloadVideo(blob: Blob, filename: string): Promise<DownloadResult> {
+  const finalFilename = filename.endsWith(".mp4") ? filename : `${filename}.mp4`
+
+  // On iOS or WebView, try Web Share API first
+  if (isIOS() || isWebView()) {
+    if (supportsWebShareWithFiles()) {
+      try {
+        const file = new File([blob], finalFilename, { type: "video/mp4" })
+        await navigator.share({
+          files: [file],
+          title: "Save Video",
+        })
+        return {
+          success: true,
+          method: "share",
+          message: "Video ready to save!",
+        }
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return {
+            success: true,
+            method: "share",
+            message: "Share cancelled",
+          }
+        }
+        console.warn("Web Share failed for video, trying fallback:", error)
+      }
+    }
+
+    // Fallback: Open video in new tab
+    try {
+      const url = URL.createObjectURL(blob)
+      const newWindow = window.open(url, "_blank")
+
+      if (newWindow) {
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+        return {
+          success: true,
+          method: "open",
+          message: "Video opened! Tap and hold to save the video.",
+        }
+      } else {
+        URL.revokeObjectURL(url)
+        return {
+          success: false,
+          method: "none",
+          message: "Popup blocked. Please allow popups to save.",
+        }
+      }
+    } catch (error) {
+      console.error("Failed to open video:", error)
+      return {
+        success: false,
+        method: "none",
+        message: "Failed to save video on this device",
+      }
+    }
+  }
+
+  // Standard download
+  try {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = finalFilename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    return {
+      success: true,
+      method: "download",
+      message: "Video downloaded!",
+    }
+  } catch (error) {
+    console.error("Video download failed:", error)
+    return {
+      success: false,
+      method: "none",
+      message: "Failed to download video",
+    }
+  }
 }
 
 /**

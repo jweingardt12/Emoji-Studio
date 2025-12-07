@@ -17,6 +17,7 @@ export interface CollectedAssets {
     creators: number
     background: number
     finale: number
+    myEmojis: number
   }
 }
 
@@ -24,11 +25,24 @@ export interface CollectedAssets {
  * Collects all emoji URLs from Wrapped stats that need to be preloaded.
  * Returns unique, proxied URLs sorted by visual priority.
  */
+/**
+ * Options for controlling what assets to collect
+ */
+export interface CollectAssetsOptions {
+  /** Include all year emojis for the "My Emojis" share card (default: true) */
+  includeAllForShareCard?: boolean
+  /** Maximum number of emojis to collect for the share card grid (default: 200) */
+  shareCardMaxEmojis?: number
+}
+
 export function collectWrappedAssets(
   stats: WrappedStats,
   allYearEmojis: Emoji[] = [],
-  personalStats?: PersonalWrappedStats | null
+  personalStats?: PersonalWrappedStats | null,
+  options: CollectAssetsOptions = {}
 ): CollectedAssets {
+  const { includeAllForShareCard = true, shareCardMaxEmojis = 200 } = options
+
   const urls = new Set<string>()
   const breakdown = {
     intro: 0,
@@ -36,6 +50,7 @@ export function collectWrappedAssets(
     creators: 0,
     background: 0,
     finale: 0,
+    myEmojis: 0,
   }
 
   // Helper to add a valid emoji URL
@@ -86,18 +101,24 @@ export function collectWrappedAssets(
   // These are less critical but nice to have preloaded
   const additionalEmojis = allYearEmojis.slice(20, 60)
   additionalEmojis.forEach((emoji) => {
-    if (urls.size < 100) { // Cap at 100 total URLs for performance
-      addEmojiUrl(emoji, "count")
-    }
+    addEmojiUrl(emoji, "count")
   })
 
-  // Priority 7: Finale emojis (remaining pool)
+  // Priority 7: Finale emojis (remaining pool for story experience)
   const finaleEmojis = allYearEmojis.slice(60, 100)
   finaleEmojis.forEach((emoji) => {
-    if (urls.size < 120) {
-      addEmojiUrl(emoji, "finale")
-    }
+    addEmojiUrl(emoji, "finale")
   })
+
+  // Priority 8: ALL remaining emojis for the "My Emojis" share card
+  // This ensures users can share a card with all their emojis loaded
+  if (includeAllForShareCard) {
+    // Load all remaining emojis up to the max limit for the share card grid
+    const remainingEmojis = allYearEmojis.slice(100, shareCardMaxEmojis)
+    remainingEmojis.forEach((emoji) => {
+      addEmojiUrl(emoji, "myEmojis")
+    })
+  }
 
   return {
     urls: Array.from(urls),
