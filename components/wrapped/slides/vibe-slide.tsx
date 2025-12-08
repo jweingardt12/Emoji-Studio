@@ -27,6 +27,16 @@ import {
   Rocket,
   Trophy,
   Sparkles,
+  // New icons for expanded personas
+  Layers,
+  RefreshCw,
+  Award,
+  MessageCircle,
+  Type,
+  Timer,
+  Activity,
+  Calendar,
+  Building,
 } from "lucide-react"
 
 interface VibeSlideProps {
@@ -56,6 +66,16 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Tv,
   Coffee,
   Rocket,
+  // New icons for expanded personas
+  Layers,
+  RefreshCw,
+  Award,
+  MessageCircle,
+  Type,
+  Timer,
+  Activity,
+  Calendar,
+  Building,
 }
 
 // CRT Scanline overlay component - disabled on mobile for performance

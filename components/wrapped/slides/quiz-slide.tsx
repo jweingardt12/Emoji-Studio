@@ -179,7 +179,8 @@ function generatePersonalPredictionQuestion(stats: WrappedStats, personalStats: 
     // Predict your GIF percentage
     () => {
       const gifPct = personalStats.gifPercentage
-      if (gifPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (gifPct === undefined || gifPct < 1) return null
       const options = generateNumericOptions(gifPct).map(n => `${n}%`)
       const correctStr = `${gifPct.toLocaleString()}%`
 
@@ -238,7 +239,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
       if (!lateNight || lateNight < 1) return null
       const options = generateNumericOptions(lateNight)
       return {
-        question: "How many emojis were created after midnight this year?",
+        question: "How many emojis were created between midnight and 5am?",
         options,
         correctIndex: options.indexOf(lateNight.toLocaleString()),
       }
@@ -280,7 +281,8 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     // GIF percentage
     () => {
       const gifPct = stats.overview?.gifPercentage
-      if (gifPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (gifPct === undefined || gifPct < 1) return null
       const options = generateNumericOptions(gifPct).map(n => `${n}%`)
       const correctStr = `${gifPct.toLocaleString()}%`
       return {
@@ -302,7 +304,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     const lateNight = stats.funStats?.lateNightCount || 10
     const options = generateNumericOptions(lateNight)
     return {
-      question: "How many emojis were created after midnight this year?",
+      question: "How many emojis were created between midnight and 5am?",
       options,
       correctIndex: options.indexOf(lateNight.toLocaleString()),
     }
@@ -329,7 +331,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
       const options = generateNumericOptions(lateNight)
 
       return {
-        question: "How many of YOUR emojis were created after midnight?",
+        question: "How many of YOUR emojis were created between midnight and 5am?",
         options,
         correctIndex: options.indexOf(lateNight.toLocaleString()),
       }
@@ -337,7 +339,8 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     // Weekend vs weekday
     () => {
       const weekendPct = personalStats.weekendPercentage
-      if (weekendPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (weekendPct === undefined || weekendPct < 1) return null
       const options = generateNumericOptions(weekendPct).map(n => `${n}%`)
       const correctStr = `${weekendPct.toLocaleString()}%`
 
@@ -349,45 +352,30 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     },
     // Your most common word in emoji names
     () => {
-      if (!personalStats.topEmojis || personalStats.topEmojis.length < 5) return null
+      // Use pre-calculated topWords from all user emojis (not just top 5)
+      if (!personalStats.topWords || personalStats.topWords.length === 0) return null
 
-      // Extract words from user's emoji names
-      const allWords: string[] = []
-      personalStats.topEmojis.forEach(emoji => {
-        const words = emoji.name.split(/[-_]/).filter(w => w.length > 2)
-        allWords.push(...words)
-      })
+      const mostCommon = personalStats.topWords[0].word
+      const mostCommonCount = personalStats.topWords[0].count
 
-      // Count word frequency
-      const wordCounts = new Map<string, number>()
-      allWords.forEach(word => {
-        const lower = word.toLowerCase()
-        wordCounts.set(lower, (wordCounts.get(lower) || 0) + 1)
-      })
+      // Need at least 2 occurrences to be meaningful
+      if (mostCommonCount < 2) return null
 
-      // Find most common
-      let mostCommon = ""
-      let maxCount = 0
-      wordCounts.forEach((count, word) => {
-        if (count > maxCount) {
-          maxCount = count
-          mostCommon = word
-        }
-      })
-
-      if (!mostCommon || maxCount < 2) return null
-
-      // Use workspace topWords for wrong answers
-      const workspaceWords = stats.funStats?.topWords || []
-      const wrongAnswers = workspaceWords
-        .filter(w => w.word.toLowerCase() !== mostCommon)
-        .slice(0, 3)
+      // Use remaining personal topWords for wrong answers first, then workspace words
+      const personalWrongWords = personalStats.topWords
+        .slice(1)
         .map(w => w.word)
+      const workspaceWords = stats.funStats?.topWords || []
+      const workspaceWrongWords = workspaceWords
+        .filter(w => w.word.toLowerCase() !== mostCommon.toLowerCase() && !personalWrongWords.includes(w.word))
+        .map(w => w.word)
+
+      const wrongAnswers = [...personalWrongWords, ...workspaceWrongWords].slice(0, 3)
 
       // Pad with generic words if needed
       const fillers = ["party", "cat", "face", "fire", "love", "cool", "happy", "dog"]
       while (wrongAnswers.length < 3) {
-        const filler = fillers.find(f => f !== mostCommon && !wrongAnswers.includes(f))
+        const filler = fillers.find(f => f.toLowerCase() !== mostCommon.toLowerCase() && !wrongAnswers.includes(f))
         if (filler) wrongAnswers.push(filler)
         else break
       }
@@ -432,7 +420,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
   const lateNight = stats.funStats?.lateNightCount || 10
   const options = generateNumericOptions(lateNight)
   return {
-    question: "How many emojis were created after midnight this year?",
+    question: "How many emojis were created between midnight and 5am?",
     options,
     correctIndex: options.indexOf(lateNight.toLocaleString()),
   }
