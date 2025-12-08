@@ -509,60 +509,99 @@ export async function generateGif(
 }
 
 /**
+ * Pre-fetch all images in an element and convert to base64 data URLs.
+ * Returns a Map of original URL -> base64 data URL.
+ * This bypasses html-to-image's buggy internal caching.
+ */
+export async function prefetchImagesToDataUrls(
+  element: HTMLElement
+): Promise<Map<string, string>> {
+  const images = element.querySelectorAll("img")
+  const cache = new Map<string, string>()
+  const uniqueSrcs = new Set<string>()
+
+  // Collect unique image URLs
+  images.forEach((img) => {
+    const src = img.getAttribute("src")
+    if (src && !src.startsWith("data:")) {
+      uniqueSrcs.add(src)
+    }
+  })
+
+  console.log(`[prefetchImagesToDataUrls] Fetching ${uniqueSrcs.size} unique images...`)
+
+  // Fetch each unique image with cache-busting
+  await Promise.all(
+    Array.from(uniqueSrcs).map(async (src) => {
+      try {
+        // Add cache-busting param to force fresh fetch
+        const bustUrl = src + (src.includes("?") ? "&" : "?") +
+          `_prefetch=${Date.now()}_${Math.random().toString(36).substr(2, 6)}`
+
+        const response = await fetch(bustUrl, { cache: "no-store" })
+        const blob = await response.blob()
+
+        // Convert to base64 data URL
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+
+        cache.set(src, dataUrl)
+      } catch (e) {
+        console.warn("[prefetchImagesToDataUrls] Failed:", src, e)
+      }
+    })
+  )
+
+  console.log(`[prefetchImagesToDataUrls] Successfully cached ${cache.size} images as data URLs`)
+  return cache
+}
+
+/**
  * Capture a single frame from an HTML element as a canvas
- * @param bustCache - If true, adds unique cache-busting params to each image URL
- * @param frameId - Optional unique identifier for this frame
+ * @param imageCache - Optional pre-fetched image cache (Map of URL -> base64 data URL)
  */
 export async function captureElementAsCanvas(
   element: HTMLElement,
-  bustCache: boolean = false,
-  frameId?: string
+  imageCache?: Map<string, string>
 ): Promise<HTMLCanvasElement> {
   // Wait for images before capturing
   await waitForImages(element)
 
-  if (bustCache) {
-    // AGGRESSIVE CACHE BUSTING: Modify image URLs directly on the element
-    // This forces html-to-image to fetch each image fresh with unique URLs
-    const uniqueId = frameId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const images = element.querySelectorAll("img")
-    const originalSrcs: string[] = []
+  const images = element.querySelectorAll("img")
+  const originalSrcs: string[] = []
 
-    // Modify all image URLs with unique per-image cache busters
-    images.forEach((img, index) => {
+  // If we have a pre-fetched cache, swap URLs to inline data URLs
+  // This completely bypasses html-to-image's buggy image fetching/caching
+  if (imageCache && imageCache.size > 0) {
+    images.forEach((img) => {
       const src = img.getAttribute("src")
-      if (src) {
-        originalSrcs.push(src)
-        // Each image gets its own unique param (frame + image index)
-        const separator = src.includes("?") ? "&" : "?"
-        img.setAttribute("src", `${src}${separator}__cb=${uniqueId}_${index}`)
+      originalSrcs.push(src || "")
+      if (src && imageCache.has(src)) {
+        img.setAttribute("src", imageCache.get(src)!)
       }
     })
+  }
 
-    try {
-      // Capture with skipFonts to avoid CORS issues
-      const canvas = await toCanvas(element, {
-        pixelRatio: 2,
-        cacheBust: true,
-        skipFonts: true,
-      })
-
-      return canvas
-    } finally {
-      // IMPORTANT: Restore original URLs so React doesn't get confused
-      images.forEach((img, index) => {
-        if (originalSrcs[index]) {
-          img.setAttribute("src", originalSrcs[index])
+  try {
+    // Capture with skipFonts to avoid CORS issues with remote stylesheets
+    return await toCanvas(element, {
+      pixelRatio: 2,
+      skipFonts: true,
+    })
+  } finally {
+    // IMPORTANT: Restore original URLs so React state isn't affected
+    if (imageCache && imageCache.size > 0) {
+      images.forEach((img, i) => {
+        if (originalSrcs[i]) {
+          img.setAttribute("src", originalSrcs[i])
         }
       })
     }
   }
-
-  // Standard capture without aggressive cache busting
-  return toCanvas(element, {
-    pixelRatio: 2,
-    skipFonts: true,
-  })
 }
 
 /**

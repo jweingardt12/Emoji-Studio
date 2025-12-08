@@ -39,6 +39,7 @@ import {
   generateGif,
   generateVideo,
   captureElementAsCanvas,
+  prefetchImagesToDataUrls,
   detectVideoEncoder,
   preloadVideoEncoder,
   getEncoderDescription,
@@ -347,11 +348,12 @@ export function WrappedShareModal({
     })
   }, [])
 
-  // Frame counter for unique IDs across captures
-  const frameCounterRef = useRef(0)
-
   // Capture a frame with a specific animation progress
-  const captureAnimatedFrame = useCallback(async (progress: number, frameIndex?: number): Promise<HTMLCanvasElement> => {
+  // imageCache is a Map of URL -> base64 data URL that bypasses html-to-image's buggy caching
+  const captureAnimatedFrame = useCallback(async (
+    progress: number,
+    imageCache?: Map<string, string>
+  ): Promise<HTMLCanvasElement> => {
     // flushSync forces React to immediately process the state update
     // Without this, the state update is async and capture may happen before re-render
     flushSync(() => {
@@ -384,12 +386,8 @@ export function WrappedShareModal({
       throw new Error(`Animated card element not found (cardType: ${cardType})`)
     }
 
-    // Generate unique frame ID for cache busting
-    const currentFrame = frameIndex !== undefined ? frameIndex : frameCounterRef.current++
-    const frameId = `gen${Date.now()}_${currentFrame}`
-
-    // Use aggressive cache-busting for multi-frame capture
-    return captureElementAsCanvas(element, true, frameId)
+    // Pass the image cache to bypass html-to-image's buggy internal caching
+    return captureElementAsCanvas(element, imageCache)
   }, [getAnimatedCardElement, waitForFrame, cardType])
 
   // Handler for generating media and showing inline preview for long-press save
@@ -418,11 +416,20 @@ export function WrappedShareModal({
         // Generate MP4 video
         const totalFrames = quality.videoFrames
         const fps = quality.videoFps
+
+        // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
+        // This bypasses html-to-image's buggy internal caching that causes
+        // all frames after frame 1 to show the same emoji
+        const animatedElement = getAnimatedCardElement()
+        if (!animatedElement) throw new Error("Animated card element not found")
+        const imageCache = await prefetchImagesToDataUrls(animatedElement)
+        console.log(`[Video] Pre-fetched ${imageCache.size} images as data URLs`)
+
         blob = await generateVideo(
           async (frameIndex: number) => {
             if (signal.aborted) throw new DOMException("Aborted", "AbortError")
             const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress, frameIndex)
+            return captureAnimatedFrame(progress, imageCache)
           },
           totalFrames,
           fps,
@@ -439,11 +446,20 @@ export function WrappedShareModal({
         // Generate animated GIF
         const totalFrames = quality.gifFrames
         const frameDelay = Math.round(1000 / quality.gifFps)
+
+        // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
+        // This bypasses html-to-image's buggy internal caching that causes
+        // all frames after frame 1 to show the same emoji
+        const animatedElement = getAnimatedCardElement()
+        if (!animatedElement) throw new Error("Animated card element not found")
+        const imageCache = await prefetchImagesToDataUrls(animatedElement)
+        console.log(`[GIF] Pre-fetched ${imageCache.size} images as data URLs`)
+
         blob = await generateGif(
           async (frameIndex: number) => {
             if (signal.aborted) throw new DOMException("Aborted", "AbortError")
             const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress, frameIndex)
+            return captureAnimatedFrame(progress, imageCache)
           },
           totalFrames,
           frameDelay,
@@ -494,7 +510,7 @@ export function WrappedShareModal({
       setGenerationStage("idle")
       abortControllerRef.current = null
     }
-  }, [isGenerating, previewMediaUrl, exportFormat, qualityPreset, captureAnimatedFrame, getFullCardElement, generationStage, track, stats.year, backgroundStyle, cardType])
+  }, [isGenerating, previewMediaUrl, exportFormat, qualityPreset, captureAnimatedFrame, getFullCardElement, getAnimatedCardElement, generationStage, track, stats.year, backgroundStyle, cardType])
 
   // Go back from preview to customization
   const handleBackFromPreview = useCallback(() => {
