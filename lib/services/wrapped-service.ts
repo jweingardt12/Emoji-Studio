@@ -94,6 +94,13 @@ export interface WordFrequency {
   count: number
 }
 
+export interface MilestoneEmoji {
+  milestone: number // 100, 200, 300, etc.
+  emoji: Emoji
+  creatorFirstNameLastInitial: string // "John S."
+  date: string // Formatted date
+}
+
 export interface WrappedFunStats {
   longestName: { emoji: Emoji; length: number } | null
   shortestName: { emoji: Emoji; length: number } | null
@@ -104,6 +111,7 @@ export interface WrappedFunStats {
   lateNightCount: number // Emojis created 12am-5am
   weekendPercentage: number
   longestStreak: { days: number; startDate: string; endDate: string }
+  milestones: MilestoneEmoji[] // 100th, 200th, 300th, etc. emojis
 }
 
 export interface WrappedGrowthStats {
@@ -195,6 +203,47 @@ function parseEmojiNameWords(name: string): string[] {
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter((word) => word.length > 2 && !STOP_WORDS.has(word))
+}
+
+/**
+ * Format creator display name as "First L." (first name + last initial)
+ */
+function formatCreatorName(displayName: string | undefined): string {
+  if (!displayName) return "Unknown"
+
+  const parts = displayName.trim().split(/\s+/)
+  if (parts.length === 1) {
+    return parts[0]
+  }
+
+  const firstName = parts[0]
+  const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || ""
+
+  return lastInitial ? `${firstName} ${lastInitial}.` : firstName
+}
+
+/**
+ * Calculate milestone emojis (100th, 200th, 300th, etc.)
+ */
+function calculateMilestones(sortedEmojis: Emoji[]): MilestoneEmoji[] {
+  const milestones: MilestoneEmoji[] = []
+  const milestoneNumbers = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000]
+
+  for (const milestone of milestoneNumbers) {
+    // Milestones are 1-indexed (100th emoji is at index 99)
+    const index = milestone - 1
+    if (index < sortedEmojis.length) {
+      const emoji = sortedEmojis[index]
+      milestones.push({
+        milestone,
+        emoji,
+        creatorFirstNameLastInitial: formatCreatorName(emoji.user_display_name),
+        date: emoji.created ? formatDate(emoji.created) : "Unknown",
+      })
+    }
+  }
+
+  return milestones
 }
 
 // ============================================================
@@ -575,6 +624,9 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   // Calculate longest streak
   const longestStreak = calculateLongestStreak(datesWithEmojis, year)
 
+  // Calculate milestones (100th, 200th, etc.)
+  const milestones = calculateMilestones(sortedEmojis)
+
   // Fun stats
   const funStats: WrappedFunStats = {
     longestName: longestName ? { emoji: longestName, length: (longestName as Emoji).name.length } : null,
@@ -586,6 +638,7 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
     lateNightCount,
     weekendPercentage: Math.round((weekendCount / sortedEmojis.length) * 100),
     longestStreak,
+    milestones,
   }
 
   // Growth stats (year-over-year)

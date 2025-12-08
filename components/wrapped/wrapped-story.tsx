@@ -21,6 +21,7 @@ import { FortuneSlide } from "./slides/fortune-slide"
 import { StatsSlide } from "./slides/stats-slide"
 import { FinaleSlide } from "./slides/finale-slide"
 import { LeaderboardSlide } from "./slides/leaderboard-slide"
+import { MilestonesSlide } from "./slides/milestones-slide"
 import { Button } from "@/components/ui/button"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
@@ -45,11 +46,12 @@ const QUIZ_SLIDES = ["quiz-workspace", "quiz-funfacts"] as const
 const REVEAL_SLIDES = ["count", "creators"] as const
 const PERSONAL_SLIDE = ["personal"] as const
 const LEADERBOARD_SLIDE = ["leaderboard"] as const
+const MILESTONES_SLIDE = ["milestones"] as const
 const FUN_SLIDES = ["vibe", "haiku", "movie"] as const
 const MIDDLE_SLIDES = ["peak", "emoji-month", "patterns", "fortune"] as const
 const END_SLIDES = ["stats", "finale"] as const
 
-type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "vibe" | "haiku" | "movie" | "peak" | "emoji-month" | "patterns" | "fortune" | "stats" | "finale"
+type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "milestones" | "vibe" | "haiku" | "movie" | "peak" | "emoji-month" | "patterns" | "fortune" | "stats" | "finale"
 
 export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
   const router = useRouter()
@@ -64,12 +66,15 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
 
   // Build slides array dynamically - include personal slide only if user has data
   // Quiz slides come BEFORE reveal slides so users are quizzed before seeing the answers
+  // Milestones slide only if there are milestones (at least 100 emojis)
+  const hasMilestones = stats.funStats?.milestones && stats.funStats.milestones.length > 0
   const SLIDES: SlideType[] = useMemo(() => {
+    const milestonesSlides = hasMilestones ? MILESTONES_SLIDE : []
     if (personalStats) {
-      return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...PERSONAL_SLIDE, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+      return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...PERSONAL_SLIDE, ...LEADERBOARD_SLIDE, ...milestonesSlides, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
     }
-    return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...LEADERBOARD_SLIDE, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
-  }, [personalStats])
+    return [...INTRO_SLIDES, ...QUIZ_SLIDES, ...REVEAL_SLIDES, ...LEADERBOARD_SLIDE, ...milestonesSlides, ...FUN_SLIDES, ...MIDDLE_SLIDES, ...END_SLIDES]
+  }, [personalStats, hasMilestones])
 
   const totalSlides = SLIDES.length
 
@@ -371,6 +376,14 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
             workspaceName={workspaceName}
             year={stats.year}
             personalStats={personalStats}
+          />
+        )
+      case "milestones":
+        return (
+          <MilestonesSlide
+            milestones={stats.funStats?.milestones || []}
+            workspaceName={workspaceName}
+            year={stats.year}
           />
         )
       case "vibe":
