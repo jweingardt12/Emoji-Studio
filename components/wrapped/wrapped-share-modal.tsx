@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
-import { flushSync } from "react-dom"
 import {
   Dialog,
   DialogContent,
@@ -325,19 +324,6 @@ export function WrappedShareModal({
     return container.querySelector("#wrapped-share-card-full") as HTMLElement | null
   }, [cardType])
 
-  const getAnimatedCardElement = useCallback((): HTMLElement | null => {
-    // Use querySelector within the ref container to find the card by ID
-    // This avoids duplicate ID issues when preview animation is playing
-    if (cardType === "my-emojis") {
-      const container = myEmojisAnimatedCardRef.current
-      if (!container) return null
-      return container.querySelector("#my-emojis-share-card-animated") as HTMLElement | null
-    }
-    const container = animatedCardRef.current
-    if (!container) return null
-    return container.querySelector("#wrapped-share-card-animated") as HTMLElement | null
-  }, [cardType])
-
   // Wait for the next animation frame (browser paint cycle)
   const waitForFrame = useCallback((): Promise<void> => {
     return new Promise(resolve => {
@@ -347,48 +333,6 @@ export function WrappedShareModal({
       })
     })
   }, [])
-
-  // Capture a frame with a specific animation progress
-  // imageCache is a Map of URL -> base64 data URL that bypasses html-to-image's buggy caching
-  const captureAnimatedFrame = useCallback(async (
-    progress: number,
-    imageCache?: Map<string, string>
-  ): Promise<HTMLCanvasElement> => {
-    // flushSync forces React to immediately process the state update
-    // Without this, the state update is async and capture may happen before re-render
-    flushSync(() => {
-      setAnimationProgress(progress)
-    })
-
-    // Wait for browser to complete the paint cycle after React commit
-    await waitForFrame()
-
-    // Try to get the element with retries in case DOM isn't ready yet
-    let element = getAnimatedCardElement()
-
-    // Retry up to 3 times with increasing delays if element not found
-    if (!element) {
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, attempt * 50))
-        await waitForFrame()
-        element = getAnimatedCardElement()
-        if (element) break
-      }
-    }
-
-    if (!element) {
-      const debugInfo = {
-        cardType,
-        statsRefExists: !!animatedCardRef.current,
-        myEmojisRefExists: !!myEmojisAnimatedCardRef.current,
-      }
-      console.error("[ShareModal] Animated card element not found:", debugInfo)
-      throw new Error(`Animated card element not found (cardType: ${cardType})`)
-    }
-
-    // Pass the image cache to bypass html-to-image's buggy internal caching
-    return captureElementAsCanvas(element, imageCache)
-  }, [getAnimatedCardElement, waitForFrame, cardType])
 
   // Handler for generating media and showing inline preview for long-press save
   const handleGeneratePreview = useCallback(async () => {
@@ -413,23 +357,31 @@ export function WrappedShareModal({
       let blob: Blob
 
       if (exportFormat === "video") {
-        // Generate MP4 video
+        // Generate MP4 video - use STATIC card with shimmer animation
+        // The shimmer CSS animation provides visual interest
         const totalFrames = quality.videoFrames
         const fps = quality.videoFps
+        const captureDelay = 33 // ~30fps timing between captures
+
+        // Use the FULL (static) card - has CSS shimmer animation
+        const fullElement = getFullCardElement()
+        if (!fullElement) throw new Error("Card element not found")
 
         // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
-        // This bypasses html-to-image's buggy internal caching that causes
-        // all frames after frame 1 to show the same emoji
-        const animatedElement = getAnimatedCardElement()
-        if (!animatedElement) throw new Error("Animated card element not found")
-        const imageCache = await prefetchImagesToDataUrls(animatedElement)
+        const imageCache = await prefetchImagesToDataUrls(fullElement)
         console.log(`[Video] Pre-fetched ${imageCache.size} images as data URLs`)
 
         blob = await generateVideo(
           async (frameIndex: number) => {
             if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress, imageCache)
+            // Small delay between frames for smooth capture
+            if (frameIndex > 0) {
+              await new Promise(resolve => setTimeout(resolve, captureDelay))
+            }
+            await waitForFrame()
+            const element = getFullCardElement()
+            if (!element) throw new Error("Card element not found")
+            return captureElementAsCanvas(element, imageCache)
           },
           totalFrames,
           fps,
@@ -443,27 +395,37 @@ export function WrappedShareModal({
         if (signal.aborted) throw new DOMException("Aborted", "AbortError")
         setPreviewMediaType("video")
       } else if (exportFormat === "gif") {
-        // Generate animated GIF
+        // Generate animated GIF - use STATIC card, not animated
+        // The animation comes from the emoji GIFs themselves playing over time
+        // We just capture multiple frames with a delay to let the GIFs animate
         const totalFrames = quality.gifFrames
         const frameDelay = Math.round(1000 / quality.gifFps)
+        const captureDelay = 80 // ms between captures to let emoji GIFs animate
+
+        // Use the FULL (static) card - emojis will animate naturally
+        const fullElement = getFullCardElement()
+        if (!fullElement) throw new Error("Card element not found")
 
         // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
-        // This bypasses html-to-image's buggy internal caching that causes
-        // all frames after frame 1 to show the same emoji
-        const animatedElement = getAnimatedCardElement()
-        if (!animatedElement) throw new Error("Animated card element not found")
-        const imageCache = await prefetchImagesToDataUrls(animatedElement)
+        const imageCache = await prefetchImagesToDataUrls(fullElement)
         console.log(`[GIF] Pre-fetched ${imageCache.size} images as data URLs`)
 
         blob = await generateGif(
           async (frameIndex: number) => {
             if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress, imageCache)
+            // Small delay between frames to let animated emoji GIFs progress
+            if (frameIndex > 0) {
+              await new Promise(resolve => setTimeout(resolve, captureDelay))
+            }
+            // Wait for next paint cycle
+            await waitForFrame()
+            const element = getFullCardElement()
+            if (!element) throw new Error("Card element not found")
+            return captureElementAsCanvas(element, imageCache)
           },
           totalFrames,
           frameDelay,
-          0,
+          0, // No additional capture interval - we handle delay ourselves
           (progress) => {
             setGenerationProgress(progress)
             if (progress > 0.8 && generationStage === "capturing") {
@@ -510,7 +472,7 @@ export function WrappedShareModal({
       setGenerationStage("idle")
       abortControllerRef.current = null
     }
-  }, [isGenerating, previewMediaUrl, exportFormat, qualityPreset, captureAnimatedFrame, getFullCardElement, getAnimatedCardElement, generationStage, track, stats.year, backgroundStyle, cardType])
+  }, [isGenerating, previewMediaUrl, exportFormat, qualityPreset, getFullCardElement, waitForFrame, generationStage, track, stats.year, backgroundStyle, cardType])
 
   // Go back from preview to customization
   const handleBackFromPreview = useCallback(() => {
