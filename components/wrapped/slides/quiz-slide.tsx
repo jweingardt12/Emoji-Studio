@@ -179,7 +179,8 @@ function generatePersonalPredictionQuestion(stats: WrappedStats, personalStats: 
     // Predict your GIF percentage
     () => {
       const gifPct = personalStats.gifPercentage
-      if (gifPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (gifPct === undefined || gifPct < 1) return null
       const options = generateNumericOptions(gifPct).map(n => `${n}%`)
       const correctStr = `${gifPct.toLocaleString()}%`
 
@@ -238,7 +239,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
       if (!lateNight || lateNight < 1) return null
       const options = generateNumericOptions(lateNight)
       return {
-        question: "How many emojis were created after midnight this year?",
+        question: "How many emojis were created between midnight and 5am?",
         options,
         correctIndex: options.indexOf(lateNight.toLocaleString()),
       }
@@ -280,7 +281,8 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     // GIF percentage
     () => {
       const gifPct = stats.overview?.gifPercentage
-      if (gifPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (gifPct === undefined || gifPct < 1) return null
       const options = generateNumericOptions(gifPct).map(n => `${n}%`)
       const correctStr = `${gifPct.toLocaleString()}%`
       return {
@@ -302,7 +304,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     const lateNight = stats.funStats?.lateNightCount || 10
     const options = generateNumericOptions(lateNight)
     return {
-      question: "How many emojis were created after midnight this year?",
+      question: "How many emojis were created between midnight and 5am?",
       options,
       correctIndex: options.indexOf(lateNight.toLocaleString()),
     }
@@ -329,7 +331,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
       const options = generateNumericOptions(lateNight)
 
       return {
-        question: "How many of YOUR emojis were created after midnight?",
+        question: "How many of YOUR emojis were created between midnight and 5am?",
         options,
         correctIndex: options.indexOf(lateNight.toLocaleString()),
       }
@@ -337,7 +339,8 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
     // Weekend vs weekday
     () => {
       const weekendPct = personalStats.weekendPercentage
-      if (weekendPct === undefined) return null
+      // Skip if undefined or 0% (not an interesting question)
+      if (weekendPct === undefined || weekendPct < 1) return null
       const options = generateNumericOptions(weekendPct).map(n => `${n}%`)
       const correctStr = `${weekendPct.toLocaleString()}%`
 
@@ -417,7 +420,7 @@ function generatePersonalBehaviorQuestion(stats: WrappedStats, personalStats: Pe
   const lateNight = stats.funStats?.lateNightCount || 10
   const options = generateNumericOptions(lateNight)
   return {
-    question: "How many emojis were created after midnight this year?",
+    question: "How many emojis were created between midnight and 5am?",
     options,
     correctIndex: options.indexOf(lateNight.toLocaleString()),
   }
