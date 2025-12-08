@@ -16,13 +16,24 @@ export type PersonaType =
   | "burst-artist"
   | "backbone"
   | "steady-hand"
-  // New personas
+  // Extended personas
   | "purist"
   | "archivist"
   | "trendsetter"
   | "night-shift"
   | "lunch-break-artist"
   | "sprinter"
+  // New expanded personas
+  | "curator"
+  | "nocturnal"
+  | "comeback-kid"
+  | "silent-legend"
+  | "reaction-master"
+  | "wordsmith"
+  | "speedrunner"
+  | "marathon-runner"
+  | "seasonal"
+  | "legacy-builder"
 
 export interface PersonaStats {
   label: string
@@ -288,6 +299,137 @@ const PERSONAS: Record<PersonaType, Omit<Persona, "type">> = {
       { label: "TIME", value: 30 },
     ],
     tarotNumber: "IV",
+  },
+  // New expanded personas
+  curator: {
+    name: "The Curator",
+    icon: "Layers",
+    description: "Quality over quantity. Every emoji is a masterpiece.",
+    gradient: [ARCADE_COLORS.gold, "#8B4513"],
+    emoji: "🖼️",
+    stats: [
+      { label: "TASTE", value: 100 },
+      { label: "SELECT", value: 95 },
+      { label: "VOLUME", value: 35 },
+    ],
+    tarotNumber: "V",
+  },
+  nocturnal: {
+    name: "The Nocturnal",
+    icon: "Moon",
+    description: "The quiet hours are your canvas. They'll never understand.",
+    gradient: ["#0d1b2a", ARCADE_COLORS.synthPurple],
+    emoji: "🦉",
+    stats: [
+      { label: "DARK", value: 100 },
+      { label: "MYSTERY", value: 90 },
+      { label: "DAYLIGHT", value: 10 },
+    ],
+    tarotNumber: "XII",
+  },
+  "comeback-kid": {
+    name: "The Comeback Kid",
+    icon: "RefreshCw",
+    description: "Disappeared. Returned. Stronger than ever.",
+    gradient: [ARCADE_COLORS.acidGreen, ARCADE_COLORS.electricBlue],
+    emoji: "🔄",
+    stats: [
+      { label: "RETURN", value: 100 },
+      { label: "GROWTH", value: 95 },
+      { label: "GAP", value: 50 },
+    ],
+    tarotNumber: "XX",
+  },
+  "silent-legend": {
+    name: "The Silent Legend",
+    icon: "Award",
+    description: "Few words. Maximum impact. They know who you are.",
+    gradient: ["#2d2d2d", ARCADE_COLORS.gold],
+    emoji: "🏅",
+    stats: [
+      { label: "IMPACT", value: 100 },
+      { label: "STEALTH", value: 95 },
+      { label: "NOISE", value: 20 },
+    ],
+    tarotNumber: "XV",
+  },
+  "reaction-master": {
+    name: "The Reaction Master",
+    icon: "MessageCircle",
+    description: "An emoji for every occasion. You've got range.",
+    gradient: [ARCADE_COLORS.hotPink, ARCADE_COLORS.electricBlue],
+    emoji: "💬",
+    stats: [
+      { label: "RANGE", value: 100 },
+      { label: "TIMING", value: 90 },
+      { label: "REPEAT", value: 25 },
+    ],
+    tarotNumber: "X",
+  },
+  wordsmith: {
+    name: "The Wordsmith",
+    icon: "Type",
+    description: "Names that slap. Descriptions that pop. Pure poetry.",
+    gradient: [ARCADE_COLORS.chromeYellow, ARCADE_COLORS.neonOrange],
+    emoji: "✍️",
+    stats: [
+      { label: "WORDS", value: 100 },
+      { label: "WIT", value: 95 },
+      { label: "BORING", value: 5 },
+    ],
+    tarotNumber: "XXI",
+  },
+  speedrunner: {
+    name: "The Speedrunner",
+    icon: "Timer",
+    description: "Upload times that break records. Efficiency is art.",
+    gradient: [ARCADE_COLORS.retroRed, ARCADE_COLORS.acidGreen],
+    emoji: "⏱️",
+    stats: [
+      { label: "SPEED", value: 100 },
+      { label: "PRECISION", value: 90 },
+      { label: "PATIENCE", value: 15 },
+    ],
+    tarotNumber: "I",
+  },
+  "marathon-runner": {
+    name: "The Marathon Runner",
+    icon: "Activity",
+    description: "Steady pace. Long game. Year after year.",
+    gradient: [ARCADE_COLORS.electricBlue, ARCADE_COLORS.mintGreen],
+    emoji: "🏃",
+    stats: [
+      { label: "ENDURE", value: 100 },
+      { label: "PACE", value: 95 },
+      { label: "SPRINT", value: 30 },
+    ],
+    tarotNumber: "VIII",
+  },
+  seasonal: {
+    name: "The Seasonal",
+    icon: "Calendar",
+    description: "Holiday specialist. Themed creator. Always on time.",
+    gradient: [ARCADE_COLORS.retroRed, ARCADE_COLORS.acidGreen],
+    emoji: "🎄",
+    stats: [
+      { label: "TIMING", value: 100 },
+      { label: "THEME", value: 95 },
+      { label: "RANDOM", value: 20 },
+    ],
+    tarotNumber: "IV",
+  },
+  "legacy-builder": {
+    name: "The Legacy Builder",
+    icon: "Building",
+    description: "Building something that lasts. Future generations will thank you.",
+    gradient: [ARCADE_COLORS.gold, ARCADE_COLORS.synthPurple],
+    emoji: "🏛️",
+    stats: [
+      { label: "VISION", value: 100 },
+      { label: "IMPACT", value: 95 },
+      { label: "HASTE", value: 25 },
+    ],
+    tarotNumber: "XXI",
   },
 }
 
@@ -644,6 +786,19 @@ const MOVIE_TEMPLATES: MovieTemplate[] = [
   { template: "{word1} Club" },
   { template: "Eternal {word1} of the Spotless Slack" },
   { template: "The {word1} Identity" },
+  // New expanded templates
+  { template: "Mission: {word1}" },
+  { template: "{word1} Rising" },
+  { template: "The {word1} Conspiracy" },
+  { template: "{word1}: Endgame" },
+  { template: "Once Upon a {word1}" },
+  { template: "The Secret Life of {word1}" },
+  { template: "{word1}: First {word2}" },
+  { template: "How I Met Your {word1}" },
+  { template: "{word1}: Awakening" },
+  { template: "The {word1} Effect" },
+  { template: "{word1} Wars: A New Hope", conditions: (ctx) => ctx.totalEmojis > 100 },
+  { template: "2024: A {word1} Odyssey", conditions: (ctx) => ctx.totalEmojis > 50 },
 ]
 
 const GENRES: { genre: string; tagline: string; conditions: (ctx: DetectionContext) => boolean }[] = [
@@ -666,6 +821,37 @@ const GENRES: { genre: string; tagline: string; conditions: (ctx: DetectionConte
     genre: "An Epic Saga",
     tagline: "Day after day. Emoji after emoji.",
     conditions: (ctx) => ctx.streakDays > 7,
+  },
+  // New expanded genres
+  {
+    genre: "A Coming-of-Age Drama",
+    tagline: "The year that changed everything.",
+    conditions: (ctx) => ctx.comparedToAverage > 150,
+  },
+  {
+    genre: "An Action-Packed Adventure",
+    tagline: "No emoji left behind. No pixel unexplored.",
+    conditions: (ctx) => ctx.busiestDayCount > 10,
+  },
+  {
+    genre: "A Heartwarming Family Film",
+    tagline: "Bringing the workspace together, one emoji at a time.",
+    conditions: (ctx) => ctx.totalEmojis > 200,
+  },
+  {
+    genre: "A Cult Classic",
+    tagline: "Not everyone gets it. That's the point.",
+    conditions: (ctx) => ctx.gifPercentage < 10 && ctx.totalEmojis > 30,
+  },
+  {
+    genre: "A Romantic Comedy",
+    tagline: "Love, laughter, and lots of reactions.",
+    conditions: (ctx) => ctx.peakHour >= 17 && ctx.peakHour <= 20,
+  },
+  {
+    genre: "A Sci-Fi Spectacle",
+    tagline: "The future of communication is here.",
+    conditions: (ctx) => ctx.totalEmojis > 500,
   },
   {
     genre: "A Documentary",
@@ -831,6 +1017,57 @@ const PROPHECIES: Record<PersonaType, string[]> = {
     "Showed up. Dominated. Left them wondering. 2026 sequel incoming.",
     "Brief but brilliant. Your impact ratio is unmatched.",
     "Quality over quantity. Speed over duration. Respect.",
+  ],
+  // New expanded persona prophecies
+  curator: [
+    "2026: Your collection grows. Each piece, carefully chosen. Gallery vibes.",
+    "While others spam, you curate. The algorithm notices quality.",
+    "Selective excellence. That's not just a strategy, it's a lifestyle.",
+  ],
+  nocturnal: [
+    "The night belongs to creators. 2026 will have many moonlit sessions.",
+    "Between midnight and dawn, magic happens. You know this well.",
+    "When the world sleeps, you create. Different timezone, different mindset.",
+  ],
+  "comeback-kid": [
+    "2026: The return arc continues. Bigger. Better. More emojis.",
+    "Hiatus? More like a strategic pause. The comeback was always planned.",
+    "They thought you were gone. You were just reloading.",
+  ],
+  "silent-legend": [
+    "Few emojis. Maximum impact. 2026 will amplify your legend.",
+    "You don't need to be loud to be legendary. Actions speak.",
+    "Quality over quantity, always. The workspace respects the approach.",
+  ],
+  "reaction-master": [
+    "2026: An emoji for every mood. A reaction for every moment.",
+    "Your range is unmatched. Comedy, drama, everything in between.",
+    "The workspace's emotional vocabulary? You built that.",
+  ],
+  wordsmith: [
+    "2026: Names that make people stop scrolling. Descriptions that pop.",
+    "Every emoji name is a tiny poem. You're the author.",
+    "While others use 'cool' and 'nice', you use actual words. Respect.",
+  ],
+  speedrunner: [
+    "2026: Even faster upload times. Even cleaner execution.",
+    "Efficiency is your art form. Time is just a number.",
+    "World record attempts incoming. The clock fears you.",
+  ],
+  "marathon-runner": [
+    "2026: Another year. Another consistent performance. Legendary endurance.",
+    "Short sprints are easy. You play the long game.",
+    "Steady pace wins the race. You've known this all along.",
+  ],
+  seasonal: [
+    "2026: Every holiday, every theme, every moment. Perfectly timed.",
+    "Halloween emojis in October. Christmas in December. You get it.",
+    "Themed excellence is an art. You're the artist.",
+  ],
+  "legacy-builder": [
+    "2026: Building something that lasts. Future workspaces will thank you.",
+    "You're not just making emojis. You're building infrastructure.",
+    "Architects think in decades. So do you.",
   ],
 }
 
