@@ -223,11 +223,34 @@ function formatCreatorName(displayName: string | undefined): string {
 }
 
 /**
- * Calculate milestone emojis (100th, 200th, 300th, etc.)
+ * Calculate milestone emojis (100th, 200th, 300th, etc. up to 50,000)
  */
 function calculateMilestones(sortedEmojis: Emoji[]): MilestoneEmoji[] {
   const milestones: MilestoneEmoji[] = []
-  const milestoneNumbers = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000, 2500, 3000]
+
+  // Define milestone thresholds with varying intervals:
+  // - Every 100 from 100-1000
+  // - Every 500 from 1000-5000
+  // - Every 1000 from 5000-10000
+  // - Every 5000 from 10000-50000
+  const milestoneNumbers: number[] = []
+
+  // 100-1000 (every 100)
+  for (let i = 100; i <= 1000; i += 100) {
+    milestoneNumbers.push(i)
+  }
+  // 1500-5000 (every 500)
+  for (let i = 1500; i <= 5000; i += 500) {
+    milestoneNumbers.push(i)
+  }
+  // 6000-10000 (every 1000)
+  for (let i = 6000; i <= 10000; i += 1000) {
+    milestoneNumbers.push(i)
+  }
+  // 15000-50000 (every 5000)
+  for (let i = 15000; i <= 50000; i += 5000) {
+    milestoneNumbers.push(i)
+  }
 
   for (const milestone of milestoneNumbers) {
     // Milestones are 1-indexed (100th emoji is at index 99)

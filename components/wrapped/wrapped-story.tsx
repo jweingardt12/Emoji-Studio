@@ -625,31 +625,50 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         </div>
 
         {/* Progress dots - Fixed Absolute Position at Bottom */}
-        <div className="absolute bottom-safe z-30 w-full flex items-center justify-center pointer-events-none pb-safe">
-          <div className="flex items-center justify-center gap-1 p-4 pointer-events-auto">
-            {SLIDES.map((_, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  goToSlide(index)
-                }}
-                aria-label={`Go to slide ${index + 1} of ${SLIDES.length}`}
-                className="p-3 -m-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full"
-              >
-                <div
-                  className={cn(
-                    "rounded-full transition-all duration-300 shadow-sm",
-                    index === currentSlide
-                      ? "bg-white w-6 h-1.5 sm:w-8 sm:h-2 box-shadow-glow"
-                      : index < currentSlide
-                        ? "bg-white/60 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/80"
-                        : "bg-white/20 w-1.5 h-1.5 sm:w-2 sm:h-2 hover:bg-white/40"
-                  )}
+        <div className="absolute bottom-safe z-30 w-full flex items-center justify-center pointer-events-none pb-safe px-2 sm:px-4">
+          {/* Use a progress bar style on mobile when many slides, dots on larger screens */}
+          {totalSlides > 14 ? (
+            // Compact progress bar for many slides
+            <div className="flex items-center gap-2 p-2 sm:p-3 pointer-events-auto">
+              <span className="text-white/60 text-xs font-medium tabular-nums">
+                {currentSlide + 1}/{totalSlides}
+              </span>
+              <div className="w-24 sm:w-32 h-1 sm:h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-white rounded-full"
+                  initial={false}
+                  animate={{ width: `${((currentSlide + 1) / totalSlides) * 100}%` }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
-              </button>
-            ))}
-          </div>
+              </div>
+            </div>
+          ) : (
+            // Individual dots for fewer slides
+            <div className="flex items-center justify-center gap-0.5 sm:gap-1 p-2 sm:p-4 pointer-events-auto max-w-[calc(100vw-2rem)]">
+              {SLIDES.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToSlide(index)
+                  }}
+                  aria-label={`Go to slide ${index + 1} of ${SLIDES.length}`}
+                  className="p-1.5 sm:p-2 md:p-3 -m-0.5 sm:-m-1 md:-m-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full flex-shrink-0"
+                >
+                  <div
+                    className={cn(
+                      "rounded-full transition-all duration-300 shadow-sm",
+                      index === currentSlide
+                        ? "bg-white w-3 h-1 sm:w-5 sm:h-1.5 md:w-6 md:h-1.5 box-shadow-glow"
+                        : index < currentSlide
+                          ? "bg-white/60 w-1 h-1 sm:w-1.5 sm:h-1.5 hover:bg-white/80"
+                          : "bg-white/20 w-1 h-1 sm:w-1.5 sm:h-1.5 hover:bg-white/40"
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tap hint on intro */}
