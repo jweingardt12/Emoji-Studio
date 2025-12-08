@@ -19,18 +19,26 @@ import {
   ArrowRight,
   Sparkles,
   Gift,
-  Share2,
+  Shield,
   User,
   Smartphone,
   Zap,
   Bell,
   Mail,
+  Crown,
+  Medal,
+  Award,
+  Calendar,
+  Flame,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { EmailExtensionModal } from "@/components/email-extension-modal"
+import { ConnectWorkspaceModal } from "@/components/wrapped/connect-workspace-modal"
 import { GridBackground } from "@/components/ui/grid-background"
 import { GradientText } from "@/components/ui/gradient-text"
+import { hasSlackConnection } from "@/lib/utils/slack-upload"
 
 // Sample emojis from Slackmojis for preview cards
 // Using /download URLs which work (CDN domain emojis.slackmojis.com blocks requests)
@@ -52,29 +60,29 @@ const SAMPLE_AVATARS = [
   "https://slackmojis.com/emojis/3643-cool-doge/download",
 ]
 
-// Preview slide data for stacked deck preview
+// Preview slide data for stacked deck preview - gradients match actual wrapped slides
 const PREVIEW_SLIDES = [
   {
     id: "count",
-    gradient: "from-blue-900 via-indigo-900 to-purple-900",
+    gradient: "from-slate-900 via-purple-950 to-slate-900",
     glowColor: "rgba(147, 51, 234, 0.3)",
     type: "count" as const,
   },
   {
     id: "peak",
-    gradient: "from-emerald-900 via-teal-900 to-cyan-900",
-    glowColor: "rgba(16, 185, 129, 0.3)",
+    gradient: "from-slate-900 via-cyan-950 to-slate-900",
+    glowColor: "rgba(34, 211, 238, 0.3)",
     type: "peak" as const,
   },
   {
     id: "stats",
-    gradient: "from-pink-900 via-rose-900 to-red-900",
-    glowColor: "rgba(236, 72, 153, 0.3)",
+    gradient: "from-purple-950 via-slate-900 to-cyan-950",
+    glowColor: "rgba(168, 85, 247, 0.3)",
     type: "stats" as const,
   },
   {
     id: "creators",
-    gradient: "from-amber-900 via-orange-900 to-red-900",
+    gradient: "from-amber-950 via-slate-900 to-yellow-950",
     glowColor: "rgba(251, 191, 36, 0.3)",
     type: "creators" as const,
   },
@@ -85,14 +93,21 @@ function CountPreviewContent({ isMobile }: { isMobile: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-4">
       <p className="text-white/60 text-xs mb-1">This year you created</p>
-      <div
-        className={`${isMobile ? 'text-4xl' : 'text-5xl'} font-black text-white`}
-        style={{ textShadow: "0 0 40px rgba(255, 255, 255, 0.3)" }}
-      >
-        847
+      {/* Hero number with dark backdrop like actual slide */}
+      <div className="relative my-2">
+        <div
+          className="absolute inset-0 -inset-x-4 rounded-xl"
+          style={{ background: "radial-gradient(ellipse 80% 120% at center, rgba(0,0,0,0.6) 0%, transparent 70%)" }}
+        />
+        <div
+          className={`relative ${isMobile ? 'text-4xl' : 'text-5xl'} font-black text-white`}
+          style={{ textShadow: "0 2px 8px rgba(0,0,0,0.8)" }}
+        >
+          847
+        </div>
       </div>
       <GradientText
-        colors={["#8b5cf6", "#ec4899", "#6366f1", "#8b5cf6"]}
+        colors={["#22d3ee", "#a855f7", "#f97316", "#22d3ee"]}
         className={`${isMobile ? 'text-base' : 'text-lg'} font-bold`}
         animationSpeed={4}
       >
@@ -116,21 +131,43 @@ function CountPreviewContent({ isMobile }: { isMobile: boolean }) {
 function PeakPreviewContent({ isMobile }: { isMobile: boolean }) {
   const barHeights = [20, 35, 45, 30, 80, 65, 40, 55, 70, 100, 50, 25]
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4">
-      <p className="text-white/60 text-xs mb-2">Busiest day</p>
-      <div className={`${isMobile ? 'text-3xl' : 'text-4xl'} font-black text-emerald-400`}>47</div>
-      <p className="text-white/50 text-xs">emojis on Dec 15</p>
+    <div className="flex flex-col items-center justify-center h-full px-3">
+      {/* Mini headline */}
+      <GradientText
+        colors={["#22d3ee", "#a855f7", "#f97316", "#22d3ee"]}
+        className="text-[10px] font-bold mb-2"
+        animationSpeed={6}
+      >
+        When Creativity Peaked
+      </GradientText>
+      {/* Glass card for best day */}
+      <div className="bg-white/5 border border-cyan-500/30 rounded-lg px-3 py-2 mb-2">
+        <p className="text-white/60 text-[10px] mb-1 flex items-center justify-center gap-1">
+          <Calendar className="w-3 h-3" />
+          Best Day
+        </p>
+        <div
+          className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-black text-cyan-400`}
+          style={{ textShadow: "0 0 20px rgba(34, 211, 238, 0.4)" }}
+        >
+          47
+        </div>
+        <p className="text-white/50 text-[10px]">Dec 15</p>
+      </div>
       {/* Mini bar chart */}
-      <div className={`flex items-end gap-0.5 ${isMobile ? 'h-10' : 'h-12'} mt-3`}>
+      <div className={`flex items-end gap-0.5 ${isMobile ? 'h-8' : 'h-10'}`}>
         {barHeights.map((h, i) => (
           <div
             key={i}
-            className={`${isMobile ? 'w-2' : 'w-2.5'} rounded-t ${i === 9 ? 'bg-emerald-400' : 'bg-white/30'}`}
-            style={{ height: `${h}%` }}
+            className={`${isMobile ? 'w-1.5' : 'w-2'} rounded-t ${i === 9 ? 'bg-cyan-400' : 'bg-white/20'}`}
+            style={{
+              height: `${h}%`,
+              boxShadow: i === 9 ? "0 0 8px rgba(34, 211, 238, 0.5)" : "none"
+            }}
           />
         ))}
       </div>
-      <div className={`flex justify-between ${isMobile ? 'w-[104px]' : 'w-[126px]'} text-[8px] text-white/30 mt-1`}>
+      <div className={`flex justify-between ${isMobile ? 'w-[78px]' : 'w-[104px]'} text-[8px] text-white/30 mt-1`}>
         <span>Jan</span><span>Dec</span>
       </div>
     </div>
@@ -139,26 +176,37 @@ function PeakPreviewContent({ isMobile }: { isMobile: boolean }) {
 
 function StatsPreviewContent({ isMobile }: { isMobile: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <p className="text-white/60 text-xs mb-2">The Stats</p>
+    <div className="flex flex-col items-center justify-center h-full px-3">
+      {/* Mini headline */}
+      <GradientText
+        colors={["#22d3ee", "#a855f7", "#f97316", "#22d3ee"]}
+        className="text-[10px] font-bold mb-2"
+        animationSpeed={6}
+      >
+        The Deep Dive
+      </GradientText>
       {/* Mini donut chart */}
-      <div className={`relative ${isMobile ? 'w-14 h-14' : 'w-16 h-16'} mb-2`}>
+      <div className={`relative ${isMobile ? 'w-12 h-12' : 'w-14 h-14'} mb-2`}>
         <svg viewBox="0 0 100 100" className="-rotate-90 w-full h-full">
           <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
           <circle cx="50" cy="50" r="35" fill="none" stroke="#a855f7" strokeWidth="12"
             strokeDasharray="220" strokeDashoffset="0" />
-          <circle cx="50" cy="50" r="35" fill="none" stroke="#14b8a6" strokeWidth="12"
-            strokeDasharray="220" strokeDashoffset="143" />
+          <circle
+            cx="50" cy="50" r="35" fill="none" stroke="#22d3ee" strokeWidth="12"
+            strokeDasharray="220" strokeDashoffset="143"
+            style={{ filter: "drop-shadow(0 0 4px rgba(34, 211, 238, 0.6))" }}
+          />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">35%</span>
+        <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">35%</span>
       </div>
-      <div className="flex gap-3 text-[10px]">
-        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-teal-500"/>GIFs</span>
+      <div className="flex gap-3 text-[9px]">
+        <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-cyan-400"/>GIFs</span>
         <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-purple-500"/>Static</span>
       </div>
-      {/* Streak */}
-      <div className={`mt-3 px-3 py-1.5 rounded-full bg-white/10 ${isMobile ? 'text-[10px]' : 'text-xs'} text-white/80`}>
-        🔥 <span className="font-bold text-white">12</span> day streak
+      {/* Streak with glass styling */}
+      <div className={`mt-2 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 ${isMobile ? 'text-[9px]' : 'text-[10px]'} text-white/80 flex items-center gap-1`}>
+        <Flame className="w-3 h-3 text-orange-400" />
+        <span className="font-bold text-white">12</span> day streak
       </div>
     </div>
   )
@@ -166,31 +214,53 @@ function StatsPreviewContent({ isMobile }: { isMobile: boolean }) {
 
 function CreatorsPreviewContent({ isMobile }: { isMobile: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <p className="text-white/60 text-xs mb-1">Top Creator</p>
-      <div
-        className={`${isMobile ? 'text-4xl' : 'text-5xl'} font-black text-amber-400`}
-        style={{ textShadow: "0 0 40px rgba(251, 191, 36, 0.3)" }}
-      >
-        #1
-      </div>
+    <div className="flex flex-col items-center justify-center h-full px-2">
+      {/* Mini headline */}
       <GradientText
-        colors={["#fbbf24", "#f59e0b", "#d97706", "#fbbf24"]}
-        className={`${isMobile ? 'text-base' : 'text-lg'} font-bold`}
-        animationSpeed={4}
+        colors={["#fbbf24", "#f97316", "#a855f7", "#fbbf24"]}
+        className="text-[10px] font-bold mb-3"
+        animationSpeed={6}
       >
-        emoji architect
+        The Emoji Architects
       </GradientText>
-      {/* Mini avatars with real emojis */}
-      <div className="flex -space-x-2 mt-3">
-        {SAMPLE_AVATARS.map((url, i) => (
+      {/* Mini podium - 3 columns (2-1-3 order) */}
+      <div className="flex items-end justify-center gap-1">
+        {/* #2 - Silver */}
+        <div className="flex flex-col items-center">
           <img
-            key={i}
-            src={url}
-            alt={`creator ${i + 1}`}
-            className={`${isMobile ? 'w-7 h-7' : 'w-8 h-8'} rounded-full bg-white/10 ring-2 ring-white/20 object-contain`}
+            src={SAMPLE_AVATARS[1]}
+            alt="creator 2"
+            className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-full object-contain mb-1`}
           />
-        ))}
+          <div className={`${isMobile ? 'w-8 h-6' : 'w-10 h-8'} rounded-t bg-gradient-to-b from-gray-400/30 to-gray-500/10 border-t border-x border-gray-400/40 flex items-center justify-center`}>
+            <Medal className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-gray-300`} />
+          </div>
+        </div>
+        {/* #1 - Gold (tallest) */}
+        <div className="flex flex-col items-center">
+          <img
+            src={SAMPLE_AVATARS[0]}
+            alt="creator 1"
+            className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7'} rounded-full object-contain mb-1 ring-2 ring-yellow-400/50`}
+          />
+          <div
+            className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-t bg-gradient-to-b from-yellow-500/30 to-yellow-600/10 border-t border-x border-yellow-500/50 flex items-center justify-center`}
+            style={{ boxShadow: "0 0 20px rgba(234, 179, 8, 0.3)" }}
+          >
+            <Crown className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-yellow-400`} />
+          </div>
+        </div>
+        {/* #3 - Bronze */}
+        <div className="flex flex-col items-center">
+          <img
+            src={SAMPLE_AVATARS[2]}
+            alt="creator 3"
+            className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-full object-contain mb-1`}
+          />
+          <div className={`${isMobile ? 'w-8 h-5' : 'w-10 h-6'} rounded-t bg-gradient-to-b from-amber-600/30 to-amber-700/10 border-t border-x border-amber-600/40 flex items-center justify-center`}>
+            <Award className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-amber-500`} />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -266,10 +336,12 @@ export function WrappedLanding({
   onViewWrapped,
 }: WrappedLandingProps) {
   const track = useTrack()
+  const router = useRouter()
   const isMobile = useIsMobile()
   const currentYear = new Date().getFullYear()
   const [pageVisible, setPageVisible] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showConnectModal, setShowConnectModal] = useState(false)
   const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0)
 
   // Cycling preview slides
@@ -299,6 +371,16 @@ export function WrappedLanding({
       cta: "get_started",
       year: currentYear,
     })
+
+    // Check if user has a workspace connected
+    if (!hasSlackConnection()) {
+      // Show modal to direct them to Chrome extension
+      setShowConnectModal(true)
+      track("wrapped_connect_modal_opened", { year: currentYear })
+    } else {
+      // Edge case: has connection but no data - go to settings to troubleshoot
+      router.push("/settings")
+    }
   }
 
   const handleViewWrapped = () => {
@@ -433,12 +515,9 @@ export function WrappedLanding({
                     size={isMobile ? "default" : "lg"}
                     className="w-full sm:w-auto font-semibold"
                     onClick={handleGetStarted}
-                    asChild
                   >
-                    <Link href="/settings">
-                      Get Your Wrapped
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
+                    Get Your Wrapped
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 )}
 
@@ -647,15 +726,15 @@ export function WrappedLanding({
               </CardContent>
             </Card>
 
-            {/* Shareable Cards */}
+            {/* Privacy */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
               <CardContent className="p-4 sm:p-5">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
-                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
+                  <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                 </div>
-                <h3 className="font-semibold text-xs sm:text-sm mb-1">Shareable Cards</h3>
+                <h3 className="font-semibold text-xs sm:text-sm mb-1">100% Private + Local</h3>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  Download beautiful summary cards
+                  All analysis happens in your browser
                 </p>
               </CardContent>
             </Card>
@@ -830,6 +909,12 @@ export function WrappedLanding({
       <EmailExtensionModal
         open={showEmailModal}
         onClose={() => setShowEmailModal(false)}
+      />
+
+      {/* Connect Workspace Modal */}
+      <ConnectWorkspaceModal
+        open={showConnectModal}
+        onOpenChange={setShowConnectModal}
       />
     </div>
   )
