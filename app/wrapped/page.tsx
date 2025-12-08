@@ -204,6 +204,7 @@ function WrappedPageContent() {
               year: currentYear,
             })
           }}
+          onClose={() => setShowStory(false)}
           allYearEmojis={yearEmojis}
         />
 

@@ -24,8 +24,6 @@ import { LeaderboardSlide } from "./slides/leaderboard-slide"
 import { MilestonesSlide } from "./slides/milestones-slide"
 import { Button } from "@/components/ui/button"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { FloatingEmojisBackground } from "./floating-emojis-background"
 import { LiquidBackground } from "./liquid-background"
@@ -38,6 +36,7 @@ interface WrappedStoryProps {
   workspaceName: string
   onComplete: () => void
   onSkipToShare: () => void
+  onClose: () => void // Called when user exits via X button or Escape key
   allYearEmojis?: Emoji[] // All emojis from the year for the background grid
 }
 
@@ -53,8 +52,7 @@ const END_SLIDES = ["stats", "finale"] as const
 
 type SlideType = "intro" | "count" | "creators" | "personal" | "quiz-workspace" | "quiz-funfacts" | "leaderboard" | "milestones" | "vibe" | "haiku" | "movie" | "peak" | "emoji-month" | "patterns" | "fortune" | "stats" | "finale"
 
-export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, allYearEmojis = [] }: WrappedStoryProps) {
-  const router = useRouter()
+export function WrappedStory({ stats, personalStats, workspaceName, onComplete, onSkipToShare, onClose, allYearEmojis = [] }: WrappedStoryProps) {
   const [isPreloading, setIsPreloading] = useState(true)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -291,7 +289,10 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       total_slides: totalSlides,
       year: stats.year,
     })
-  }, [track, SLIDES, currentSlide, totalSlides, stats.year])
+    if (method !== "skip_to_share") {
+      onClose()
+    }
+  }, [track, SLIDES, currentSlide, totalSlides, stats.year, onClose])
 
   // Keyboard navigation
   useEffect(() => {
@@ -305,13 +306,12 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         goToPrev()
       } else if (e.key === "Escape") {
         handleExit("escape_key")
-        router.push("/wrapped")
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [goToNext, goToPrev, router, handleExit])
+  }, [goToNext, goToPrev, handleExit])
 
   // Simpler fade transitions on mobile for better performance
   const slideVariants = shouldReduceAnimations
@@ -526,16 +526,15 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
       <div className="relative z-10 flex flex-col h-full">
         {/* Top controls */}
         <div className="flex items-center justify-between p-4">
-          <Link href="/wrapped" onClick={(e) => { e.preventDefault(); handleExit("close_button"); router.push("/wrapped"); }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
-              aria-label="Close wrapped experience"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
+            aria-label="Close wrapped experience"
+            onClick={() => handleExit("close_button")}
+          >
+            <X className="w-5 h-5" />
+          </Button>
 
           <Button
             variant="ghost"
