@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
+import { flushSync } from "react-dom"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Loader2, Copy, Download, Share2, Check, Image, Film, Video, Square, Smartphone, Monitor, X, Play, Pause } from "lucide-react"
+import { Loader2, Download, Image, Film, Video, Square, Smartphone, Monitor, X, Play, Pause, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useTrack } from "@/lib/hooks/use-track"
@@ -35,23 +36,14 @@ import { WrappedStats } from "@/lib/services/wrapped-service"
 import { Emoji } from "@/lib/services/emoji-service"
 import {
   generateImage,
-  copyImageToClipboard,
-  downloadImage,
-  shareImageWithResult,
   generateGif,
-  downloadGif,
-  shareGifWithResult,
   generateVideo,
-  downloadVideo,
-  shareVideoWithResult,
   captureElementAsCanvas,
-  blobToDataUrl,
-  shouldUseInlineFallback,
-  type DownloadResult,
-  type ShareResult,
+  detectVideoEncoder,
+  preloadVideoEncoder,
+  getEncoderDescription,
+  type EncoderType,
 } from "@/lib/utils/share-image"
-import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
-import { VideoProcessor } from "@/lib/utils/video-processor"
 import { cn } from "@/lib/utils"
 
 interface WrappedShareModalProps {
@@ -126,10 +118,13 @@ export function WrappedShareModal({
   const track = useTrack()
   const cardRef = useRef<HTMLDivElement>(null)
   const fullCardRef = useRef<HTMLDivElement>(null)
+  const myEmojisFullCardRef = useRef<HTMLDivElement>(null)
+  const myEmojisAnimatedCardRef = useRef<HTMLDivElement>(null)
 
   const [cardType, setCardType] = useState<CardType>("stats")
   const [backgroundStyle, setBackgroundStyle] = useState<WrappedBackgroundStyle>("cosmic")
-  const [cardSize, setCardSize] = useState<WrappedCardSize>("square")
+  // Always use square size for exports
+  const cardSize: WrappedCardSize = "square"
   const [exportFormat, setExportFormat] = useState<ExportFormat>("image")
 
   // Filter emojis to only show user's emojis for "My Emojis" card
@@ -141,41 +136,82 @@ export function WrappedShareModal({
   // Check if we have enough user emojis for the "My Emojis" card
   // Requires both a valid userId AND at least 5 emojis from that user this year
   const hasEnoughEmojis = userId && userYearEmojis.length >= 5
-  const [qualityPreset, setQualityPreset] = useState<QualityPreset>("standard")
+  // Always use draft quality for speed
+  const qualityPreset: QualityPreset = "draft"
   const [isGenerating, setIsGenerating] = useState(false)
-  const [copied, setCopied] = useState(false)
   const [generationProgress, setGenerationProgress] = useState(0)
   const [generationStage, setGenerationStage] = useState<"idle" | "capturing" | "encoding" | "finalizing">("idle")
   const [animationProgress, setAnimationProgress] = useState(0)
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
-  const [fallbackImageUrl, setFallbackImageUrl] = useState<string | null>(null)
-  const [showFallbackView, setShowFallbackView] = useState(false)
-  const [needsFallback, setNeedsFallback] = useState(false)
+  // Preview state for inline media display (long-press to save)
+  const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null)
+  const [previewMediaType, setPreviewMediaType] = useState<"image" | "gif" | "video" | null>(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [videoEncoderType, setVideoEncoderType] = useState<EncoderType | null>(null)
   const animatedCardRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const previewAnimationRef = useRef<number | null>(null)
 
-  // Check if we need inline fallback (for restricted WebViews)
-  useEffect(() => {
-    setNeedsFallback(shouldUseInlineFallback())
-  }, [])
-
-  // Reset fallback view when modal closes
+  // Reset preview when modal closes and cleanup blob URLs
   useEffect(() => {
     if (!open) {
-      setShowFallbackView(false)
-      setFallbackImageUrl(null)
+      if (previewMediaUrl) {
+        URL.revokeObjectURL(previewMediaUrl)
+      }
+      setShowPreview(false)
+      setPreviewMediaUrl(null)
+      setPreviewMediaType(null)
     }
-  }, [open])
+  }, [open, previewMediaUrl])
 
-  // Preload FFmpeg WASM when modal opens (eliminates 10-20s delay on first video export)
+  // Detect video encoder and preload when modal opens
+  // WebCodecs is hardware-accelerated and doesn't need preloading
+  // FFmpeg WASM needs preloading to avoid 10-20s delay on first export
   useEffect(() => {
     if (open) {
-      VideoProcessor.loadFFmpeg().catch((error) => {
-        console.warn("FFmpeg preload failed:", error)
+      detectVideoEncoder().then((info) => {
+        setVideoEncoderType(info.type)
+        console.log(`[ShareModal] Video encoder: ${info.type}${info.reason ? ` (${info.reason})` : ""}`)
+      })
+      preloadVideoEncoder().catch((error) => {
+        console.warn("Video encoder preload failed:", error)
       })
     }
   }, [open])
+
+  // Preload images in the full card when modal opens
+  // This ensures images are cached before capture operations
+  useEffect(() => {
+    if (!open) return
+
+    // Small delay to allow full card to render
+    const preloadImages = async () => {
+      await new Promise(r => setTimeout(r, 100))
+
+      const element = cardType === "my-emojis"
+        ? document.getElementById("my-emojis-share-card-full")
+        : document.getElementById("wrapped-share-card-full")
+
+      if (!element) return
+
+      const images = element.querySelectorAll("img")
+      await Promise.all(
+        Array.from(images).map(img =>
+          new Promise<void>(resolve => {
+            if (img.complete && img.naturalWidth > 0) {
+              resolve()
+              return
+            }
+            // Preload by setting up load handlers
+            img.onload = () => resolve()
+            img.onerror = () => resolve()
+          })
+        )
+      )
+    }
+
+    preloadImages()
+  }, [open, cardType, backgroundStyle, cardSize])
 
   // Track modal opened
   useEffect(() => {
@@ -247,29 +283,11 @@ export function WrappedShareModal({
     })
   }
 
-  const handleSizeChange = (size: WrappedCardSize) => {
-    setCardSize(size)
-    track("wrapped_share_customized", {
-      option: "size",
-      value: size,
-      year: stats.year,
-    })
-  }
-
   const handleFormatChange = (format: ExportFormat) => {
     setExportFormat(format)
     track("wrapped_share_customized", {
       option: "format",
       value: format,
-      year: stats.year,
-    })
-  }
-
-  const handleQualityChange = (quality: QualityPreset) => {
-    setQualityPreset(quality)
-    track("wrapped_share_customized", {
-      option: "quality",
-      value: quality,
       year: stats.year,
     })
   }
@@ -294,15 +312,29 @@ export function WrappedShareModal({
   }, [isPreviewPlaying])
 
   const getFullCardElement = useCallback((): HTMLElement | null => {
-    return cardType === "my-emojis"
-      ? document.getElementById("my-emojis-share-card-full")
-      : document.getElementById("wrapped-share-card-full")
+    // Use querySelector within the ref container to find the card by ID
+    // This avoids duplicate ID issues when preview animation is playing
+    if (cardType === "my-emojis") {
+      const container = myEmojisFullCardRef.current
+      if (!container) return null
+      return container.querySelector("#my-emojis-share-card-full") as HTMLElement | null
+    }
+    const container = fullCardRef.current
+    if (!container) return null
+    return container.querySelector("#wrapped-share-card-full") as HTMLElement | null
   }, [cardType])
 
   const getAnimatedCardElement = useCallback((): HTMLElement | null => {
-    return cardType === "my-emojis"
-      ? document.getElementById("my-emojis-share-card-animated")
-      : document.getElementById("wrapped-share-card-animated")
+    // Use querySelector within the ref container to find the card by ID
+    // This avoids duplicate ID issues when preview animation is playing
+    if (cardType === "my-emojis") {
+      const container = myEmojisAnimatedCardRef.current
+      if (!container) return null
+      return container.querySelector("#my-emojis-share-card-animated") as HTMLElement | null
+    }
+    const container = animatedCardRef.current
+    if (!container) return null
+    return container.querySelector("#wrapped-share-card-animated") as HTMLElement | null
   }, [cardType])
 
   // Wait for the next animation frame (browser paint cycle)
@@ -315,155 +347,242 @@ export function WrappedShareModal({
     })
   }, [])
 
-  // Capture a frame with a specific animation progress
-  const captureAnimatedFrame = useCallback(async (progress: number): Promise<HTMLCanvasElement> => {
-    // Update animation progress state
-    setAnimationProgress(progress)
+  // Frame counter for unique IDs across captures
+  const frameCounterRef = useRef(0)
 
-    // Wait for browser to complete the paint cycle (smarter than fixed 16ms delay)
-    // Double requestAnimationFrame ensures React has committed and browser has painted
+  // Capture a frame with a specific animation progress
+  const captureAnimatedFrame = useCallback(async (progress: number, frameIndex?: number): Promise<HTMLCanvasElement> => {
+    // flushSync forces React to immediately process the state update
+    // Without this, the state update is async and capture may happen before re-render
+    flushSync(() => {
+      setAnimationProgress(progress)
+    })
+
+    // Wait for browser to complete the paint cycle after React commit
     await waitForFrame()
 
-    const element = getAnimatedCardElement()
-    if (!element) throw new Error("Animated card element not found")
+    // Try to get the element with retries in case DOM isn't ready yet
+    let element = getAnimatedCardElement()
 
-    return captureElementAsCanvas(element)
-  }, [getAnimatedCardElement, waitForFrame])
+    // Retry up to 3 times with increasing delays if element not found
+    if (!element) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, attempt * 50))
+        await waitForFrame()
+        element = getAnimatedCardElement()
+        if (element) break
+      }
+    }
+
+    if (!element) {
+      const debugInfo = {
+        cardType,
+        statsRefExists: !!animatedCardRef.current,
+        myEmojisRefExists: !!myEmojisAnimatedCardRef.current,
+      }
+      console.error("[ShareModal] Animated card element not found:", debugInfo)
+      throw new Error(`Animated card element not found (cardType: ${cardType})`)
+    }
+
+    // Generate unique frame ID for cache busting
+    const currentFrame = frameIndex !== undefined ? frameIndex : frameCounterRef.current++
+    const frameId = `gen${Date.now()}_${currentFrame}`
+
+    // Use aggressive cache-busting for multi-frame capture
+    return captureElementAsCanvas(element, true, frameId)
+  }, [getAnimatedCardElement, waitForFrame, cardType])
+
+  // Handler for generating media and showing inline preview for long-press save
+  const handleGeneratePreview = useCallback(async () => {
+    if (isGenerating) return
+
+    // Clean up any previous preview
+    if (previewMediaUrl) {
+      URL.revokeObjectURL(previewMediaUrl)
+      setPreviewMediaUrl(null)
+    }
+
+    // Create new abort controller for this operation
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
+    setIsGenerating(true)
+    setGenerationProgress(0)
+    setGenerationStage("capturing")
+
+    try {
+      const quality = QUALITY_PRESETS[qualityPreset]
+      let blob: Blob
+
+      if (exportFormat === "video") {
+        // Generate MP4 video
+        const totalFrames = quality.videoFrames
+        const fps = quality.videoFps
+        blob = await generateVideo(
+          async (frameIndex: number) => {
+            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+            const progress = frameIndex / (totalFrames - 1)
+            return captureAnimatedFrame(progress, frameIndex)
+          },
+          totalFrames,
+          fps,
+          (progress) => {
+            setGenerationProgress(progress)
+            if (progress > 0.3 && generationStage === "capturing") {
+              setGenerationStage("encoding")
+            }
+          }
+        )
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+        setPreviewMediaType("video")
+      } else if (exportFormat === "gif") {
+        // Generate animated GIF
+        const totalFrames = quality.gifFrames
+        const frameDelay = Math.round(1000 / quality.gifFps)
+        blob = await generateGif(
+          async (frameIndex: number) => {
+            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+            const progress = frameIndex / (totalFrames - 1)
+            return captureAnimatedFrame(progress, frameIndex)
+          },
+          totalFrames,
+          frameDelay,
+          0,
+          (progress) => {
+            setGenerationProgress(progress)
+            if (progress > 0.8 && generationStage === "capturing") {
+              setGenerationStage("encoding")
+            }
+          }
+        )
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+        setPreviewMediaType("gif")
+      } else {
+        // Generate static image
+        const element = getFullCardElement()
+        if (!element) throw new Error("Card element not found")
+        blob = await generateImage(element)
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
+        setPreviewMediaType("image")
+      }
+
+      setGenerationStage("finalizing")
+
+      // Create blob URL for inline display
+      const blobUrl = URL.createObjectURL(blob)
+      setPreviewMediaUrl(blobUrl)
+      setShowPreview(true)
+
+      track("wrapped_share_preview_generated", {
+        year: stats.year,
+        format: exportFormat,
+        background: backgroundStyle,
+        card_type: cardType,
+      })
+
+      const formatLabel = exportFormat === "video" ? "Video" : exportFormat === "gif" ? "GIF" : "Image"
+      toast.success(`${formatLabel} ready! Long-press to save.`, { duration: 4000 })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return
+      }
+      console.error("Failed to generate preview:", error)
+      toast.error("Failed to generate. Please try again.")
+    } finally {
+      setIsGenerating(false)
+      setGenerationProgress(0)
+      setGenerationStage("idle")
+      abortControllerRef.current = null
+    }
+  }, [isGenerating, previewMediaUrl, exportFormat, qualityPreset, captureAnimatedFrame, getFullCardElement, generationStage, track, stats.year, backgroundStyle, cardType])
+
+  // Go back from preview to customization
+  const handleBackFromPreview = useCallback(() => {
+    if (previewMediaUrl) {
+      URL.revokeObjectURL(previewMediaUrl)
+    }
+    setShowPreview(false)
+    setPreviewMediaUrl(null)
+    setPreviewMediaType(null)
+  }, [previewMediaUrl])
 
   // Render full-size cards for export (static + animated)
+  // IMPORTANT: Always render BOTH card types to ensure refs are attached
+  // The cards are positioned off-screen anyway, so rendering both has no visual impact
   const renderFullCard = useCallback(() => {
     return (
       <>
-        {/* Stats cards */}
-        {cardType === "stats" && (
-          <>
-            {/* Static card for image export */}
-            <div
-              ref={fullCardRef}
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                top: "-9999px",
-              }}
-            >
-              <WrappedShareCardFull
-                stats={stats}
-                workspaceName={workspaceName}
-                backgroundStyle={backgroundStyle}
-                size={cardSize}
-              />
-            </div>
-            {/* Animated card for video/GIF export */}
-            <div
-              ref={animatedCardRef}
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                top: "-9999px",
-              }}
-            >
-              <WrappedShareCardAnimated
-                stats={stats}
-                workspaceName={workspaceName}
-                backgroundStyle={backgroundStyle}
-                size={cardSize}
-                animationProgress={animationProgress}
-              />
-            </div>
-          </>
-        )}
-        {/* My Emojis cards */}
-        {cardType === "my-emojis" && (
-          <>
-            {/* Static card for image export */}
-            <div
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                top: "-9999px",
-              }}
-            >
-              <MyEmojisShareCardFull
-                emojis={userYearEmojis}
-                workspaceName={workspaceName}
-                backgroundStyle={backgroundStyle}
-                size={cardSize}
-                year={stats.year}
-                creatorName={creatorName}
-              />
-            </div>
-            {/* Animated card for video/GIF export */}
-            <div
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                top: "-9999px",
-              }}
-            >
-              <MyEmojisShareCardAnimated
-                emojis={userYearEmojis}
-                workspaceName={workspaceName}
-                backgroundStyle={backgroundStyle}
-                size={cardSize}
-                year={stats.year}
-                creatorName={creatorName}
-                animationProgress={animationProgress}
-              />
-            </div>
-          </>
-        )}
+        {/* Stats cards - always rendered for ref stability */}
+        <div
+          ref={fullCardRef}
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          <WrappedShareCardFull
+            stats={stats}
+            workspaceName={workspaceName}
+            backgroundStyle={backgroundStyle}
+            size={cardSize}
+          />
+        </div>
+        <div
+          ref={animatedCardRef}
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          <WrappedShareCardAnimated
+            stats={stats}
+            workspaceName={workspaceName}
+            backgroundStyle={backgroundStyle}
+            size={cardSize}
+            animationProgress={animationProgress}
+          />
+        </div>
+        {/* My Emojis cards - always rendered for ref stability */}
+        <div
+          ref={myEmojisFullCardRef}
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          <MyEmojisShareCardFull
+            emojis={userYearEmojis}
+            workspaceName={workspaceName}
+            backgroundStyle={backgroundStyle}
+            size={cardSize}
+            year={stats.year}
+            creatorName={creatorName}
+          />
+        </div>
+        <div
+          ref={myEmojisAnimatedCardRef}
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          <MyEmojisShareCardAnimated
+            emojis={userYearEmojis}
+            workspaceName={workspaceName}
+            backgroundStyle={backgroundStyle}
+            size={cardSize}
+            year={stats.year}
+            creatorName={creatorName}
+            animationProgress={animationProgress}
+          />
+        </div>
       </>
     )
-  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress, cardType, userYearEmojis, creatorName])
-
-  const handleCopy = useCallback(async () => {
-    if (isGenerating) return
-
-    // Check if clipboard is supported on this device before even trying
-    if (!supportsClipboardWriteImage() && (isIOS() || isWebView())) {
-      // On iOS/WebView, clipboard write isn't supported - prompt to use share instead
-      toast.error("Copying images isn't supported on this device. Use the Share button instead.", {
-        duration: 4000,
-      })
-      return
-    }
-
-    setIsGenerating(true)
-    setCopied(false)
-
-    try {
-      const element = getFullCardElement()
-      if (!element) throw new Error("Card element not found")
-
-      const blob = await generateImage(element)
-      const result = await copyImageToClipboard(blob)
-
-      if (result.success) {
-        setCopied(true)
-        toast.success(result.message)
-        track("wrapped_share_copied", {
-          year: stats.year,
-          background: backgroundStyle,
-          size: cardSize,
-        })
-        setTimeout(() => setCopied(false), 2000)
-      } else if (result.fallbackToShare) {
-        // Suggest using share instead
-        toast.error(result.message, { duration: 4000 })
-      } else {
-        toast.error(result.message)
-      }
-    } catch (error) {
-      console.error("Failed to copy:", error)
-      if (isIOS() || isWebView()) {
-        toast.error("Copying failed on this device. Use the Share button instead.", { duration: 4000 })
-      } else {
-        toast.error("Failed to copy image")
-      }
-    } finally {
-      setIsGenerating(false)
-    }
-  }, [isGenerating, getFullCardElement, track, stats.year, backgroundStyle, cardSize])
+  }, [stats, workspaceName, backgroundStyle, cardSize, animationProgress, userYearEmojis, creatorName])
 
   // Cancel generation in progress
   const handleCancel = useCallback(() => {
@@ -477,289 +596,44 @@ export function WrappedShareModal({
     toast.info("Generation cancelled")
   }, [])
 
-  const handleDownload = useCallback(async () => {
-    if (isGenerating) return
-
-    // Create new abort controller for this operation
-    abortControllerRef.current = new AbortController()
-    const signal = abortControllerRef.current.signal
-
-    setIsGenerating(true)
-    setGenerationProgress(0)
-    setGenerationStage("capturing")
-
-    try {
-      const element = getFullCardElement()
-      if (!element) throw new Error("Card element not found")
-
-      const filename = `emoji-wrapped-${stats.year}-${workspaceName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}`
-
-      const quality = QUALITY_PRESETS[qualityPreset]
-      let downloadResult: DownloadResult
-
-      if (exportFormat === "video") {
-        // Generate MP4 video with animated content using quality preset
-        const totalFrames = quality.videoFrames
-        const fps = quality.videoFps
-        const blob = await generateVideo(
-          async (frameIndex: number) => {
-            // Check for cancellation before each frame
-            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress)
-          },
-          totalFrames,
-          fps,
-          (progress) => {
-            setGenerationProgress(progress)
-            // Switch to encoding stage after frame capture (30% point)
-            if (progress > 0.3 && generationStage === "capturing") {
-              setGenerationStage("encoding")
-            }
-          }
-        )
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        downloadResult = await downloadVideo(blob, filename)
-      } else if (exportFormat === "gif") {
-        // Generate animated GIF with animated content using quality preset
-        const totalFrames = quality.gifFrames
-        const frameDelay = Math.round(1000 / quality.gifFps)
-        const blob = await generateGif(
-          async (frameIndex: number) => {
-            // Check for cancellation before each frame
-            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress)
-          },
-          totalFrames,
-          frameDelay, // Delay between frames in GIF based on fps
-          0, // No additional capture interval needed since we control progress
-          (progress) => {
-            setGenerationProgress(progress)
-            // Switch to encoding stage after frame capture (80% point for GIF)
-            if (progress > 0.8 && generationStage === "capturing") {
-              setGenerationStage("encoding")
-            }
-          }
-        )
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        downloadResult = await downloadGif(blob, filename)
-      } else {
-        const blob = await generateImage(element)
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        downloadResult = await downloadImage(blob, `${filename}.png`)
-      }
-
-      // Handle the download result with appropriate messaging
-      if (downloadResult.success) {
-        // Show appropriate toast based on the method used
-        if (downloadResult.method === "open") {
-          // Special message for iOS fallback where image opens in new tab
-          toast.success(downloadResult.message, { duration: 5000 })
-        } else {
-          toast.success(downloadResult.message)
-        }
-
-        track("wrapped_share_downloaded", {
-          year: stats.year,
-          format: exportFormat,
-          background: backgroundStyle,
-          size: cardSize,
-          method: downloadResult.method,
-        })
-      } else {
-        toast.error(downloadResult.message, { duration: 4000 })
-      }
-    } catch (error) {
-      // Don't show error for user-initiated cancellation
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return
-      }
-      console.error("Failed to download:", error)
-      if (isIOS() || isWebView()) {
-        toast.error("Download failed. Try using the Share button instead.", { duration: 4000 })
-      } else {
-        toast.error("Failed to download")
-      }
-    } finally {
-      setIsGenerating(false)
-      setGenerationProgress(0)
-      setGenerationStage("idle")
-    }
-  }, [isGenerating, getFullCardElement, captureAnimatedFrame, exportFormat, stats.year, workspaceName, track, backgroundStyle, cardSize, generationStage, qualityPreset])
-
-  const handleShare = useCallback(async () => {
-    if (isGenerating) return
-
-    // Create new abort controller for this operation
-    abortControllerRef.current = new AbortController()
-    const signal = abortControllerRef.current.signal
-
-    setIsGenerating(true)
-    setGenerationProgress(0)
-    setGenerationStage("capturing")
-
-    try {
-      const element = getFullCardElement()
-      if (!element) throw new Error("Card element not found")
-
-      const title = `${workspaceName} Emoji Wrapped ${stats.year}`
-      const text = `Check out our emoji stats from ${stats.year}! Created with Emoji Studio`
-      let result: ShareResult
-
-      const quality = QUALITY_PRESETS[qualityPreset]
-
-      if (exportFormat === "video") {
-        const totalFrames = quality.videoFrames
-        const fps = quality.videoFps
-        const blob = await generateVideo(
-          async (frameIndex: number) => {
-            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress)
-          },
-          totalFrames,
-          fps,
-          (progress) => {
-            setGenerationProgress(progress)
-            if (progress > 0.3 && generationStage === "capturing") {
-              setGenerationStage("encoding")
-            }
-          }
-        )
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        result = await shareVideoWithResult(blob, title, text)
-      } else if (exportFormat === "gif") {
-        const totalFrames = quality.gifFrames
-        const frameDelay = Math.round(1000 / quality.gifFps)
-        const blob = await generateGif(
-          async (frameIndex: number) => {
-            if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-            const progress = frameIndex / (totalFrames - 1)
-            return captureAnimatedFrame(progress)
-          },
-          totalFrames,
-          frameDelay,
-          0,
-          (progress) => {
-            setGenerationProgress(progress)
-            if (progress > 0.8 && generationStage === "capturing") {
-              setGenerationStage("encoding")
-            }
-          }
-        )
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        result = await shareGifWithResult(blob, title, text)
-      } else {
-        const blob = await generateImage(element)
-        if (signal.aborted) throw new DOMException("Aborted", "AbortError")
-        setGenerationStage("finalizing")
-        result = await shareImageWithResult(blob, title, text)
-      }
-
-      if (result.success && !result.cancelled) {
-        // Show appropriate message based on the method used
-        if (result.method === "download") {
-          toast.success(result.message, { duration: 4000 })
-        } else {
-          toast.success(result.message)
-        }
-
-        track("wrapped_share_shared", {
-          year: stats.year,
-          format: exportFormat,
-          background: backgroundStyle,
-          size: cardSize,
-          method: result.method,
-        })
-      } else if (!result.success) {
-        toast.error(result.message, { duration: 4000 })
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") {
-        return
-      }
-      console.error("Failed to share:", error)
-      toast.error("Failed to share")
-    } finally {
-      setIsGenerating(false)
-      setGenerationProgress(0)
-      setGenerationStage("idle")
-      abortControllerRef.current = null
-    }
-  }, [isGenerating, getFullCardElement, captureAnimatedFrame, workspaceName, stats.year, track, backgroundStyle, cardSize, exportFormat, generationStage, qualityPreset])
-
-  // Handler for WebView fallback - generates image and shows it inline for long-press save
-  const handleSaveForWebView = useCallback(async () => {
-    if (isGenerating) return
-
-    setIsGenerating(true)
-    setGenerationProgress(0)
-    setGenerationStage("capturing")
-
-    try {
-      const element = getFullCardElement()
-      if (!element) throw new Error("Card element not found")
-
-      // For animated formats in fallback mode, just generate a static image
-      // since GIFs/videos are complex and may not work in WebViews
-      const blob = await generateImage(element)
-      setGenerationStage("finalizing")
-
-      // Convert to data URL for inline display
-      const dataUrl = await blobToDataUrl(blob)
-      setFallbackImageUrl(dataUrl)
-      setShowFallbackView(true)
-
-      track("wrapped_share_fallback_generated", {
-        year: stats.year,
-        background: backgroundStyle,
-        size: cardSize,
-        format: "image", // Always image for fallback
-      })
-
-      toast.success("Image ready! Long-press to save.", { duration: 4000 })
-    } catch (error) {
-      console.error("Failed to generate fallback image:", error)
-      toast.error("Failed to generate image")
-    } finally {
-      setIsGenerating(false)
-      setGenerationProgress(0)
-      setGenerationStage("idle")
-    }
-  }, [isGenerating, getFullCardElement, track, stats.year, backgroundStyle, cardSize])
-
-  // Go back from fallback view to customization
-  const handleBackFromFallback = useCallback(() => {
-    setShowFallbackView(false)
-    setFallbackImageUrl(null)
-  }, [])
-
-  // Fallback view for WebViews - shows generated image inline for long-press save
-  const FallbackView = (
+  // Preview view - shows generated media inline for long-press save
+  const PreviewView = (
     <div className="space-y-4">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold">Save Your Image</h3>
+        <h3 className="text-lg font-semibold">
+          Save Your {previewMediaType === "video" ? "Video" : previewMediaType === "gif" ? "GIF" : "Image"}
+        </h3>
         <p className="text-sm text-muted-foreground">
-          Long-press the image below and select "Save Image" or "Add to Photos"
+          {previewMediaType === "video"
+            ? "Long-press the video and select \"Save Video\", or use the video controls to save"
+            : "Long-press the image below and select \"Save Image\" or \"Add to Photos\""
+          }
         </p>
       </div>
 
-      {/* Generated image for long-press save */}
-      {fallbackImageUrl && (
+      {/* Generated media for long-press save */}
+      {previewMediaUrl && (
         <div className="flex justify-center">
           <div className="relative rounded-lg overflow-hidden shadow-lg border border-border">
-            <img
-              src={fallbackImageUrl}
-              alt="Your Wrapped share card"
-              className="max-w-full max-h-[60vh] object-contain"
-              style={{ touchAction: "manipulation" }}
-            />
+            {previewMediaType === "video" ? (
+              <video
+                src={previewMediaUrl}
+                controls
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="max-w-full max-h-[60vh] object-contain"
+                style={{ touchAction: "manipulation" }}
+              />
+            ) : (
+              <img
+                src={previewMediaUrl}
+                alt="Your Wrapped share card"
+                className="max-w-full max-h-[60vh] object-contain"
+                style={{ touchAction: "manipulation" }}
+              />
+            )}
           </div>
         </div>
       )}
@@ -768,9 +642,19 @@ export function WrappedShareModal({
       <div className="bg-muted/50 rounded-lg p-4 space-y-2">
         <p className="text-sm font-medium">How to save:</p>
         <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-          <li>Press and hold on the image above</li>
-          <li>Select "Save Image" or "Add to Photos"</li>
-          <li>Find it in your photo library!</li>
+          {previewMediaType === "video" ? (
+            <>
+              <li>Long-press on the video above</li>
+              <li>Select "Save Video" or "Download Video"</li>
+              <li>Find it in your photo library!</li>
+            </>
+          ) : (
+            <>
+              <li>Press and hold on the {previewMediaType === "gif" ? "GIF" : "image"} above</li>
+              <li>Select "Save Image" or "Add to Photos"</li>
+              <li>Find it in your photo library!</li>
+            </>
+          )}
         </ol>
       </div>
 
@@ -779,9 +663,10 @@ export function WrappedShareModal({
         <Button
           variant="outline"
           className="flex-1"
-          onClick={handleBackFromFallback}
+          onClick={handleBackFromPreview}
         >
-          ← Back to customize
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to customize
         </Button>
       </div>
     </div>
@@ -789,9 +674,9 @@ export function WrappedShareModal({
 
   const ModalContent = (
     <div className="space-y-4">
-      {/* Show fallback view or customization view */}
-      {showFallbackView ? (
-        FallbackView
+      {/* Show preview view or customization view */}
+      {showPreview ? (
+        PreviewView
       ) : (
         <>
       {/* Card Type Selection - only show if we have emojis */}
@@ -917,23 +802,6 @@ export function WrappedShareModal({
         </div>
       </div>
 
-      {/* Size selection */}
-      <div>
-        <label className="text-sm text-muted-foreground mb-2 block">Size</label>
-        <ToggleGroup
-          type="single"
-          value={cardSize}
-          onValueChange={(v) => v && handleSizeChange(v as WrappedCardSize)}
-          className="justify-start"
-        >
-          {(Object.keys(WRAPPED_SIZES) as WrappedCardSize[]).map((size) => (
-            <ToggleGroupItem key={size} value={size} className="gap-2">
-              {SIZE_ICONS[size]}
-              <span className="hidden sm:inline">{size.charAt(0).toUpperCase() + size.slice(1)}</span>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-      </div>
 
       {/* Format selection */}
       <div>
@@ -957,27 +825,12 @@ export function WrappedShareModal({
             <span>Video</span>
           </ToggleGroupItem>
         </ToggleGroup>
+        {exportFormat === "video" && videoEncoderType && (
+          <p className="text-xs text-muted-foreground mt-1.5">
+            {getEncoderDescription(videoEncoderType)}
+          </p>
+        )}
       </div>
-
-      {/* Quality selection - only show for animated formats */}
-      {(exportFormat === "gif" || exportFormat === "video") && (
-        <div>
-          <label className="text-sm text-muted-foreground mb-2 block">Quality</label>
-          <ToggleGroup
-            type="single"
-            value={qualityPreset}
-            onValueChange={(v) => v && handleQualityChange(v as QualityPreset)}
-            className="justify-start"
-          >
-            {(Object.keys(QUALITY_PRESETS) as QualityPreset[]).map((preset) => (
-              <ToggleGroupItem key={preset} value={preset} className="flex-col items-start gap-0 h-auto py-2 px-3">
-                <span className="font-medium">{QUALITY_PRESETS[preset].label}</span>
-                <span className="text-xs text-muted-foreground">{QUALITY_PRESETS[preset].description}</span>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-      )}
 
       {/* Progress bar with stage indicator and cancel button */}
       {isGenerating && generationProgress > 0 && (
@@ -1010,87 +863,25 @@ export function WrappedShareModal({
         </div>
       )}
 
-      {/* WebView fallback hint */}
-      {needsFallback && (
-        <p className="text-xs text-muted-foreground text-center">
-          Tap <strong>Save Image</strong> below, then long-press to save to your photos.
-        </p>
-      )}
-
-      {/* Action buttons */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* WebView fallback: Primary "Save Image" button that generates inline image */}
-        {needsFallback ? (
-          <Button
-            className="flex-1"
-            onClick={handleSaveForWebView}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 mr-2" />
-            )}
-            Save Image
-          </Button>
+      {/* Single Generate button */}
+      <Button
+        className="w-full"
+        onClick={handleGeneratePreview}
+        disabled={isGenerating}
+        size="lg"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Generating...
+          </>
         ) : (
           <>
-            {/* Copy button */}
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleCopy}
-              disabled={isGenerating}
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy
-                </>
-              )}
-            </Button>
-
-            {/* Download/Save button */}
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={handleDownload}
-              disabled={isGenerating}
-            >
-              {isGenerating && generationProgress > 0 ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {Math.round(generationProgress * 100)}%
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  {(isIOS() || isWebView()) ? "Save" : "Download"}
-                </>
-              )}
-            </Button>
-
-            {/* Share button - always visible, with built-in fallbacks */}
-            <Button
-              className="flex-1"
-              onClick={handleShare}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Share2 className="w-4 h-4 mr-2" />
-              )}
-              Share
-            </Button>
+            <Download className="w-4 h-4 mr-2" />
+            Generate {exportFormat === "image" ? "Image" : exportFormat === "gif" ? "GIF" : "Video"}
           </>
         )}
-      </div>
+      </Button>
         </>
       )}
 

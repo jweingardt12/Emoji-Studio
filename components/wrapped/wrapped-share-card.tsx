@@ -232,7 +232,7 @@ export function WrappedShareCard({
 
       {/* Grain texture overlay */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        className="absolute inset-0 pointer-events-none opacity-[0.08]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: "64px 64px",
@@ -503,7 +503,7 @@ export function WrappedShareCardFull({
 
       {/* Grain texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.10]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: `${128 * scale}px ${128 * scale}px`,
@@ -689,28 +689,31 @@ export function WrappedShareCardAnimated({
   // Collect emojis for background
   const backgroundEmojis = collectBackgroundEmojis(stats)
 
-  // Animation calculations
-  const titleOpacity = fadeIn(p, 0, 0.15)
-  const titleScale = animateValue(p, 0.8, 1, 0, 0.15)
+  // Animation timeline - content visible throughout, just animating values
+  //   0.00-0.70: Big number counts up from 0 to final
+  //   0.00-0.30: Count scales up slightly
+  //   0.00-1.00: Shimmer sweeps across
+  const titleOpacity = 1  // Always visible
+  const titleScale = 1
 
-  const countValue = Math.round(animateValue(p, 0, stats.overview.totalEmojis, 0.15, 0.45))
-  const countOpacity = fadeIn(p, 0.15, 0.1)
-  const countScale = animateValue(p, 0.5, 1, 0.15, 0.35)
+  const countValue = Math.round(animateValue(p, 0, stats.overview.totalEmojis, 0, 0.70))
+  const countOpacity = 1  // Always visible
+  const countScale = animateValue(p, 0.95, 1, 0, 0.30)
 
-  const creatorsOpacity = fadeIn(p, 0.45, 0.1)
-  const creatorsY = animateValue(p, 50, 0, 0.45, 0.65)
+  const creatorsOpacity = 1  // Always visible
+  const creatorsY = 0
 
   const statsData = [
-    { value: stats.overview.totalCreators, label: "creators", startP: 0.65 },
-    { value: `${stats.overview.gifPercentage}%`, label: "GIFs", startP: 0.72 },
-    { value: stats.funStats.longestStreak.days, label: "day streak", startP: 0.79 },
+    { value: stats.overview.totalCreators, label: "creators" },
+    { value: `${stats.overview.gifPercentage}%`, label: "GIFs" },
+    { value: stats.funStats.longestStreak.days, label: "day streak" },
   ]
 
-  // Shimmer position for the final phase
-  const shimmerX = p >= 0.85 ? animateValue(p, -100, 200, 0.85, 1.0) : -200
+  // Shimmer sweeps across throughout the animation
+  const shimmerX = animateValue(p, -100, 200, 0, 1.0)
 
-  // Emoji fade-in animation (fade in with main content)
-  const emojiOpacity = fadeIn(p, 0.1, 0.2)
+  // Background emojis always visible
+  const emojiOpacity = 1
 
   return (
     <div
@@ -774,7 +777,7 @@ export function WrappedShareCardAnimated({
 
       {/* Grain texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.10]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: `${128 * scale}px ${128 * scale}px`,
@@ -889,48 +892,36 @@ export function WrappedShareCardAnimated({
             })}
           </div>
 
-          {/* Quick stats - fade in sequentially */}
+          {/* Quick stats - no animation, always visible */}
           <div
             className="flex justify-center"
             style={{ gap: isStory ? 80 : 60, marginTop: isStory ? 60 : 40 }}
           >
-            {statsData.map((stat) => {
-              const opacity = fadeIn(p, stat.startP, 0.07)
-              const translateY = animateValue(p, 20, 0, stat.startP, stat.startP + 0.1)
-              return (
+            {statsData.map((stat) => (
+              <div key={stat.label} className="text-center">
                 <div
-                  key={stat.label}
-                  className="text-center"
-                  style={{
-                    opacity,
-                    transform: `translateY(${translateY}px)`,
-                  }}
+                  className="font-bold text-white"
+                  style={{ fontSize: isStory ? 56 : 44 }}
                 >
-                  <div
-                    className="font-bold text-white"
-                    style={{ fontSize: isStory ? 56 : 44 }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div
-                    className="text-white/60"
-                    style={{ fontSize: isStory ? 24 : 20 }}
-                  >
-                    {stat.label}
-                  </div>
+                  {stat.value}
                 </div>
-              )
-            })}
+                <div
+                  className="text-white/60"
+                  style={{ fontSize: isStory ? 24 : 20 }}
+                >
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Promotional Footer with Apple icon - fade in at end */}
+        {/* Promotional Footer with Apple icon - always visible */}
         <div
           className="flex flex-col items-center justify-center mt-auto"
           style={{
             gap: isStory ? 12 : 8,
             paddingTop: 20,
-            opacity: fadeIn(p, 0.8, 0.1),
           }}
         >
           <div className="flex items-center" style={{ gap: 12 }}>
@@ -1043,9 +1034,9 @@ export function MyEmojisShareCard({
   const displayEmojis = emojis.slice(0, maxEmojis)
 
   // Calculate emoji size based on available space
-  const gridPadding = isStory ? 16 : 12
-  const headerSpace = isStory ? 80 : isWide ? 50 : 60
-  const footerSpace = isStory ? 60 : 50
+  const gridPadding = isStory ? 12 : 8
+  const headerSpace = isStory ? 60 : isWide ? 40 : 50
+  const footerSpace = isStory ? 40 : 35
   const availableWidth = previewWidth - (gridPadding * 2)
   const availableHeight = previewHeight - headerSpace - footerSpace - (gridPadding * 2)
   const emojiSize = Math.min(
@@ -1077,7 +1068,7 @@ export function MyEmojisShareCard({
 
       {/* Grain texture overlay */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.04]"
+        className="absolute inset-0 pointer-events-none opacity-[0.08]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: "64px 64px",
@@ -1198,9 +1189,9 @@ export function MyEmojisShareCardFull({
   const displayEmojis = emojis.slice(0, maxEmojis)
 
   // Calculate emoji size based on available space (full size)
-  const gridPadding = isStory ? 50 : 40
-  const headerSpace = isStory ? 200 : isWide ? 140 : 160
-  const footerSpace = isStory ? 120 : 100
+  const gridPadding = isStory ? 40 : 30
+  const headerSpace = isStory ? 140 : isWide ? 100 : 120
+  const footerSpace = isStory ? 80 : 70
   const availableWidth = dimensions.width - (gridPadding * 2)
   const availableHeight = dimensions.height - headerSpace - footerSpace - (gridPadding * 2)
   const emojiSize = Math.min(
@@ -1232,7 +1223,7 @@ export function MyEmojisShareCardFull({
 
       {/* Grain texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.10]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: `${128 * scale}px ${128 * scale}px`,
@@ -1359,24 +1350,29 @@ export function MyEmojisShareCardAnimated({
   const { cols, rows, maxEmojis } = calculateGridLayout(emojis.length, size)
   const displayEmojis = emojis.slice(0, maxEmojis)
 
-  // Animation calculations
-  const titleOpacity = fadeIn(p, 0, 0.1)
-  const titleScale = animateValue(p, 0.9, 1, 0, 0.1)
-  const countValue = Math.round(animateValue(p, 0, emojis.length, 0.1, 0.3))
+  // Animation timeline - content visible throughout, just animating values
+  //   0.00-0.70: Count animates up from 0 to final
+  //   0.00-0.40: Grid scales up slightly
+  //   0.00-1.00: Shimmer sweeps across
+  const titleOpacity = 1  // Always visible
+  const titleScale = 1
+  const subtitleOpacity = 1
+  const countValue = Math.round(animateValue(p, 0, emojis.length, 0, 0.70))
 
-  // Emojis cascade in over time
-  const emojiRevealProgress = animateValue(p, 0, 1, 0.15, 0.85)
-  const emojisToShow = Math.round(displayEmojis.length * emojiRevealProgress)
+  // Emoji grid - subtle scale animation
+  const gridOpacity = 1  // Always visible
+  const gridScale = animateValue(p, 0.97, 1, 0, 0.40)
 
-  const brandingOpacity = fadeIn(p, 0.85, 0.1)
+  // Branding always visible
+  const brandingOpacity = 1
 
-  // Shimmer position
-  const shimmerX = p >= 0.9 ? animateValue(p, -100, 200, 0.9, 1.0) : -200
+  // Shimmer sweeps across throughout the animation
+  const shimmerX = animateValue(p, -100, 200, 0, 1.0)
 
   // Calculate emoji size
-  const gridPadding = isStory ? 50 : 40
-  const headerSpace = isStory ? 200 : isWide ? 140 : 160
-  const footerSpace = isStory ? 120 : 100
+  const gridPadding = isStory ? 40 : 30
+  const headerSpace = isStory ? 140 : isWide ? 100 : 120
+  const footerSpace = isStory ? 80 : 70
   const availableWidth = dimensions.width - (gridPadding * 2)
   const availableHeight = dimensions.height - headerSpace - footerSpace - (gridPadding * 2)
   const emojiSize = Math.min(
@@ -1421,7 +1417,7 @@ export function MyEmojisShareCardAnimated({
 
       {/* Grain texture */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.06]"
+        className="absolute inset-0 pointer-events-none opacity-[0.10]"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundSize: `${128 * scale}px ${128 * scale}px`,
@@ -1455,7 +1451,7 @@ export function MyEmojisShareCardAnimated({
           </h1>
           <p
             className="text-white/80 font-medium tabular-nums"
-            style={{ fontSize: isStory ? 32 : 28 }}
+            style={{ fontSize: isStory ? 32 : 28, opacity: subtitleOpacity }}
           >
             {countValue} custom emoji{countValue !== 1 ? "s" : ""} created
           </p>
@@ -1464,7 +1460,11 @@ export function MyEmojisShareCardAnimated({
         {/* Emoji Grid - cascade animation */}
         <div
           className="flex-1 flex items-center justify-center"
-          style={{ padding: gridPadding }}
+          style={{
+            padding: gridPadding,
+            opacity: gridOpacity,
+            transform: `scale(${gridScale})`,
+          }}
         >
           <div
             className="grid"
@@ -1474,36 +1474,27 @@ export function MyEmojisShareCardAnimated({
               gap: 8,
             }}
           >
-            {displayEmojis.map((emoji, index) => {
-              const isVisible = index < emojisToShow
-              const individualProgress = isVisible
-                ? Math.min(1, (emojisToShow - index) / 3) // Fade in over 3 emoji reveals
-                : 0
-
-              return (
-                <div
-                  key={`${emoji.name}-${index}`}
-                  className="flex items-center justify-center"
+            {displayEmojis.map((emoji, index) => (
+              <div
+                key={`${emoji.name}-${index}`}
+                className="flex items-center justify-center"
+                style={{
+                  width: emojiSize,
+                  height: emojiSize,
+                }}
+              >
+                <img
+                  src={proxyImageUrl(emoji.url)}
+                  alt={emoji.name}
+                  className="object-contain rounded"
                   style={{
-                    width: emojiSize,
-                    height: emojiSize,
-                    opacity: individualProgress,
-                    transform: `scale(${0.5 + individualProgress * 0.5})`,
+                    width: emojiSize - 4,
+                    height: emojiSize - 4,
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
                   }}
-                >
-                  <img
-                    src={proxyImageUrl(emoji.url)}
-                    alt={emoji.name}
-                    className="object-contain rounded"
-                    style={{
-                      width: emojiSize - 4,
-                      height: emojiSize - 4,
-                      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
-                    }}
-                  />
-                </div>
-              )
-            })}
+                />
+              </div>
+            ))}
             {/* Empty placeholders */}
             {Array.from({ length: Math.max(0, maxEmojis - displayEmojis.length) }).map((_, i) => (
               <div

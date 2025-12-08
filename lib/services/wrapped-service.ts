@@ -647,8 +647,16 @@ export function calculateWrappedStats(emojis: Emoji[], year: number): WrappedSta
   // Calculate longest streak
   const longestStreak = calculateLongestStreak(datesWithEmojis, year)
 
-  // Calculate milestones (100th, 200th, etc.)
-  const milestones = calculateMilestones(sortedEmojis)
+  // Calculate ALL-TIME milestones (100th, 200th, etc. emoji ever created)
+  // Sort ALL emojis chronologically, not just current year
+  const allSortedEmojis = [...emojis].sort((a, b) => (a.created || 0) - (b.created || 0))
+  const allTimeMilestones = calculateMilestones(allSortedEmojis)
+
+  // Filter to only milestones where the emoji was created in the current year
+  const milestones = allTimeMilestones.filter(m => {
+    const emojiYear = m.emoji.created ? new Date(m.emoji.created * 1000).getFullYear() : 0
+    return emojiYear === year
+  })
 
   // Fun stats
   const funStats: WrappedFunStats = {

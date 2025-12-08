@@ -18,13 +18,22 @@ interface MilestonesSlideProps {
   captureMode?: boolean
 }
 
-// Format milestone number for display
-function formatMilestone(milestone: number): string {
+// Format milestone number with ordinal suffix (100th, 200th, etc.)
+function formatMilestoneOrdinal(milestone: number): string {
+  const suffix = getOrdinalSuffix(milestone)
   if (milestone >= 1000) {
     const k = milestone / 1000
-    return k % 1 === 0 ? `${k}k` : `${k.toFixed(1)}k`
+    const num = k % 1 === 0 ? `${k}k` : `${k.toFixed(1)}k`
+    return `${num}${suffix}`
   }
-  return milestone.toString()
+  return `${milestone}${suffix}`
+}
+
+// Get ordinal suffix for a number
+function getOrdinalSuffix(n: number): string {
+  const s = ["th", "st", "nd", "rd"]
+  const v = n % 100
+  return s[(v - 20) % 10] || s[v] || s[0]
 }
 
 // Get a fun label for the milestone
@@ -140,7 +149,7 @@ function MilestoneCard({
           }}
         >
           <Trophy className="w-3 h-3" />
-          <span>{formatMilestone(milestone.milestone)}</span>
+          <span>{formatMilestoneOrdinal(milestone.milestone)}</span>
         </motion.div>
       </div>
 
@@ -296,7 +305,7 @@ export function MilestonesSlide({
             {captureMode ? (
               <div className="mb-4">
                 <h2 className="wrapped-headline text-white mb-2 text-3xl sm:text-4xl md:text-5xl">Milestone Moments</h2>
-                <p className="wrapped-body text-base sm:text-lg">The emojis that marked big numbers in {year}</p>
+                <p className="wrapped-body text-base sm:text-lg">The emojis that hit big all-time numbers</p>
               </div>
             ) : (
               <BlurFade delay={0.1} shouldAnimate={shouldAnimate} className="mb-4">
@@ -313,7 +322,7 @@ export function MilestonesSlide({
                     Milestone Moments
                   </GradientText>
                 </h2>
-                <p className="wrapped-body text-base sm:text-lg md:text-xl">The emojis that marked big numbers in {year}</p>
+                <p className="wrapped-body text-base sm:text-lg md:text-xl">The emojis that hit big all-time numbers</p>
               </BlurFade>
             )}
           </div>

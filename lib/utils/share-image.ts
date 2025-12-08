@@ -2,6 +2,13 @@ import { toPng, toCanvas } from "html-to-image"
 import GIF from "gif.js"
 import { VideoProcessor } from "./video-processor"
 import {
+  encodeFramesToMp4,
+  detectVideoEncoder,
+  preloadVideoEncoder,
+  getEncoderDescription,
+  type EncoderType,
+} from "./video-encoder-factory"
+import {
   isIOS,
   isWebView,
   isRestrictedWebView,
@@ -15,17 +22,32 @@ import {
 
 /**
  * Wait for all images in an element to be fully loaded
+ * Enhanced version that verifies images actually loaded (not just completed)
  */
 async function waitForImages(element: HTMLElement): Promise<void> {
   const images = element.querySelectorAll("img")
   const promises = Array.from(images).map((img) => {
-    if (img.complete) return Promise.resolve()
     return new Promise<void>((resolve) => {
+      // Check if image is already loaded AND has actual content
+      if (img.complete && img.naturalWidth > 0) {
+        resolve()
+        return
+      }
+
       img.onload = () => resolve()
-      img.onerror = () => resolve() // Don't fail on broken images
+      img.onerror = () => {
+        // Try reloading once on error
+        const src = img.src
+        img.src = ''
+        img.src = src
+        img.onload = () => resolve()
+        img.onerror = () => resolve() // Give up after retry
+      }
     })
   })
   await Promise.all(promises)
+  // Small delay to ensure browser has painted the images
+  await new Promise(r => requestAnimationFrame(r))
 }
 
 /**
@@ -41,7 +63,7 @@ export async function generateImage(element: HTMLElement, backgroundColor?: stri
 
   const dataUrl = await toPng(element, {
     pixelRatio: 2, // 2x for retina quality
-    cacheBust: true,
+    // cacheBust removed - use browser cache to ensure consistent images
     backgroundColor: bgColor,
     skipFonts: true,
     // Include external images by fetching them
@@ -488,11 +510,58 @@ export async function generateGif(
 
 /**
  * Capture a single frame from an HTML element as a canvas
+ * @param bustCache - If true, adds unique cache-busting params to each image URL
+ * @param frameId - Optional unique identifier for this frame
  */
-export async function captureElementAsCanvas(element: HTMLElement): Promise<HTMLCanvasElement> {
+export async function captureElementAsCanvas(
+  element: HTMLElement,
+  bustCache: boolean = false,
+  frameId?: string
+): Promise<HTMLCanvasElement> {
+  // Wait for images before capturing
+  await waitForImages(element)
+
+  if (bustCache) {
+    // AGGRESSIVE CACHE BUSTING: Modify image URLs directly on the element
+    // This forces html-to-image to fetch each image fresh with unique URLs
+    const uniqueId = frameId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const images = element.querySelectorAll("img")
+    const originalSrcs: string[] = []
+
+    // Modify all image URLs with unique per-image cache busters
+    images.forEach((img, index) => {
+      const src = img.getAttribute("src")
+      if (src) {
+        originalSrcs.push(src)
+        // Each image gets its own unique param (frame + image index)
+        const separator = src.includes("?") ? "&" : "?"
+        img.setAttribute("src", `${src}${separator}__cb=${uniqueId}_${index}`)
+      }
+    })
+
+    try {
+      // Capture with skipFonts to avoid CORS issues
+      const canvas = await toCanvas(element, {
+        pixelRatio: 2,
+        cacheBust: true,
+        skipFonts: true,
+      })
+
+      return canvas
+    } finally {
+      // IMPORTANT: Restore original URLs so React doesn't get confused
+      images.forEach((img, index) => {
+        if (originalSrcs[index]) {
+          img.setAttribute("src", originalSrcs[index])
+        }
+      })
+    }
+  }
+
+  // Standard capture without aggressive cache busting
   return toCanvas(element, {
     pixelRatio: 2,
-    cacheBust: true,
+    skipFonts: true,
   })
 }
 
@@ -720,8 +789,9 @@ export async function generateVideo(
     onProgress?.((i + 1) / frameCount * 0.3) // 30% for frame capture
   }
 
-  // Convert frames to MP4
-  const videoBlob = await VideoProcessor.framesToMp4(
+  // Convert frames to MP4 using best available encoder
+  // (WebCodecs with hardware acceleration when available, FFmpeg WASM fallback)
+  const videoBlob = await encodeFramesToMp4(
     frames,
     fps,
     (p) => onProgress?.(0.3 + p * 0.7) // Remaining 70% for encoding
@@ -928,4 +998,12 @@ export async function shareVideoWithResult(
     method: "none",
     message: "Unable to share video. Please try downloading instead.",
   }
+}
+
+// Re-export video encoder utilities for use by components
+export {
+  detectVideoEncoder,
+  preloadVideoEncoder,
+  getEncoderDescription,
+  type EncoderType,
 }

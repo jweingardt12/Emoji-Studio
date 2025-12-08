@@ -110,12 +110,13 @@ function WrappedPageContent() {
     })
   }, [])
 
-  // Hide app frame (header, sidebar) when:
+  // Hide app frame (header, sidebar) only when:
   // - Explicitly embedded via URL param
   // - Coming from mobile app with auth params
-  // - Actively viewing the wrapped story (for immersive experience)
+  // Desktop keeps the sidebar visible for navigation
   useEffect(() => {
-    const shouldHideFrame = isEmbedded || hasMobileParams || cameFromMobile || showStory
+    const isMobile = window.innerWidth < 768
+    const shouldHideFrame = isEmbedded || hasMobileParams || cameFromMobile || (showStory && isMobile)
 
     if (shouldHideFrame) {
       document.body.classList.add("wrapped-embedded")

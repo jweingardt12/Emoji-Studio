@@ -80,6 +80,7 @@
     "jszip": "^3.10.1",
     "libgif": "^0.0.3",
     "lucide-react": "^0.454.0",
+    "mediabunny": "^1.25.7",
     "motion": "^12.17.3",
     "next": "15.2.6",
     "next-themes": "^0.4.4",
