@@ -250,12 +250,12 @@ export function SlideShareButton({
           </div>
 
           {/* Image for long-press save */}
-          <div className="flex justify-center">
+          {/* share-image-saveable class enables long-press context menu on iOS */}
+          <div className="share-image-saveable flex justify-center">
             <img
               src={fallbackImageUrl}
               alt="Share card"
               className="max-w-full max-h-[50vh] rounded-lg shadow-lg object-contain"
-              style={{ touchAction: "manipulation" }}
             />
           </div>
 
