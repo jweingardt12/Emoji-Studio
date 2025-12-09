@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Loader2, Download, Image, Film, Video, Square, Smartphone, Monitor, X, Play, Pause, ArrowLeft } from "lucide-react"
+import { Loader2, Download, Image, Film, Video, Square, Smartphone, Monitor, X, Play, Pause, ArrowLeft, Share2 } from "lucide-react"
 import { toast } from "sonner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useTrack } from "@/lib/hooks/use-track"
@@ -42,6 +42,10 @@ import {
   detectVideoEncoder,
   preloadVideoEncoder,
   getEncoderDescription,
+  blobToDataUrl,
+  shareImageWithResult,
+  shareGifWithResult,
+  shareVideoWithResult,
   type EncoderType,
 } from "@/lib/utils/share-image"
 import { cn } from "@/lib/utils"
@@ -146,7 +150,9 @@ export function WrappedShareModal({
   // Preview state for inline media display (long-press to save)
   const [previewMediaUrl, setPreviewMediaUrl] = useState<string | null>(null)
   const [previewMediaType, setPreviewMediaType] = useState<"image" | "gif" | "video" | null>(null)
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null) // Store blob for Web Share API
   const [showPreview, setShowPreview] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
   const [videoEncoderType, setVideoEncoderType] = useState<EncoderType | null>(null)
   const animatedCardRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -155,12 +161,15 @@ export function WrappedShareModal({
   // Reset preview when modal closes and cleanup blob URLs
   useEffect(() => {
     if (!open) {
-      if (previewMediaUrl) {
+      // Only revoke if it's a blob URL (not a data URL)
+      if (previewMediaUrl && previewMediaUrl.startsWith("blob:")) {
         URL.revokeObjectURL(previewMediaUrl)
       }
       setShowPreview(false)
       setPreviewMediaUrl(null)
       setPreviewMediaType(null)
+      setPreviewBlob(null)
+      setIsSharing(false)
     }
   }, [open, previewMediaUrl])
 
@@ -446,9 +455,20 @@ export function WrappedShareModal({
 
       setGenerationStage("finalizing")
 
-      // Create blob URL for inline display
-      const blobUrl = URL.createObjectURL(blob)
-      setPreviewMediaUrl(blobUrl)
+      // Store the blob for Web Share API
+      setPreviewBlob(blob)
+
+      // For images and GIFs, use data URL for better iOS Safari long-press compatibility
+      // For videos, use blob URL since they need streaming
+      let mediaUrl: string
+      if (exportFormat === "video") {
+        mediaUrl = URL.createObjectURL(blob)
+      } else {
+        // Convert to base64 data URL for better mobile compatibility
+        mediaUrl = await blobToDataUrl(blob)
+      }
+
+      setPreviewMediaUrl(mediaUrl)
       setShowPreview(true)
 
       track("wrapped_share_preview_generated", {
@@ -459,7 +479,7 @@ export function WrappedShareModal({
       })
 
       const formatLabel = exportFormat === "video" ? "Video" : exportFormat === "gif" ? "GIF" : "Image"
-      toast.success(`${formatLabel} ready! Long-press to save.`, { duration: 4000 })
+      toast.success(`${formatLabel} ready! Tap Share or long-press to save.`, { duration: 4000 })
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return
@@ -476,12 +496,14 @@ export function WrappedShareModal({
 
   // Go back from preview to customization
   const handleBackFromPreview = useCallback(() => {
-    if (previewMediaUrl) {
+    // Only revoke if it's a blob URL (not a data URL)
+    if (previewMediaUrl && previewMediaUrl.startsWith("blob:")) {
       URL.revokeObjectURL(previewMediaUrl)
     }
     setShowPreview(false)
     setPreviewMediaUrl(null)
     setPreviewMediaType(null)
+    setPreviewBlob(null)
   }, [previewMediaUrl])
 
   // Render full-size cards for export (static + animated)
@@ -574,6 +596,45 @@ export function WrappedShareModal({
     toast.info("Generation cancelled")
   }, [])
 
+  // Handle share button click - uses Web Share API
+  const handleShare = useCallback(async () => {
+    if (!previewBlob || isSharing) return
+
+    setIsSharing(true)
+    try {
+      const filename = `emoji-wrapped-${stats.year}.${previewMediaType === "video" ? "mp4" : previewMediaType === "gif" ? "gif" : "png"}`
+      const title = `My ${stats.year} Emoji Wrapped`
+      const text = `Check out my ${stats.year} emoji stats from ${workspaceName}! Made with Emoji Studio`
+
+      let result
+      if (previewMediaType === "video") {
+        result = await shareVideoWithResult(previewBlob, title, text, filename)
+      } else if (previewMediaType === "gif") {
+        result = await shareGifWithResult(previewBlob, title, text, filename)
+      } else {
+        result = await shareImageWithResult(previewBlob, title, text, filename)
+      }
+
+      if (result.success && !result.cancelled) {
+        track("wrapped_share_completed", {
+          year: stats.year,
+          format: previewMediaType,
+          method: result.method,
+        })
+        toast.success(result.message)
+      } else if (result.cancelled) {
+        // User cancelled, no toast needed
+      } else {
+        toast.error(result.message)
+      }
+    } catch (error) {
+      console.error("Share failed:", error)
+      toast.error("Failed to share. Try long-pressing the image to save.")
+    } finally {
+      setIsSharing(false)
+    }
+  }, [previewBlob, previewMediaType, isSharing, stats.year, workspaceName, track])
+
   // Preview view - shows generated media inline for long-press save
   const PreviewView = (
     <div className="space-y-4">
@@ -582,17 +643,15 @@ export function WrappedShareModal({
           Save Your {previewMediaType === "video" ? "Video" : previewMediaType === "gif" ? "GIF" : "Image"}
         </h3>
         <p className="text-sm text-muted-foreground">
-          {previewMediaType === "video"
-            ? "Long-press the video and select \"Save Video\", or use the video controls to save"
-            : "Long-press the image below and select \"Save Image\" or \"Add to Photos\""
-          }
+          Tap Share to save, or long-press the {previewMediaType === "video" ? "video" : "image"} below
         </p>
       </div>
 
       {/* Generated media for long-press save */}
       {previewMediaUrl && (
         <div className="flex justify-center">
-          <div className="relative rounded-lg overflow-hidden shadow-lg border border-border">
+          {/* share-image-saveable class enables long-press context menu on iOS */}
+          <div className="share-image-saveable relative rounded-lg overflow-hidden shadow-lg border border-border">
             {previewMediaType === "video" ? (
               <video
                 src={previewMediaUrl}
@@ -601,42 +660,20 @@ export function WrappedShareModal({
                 loop
                 muted
                 playsInline
-                className="max-w-full max-h-[60vh] object-contain"
-                style={{ touchAction: "manipulation" }}
+                className="max-w-full max-h-[50vh] object-contain"
               />
             ) : (
               <img
                 src={previewMediaUrl}
                 alt="Your Wrapped share card"
-                className="max-w-full max-h-[60vh] object-contain"
-                style={{ touchAction: "manipulation" }}
+                className="max-w-full max-h-[50vh] object-contain"
               />
             )}
           </div>
         </div>
       )}
 
-      {/* Instructions */}
-      <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-        <p className="text-sm font-medium">How to save:</p>
-        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-          {previewMediaType === "video" ? (
-            <>
-              <li>Long-press on the video above</li>
-              <li>Select "Save Video" or "Download Video"</li>
-              <li>Find it in your photo library!</li>
-            </>
-          ) : (
-            <>
-              <li>Press and hold on the {previewMediaType === "gif" ? "GIF" : "image"} above</li>
-              <li>Select "Save Image" or "Add to Photos"</li>
-              <li>Find it in your photo library!</li>
-            </>
-          )}
-        </ol>
-      </div>
-
-      {/* Back button */}
+      {/* Share and Back buttons */}
       <div className="flex gap-2">
         <Button
           variant="outline"
@@ -644,9 +681,46 @@ export function WrappedShareModal({
           onClick={handleBackFromPreview}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to customize
+          Back
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={handleShare}
+          disabled={isSharing || !previewBlob}
+        >
+          {isSharing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Sharing...
+            </>
+          ) : (
+            <>
+              <Share2 className="w-4 h-4 mr-2" />
+              Share
+            </>
+          )}
         </Button>
       </div>
+
+      {/* Instructions - collapsed for cleaner UI */}
+      <details className="bg-muted/50 rounded-lg p-3">
+        <summary className="text-sm font-medium cursor-pointer">Having trouble? Tap for help</summary>
+        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside mt-2">
+          {previewMediaType === "video" ? (
+            <>
+              <li>Tap "Share" above to open save options</li>
+              <li>Or long-press the video and select "Save Video"</li>
+              <li>Find it in your photo library!</li>
+            </>
+          ) : (
+            <>
+              <li>Tap "Share" above to open save options</li>
+              <li>Or press and hold on the {previewMediaType === "gif" ? "GIF" : "image"} above</li>
+              <li>Select "Save Image" or "Add to Photos"</li>
+            </>
+          )}
+        </ol>
+      </details>
     </div>
   )
 
