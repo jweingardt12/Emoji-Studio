@@ -27,6 +27,7 @@ import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 interface Emoji {
   name: string
@@ -44,7 +45,7 @@ interface Emoji {
 function MyEmojisPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
-  const { emojiData, loading, hasRealData, workspace, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
+  const { emojiData, loading, hasRealData, workspace, workspaceDisplayName, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
@@ -1615,8 +1616,8 @@ function MyEmojisPage() {
                   <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
                     My Emojis {myEmojis.length > 0 && <span className="text-muted-foreground font-normal">({myEmojis.length})</span>}
                   </CardTitle>                    <CardDescription>
-                      {hasRealData 
-                        ? `Manage the emojis you've created in ${workspace || "your workspace"}`
+                      {hasRealData
+                        ? `Manage the emojis you've created in ${getWorkspaceDisplayName(workspaceDisplayName, workspace)}`
                         : "Connect to Slack to see and manage your emojis"
                       }
                     </CardDescription>

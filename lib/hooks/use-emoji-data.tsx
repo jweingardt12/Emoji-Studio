@@ -34,6 +34,8 @@ interface EmojiDataContextType {
   setHasRealData: React.Dispatch<React.SetStateAction<boolean>>
   workspace: string
   setWorkspace: React.Dispatch<React.SetStateAction<string>>
+  workspaceDisplayName: string
+  setWorkspaceDisplayName: React.Dispatch<React.SetStateAction<string>>
 }
 
 // Create the context with a default value
@@ -47,8 +49,38 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [useDemoData, setUseDemoData] = useState(false)
   const [demoTimeRange, setDemoTimeRange] = useState("90d")
   const [hasRealData, setHasRealData] = useState(false)
-  const [workspace, setWorkspace] = useState<string>("")
+  const [workspaceInternal, setWorkspaceInternal] = useState<string>("")
+  const [workspaceDisplayNameInternal, setWorkspaceDisplayNameInternal] = useState<string>("")
+  const previousWorkspaceRef = useRef<string>("")
   const hasShownStorageWarningRef = useRef(false)
+
+  // Wrapper for setWorkspace that clears display name when workspace changes
+  const setWorkspace = useCallback((value: React.SetStateAction<string>) => {
+    setWorkspaceInternal(prev => {
+      const newValue = typeof value === 'function' ? value(prev) : value
+      // If workspace actually changed, clear the custom display name
+      if (previousWorkspaceRef.current && previousWorkspaceRef.current !== newValue) {
+        console.log('[EmojiDataContext] Workspace changed, clearing custom display name')
+        setWorkspaceDisplayNameInternal("")
+        localStorage.removeItem("workspaceDisplayName")
+      }
+      previousWorkspaceRef.current = newValue
+      return newValue
+    })
+  }, [])
+
+  // Wrapper for setWorkspaceDisplayName that persists to localStorage
+  const setWorkspaceDisplayName = useCallback((value: React.SetStateAction<string>) => {
+    setWorkspaceDisplayNameInternal(prev => {
+      const newValue = typeof value === 'function' ? value(prev) : value
+      if (newValue && newValue.trim()) {
+        localStorage.setItem("workspaceDisplayName", newValue)
+      } else {
+        localStorage.removeItem("workspaceDisplayName")
+      }
+      return newValue
+    })
+  }, [])
   
   // Wrapper for setEmojiData to add logging
   const setEmojiData = useCallback((data: Emoji[] | ((prev: Emoji[]) => Emoji[])) => {
@@ -157,10 +189,19 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       // Load workspace from settings
       const storedWorkspace = await settingsStorage.loadSetting("workspace") || localStorage.getItem("workspace")
-      
+
       if (storedWorkspace) {
         console.log('[EmojiDataContext] Setting workspace:', storedWorkspace);
-        setWorkspace(storedWorkspace)
+        // Set internal state directly to avoid triggering display name clear on initial load
+        setWorkspaceInternal(storedWorkspace)
+        previousWorkspaceRef.current = storedWorkspace
+      }
+
+      // Load custom workspace display name
+      const storedDisplayName = localStorage.getItem("workspaceDisplayName")
+      if (storedDisplayName) {
+        console.log('[EmojiDataContext] Setting workspace display name:', storedDisplayName);
+        setWorkspaceDisplayNameInternal(storedDisplayName)
       }
 
       // Try to load emoji data from IndexedDB first, with localStorage fallback
@@ -204,7 +245,10 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setEmojiData([])
       setHasRealData(false)
       setUseDemoData(false)
-      setWorkspace("")
+      setWorkspaceInternal("")
+      setWorkspaceDisplayNameInternal("")
+      previousWorkspaceRef.current = ""
+      localStorage.removeItem("workspaceDisplayName")
     }
 
     // Listen for emoji data updated event
@@ -326,8 +370,10 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setDemoTimeRange,
     hasRealData,
     setHasRealData,
-    workspace,
+    workspace: workspaceInternal,
     setWorkspace,
+    workspaceDisplayName: workspaceDisplayNameInternal,
+    setWorkspaceDisplayName,
   }
 
   return <EmojiDataContext.Provider value={contextValue}>{children}</EmojiDataContext.Provider>

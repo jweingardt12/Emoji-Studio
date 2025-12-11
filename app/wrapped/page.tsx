@@ -14,6 +14,7 @@ import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchEmojiDataWithMobileAuth, getMobileUserId } from "@/lib/services/mobile-emoji-fetch"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 function WrappedPageContent() {
   const [isClient, setIsClient] = useState(false)
@@ -34,7 +35,7 @@ function WrappedPageContent() {
   const isEmbedded = searchParams.get("embedded") === "true"
   const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
-  const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
+  const { emojiData, hasRealData, useDemoData, loading, workspace, workspaceDisplayName: contextDisplayName } = useEmojiData()
   const track = useTrack()
   const currentYear = new Date().getFullYear()
 
@@ -97,10 +98,6 @@ function WrappedPageContent() {
 
   useEffect(() => {
     setIsClient(true)
-    // Get workspace name from localStorage
-    const storedName = localStorage.getItem("workspace") || "Your Workspace"
-    setWorkspaceName(storedName)
-
     // Track page view
     track("wrapped_page_viewed", {
       has_data: hasData,
@@ -109,6 +106,17 @@ function WrappedPageContent() {
       is_mobile_auth: hasMobileParams,
     })
   }, [])
+
+  // Update workspace name when context changes (handle mobile auth case separately)
+  useEffect(() => {
+    if (mobileWorkspace) {
+      // Mobile auth case: use the workspace from URL params (no custom display name)
+      setWorkspaceName(getWorkspaceDisplayName(null, mobileWorkspace))
+    } else {
+      // Regular case: use custom display name from context if available
+      setWorkspaceName(getWorkspaceDisplayName(contextDisplayName, workspace))
+    }
+  }, [contextDisplayName, workspace, mobileWorkspace])
 
   // Hide app frame (header, sidebar) only when:
   // - Explicitly embedded via URL param

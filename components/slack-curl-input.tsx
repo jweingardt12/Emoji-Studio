@@ -27,6 +27,7 @@ import { initializeExtensionListener, type SlackAuthData } from "@/lib/chrome-ex
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 export function SlackCurlInput() {
   const router = useRouter()
@@ -390,11 +391,17 @@ export function SlackCurlInput() {
       // Fire event to notify other components that emoji data has been updated
       window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
 
+      // Get the display name - preserve custom name if syncing same workspace
+      const currentWorkspace = localStorage.getItem("workspace")
+      const successDisplayName = currentWorkspace === workspace
+        ? getWorkspaceDisplayName(localStorage.getItem("workspaceDisplayName"), workspace)
+        : getWorkspaceDisplayName(null, workspace)
+
       setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 800))
 
-      setSuccess(`Successfully synced emojis from ${workspace}`)
+      setSuccess(`Successfully synced emojis from ${successDisplayName}`)
       setLoadingStage("")
       setIsLoading(false)
 

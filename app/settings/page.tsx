@@ -26,6 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { PairToMobile } from "@/components/pair-to-mobile"
 import { FeedbackModal } from "@/components/feedback-modal"
 import { Badge } from "@/components/ui/badge"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 type SettingsSection = 'connection' | 'preferences' | 'data' | 'about';
 
@@ -119,7 +120,7 @@ export default function SettingsPage() {
   // Modal
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
 
-  const { emojiData, hasRealData, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
+  const { emojiData, hasRealData, setEmojiData, setWorkspace, setHasRealData, workspace, workspaceDisplayName, setWorkspaceDisplayName } = useEmojiData()
 
   // Load settings from localStorage
   useEffect(() => {
@@ -368,7 +369,7 @@ export default function SettingsPage() {
                           </span>
                           {hasSlack && (
                             <Badge variant="secondary" className="text-xs">
-                              {localStorage.getItem("workspace") || "Workspace"}
+                              {getWorkspaceDisplayName(workspaceDisplayName, workspace)}
                             </Badge>
                           )}
                         </div>
@@ -390,6 +391,49 @@ export default function SettingsPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Workspace Name Card - shown when connected */}
+                {hasSlack && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Workspace Name</CardTitle>
+                      <CardDescription>Customize how your workspace name appears in share images</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          value={workspaceDisplayName}
+                          onChange={(e) => setWorkspaceDisplayName(e.target.value)}
+                          onBlur={() => {
+                            if (workspaceDisplayName.trim()) {
+                              toast.success('Workspace name updated')
+                              track('Settings: Update Workspace Display Name')
+                            }
+                          }}
+                          placeholder={getWorkspaceDisplayName(null, workspace)}
+                          className="flex-1"
+                        />
+                        {workspaceDisplayName && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setWorkspaceDisplayName("")
+                              toast.success('Using default workspace name')
+                            }}
+                          >
+                            Reset
+                          </Button>
+                        )}
+                      </div>
+                      {workspace && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Slack workspace ID: {workspace}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Connection Options */}
                 <Card>
