@@ -26,6 +26,7 @@ import DownloadProgressOverlay from '@/components/download-progress-overlay';
 import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
 import { OptimizedEmojiImage } from "@/components/optimized-emoji-image"
+import { VirtualizedExplorerGrid } from "@/components/virtualized-explorer-grid"
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -665,144 +666,22 @@ function ExplorerPage() {
                   </div>
                 ) : (
                   <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-                      {sortedEmojis.map((emoji) => (
-                        <div
-                          key={`${emoji.name}-${emoji.url}`}
-                          className={cn(
-                            "group relative flex flex-col items-center justify-between rounded-xl border-2 bg-card p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full",
-                            showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && "ring-2 ring-primary/50 bg-primary/5",
-                            selectedEmojis.has(emoji.name) && bulkSelectionMode && "ring-2 ring-primary bg-primary/5 border-primary",
-                            !bulkSelectionMode && "hover:border-primary/40"
-                          )}
-                          onClick={(e) => {
-                            if (bulkSelectionMode) {
-                              toggleEmojiSelection(emoji.name, e);
-                            } else {
-                              // Track analytics immediately (non-blocking)
-                              analytics.trackEmojiView(emoji.name, emoji.user_display_name || "");
-                              // Defer state update to prevent blocking the UI
-                              startTransition(() => {
-                                setSelectedEmoji(emoji);
-                              });
-                            }
-                          }}
-                        >
-                          {/* Bulk Selection Checkbox */}
-                          {bulkSelectionMode && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <div className={cn(
-                                "h-5 w-5 rounded border-2 flex items-center justify-center transition-colors",
-                                selectedEmojis.has(emoji.name)
-                                  ? "bg-primary border-primary text-primary-foreground"
-                                  : "bg-background border-muted-foreground/30"
-                              )}>
-                                {selectedEmojis.has(emoji.name) && (
-                                  <CheckSquare className="h-4 w-4" />
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* New badge */}
-                          {showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter && (
-                            <Badge variant="default" className="absolute top-2 right-2 text-xs px-2 py-0.5">
-                              New
-                            </Badge>
-                          )}
-
-                          {/* Emoji Image - Larger */}
-                          <div className="flex-shrink-0 mb-3 mt-2">
-                            <OptimizedEmojiImage
-                              src={emoji.url || getPlaceholderImage(emoji.name)}
-                              alt={`:${emoji.name}:`}
-                              className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
-                              onError={() => handleImageError(emoji.name)}
-                              fallback={
-                                <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
-                                  {emoji.name.slice(0, 2).toUpperCase()}
-                                </div>
-                              }
-                            />
-                          </div>
-
-                          {/* Emoji Details */}
-                          <div className="w-full space-y-1">
-                            {/* Emoji Name */}
-                            <p className="text-sm font-semibold text-foreground text-center truncate px-1" title={`:${emoji.name}:`}>
-                              :{emoji.name.length > 14 ? emoji.name.slice(0, 14) + "…" : emoji.name}:
-                            </p>
-
-                            {/* Creator Name */}
-                            {emoji.user_display_name && (
-                              <p className="text-xs text-muted-foreground text-center truncate px-1" title={emoji.user_display_name}>
-                                by {emoji.user_display_name.split(" ")[0]}
-                              </p>
-                            )}
-
-                            {/* Creation Date */}
-                            {emoji.created && (
-                              <p className="text-xs text-muted-foreground/80 text-center">
-                                {new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Quick Actions - Desktop Only */}
-                          {!isMobile && !bulkSelectionMode && (
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={(e) => copyEmojiName(emoji, e)}
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Copy name</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={(e) => copyEmojiUrl(emoji, e)}
-                                    >
-                                      <ExternalLink className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Copy URL</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={(e) => copyImageToClipboard(emoji, e)}
-                                    >
-                                      <ImageIcon className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Copy image</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    <VirtualizedExplorerGrid
+                      emojis={sortedEmojis}
+                      onEmojiClick={(emoji) => setSelectedEmoji(emoji)}
+                      getPlaceholderImage={getPlaceholderImage}
+                      onImageError={handleImageError}
+                      bulkSelectionMode={bulkSelectionMode}
+                      selectedEmojis={selectedEmojis}
+                      toggleEmojiSelection={toggleEmojiSelection}
+                      showNewBadge={showNewBadge}
+                      sinceFilter={sinceFilter}
+                      copyEmojiName={copyEmojiName}
+                      copyEmojiUrl={copyEmojiUrl}
+                      copyImageToClipboard={copyImageToClipboard}
+                      trackEmojiView={(name, creator) => analytics.trackEmojiView(name, creator)}
+                      isMobile={isMobile ?? false}
+                    />
                   </div>
                 )}
               </>

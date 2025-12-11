@@ -1275,7 +1275,7 @@ body.wrapped-embedded [data-sidebar="inset"] {
 body.wrapped-embedded .flex.flex-col.gap-4.p-4,
 body.wrapped-embedded .flex.flex-col.gap-4.p-4.pt-safe,
 body.wrapped-embedded .p-4.pt-safe,
-body.wrapped-embedded .md\\:p-6 {
+body.wrapped-embedded [class*="md:p-6"] {
   padding: 0 !important;
   gap: 0 !important;
 }

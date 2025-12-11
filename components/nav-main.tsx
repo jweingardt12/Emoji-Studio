@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AuroraText } from "@/components/ui/aurora-text"
+import { TextShimmer } from "@/components/ui/text-shimmer"
 
 interface NavMainProps {
   items: {
@@ -110,7 +110,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         
         const linkContent = (
           <>
-            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <Icon className={cn("h-5 w-5 shrink-0", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
             <span className="truncate">{item.title}</span>
             {item.badge && (
               <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
@@ -120,35 +120,21 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             {item.indicator === "error" && (
               <XCircle className="ml-auto h-4 w-4 shrink-0 text-red-500" aria-hidden="true" />
             )}
-            {isRefresh && refreshing && (
-              <svg
-                className="ml-auto h-4 w-4 animate-spin text-muted-foreground"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            )}
           </>
         )
 
-        // Special content for Wrapped link with aurora effect
+        // Special content for Wrapped link with shimmer effect
         const wrappedLinkContent = (
           <>
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <AuroraText
-              className="text-sm font-medium"
-              colors={["#f97316", "#eab308", "#ef4444", "#f97316"]}
-              speed={1.5}
+            <TextShimmer
+              as="span"
+              className="text-sm font-medium [--base-color:#f97316] [--base-gradient-color:#fbbf24] dark:[--base-color:#f97316] dark:[--base-gradient-color:#fef3c7]"
+              duration={1.5}
+              spread={1.5}
             >
               {item.title}
-            </AuroraText>
+            </TextShimmer>
             {item.badge && (
               <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
                 {item.badge}

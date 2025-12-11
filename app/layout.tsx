@@ -14,6 +14,7 @@ import { NotificationManager } from "@/components/notification-manager";
 import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default function RootLayout({
   children,
@@ -66,9 +67,11 @@ export default function RootLayout({
                     <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto native-scroll no-horizontal-scroll">
                       <PullToRefreshWrapper>
                         <div className="flex flex-col gap-4 p-4 pt-safe md:p-6 lg:px-6">
-                          <MobilePageManager>
-                            {children}
-                          </MobilePageManager>
+                          <ErrorBoundary>
+                            <MobilePageManager>
+                              {children}
+                            </MobilePageManager>
+                          </ErrorBoundary>
                         </div>
                       </PullToRefreshWrapper>
                     </div>
