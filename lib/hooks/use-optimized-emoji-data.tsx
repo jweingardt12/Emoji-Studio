@@ -58,6 +58,10 @@ export const OptimizedEmojiDataProvider: React.FC<{ children: React.ReactNode }>
   
   // Track if component is mounted
   const mountedRef = useRef(true)
+  // Use ref to access emojis without triggering re-renders in callbacks
+  const emojisRef = useRef<Emoji[]>([])
+  emojisRef.current = emojis
+
   useEffect(() => {
     return () => {
       mountedRef.current = false
@@ -103,15 +107,15 @@ export const OptimizedEmojiDataProvider: React.FC<{ children: React.ReactNode }>
           if (useDemoData) {
             return generateDemoStats()
           }
-          return calculateEmojiStats(emojis, Date.now())
+          return calculateEmojiStats(emojisRef.current, Date.now())
         }),
-        
+
         // Load leaderboard
         leaderboardCache.get(`leaderboard-${cacheKey}`, async () => {
           if (useDemoData) {
             return generateDemoLeaderboard()
           }
-          return getUserLeaderboard(emojis, Date.now())
+          return getUserLeaderboard(emojisRef.current, Date.now())
         }),
         
         // Load chart data
@@ -143,7 +147,7 @@ export const OptimizedEmojiDataProvider: React.FC<{ children: React.ReactNode }>
         setLoading(false)
       }
     }
-  }, [useDemoData, workspace, timeRange, emojis])
+  }, [useDemoData, workspace, timeRange])
 
   // Initial load
   useEffect(() => {

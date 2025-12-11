@@ -58,26 +58,24 @@ export function UploadReview({
 
     // Check all names concurrently
     await Promise.all(
-      items.map(async (item, index) => {
+      items.map(async (item) => {
         try {
           const available = await isEmojiNameAvailable(item.proposedName)
-          setReviewItems((prev) => {
-            const next = [...prev]
-            next[index] = {
-              ...next[index],
-              status: available ? "available" : "taken",
-            }
-            return next
-          })
+          setReviewItems((prev) =>
+            prev.map((reviewItem) =>
+              reviewItem.id === item.id
+                ? { ...reviewItem, status: available ? "available" : "taken" }
+                : reviewItem
+            )
+          )
         } catch (error) {
-          setReviewItems((prev) => {
-            const next = [...prev]
-            next[index] = {
-              ...next[index],
-              status: "error",
-            }
-            return next
-          })
+          setReviewItems((prev) =>
+            prev.map((reviewItem) =>
+              reviewItem.id === item.id
+                ? { ...reviewItem, status: "error" }
+                : reviewItem
+            )
+          )
         }
       })
     )

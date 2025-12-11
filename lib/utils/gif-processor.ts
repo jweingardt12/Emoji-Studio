@@ -60,11 +60,22 @@ export class GifProcessor {
 
   private static async processAnimatedGif(file: File, targetSize: number, maxFileSize: number): Promise<Blob> {
     return new Promise(async (resolve, reject) => {
+      let img: HTMLImageElement | null = null
+      let canvas: HTMLCanvasElement | null = null
+
+      const cleanup = () => {
+        if (img?.src) URL.revokeObjectURL(img.src)
+        if (canvas) {
+          canvas.width = 0
+          canvas.height = 0
+        }
+      }
+
       try {
         // Create a temporary video element to extract frames
         // This is a workaround since we can't easily parse GIF frames in the browser
-        const img = await this.loadImage(file)
-        
+        img = await this.loadImage(file)
+
         // Calculate scaling
         const scale = Math.min(targetSize / img.width, targetSize / img.height)
         const scaledWidth = Math.round(img.width * scale)
@@ -83,7 +94,7 @@ export class GifProcessor {
 
         // For now, we'll create a simple animated GIF by duplicating the frame
         // In a real implementation, you'd parse the actual GIF frames
-        const canvas = document.createElement('canvas')
+        canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
         canvas.width = targetSize
         canvas.height = targetSize
@@ -105,6 +116,7 @@ export class GifProcessor {
         }
 
         gif.on('finished', (blob: Blob) => {
+          cleanup()
           if (blob.size > maxFileSize) {
             // Try with lower quality
             this.processAnimatedGifLowQuality(file, targetSize, maxFileSize)
@@ -122,6 +134,7 @@ export class GifProcessor {
 
         gif.render()
       } catch (error) {
+        cleanup()
         reject(error)
       }
     })
@@ -129,9 +142,20 @@ export class GifProcessor {
 
   private static async processAnimatedGifLowQuality(file: File, targetSize: number, maxFileSize: number): Promise<Blob> {
     return new Promise(async (resolve, reject) => {
+      let img: HTMLImageElement | null = null
+      let canvas: HTMLCanvasElement | null = null
+
+      const cleanup = () => {
+        if (img?.src) URL.revokeObjectURL(img.src)
+        if (canvas) {
+          canvas.width = 0
+          canvas.height = 0
+        }
+      }
+
       try {
-        const img = await this.loadImage(file)
-        
+        img = await this.loadImage(file)
+
         // Calculate scaling with more aggressive size reduction
         const scale = Math.min(targetSize / img.width, targetSize / img.height) * 0.8
         const scaledWidth = Math.round(img.width * scale)
@@ -147,7 +171,7 @@ export class GifProcessor {
           workerScript: '/gif.worker.js'
         })
 
-        const canvas = document.createElement('canvas')
+        canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
         canvas.width = targetSize
         canvas.height = targetSize
@@ -165,11 +189,13 @@ export class GifProcessor {
         }
 
         gif.on('finished', (blob: Blob) => {
+          cleanup()
           resolve(blob)
         })
 
         gif.render()
       } catch (error) {
+        cleanup()
         reject(error)
       }
     })
@@ -177,30 +203,47 @@ export class GifProcessor {
 
   private static async processStaticImage(file: File, targetSize: number, maxFileSize: number): Promise<Blob> {
     return new Promise(async (resolve, reject) => {
-      const img = await this.loadImage(file)
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')!
-      
-      canvas.width = targetSize
-      canvas.height = targetSize
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      
-      const scale = Math.min(targetSize / img.width, targetSize / img.height)
-      const scaledWidth = img.width * scale
-      const scaledHeight = img.height * scale
-      const offsetX = (targetSize - scaledWidth) / 2
-      const offsetY = (targetSize - scaledHeight) / 2
-      
-      ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob)
-        } else {
-          reject(new Error('Failed to create blob'))
+      let img: HTMLImageElement | null = null
+      let canvas: HTMLCanvasElement | null = null
+
+      const cleanup = () => {
+        if (img?.src) URL.revokeObjectURL(img.src)
+        if (canvas) {
+          canvas.width = 0
+          canvas.height = 0
         }
-      }, 'image/png', 0.95)
+      }
+
+      try {
+        img = await this.loadImage(file)
+        canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')!
+
+        canvas.width = targetSize
+        canvas.height = targetSize
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        const scale = Math.min(targetSize / img.width, targetSize / img.height)
+        const scaledWidth = img.width * scale
+        const scaledHeight = img.height * scale
+        const offsetX = (targetSize - scaledWidth) / 2
+        const offsetY = (targetSize - scaledHeight) / 2
+
+        ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight)
+
+        canvas.toBlob((blob) => {
+          cleanup()
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Failed to create blob'))
+          }
+        }, 'image/png', 0.95)
+      } catch (error) {
+        cleanup()
+        reject(error)
+      }
     })
   }
   

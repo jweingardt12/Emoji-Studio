@@ -22,6 +22,7 @@ interface EmojiDataContextType {
   setEmojiData: React.Dispatch<React.SetStateAction<Emoji[]>>
   loading: boolean
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
+  error: string | null
   filterByDateRange: (start: Date, end: Date) => Emoji[]
   stats: ReturnType<typeof calculateEmojiStats> | null
   userLeaderboard: ReturnType<typeof getUserLeaderboard>
@@ -42,6 +43,7 @@ const EmojiDataContext = createContext<EmojiDataContextType | undefined>(undefin
 export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [emojiData, setEmojiDataInternal] = useState<Emoji[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [useDemoData, setUseDemoData] = useState(false)
   const [demoTimeRange, setDemoTimeRange] = useState("90d")
   const [hasRealData, setHasRealData] = useState(false)
@@ -182,8 +184,9 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setHasRealData(false)
         setUseDemoData(false)
       }
-    } catch (error) {
-      console.error("Error loading emoji data from storage:", error)
+    } catch (err) {
+      console.error("Error loading emoji data from storage:", err)
+      setError(err instanceof Error ? err.message : "Failed to load emoji data")
       setHasRealData(false)
       setUseDemoData(false)
     } finally {
@@ -313,6 +316,7 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setEmojiData,
     loading: loading || (useDemoData && demoLoading),
     setLoading,
+    error,
     filterByDateRange,
     stats: useDemoData && demoStats ? demoStats : stats,
     userLeaderboard: useDemoData && demoLeaderboard.length > 0 ? demoLeaderboard : userLeaderboard,

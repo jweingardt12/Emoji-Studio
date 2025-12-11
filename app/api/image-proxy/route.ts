@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
+import { applyRateLimit } from "@/lib/utils/api-security"
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResponse = await applyRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   const { searchParams } = new URL(request.url);
   const imageUrl = searchParams.get('url');
 
@@ -9,11 +15,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Validate the URL to prevent potential SSRF vulnerabilities if needed, though for known emoji sources it might be less critical.
-    // For example, ensure it's an http/https URL and optionally restrict to known domains.
-    const parsedUrl = new URL(imageUrl);
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-      return new NextResponse('Invalid image URL protocol', { status: 400 });
+    // Validate URL - only allow whitelisted image domains
+    const validation = validateImageProxyUrl(imageUrl);
+    if (!validation.valid) {
+      return new NextResponse(validation.error || 'Invalid image URL', { status: 400 });
     }
 
     const response = await fetch(imageUrl, {
@@ -43,8 +48,9 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(imageBlob, { status: 200, headers });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Image proxy error for URL ${imageUrl}:`, error);
-    return new NextResponse(`Error fetching image: ${error.message}`, { status: 500 });
+    const sanitized = sanitizeErrorResponse(error, "Error fetching image")
+    return new NextResponse(sanitized.message, { status: 500 });
   }
 }

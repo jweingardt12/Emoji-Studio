@@ -1,5 +1,7 @@
-// SECURITY WARNING: This endpoint handles Slack API requests. Do NOT expose to untrusted users.
+// Slack API proxy endpoint - handles emoji list requests
 import { type NextRequest, NextResponse } from "next/server"
+import { validateProxyUrl, sanitizeErrorResponse, redactSensitive, shouldLogSensitive } from "@/lib/utils/url-validation"
+import { applyRateLimit } from "@/lib/utils/api-security"
 
 // Interface for the curl request object
 interface SlackCurlRequest {
@@ -29,6 +31,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await applyRateLimit(request)
+    if (rateLimitResponse) return rateLimitResponse
+
     // Parse the request body
     const body = await request.json()
     const curlRequest = body.curlRequest
@@ -37,7 +43,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid request: missing URL" }, { status: 400 })
     }
 
-    console.log("Received curl request:", JSON.stringify(curlRequest, null, 2))
+    // Validate URL - only allow slack.com domains
+    const validation = validateProxyUrl(curlRequest.url)
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 })
+    }
+
+    // Log request without sensitive data
+    if (shouldLogSensitive()) {
+      console.log("Received curl request (dev mode):", JSON.stringify(curlRequest, null, 2))
+    } else {
+      console.log("Received curl request for URL:", curlRequest.url?.split("?")[0] || "[no url]")
+    }
 
     // Ensure _x_id is in the URL
     const xIdMatch = curlRequest.url.match(/[?&]_x_id=([^&\s'"]+)/)
@@ -137,13 +154,13 @@ export async function POST(request: NextRequest) {
       // Check if token exists in formData
       const hasToken = "token" in curlRequest.formData
       console.log("[Proxy] Token exists in formData:", hasToken)
-      
+
       // If token is missing but we found one in the URL or elsewhere, add it
       if (!hasToken && curlRequest.url) {
         const tokenMatch = curlRequest.url.match(/[?&]token=([^&\s'"]+)/)
         if (tokenMatch && tokenMatch[1]) {
           params.append("token", tokenMatch[1])
-          console.log("[Proxy] Added token from URL:", tokenMatch[1].substring(0, 10) + "...")
+          console.log("[Proxy] Added token from URL: [REDACTED]")
         }
       }
 
@@ -151,9 +168,10 @@ export async function POST(request: NextRequest) {
       for (const [key, value] of Object.entries(curlRequest.formData)) {
         if (value !== undefined && value !== null && value !== "") {
           params.append(key, String(value))
-          // Don't log full token value for security
-          const logValue = key.includes("token") ? String(value).substring(0, 10) + "..." : value
-          console.log(`Added form field: ${key}=${logValue}`)
+          // Never log token values
+          if (shouldLogSensitive() && !key.includes("token")) {
+            console.log(`Added form field: ${key}=${value}`)
+          }
         }
       }
 
@@ -171,8 +189,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("Making request to Slack API with method:", options.method)
-    console.log("Headers:", options.headers ? JSON.stringify(options.headers) : "(none)")
-    console.log("Body:", options.body)
+    // Only log headers in development, and redact sensitive ones
+    if (shouldLogSensitive()) {
+      console.log("Headers:", options.headers ? JSON.stringify(options.headers) : "(none)")
+    }
+    console.log("Body length:", (options.body as string)?.length || 0)
 
     // Ensure we have all required headers for Slack auth
     if (options.headers && typeof options.headers === 'object') {
@@ -332,21 +353,22 @@ export async function POST(request: NextRequest) {
       }
     } catch (fetchError) {
       console.error("Fetch error:", fetchError)
+      const sanitized = sanitizeErrorResponse(fetchError, "Error fetching from Slack API")
       return NextResponse.json(
         {
-          error: `Error fetching from Slack API: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`,
-          details: fetchError instanceof Error ? fetchError.stack : undefined,
+          error: sanitized.message,
+          ...(sanitized.details && { details: sanitized.details }),
         },
         { status: 500 },
       )
     }
   } catch (error) {
     console.error("Error processing Slack emoji request:", error)
+    const sanitized = sanitizeErrorResponse(error, "Internal server error")
     return NextResponse.json(
       {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        error: sanitized.message,
+        ...(sanitized.details && { details: sanitized.details }),
       },
       { status: 500 },
     )

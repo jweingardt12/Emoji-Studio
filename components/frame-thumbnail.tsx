@@ -21,8 +21,22 @@ interface FrameThumbnailProps {
   canSelect: boolean
 }
 
-// Global cache for frame thumbnails
+// Global cache for frame thumbnails with LRU eviction
+const MAX_CACHE_SIZE = 100
 const thumbnailCache = new Map<string, string>()
+
+// Helper to add to cache with LRU eviction
+function addToCache(key: string, value: string) {
+  // If cache is full, remove oldest entries
+  if (thumbnailCache.size >= MAX_CACHE_SIZE) {
+    // Delete the first (oldest) 20 entries
+    const keysToDelete = Array.from(thumbnailCache.keys()).slice(0, 20)
+    for (const k of keysToDelete) {
+      thumbnailCache.delete(k)
+    }
+  }
+  thumbnailCache.set(key, value)
+}
 
 export function FrameThumbnail({
   frame,
@@ -118,7 +132,7 @@ export function FrameThumbnail({
 
       // Convert to data URL and cache it
       const dataUrl = canvas.toDataURL('image/jpeg', 0.7) // Use JPEG for smaller size
-      thumbnailCache.set(cacheKey, dataUrl)
+      addToCache(cacheKey, dataUrl)
       setThumbnailUrl(dataUrl)
       
       // Release the temporary canvas back to the pool

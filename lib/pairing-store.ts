@@ -36,23 +36,16 @@ function cleanupExpired() {
 }
 
 function randomCode(): string {
-  // 4 digit numeric code; avoid leading zeros by forcing range 1000-9999
-  return String(Math.floor(1000 + Math.random() * 9000))
+  // 6 digit numeric code using cryptographically secure randomness
+  // Range: 100000-999999 (avoids leading zeros)
+  const crypto = require("crypto") as typeof import("crypto")
+  return String(crypto.randomInt(100000, 1000000))
 }
 
 function randomSid(length = 12): string {
-  // Generate an alphanumeric session id suitable for QR links (short)
-  // Use crypto if available
-  try {
-    // @ts-ignore
-    const cryptoMod = require("crypto") as typeof import("crypto")
-    return cryptoMod.randomBytes(Math.ceil(length / 2)).toString("hex").slice(0, length)
-  } catch {
-    let out = ""
-    const chars = "abcdef0123456789"
-    for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)]
-    return out
-  }
+  // Generate an alphanumeric session id using crypto (required, no fallback)
+  const crypto = require("crypto") as typeof import("crypto")
+  return crypto.randomBytes(Math.ceil(length / 2)).toString("hex").slice(0, length)
 }
 
 export function createPairing(curl: string): { code: string; expiresAt: number } {

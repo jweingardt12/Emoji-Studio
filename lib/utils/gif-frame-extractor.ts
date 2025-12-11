@@ -292,15 +292,19 @@ export class GifFrameExtractor {
       tempCanvas.width = frame.dims.width
       tempCanvas.height = frame.dims.height
       const tempCtx = tempCanvas.getContext('2d')
-      
+
       if (tempCtx) {
         tempCtx.putImageData(patchData, 0, 0)
         ctx.drawImage(tempCanvas, frame.dims.left, frame.dims.top)
       }
-      
+
+      // Clean up temp canvas
+      tempCanvas.width = 0
+      tempCanvas.height = 0
+
       // Capture composited frame
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      
+
       extractedFrames.push({
         data: new ImageData(
           new Uint8ClampedArray(imageData.data),
@@ -309,6 +313,11 @@ export class GifFrameExtractor {
         ),
         delay: frame.delay * 10 || 100
       })
+
+      // Yield to main thread every 10 frames to prevent UI freezing
+      if (i % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
     }
     
     if (extractedFrames.length === 0) {
@@ -381,7 +390,7 @@ export class GifFrameExtractor {
       
       if (tempCtx) {
         tempCtx.putImageData(frameData, 0, 0)
-        
+
         // Draw with proper compositing
         ctx.globalCompositeOperation = 'source-over'
         ctx.drawImage(
@@ -392,10 +401,14 @@ export class GifFrameExtractor {
           frameInfo.height || reader.height
         )
       }
-      
+
+      // Clean up temp canvas
+      tempCanvas.width = 0
+      tempCanvas.height = 0
+
       // Capture composited result
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      
+
       extractedFrames.push({
         data: new ImageData(
           new Uint8ClampedArray(imageData.data),
@@ -404,8 +417,17 @@ export class GifFrameExtractor {
         ),
         delay: frameInfo.delay * 10 || 100
       })
+
+      // Yield to main thread every 10 frames to prevent UI freezing
+      if (i % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 0))
+      }
     }
-    
+
+    // Clean up main canvas
+    canvas.width = 0
+    canvas.height = 0
+
     return extractedFrames
   }
   
