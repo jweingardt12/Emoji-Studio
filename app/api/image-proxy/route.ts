@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
-import { applyRateLimit } from "@/lib/utils/api-security"
 
 export async function GET(request: NextRequest) {
-  // Apply rate limiting
-  const rateLimitResponse = await applyRateLimit(request)
-  if (rateLimitResponse) return rateLimitResponse
+  // Note: Rate limiting removed to support bulk emoji downloads (500+ emojis)
+  // This endpoint only proxies images and is low-risk for abuse
 
   const { searchParams } = new URL(request.url);
   const imageUrl = searchParams.get('url');

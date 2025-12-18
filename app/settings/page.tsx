@@ -283,7 +283,13 @@ export default function SettingsPage() {
         localStorage.setItem("workspace", ws || "")
         localStorage.setItem("emojiCount", processedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-        window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+          detail: {
+            emojiData: processedData,
+            workspace: ws || "slack-workspace",
+            timestamp: Date.now()
+          }
+        }))
         toast.success(`Refreshed ${processedData.length} emojis`)
       } else {
         toast.error("No emoji data returned")

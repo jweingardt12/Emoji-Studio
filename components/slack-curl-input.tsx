@@ -242,7 +242,13 @@ export function SlackCurlInput() {
       localStorage.setItem("lastFetchTime", new Date().toISOString())
 
       // Fire event to notify other components that emoji data has been updated
-      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+        detail: {
+          emojiData: demoData,
+          workspace: "demo-workspace",
+          timestamp: Date.now()
+        }
+      }))
 
       setLoadingStage(`Demo data loaded!`)
       setProgress(100)
@@ -389,7 +395,13 @@ export function SlackCurlInput() {
       localStorage.setItem("lastFetchTime", new Date().toISOString())
 
       // Fire event to notify other components that emoji data has been updated
-      window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+        detail: {
+          emojiData: typedEmojis,
+          workspace,
+          timestamp: Date.now()
+        }
+      }))
 
       // Get the display name - preserve custom name if syncing same workspace
       const currentWorkspace = localStorage.getItem("workspace")

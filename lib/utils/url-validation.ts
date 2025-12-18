@@ -8,7 +8,7 @@ const ALLOWED_DOMAINS = [
   'slack.com',
   'slack-edge.com',
   'slackmojis.com',
-  'a.]slack-edge.com',
+  'a.slack-edge.com',
   'ca.slack-edge.com',
   'emoji.slack-edge.com',
   'files.slack.com',

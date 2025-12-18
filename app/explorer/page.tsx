@@ -27,6 +27,7 @@ import { RefreshButton } from "@/components/refresh-button"
 import { cn } from "@/lib/utils"
 import { OptimizedEmojiImage } from "@/components/optimized-emoji-image"
 import { VirtualizedExplorerGrid } from "@/components/virtualized-explorer-grid"
+import { downloadEmojisInParallel, saveZipFile } from "@/lib/utils/download-utils"
 
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
@@ -280,41 +281,22 @@ function ExplorerPage() {
   const downloadSelectedEmojis = async () => {
     if (selectedEmojis.size === 0) return;
 
-    const [JSZip, { saveAs }] = await Promise.all([
-      import('jszip').then(m => m.default),
-      import('file-saver')
-    ]);
-
     sonner.loading(`Downloading ${selectedEmojis.size} emojis...`, { id: "bulk-download-selected" });
 
     try {
-      const zip = new JSZip();
       const emojisToDownload = sortedEmojis.filter(e => selectedEmojis.has(e.name));
 
-      for (const emoji of emojisToDownload) {
-        try {
-          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
-          const response = await fetch(proxyUrl);
+      const { zip, errors, successCount } = await downloadEmojisInParallel(emojisToDownload, {
+        batchSize: 10,
+      });
 
-          if (!response.ok) continue;
+      await saveZipFile(zip, `emoji-selection-${Date.now()}.zip`);
 
-          const blob = await response.blob();
-          let extension = '.png';
-          const contentType = response.headers.get('content-type');
-          if (contentType?.includes('gif')) extension = '.gif';
-          else if (contentType?.includes('jpeg')) extension = '.jpg';
-
-          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`;
-          zip.file(fileName, blob);
-        } catch (error) {
-          console.error(`Failed to download ${emoji.name}`, error);
-        }
+      if (errors.length > 0) {
+        sonner.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download-selected" });
+      } else {
+        sonner.success(`Downloaded ${successCount} emojis`, { id: "bulk-download-selected" });
       }
-
-      const content = await zip.generateAsync({ type: 'blob' });
-      saveAs(content, `emoji-selection-${Date.now()}.zip`);
-
-      sonner.success(`Downloaded ${selectedEmojis.size} emojis`, { id: "bulk-download-selected" });
       clearSelection();
     } catch (error) {
       sonner.error("Failed to download selected emojis", { id: "bulk-download-selected" });
@@ -337,20 +319,14 @@ function ExplorerPage() {
   const handleDownloadAll = async () => {
     if (!nonAliasCount || isDownloading) return;
 
-    // Dynamically import JSZip and file-saver to reduce initial bundle size
-    const [JSZip, { saveAs }] = await Promise.all([
-      import('jszip').then(m => m.default),
-      import('file-saver')
-    ]);
-
-    abortControllerRef.current = new AbortController(); // Initialize AbortController
+    abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
     setIsDownloading(true);
     setDownloadError(null);
     setImageErrors({});
-    
-    // Initialize progress states - filter out aliases
+
+    // Filter out aliases
     const nonAliasEmojis = sortedEmojis.filter(emoji => !emoji.is_alias && !emoji.url.startsWith('alias:'));
     analytics.trackDownloadAllClicked(nonAliasEmojis.length, searchQuery);
     const filesToProcess = nonAliasEmojis.length;
@@ -358,114 +334,58 @@ function ExplorerPage() {
     setProcessedFileCount(0);
     setDownloadProgress(0);
 
-    const zip = new JSZip();
-    let currentFileNumber = 0; // To update progress
-
     try {
-      for (const emoji of nonAliasEmojis) {
-        if (signal.aborted) {
-          console.log('Download aborted, breaking loop.');
-          // No need to set error here, handleCancelDownload does it.
-          break; // Exit loop if download was cancelled
-        }
-        
-        // Aliases are already filtered out, but keeping this check for safety
-        if (emoji.is_alias || emoji.url.startsWith('alias:')) {
-          continue;
-        }
-        
-        currentFileNumber++;
-        setProcessedFileCount(currentFileNumber);
-        if (filesToProcess > 0) {
-          setDownloadProgress(Math.round((currentFileNumber / filesToProcess) * 100));
-        }
-
-        try {
-          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`;
-          const response = await fetch(proxyUrl, { signal: abortControllerRef.current.signal });
-          
-          if (!response.ok) {
-            handleImageError(emoji.name); 
-            continue;
-          }
-          const blob = await response.blob();
-          let extension = '.png'; // Default extension
-          const contentType = response.headers.get('content-type');
-          if (contentType) {
-            if (contentType.includes('gif')) extension = '.gif';
-            else if (contentType.includes('jpeg')) extension = '.jpg';
-            else if (contentType.includes('png')) extension = '.png';
-          }
-          // Sanitize emoji name for filename
-          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`;
-          zip.file(fileName, blob);
-        } catch (error: any) { 
-          if (error.name === 'AbortError') {
-            break; // Exit loop if fetch was aborted
-          }
-          handleImageError(emoji.name);
-        }
-      }
+      const { zip, errors, successCount } = await downloadEmojisInParallel(nonAliasEmojis, {
+        batchSize: 10,
+        signal,
+        onProgress: (processed, total) => {
+          setProcessedFileCount(processed);
+          setDownloadProgress(Math.round((processed / total) * 100));
+        },
+      });
 
       if (signal.aborted) {
-        // If aborted, handleCancelDownload has already managed state.
         return;
       }
 
-      if (Object.keys(imageErrors).length > 0 && processedFileCount < totalFilesToDownload) {
-        setDownloadError(`Download completed with ${Object.keys(imageErrors).length} errors. Some images may be missing.`);
-        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'partial_completion_with_errors');
-      } else if (processedFileCount === 0 && totalFilesToDownload > 0) {
+      // Handle errors
+      if (errors.length > 0) {
+        errors.forEach(name => handleImageError(name));
+        setDownloadError(`Download completed with ${errors.length} errors. Some images may be missing.`);
+        analytics.trackDownloadAllFailed(filesToProcess, searchQuery, 'partial_completion_with_errors');
+      } else if (successCount === 0 && filesToProcess > 0) {
         setDownloadError('No emojis were processed. Please check the console for errors.');
-        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'no_emojis_processed');
-      } else if (totalFilesToDownload === 0) {
+        analytics.trackDownloadAllFailed(filesToProcess, searchQuery, 'no_emojis_processed');
+      } else if (filesToProcess === 0) {
         setDownloadError('No emojis found to download (after filtering aliases).');
         analytics.trackDownloadAllFailed(0, searchQuery, 'no_emojis_to_download');
       } else {
-        setDownloadError(null); // Clear previous errors if successful
+        setDownloadError(null);
       }
 
-      // Only generate zip if not aborted and there are files
-      if (zip.files && Object.keys(zip.files).length > 0) {
-        zip.generateAsync({ type: 'blob' })
-          .then((content) => {
-            if (signal.aborted) return; // Check again before saving
-            saveAs(content, 'emoji-download.zip'); // Updated filename
-            analytics.trackDownloadAllSuccess(totalFilesToDownload, searchQuery);
-          })
-          .catch((err) => {
-            if (err.name === 'AbortError') {
-              console.log('Zip generation aborted.');
-              return;
-            }
-            setDownloadError('Failed to generate zip file. Please try again.');
-            analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'zip_generation_failed');
-          });
-      } else if (!signal.aborted) {
-        if (totalFilesToDownload > 0) { // If there were files expected but none were added to zip (e.g. all errored)
-          setDownloadError('No images could be added to the zip. Check for errors.');
-          analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'empty_zip_due_to_errors');
-        }
+      // Save the zip file
+      if (successCount > 0) {
+        await saveZipFile(zip, 'emoji-download.zip');
+        analytics.trackDownloadAllSuccess(filesToProcess, searchQuery);
       }
 
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        // No need to set error here, handleCancelDownload does it.
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Handled by handleCancelDownload
       } else {
         setDownloadError('An unexpected error occurred. Please try again.');
-        analytics.trackDownloadAllFailed(totalFilesToDownload, searchQuery, 'unexpected_error');
+        analytics.trackDownloadAllFailed(filesToProcess, searchQuery, 'unexpected_error');
       }
     } finally {
-      // Only set timeout if not aborted, as handleCancelDownload hides modal immediately
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => {
           setIsDownloading(false);
           setDownloadProgress(0);
           setProcessedFileCount(0);
           setTotalFilesToDownload(0);
-        }, 2000); // Keep overlay for 2 seconds after completion/error
+        }, 2000);
       }
-      abortControllerRef.current = null; // Clean up controller ref
+      abortControllerRef.current = null;
     }
   };
 
