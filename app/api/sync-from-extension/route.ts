@@ -1,7 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sanitizeErrorResponse } from "@/lib/utils/url-validation"
+import { applyRateLimit } from "@/lib/utils/api-security"
+
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'chrome-extension://', // Allow any Chrome extension (IDs are dynamic)
+  'https://app.emojistudio.xyz',
+  'https://emojistudio.xyz',
+  'http://localhost:3000', // Development
+]
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false
+  return ALLOWED_ORIGINS.some(allowed =>
+    origin.startsWith(allowed) || origin === allowed
+  )
+}
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await applyRateLimit(request)
+    if (rateLimitResponse) return rateLimitResponse
+
+    // Validate origin
+    const origin = request.headers.get('origin')
+    if (!isAllowedOrigin(origin)) {
+      console.warn(`[Sync API] Rejected request from unauthorized origin: ${origin}`)
+      return NextResponse.json(
+        { error: 'Unauthorized origin' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
 
     // Accept both 'emoji' and 'emojiData' for backward compatibility with extension
@@ -59,16 +90,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Sync API] Error processing sync request:', error)
 
-    // Provide more helpful error messages
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const isJSONError = errorMessage.includes('JSON')
-
+    const sanitized = sanitizeErrorResponse(error, 'Failed to process sync request')
     return NextResponse.json(
       {
-        error: 'Failed to process sync request',
-        details: isJSONError
-          ? 'Invalid JSON in request body. Ensure data is properly formatted.'
-          : 'Server error processing request. Check server logs for details.',
+        error: sanitized.message,
+        ...(sanitized.details && { details: sanitized.details }),
         timestamp: new Date().toISOString()
       },
       { status: 500 }
@@ -78,12 +104,18 @@ export async function POST(request: NextRequest) {
 
 // Add CORS headers for the Chrome extension
 export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+
+  // Only return CORS headers for allowed origins
+  const corsOrigin = isAllowedOrigin(origin) ? origin : 'https://app.emojistudio.xyz'
+
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin!,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400', // Cache preflight for 24 hours
     },
   })
 }

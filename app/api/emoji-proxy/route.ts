@@ -1,10 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
+import { applyRateLimit } from "@/lib/utils/api-security"
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResponse = await applyRateLimit(request)
+  if (rateLimitResponse) return rateLimitResponse
+
   const url = request.nextUrl.searchParams.get("url")
 
   if (!url) {
     return new NextResponse("Missing URL parameter", { status: 400 })
+  }
+
+  // Validate URL - only allow whitelisted domains
+  const validation = validateImageProxyUrl(url)
+  if (!validation.valid) {
+    return new NextResponse(validation.error || "Invalid URL", { status: 400 })
   }
 
   try {
@@ -42,8 +54,9 @@ export async function GET(request: NextRequest) {
         "Access-Control-Allow-Origin": "*", // Allow cross-origin requests
       },
     })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error proxying image:", error)
-    return new NextResponse(`Error proxying image: ${error}`, { status: 500 })
+    const sanitized = sanitizeErrorResponse(error, "Error proxying image")
+    return new NextResponse(sanitized.message, { status: 500 })
   }
 }

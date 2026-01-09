@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Share2 } from "lucide-react"
 import { LeaderboardShareModal } from "@/components/leaderboard-share-modal"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
@@ -50,7 +51,7 @@ function LeaderboardPage() {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     };
   }, [])
-  const { emojiData, filterByDateRange, loading } = useEmojiData()
+  const { emojiData, filterByDateRange, loading, workspace, workspaceDisplayName } = useEmojiData()
   const [dateRange, setDateRange] = useState<import("@/components/leaderboard").DateRange>("all")
 
   const [error, setError] = useState(null)
@@ -118,10 +119,8 @@ function LeaderboardPage() {
     track("Leaderboard: Toggle Show Inactive Users", { active: value });
   };
 
-  // Get workspace name from localStorage
-  const workspaceName = typeof window !== 'undefined'
-    ? localStorage.getItem("workspace") || "Workspace"
-    : "Workspace";
+  // Get workspace display name from context
+  const workspaceName = getWorkspaceDisplayName(workspaceDisplayName, workspace)
 
   if (!isClient || !now) return null;
   
@@ -184,7 +183,7 @@ function LeaderboardPage() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setShowShareModal(true)}
-                  className="h-10 px-4 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                  className="h-10 px-6 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
                   disabled={filteredLeaderboard.length === 0}
                 >
                   <Share2 className="h-4 w-4" />
@@ -217,7 +216,7 @@ function LeaderboardPage() {
               </h2>
               <Button
                 onClick={() => setShowShareModal(true)}
-                className="h-10 px-5 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                className="h-10 px-12 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
                 disabled={filteredLeaderboard.length === 0}
               >
                 <Share2 className="h-4 w-4" />

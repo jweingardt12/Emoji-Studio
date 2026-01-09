@@ -10,6 +10,7 @@ import { Emoji } from "@/lib/services/emoji-service"
 import { EmojiImportStatus } from "@/components/emoji-import-status"
 import { useTrack } from '@/lib/hooks/use-track'
 import { toast } from "sonner"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 export function ChromeExtensionHandler() {
   const searchParams = useSearchParams()
@@ -125,7 +126,13 @@ export function ChromeExtensionHandler() {
 
       // Only show success toast if this is actually a NEW sync (not just loading cached data)
       if (isNewSync || forceShowToast) {
-        toast.success(`Synced ${nonAliasCount} emojis from ${data.workspace}`, {
+        // Get the display name - preserve custom name if syncing same workspace
+        const currentWorkspace = localStorage.getItem("workspace")
+        const displayName = currentWorkspace === data.workspace
+          ? getWorkspaceDisplayName(localStorage.getItem("workspaceDisplayName"), data.workspace)
+          : getWorkspaceDisplayName(null, data.workspace)
+
+        toast.success(`Synced ${nonAliasCount} emojis from ${displayName}`, {
           description: `Last updated: ${new Date(data.lastFetchTime).toLocaleString()}`,
           duration: 4000,
         })
@@ -329,9 +336,15 @@ export function ChromeExtensionHandler() {
         }
       }));
 
+      // Get the display name - preserve custom name if syncing same workspace
+      const currentStoredWorkspace = localStorage.getItem("workspace")
+      const successDisplayName = currentStoredWorkspace === workspace
+        ? getWorkspaceDisplayName(localStorage.getItem("workspaceDisplayName"), workspace)
+        : getWorkspaceDisplayName(null, workspace)
+
       setLoadingStage(`Success! Emojis loaded`)
       setProgress(100)
-      setSuccess(`Successfully synced emojis from ${workspace}`)
+      setSuccess(`Successfully synced emojis from ${successDisplayName}`)
       setIsLoading(false)
 
       track('chrome_extension_emojis_fetched', {

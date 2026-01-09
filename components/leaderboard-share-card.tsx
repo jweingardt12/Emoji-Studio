@@ -62,13 +62,6 @@ function formatDisplayName(name: string | undefined): string {
   return `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`
 }
 
-// Format workspace name: "slack-workspace" → "Slack Workspace"
-function formatWorkspaceName(workspace: string): string {
-  return workspace
-    .split(/[-_]/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
-}
 
 // Medal accent colors for top 3
 const MEDAL_COLORS = {
@@ -133,6 +126,7 @@ function ShareLeaderboardRow({ user, rank, twoColumn = false, showEmojis = false
               src={proxyImageUrl(emoji.url)}
               alt={emoji.name}
               crossOrigin="anonymous"
+              data-is-gif={emoji.url?.toLowerCase().includes('.gif') ? 'true' : undefined}
               className={cn(
                 "rounded-sm object-contain",
                 twoColumn ? "w-4 h-4" : "w-5 h-5",
@@ -176,7 +170,6 @@ export function LeaderboardShareCard({
       style={{
         width: 390,
         height: 390,
-        borderRadius: 24,
         background: `linear-gradient(to bottom, ${bg.from}, ${bg.to})`,
       }}
     >
@@ -210,7 +203,7 @@ export function LeaderboardShareCard({
 
       {/* Border overlay */}
       <div
-        className="absolute inset-0 pointer-events-none rounded-[24px]"
+        className="absolute inset-0 pointer-events-none"
         style={{
           border: "1px solid rgba(255,255,255,0.12)",
         }}
@@ -221,7 +214,7 @@ export function LeaderboardShareCard({
         {/* Header */}
         <div className="text-center space-y-0.5 shrink-0">
           <h2 className="text-xl font-bold text-white">🏆 Emoji Creation Leaderboard 🏆</h2>
-          <p className="text-sm font-medium text-white/80">{formatWorkspaceName(workspaceName)}</p>
+          <p className="text-sm font-medium text-white/80">{workspaceName}</p>
           <p className="text-xs text-white/60">{DATE_RANGE_LABELS[timeRange]}</p>
         </div>
 

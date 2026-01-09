@@ -31,8 +31,8 @@ export interface UseWrappedStatsResult {
  * Hook to calculate and memoize Wrapped statistics
  */
 export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOptions): UseWrappedStatsResult {
-  const currentYear = new Date().getFullYear()
-  const year = options?.year ?? currentYear
+  const wrappedYear = new Date().getFullYear() - 1
+  const year = options?.year ?? wrappedYear
 
   const availableYears = useMemo(() => {
     if (!emojiData || emojiData.length === 0) return []

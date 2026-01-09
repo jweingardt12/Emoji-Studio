@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validateProxyUrl, sanitizeErrorResponse, shouldLogSensitive } from "@/lib/utils/url-validation"
+import { applyRateLimit } from "@/lib/utils/api-security"
 
 export async function POST(request: NextRequest) {
   console.log('API emoji-manage endpoint hit')
-  
+
   try {
+    // Apply rate limiting
+    const rateLimitResponse = await applyRateLimit(request)
+    if (rateLimitResponse) return rateLimitResponse
+
     const body = await request.json()
     const { action, emojiName, newName, newAlias, imageData, workspace, slackCurl } = body
     
@@ -152,7 +158,11 @@ export async function POST(request: NextRequest) {
         }
 
         console.log('Processing delete for emoji:', emojiName)
-        console.log('Using direct token:', directToken.substring(0, 10) + '...')
+        if (shouldLogSensitive()) {
+          console.log('Using direct token (dev):', directToken.substring(0, 10) + '...')
+        } else {
+          console.log('Using direct token: [REDACTED]')
+        }
 
         // Make the request exactly as the browser would
         const response = await fetch(`https://${workspace}.slack.com/api/emoji.remove`, {
@@ -180,8 +190,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('Emoji management error:', error)
-    return NextResponse.json({ 
-      error: error instanceof Error ? error.message : 'Failed to manage emoji' 
+    const sanitized = sanitizeErrorResponse(error, 'Failed to manage emoji')
+    return NextResponse.json({
+      error: sanitized.message,
+      ...(sanitized.details && { details: sanitized.details })
     }, { status: 500 })
   }
 }

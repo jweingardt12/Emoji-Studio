@@ -62,6 +62,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string>("")
   const [editedBlob, setEditedBlob] = useState<Blob | null>(null)
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const [originalImageData, setOriginalImageData] = useState<ImageData | null>(null)
@@ -447,7 +448,14 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
   useEffect(() => {
     if (originalImageData) {
-      applyAdjustments()
+      try {
+        setAdjustmentError(null)
+        applyAdjustments()
+      } catch (err) {
+        console.error("Error applying adjustments:", err)
+        setAdjustmentError(err instanceof Error ? err.message : "Failed to apply image adjustments")
+        toast.error("Failed to apply image adjustments")
+      }
     }
   }, [adjustments, removeBackground, makeHDR, hdrIntensity, originalImageData])
 

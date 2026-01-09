@@ -90,6 +90,54 @@ export function LeaderboardShareModal({
     }
   }, [open, track, userCount, dateRange])
 
+  // Freeze/unfreeze GIF animations in preview based on export format
+  useEffect(() => {
+    if (!open) return
+
+    const card = document.getElementById("leaderboard-share-card")
+    if (!card) return
+
+    const gifImages = card.querySelectorAll('img') as NodeListOf<HTMLImageElement>
+
+    if (exportFormat === "image") {
+      // Freeze GIFs by converting to static canvas snapshots
+      gifImages.forEach((img) => {
+        const isGif = img.src.toLowerCase().includes('.gif') || img.dataset.isGif === 'true'
+        if (!isGif || img.dataset.frozenSrc) return
+
+        img.dataset.originalAnimatedSrc = img.src
+
+        const freezeImage = () => {
+          try {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.naturalWidth || img.width || 64
+            canvas.height = img.naturalHeight || img.height || 64
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+              img.dataset.frozenSrc = 'true'
+              img.src = canvas.toDataURL('image/png')
+            }
+          } catch (e) {
+            // Ignore CORS errors for cross-origin images
+          }
+        }
+
+        if (img.complete) freezeImage()
+        else img.addEventListener('load', freezeImage, { once: true })
+      })
+    } else {
+      // Restore original GIF animations
+      gifImages.forEach((img) => {
+        if (img.dataset.originalAnimatedSrc) {
+          img.src = img.dataset.originalAnimatedSrc
+          delete img.dataset.originalAnimatedSrc
+          delete img.dataset.frozenSrc
+        }
+      })
+    }
+  }, [exportFormat, showEmojis, userCount, open])
+
   const getCardElement = useCallback((): HTMLElement | null => {
     return document.getElementById("leaderboard-share-card")
   }, [])
@@ -107,11 +155,12 @@ export function LeaderboardShareModal({
       }
 
       const originalSrc = img.src
-      const isGif = originalSrc.toLowerCase().includes(".gif")
+      const isGif = img.dataset.isGif === "true" || originalSrc.toLowerCase().includes(".gif")
 
-      // Mark GIF images
+      // Mark GIF images and store original URL for frame extraction
       if (isGif) {
         img.dataset.isGif = "true"
+        img.dataset.originalGifUrl = originalSrc  // Store for frame extraction later
       }
 
       // Skip converting GIFs if we want to preserve their animation
@@ -155,6 +204,7 @@ export function LeaderboardShareModal({
       originalSrcs.forEach((originalSrc, img) => {
         img.src = originalSrc
         delete img.dataset.isGif
+        delete img.dataset.originalGifUrl
       })
     }
   }, [])
@@ -185,6 +235,208 @@ export function LeaderboardShareModal({
     })
   }, [])
 
+  // Generate an animated GIF with actual GIF emoji frames
+  const generateAnimatedGif = useCallback(async (element: HTMLElement): Promise<Blob> => {
+    const { toCanvas } = await import("html-to-image")
+    const { parseGIF, decompressFrames } = await import("gifuct-js")
+
+    // Find all GIF emoji images
+    const gifEmojiImages = Array.from(element.querySelectorAll('img[data-is-gif="true"]')) as HTMLImageElement[]
+
+    // If no GIF emojis, create single-frame static GIF
+    if (gifEmojiImages.length === 0) {
+      return generateStaticGif(element)
+    }
+
+    const pixelRatio = 2
+    const cardRect = element.getBoundingClientRect()
+
+    // Calculate scale factor to compensate for CSS scale-[0.72] transform
+    const naturalWidth = element.offsetWidth
+    const naturalHeight = element.offsetHeight
+    const scaleX = naturalWidth / cardRect.width
+    const scaleY = naturalHeight / cardRect.height
+
+    // Extract frames from all GIF emojis
+    interface GifData {
+      frames: HTMLCanvasElement[]
+      delays: number[]
+      x: number
+      y: number
+      width: number
+      height: number
+    }
+
+    const gifDataPromises = gifEmojiImages.map(async (img): Promise<GifData | null> => {
+      const rect = img.getBoundingClientRect()
+      // Apply scale factor to get correct position relative to card
+      const x = (rect.left - cardRect.left) * scaleX * pixelRatio
+      const y = (rect.top - cardRect.top) * scaleY * pixelRatio
+      const width = rect.width * scaleX * pixelRatio
+      const height = rect.height * scaleY * pixelRatio
+
+      // Use stored original URL (before conversion to data URL)
+      const gifUrl = img.dataset.originalGifUrl || img.src
+
+      try {
+        const response = await fetch(gifUrl)
+        const arrayBuffer = await response.arrayBuffer()
+
+        const parsedGif = parseGIF(arrayBuffer)
+        const rawFrames = decompressFrames(parsedGif, true)
+
+        if (!rawFrames || rawFrames.length === 0) {
+          return null
+        }
+
+        // Create canvas for each frame with proper disposal handling
+        const frames: HTMLCanvasElement[] = []
+        const delays: number[] = []
+
+        // Create a persistent canvas for compositing frames
+        const compositeCanvas = document.createElement("canvas")
+        compositeCanvas.width = parsedGif.lsd.width
+        compositeCanvas.height = parsedGif.lsd.height
+        const compositeCtx = compositeCanvas.getContext("2d")!
+
+        for (let i = 0; i < rawFrames.length; i++) {
+          const frame = rawFrames[i]
+
+          // Handle disposal method from previous frame
+          if (i > 0) {
+            const prevFrame = rawFrames[i - 1]
+            const disposalType = prevFrame.disposalType
+
+            if (disposalType === 2) {
+              // Restore to background (clear the frame area)
+              compositeCtx.clearRect(
+                prevFrame.dims.left,
+                prevFrame.dims.top,
+                prevFrame.dims.width,
+                prevFrame.dims.height
+              )
+            } else if (disposalType === 3) {
+              // Restore to previous - we'd need to save/restore, simplify to background
+              compositeCtx.clearRect(
+                prevFrame.dims.left,
+                prevFrame.dims.top,
+                prevFrame.dims.width,
+                prevFrame.dims.height
+              )
+            }
+            // disposalType 0 or 1: do nothing (leave as-is)
+          }
+
+          // Create ImageData from frame patch
+          const frameCanvas = document.createElement("canvas")
+          frameCanvas.width = frame.dims.width
+          frameCanvas.height = frame.dims.height
+          const frameCtx = frameCanvas.getContext("2d")!
+
+          const imageData = frameCtx.createImageData(frame.dims.width, frame.dims.height)
+          imageData.data.set(frame.patch)
+          frameCtx.putImageData(imageData, 0, 0)
+
+          // Draw frame patch onto composite canvas
+          compositeCtx.drawImage(frameCanvas, frame.dims.left, frame.dims.top)
+
+          // Create output frame canvas at target size
+          const outputCanvas = document.createElement("canvas")
+          outputCanvas.width = width
+          outputCanvas.height = height
+          const outputCtx = outputCanvas.getContext("2d")!
+
+          // Draw composite canvas scaled to output size
+          outputCtx.drawImage(
+            compositeCanvas,
+            0, 0, compositeCanvas.width, compositeCanvas.height,
+            0, 0, width, height
+          )
+
+          frames.push(outputCanvas)
+          delays.push(frame.delay || 100)
+        }
+
+        return { frames, delays, x, y, width, height }
+      } catch (error) {
+        console.warn("Failed to extract GIF frames:", gifUrl, error)
+        return null
+      }
+    })
+
+    const allGifData = (await Promise.all(gifDataPromises)).filter((d): d is GifData => d !== null)
+
+    // If frame extraction failed for all GIFs, fall back to static
+    if (allGifData.length === 0) {
+      return generateStaticGif(element)
+    }
+
+    // Capture base card as canvas (with static images)
+    const baseCanvas = await toCanvas(element, { pixelRatio, cacheBust: true })
+
+    // Speed up playback by 2x
+    const speedMultiplier = 2
+    const maxGifDuration = Math.max(...allGifData.map(g => g.delays.reduce((a, b) => a + b, 0)))
+    const outputDuration = Math.min(maxGifDuration / speedMultiplier, 2000) // Cap at 2 seconds
+    const frameDelay = 33 // 30 FPS
+    const outputFrameCount = Math.ceil(outputDuration / frameDelay)
+
+    return new Promise((resolve, reject) => {
+      try {
+        const gif = new GIF({
+          workers: 2,
+          quality: 10,
+          width: baseCanvas.width,
+          height: baseCanvas.height,
+          workerScript: "/gif.worker.js",
+        })
+
+        // Create output frames with animated emojis composited
+        for (let frameIdx = 0; frameIdx < outputFrameCount; frameIdx++) {
+          const frameCanvas = document.createElement("canvas")
+          frameCanvas.width = baseCanvas.width
+          frameCanvas.height = baseCanvas.height
+          const frameCtx = frameCanvas.getContext("2d")!
+
+          // Draw base card
+          frameCtx.drawImage(baseCanvas, 0, 0)
+
+          // Apply speed multiplier to determine which frame to show from each GIF
+          const currentTime = frameIdx * frameDelay * speedMultiplier
+
+          // Overlay animated GIF frames at correct positions
+          for (const gifData of allGifData) {
+            // Calculate which frame to show based on current time (looping)
+            const totalGifDuration = gifData.delays.reduce((a, b) => a + b, 0)
+            const gifTime = currentTime % totalGifDuration
+
+            let accumulatedTime = 0
+            let frameToShow = 0
+            for (let i = 0; i < gifData.delays.length; i++) {
+              accumulatedTime += gifData.delays[i]
+              if (gifTime < accumulatedTime) {
+                frameToShow = i
+                break
+              }
+            }
+
+            const gifFrame = gifData.frames[frameToShow]
+            if (gifFrame) {
+              frameCtx.drawImage(gifFrame, gifData.x, gifData.y, gifData.width, gifData.height)
+            }
+          }
+
+          gif.addFrame(frameCanvas, { delay: frameDelay, copy: true })
+        }
+
+        gif.on("finished", (blob: Blob) => resolve(blob))
+        gif.render()
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }, [generateStaticGif])
+
   const handleCopy = useCallback(async () => {
     // Check if clipboard is supported on this device before even trying
     if (!supportsClipboardWriteImage() && (isIOS() || isWebView())) {
@@ -204,8 +456,8 @@ export function LeaderboardShareModal({
       restoreImages = await convertImagesToDataUrls(element)
 
       if (exportFormat === "gif") {
-        // Generate GIF and download (clipboard doesn't support GIF)
-        const gifBlob = await generateStaticGif(element)
+        // Generate animated GIF and download (clipboard doesn't support GIF)
+        const gifBlob = await generateAnimatedGif(element)
         const baseFilename = `leaderboard-${workspaceName.toLowerCase().replace(/\s+/g, "-")}-${dateRange}`
         const downloadResult = await downloadGif(gifBlob, `${baseFilename}.gif`)
 
@@ -255,7 +507,7 @@ export function LeaderboardShareModal({
       restoreImages?.()
       setIsGenerating(false)
     }
-  }, [getCardElement, convertImagesToDataUrls, generateStaticGif, exportFormat, workspaceName, userCount, backgroundStyle, dateRange, showEmojis, track])
+  }, [getCardElement, convertImagesToDataUrls, generateAnimatedGif, exportFormat, workspaceName, userCount, backgroundStyle, dateRange, showEmojis, track])
 
   const handleDownload = useCallback(async () => {
     const element = getCardElement()
@@ -272,7 +524,7 @@ export function LeaderboardShareModal({
       let downloadResult: DownloadResult
 
       if (exportFormat === "gif") {
-        const gifBlob = await generateStaticGif(element)
+        const gifBlob = await generateAnimatedGif(element)
         downloadResult = await downloadGif(gifBlob, `${baseFilename}.gif`)
       } else {
         const blob = await generateImage(element)
@@ -309,7 +561,7 @@ export function LeaderboardShareModal({
       restoreImages?.()
       setIsGenerating(false)
     }
-  }, [getCardElement, convertImagesToDataUrls, generateStaticGif, workspaceName, dateRange, exportFormat, userCount, backgroundStyle, showEmojis, track])
+  }, [getCardElement, convertImagesToDataUrls, generateAnimatedGif, workspaceName, dateRange, exportFormat, userCount, backgroundStyle, showEmojis, track])
 
   const handleShare = useCallback(async () => {
     const element = getCardElement()
@@ -324,7 +576,7 @@ export function LeaderboardShareModal({
 
       let result: ShareResult
       if (exportFormat === "gif") {
-        const gifBlob = await generateStaticGif(element)
+        const gifBlob = await generateAnimatedGif(element)
         result = await shareGifWithResult(
           gifBlob,
           `${workspaceName} Emoji Leaderboard`,
@@ -365,7 +617,7 @@ export function LeaderboardShareModal({
       restoreImages?.()
       setIsGenerating(false)
     }
-  }, [getCardElement, convertImagesToDataUrls, generateStaticGif, exportFormat, workspaceName, userCount, backgroundStyle, dateRange, showEmojis, track])
+  }, [getCardElement, convertImagesToDataUrls, generateAnimatedGif, exportFormat, workspaceName, userCount, backgroundStyle, dateRange, showEmojis, track])
 
   const handleLinkedInShare = useCallback(async () => {
     const element = getCardElement()

@@ -184,9 +184,12 @@ export default function EmojiGrid() {
             if (userEmojis.length > 0) {
               // Calculate basic stats for this user
               const emojiCount = userEmojis.filter((e) => !e.is_alias).length
-              const timestamps = userEmojis.map((e) => e.created)
-              const mostRecentTimestamp = Math.max(...timestamps)
-              const oldestTimestamp = Math.min(...timestamps)
+              // Filter out undefined/null/0 timestamps before computing min/max
+              const timestamps = userEmojis
+                .map((e) => e.created)
+                .filter((t): t is number => typeof t === 'number' && t > 0)
+              const mostRecentTimestamp = timestamps.length > 0 ? Math.max(...timestamps) : 0
+              const oldestTimestamp = timestamps.length > 0 ? Math.min(...timestamps) : 0
 
               // Find user's rank in the leaderboard
               const userRank = leaderboard.findIndex(u => u.user_id === userId) + 1;

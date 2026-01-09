@@ -206,10 +206,16 @@ export function DashboardOverlay() {
       
       // Update state
       setHasRealData(true)
-      
+
       // Dispatch event to notify components that emoji data has been updated
-      window.dispatchEvent(new Event("emojiDataUpdated"))
-      
+      window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+        detail: {
+          emojiData: demoData,
+          workspace: "Slack Emoji Collection",
+          timestamp: Date.now()
+        }
+      }))
+
       // Redirect to dashboard
       router.push("/app")
     } catch (error) {

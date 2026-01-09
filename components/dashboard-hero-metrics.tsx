@@ -351,14 +351,21 @@ export function DashboardHeroMetrics() {
     for (let i = days - 1; i >= 0; i--) {
       const dayDate = new Date(currentDate);
       dayDate.setDate(currentDate.getDate() - i);
-      const dayStart = Math.floor(dayDate.setHours(0, 0, 0, 0) / 1000);
-      const dayEnd = Math.floor(dayDate.setHours(23, 59, 59, 999) / 1000);
-      
-      const count = nonAliasEmojis.filter(e => 
+
+      // Create separate Date objects to avoid mutation issues
+      const dayStartDate = new Date(dayDate);
+      dayStartDate.setHours(0, 0, 0, 0);
+      const dayStart = Math.floor(dayStartDate.getTime() / 1000);
+
+      const dayEndDate = new Date(dayDate);
+      dayEndDate.setHours(23, 59, 59, 999);
+      const dayEnd = Math.floor(dayEndDate.getTime() / 1000);
+
+      const count = nonAliasEmojis.filter(e =>
         e.created && e.created >= dayStart && e.created <= dayEnd
       ).length;
-      
-      data.push({ 
+
+      data.push({
         value: count,
         label: format(dayDate, 'd')
       });

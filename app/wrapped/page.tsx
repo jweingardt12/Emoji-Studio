@@ -14,6 +14,7 @@ import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchEmojiDataWithMobileAuth, getMobileUserId } from "@/lib/services/mobile-emoji-fetch"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 function WrappedPageContent() {
   const [isClient, setIsClient] = useState(false)
@@ -34,15 +35,15 @@ function WrappedPageContent() {
   const isEmbedded = searchParams.get("embedded") === "true"
   const hasMobileParams = !!(mobileToken && mobileUserId && mobileTeamId)
 
-  const { emojiData, hasRealData, useDemoData, loading } = useEmojiData()
+  const { emojiData, hasRealData, useDemoData, loading, workspace, workspaceDisplayName: contextDisplayName } = useEmojiData()
   const track = useTrack()
-  const currentYear = new Date().getFullYear()
+  const wrappedYear = new Date().getFullYear() - 1
 
   // Get stored mobile userId for personal stats filtering
   const storedMobileUserId = isClient ? getMobileUserId() : null
 
   const { stats, personalStats, hasMinimumData, availableYears, emojiCount, yearEmojis, error } = useWrappedStats(emojiData, {
-    year: currentYear,
+    year: wrappedYear,
     userId: storedMobileUserId || undefined,
   })
 
@@ -97,18 +98,25 @@ function WrappedPageContent() {
 
   useEffect(() => {
     setIsClient(true)
-    // Get workspace name from localStorage
-    const storedName = localStorage.getItem("workspace") || "Your Workspace"
-    setWorkspaceName(storedName)
-
     // Track page view
     track("wrapped_page_viewed", {
       has_data: hasData,
       has_real_data: hasRealData,
-      year: currentYear,
+      year: wrappedYear,
       is_mobile_auth: hasMobileParams,
     })
   }, [])
+
+  // Update workspace name when context changes (handle mobile auth case separately)
+  useEffect(() => {
+    if (mobileWorkspace) {
+      // Mobile auth case: use the workspace from URL params (no custom display name)
+      setWorkspaceName(getWorkspaceDisplayName(null, mobileWorkspace))
+    } else {
+      // Regular case: use custom display name from context if available
+      setWorkspaceName(getWorkspaceDisplayName(contextDisplayName, workspace))
+    }
+  }, [contextDisplayName, workspace, mobileWorkspace])
 
   // Hide app frame (header, sidebar) only when:
   // - Explicitly embedded via URL param
@@ -138,13 +146,13 @@ function WrappedPageContent() {
   useEffect(() => {
     if (isClient && showStory && hasMinimumData && stats) {
       track("wrapped_experience_started", {
-        year: currentYear,
+        year: wrappedYear,
         total_emojis: stats.overview.totalEmojis,
         total_creators: stats.overview.totalCreators,
         has_personal_stats: !!personalStats,
       })
     }
-  }, [isClient, showStory, hasMinimumData, stats, personalStats, currentYear, track])
+  }, [isClient, showStory, hasMinimumData, stats, personalStats, wrappedYear, track])
 
   // Loading state - match app aesthetic
   if (!isClient || loading || mobileAuthLoading) {
@@ -194,14 +202,14 @@ function WrappedPageContent() {
           onComplete={() => {
             setStoryComplete(true)
             track("wrapped_story_completed", {
-              year: currentYear,
+              year: wrappedYear,
               total_emojis: stats.overview.totalEmojis,
             })
           }}
           onSkipToShare={() => {
             setShowShareModal(true)
             track("wrapped_skip_to_share", {
-              year: currentYear,
+              year: wrappedYear,
             })
           }}
           onClose={() => setShowStory(false)}
@@ -231,7 +239,7 @@ function WrappedPageContent() {
               <div className="text-5xl mb-4">🎁</div>
               <CardTitle className="text-2xl">Not Enough Emojis Yet</CardTitle>
               <CardDescription className="text-base">
-                Your workspace needs at least 10 emojis created in {currentYear} to generate your Wrapped.
+                Your workspace needs at least 10 emojis created in {wrappedYear} to generate your Wrapped.
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">

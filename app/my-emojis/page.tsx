@@ -27,6 +27,8 @@ import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
+import { downloadEmojisInParallel, saveZipFile } from "@/lib/utils/download-utils"
 
 interface Emoji {
   name: string
@@ -44,7 +46,7 @@ interface Emoji {
 function MyEmojisPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
-  const { emojiData, loading, hasRealData, workspace, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
+  const { emojiData, loading, hasRealData, workspace, workspaceDisplayName, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
@@ -266,7 +268,13 @@ function MyEmojisPage() {
         localStorage.setItem("emojiCount", recentData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
         localStorage.setItem("lastEmojiRefreshTime", Date.now().toString())
-        window.dispatchEvent(new CustomEvent("emojiDataUpdated"))
+        window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
+          detail: {
+            emojiData: recentData,
+            workspace: workspaceName,
+            timestamp: Date.now()
+          }
+        }))
       }
     } catch (error) {
       console.error("Error refreshing emoji data:", error)
@@ -584,41 +592,22 @@ function MyEmojisPage() {
   const handleBulkDownload = async () => {
     if (selectedEmojiNames.size === 0) return
 
-    const [JSZip, { saveAs }] = await Promise.all([
-      import('jszip').then(m => m.default),
-      import('file-saver')
-    ])
-
     sonner.loading(`Downloading ${selectedEmojiNames.size} emojis...`, { id: "bulk-download" })
 
     try {
-      const zip = new JSZip()
       const emojisToDownload = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
 
-      for (const emoji of emojisToDownload) {
-        try {
-          const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(emoji.url)}`
-          const response = await fetch(proxyUrl)
+      const { zip, errors, successCount } = await downloadEmojisInParallel(emojisToDownload, {
+        batchSize: 10,
+      })
 
-          if (!response.ok) continue
+      await saveZipFile(zip, `my-emojis-${Date.now()}.zip`)
 
-          const blob = await response.blob()
-          let extension = '.png'
-          const contentType = response.headers.get('content-type')
-          if (contentType?.includes('gif')) extension = '.gif'
-          else if (contentType?.includes('jpeg')) extension = '.jpg'
-
-          const fileName = `${emoji.name.replace(/[^a-zA-Z0-9_\-]/g, '_')}${extension}`
-          zip.file(fileName, blob)
-        } catch (error) {
-          console.error(`Failed to download ${emoji.name}`, error)
-        }
+      if (errors.length > 0) {
+        sonner.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download" })
+      } else {
+        sonner.success(`Downloaded ${successCount} emojis`, { id: "bulk-download" })
       }
-
-      const content = await zip.generateAsync({ type: 'blob' })
-      saveAs(content, `my-emojis-${Date.now()}.zip`)
-
-      sonner.success(`Downloaded ${selectedEmojiNames.size} emojis`, { id: "bulk-download" })
     } catch (error) {
       sonner.error("Failed to download emojis", { id: "bulk-download" })
     }
@@ -1615,8 +1604,8 @@ function MyEmojisPage() {
                   <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
                     My Emojis {myEmojis.length > 0 && <span className="text-muted-foreground font-normal">({myEmojis.length})</span>}
                   </CardTitle>                    <CardDescription>
-                      {hasRealData 
-                        ? `Manage the emojis you've created in ${workspace || "your workspace"}`
+                      {hasRealData
+                        ? `Manage the emojis you've created in ${getWorkspaceDisplayName(workspaceDisplayName, workspace)}`
                         : "Connect to Slack to see and manage your emojis"
                       }
                     </CardDescription>

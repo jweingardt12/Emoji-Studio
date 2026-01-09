@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CalendarIcon, RefreshCwIcon } from "lucide-react"
+import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 export function FetchStatsDisplay() {
   const [fetchStats, setFetchStats] = useState<{
     count: number
     lastFetch: string
-    workspace: string
+    workspaceDisplayName: string
   } | null>(null)
 
   useEffect(() => {
@@ -17,12 +18,13 @@ export function FetchStatsDisplay() {
       const count = localStorage.getItem("emojiCount")
       const lastFetch = localStorage.getItem("lastFetchTime")
       const workspace = localStorage.getItem("workspace")
+      const workspaceDisplayName = localStorage.getItem("workspaceDisplayName")
 
       if (count && lastFetch && workspace) {
         setFetchStats({
           count: Number.parseInt(count, 10),
           lastFetch,
-          workspace,
+          workspaceDisplayName: getWorkspaceDisplayName(workspaceDisplayName, workspace),
         })
       } else {
         setFetchStats(null)
@@ -85,8 +87,8 @@ export function FetchStatsDisplay() {
             <div className="space-y-1">
               <p className="text-sm font-medium leading-none">Emoji Count</p>
               <p className="text-sm text-muted-foreground">
-                {fetchStats.count.toLocaleString()} emojis fetched from workspace{" "}
-                <span className="font-mono">{fetchStats.workspace}</span>
+                {fetchStats.count.toLocaleString()} emojis fetched from{" "}
+                <span className="font-medium">{fetchStats.workspaceDisplayName}</span>
               </p>
             </div>
           </div>
