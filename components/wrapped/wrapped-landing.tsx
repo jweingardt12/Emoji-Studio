@@ -338,7 +338,7 @@ export function WrappedLanding({
   const track = useTrack()
   const router = useRouter()
   const isMobile = useIsMobile()
-  const currentYear = new Date().getFullYear()
+  const wrappedYear = new Date().getFullYear() - 1
   const [pageVisible, setPageVisible] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showConnectModal, setShowConnectModal] = useState(false)
@@ -358,25 +358,25 @@ export function WrappedLanding({
     const timer = setTimeout(() => setPageVisible(true), 100)
 
     track("wrapped_landing_viewed", {
-      year: currentYear,
+      year: wrappedYear,
       has_data: hasData,
       referrer: typeof document !== "undefined" ? document.referrer : "",
     })
 
     return () => clearTimeout(timer)
-  }, [track, currentYear, hasData])
+  }, [track, wrappedYear, hasData])
 
   const handleGetStarted = () => {
     track("wrapped_landing_cta_clicked", {
       cta: "get_started",
-      year: currentYear,
+      year: wrappedYear,
     })
 
     // Check if user has a workspace connected
     if (!hasSlackConnection()) {
       // Show modal to direct them to Chrome extension
       setShowConnectModal(true)
-      track("wrapped_connect_modal_opened", { year: currentYear })
+      track("wrapped_connect_modal_opened", { year: wrappedYear })
     } else {
       // Edge case: has connection but no data - go to settings to troubleshoot
       router.push("/settings")
@@ -386,7 +386,7 @@ export function WrappedLanding({
   const handleViewWrapped = () => {
     track("wrapped_landing_cta_clicked", {
       cta: "view_wrapped",
-      year: currentYear,
+      year: wrappedYear,
     })
     onViewWrapped?.()
   }
@@ -394,7 +394,7 @@ export function WrappedLanding({
   const handleChromeExtension = () => {
     track("wrapped_landing_cta_clicked", {
       cta: "chrome_extension",
-      year: currentYear,
+      year: wrappedYear,
     })
     window.open(
       "https://chromewebstore.google.com/detail/jpfabnpgomjgomlndffnpcceljgopgoa",
@@ -405,7 +405,7 @@ export function WrappedLanding({
   const handleiOSApp = () => {
     track("wrapped_landing_cta_clicked", {
       cta: "ios_app",
-      year: currentYear,
+      year: wrappedYear,
     })
     window.open(
       "https://apps.apple.com/us/app/emoji-studio-for-slack/id6751079971",
@@ -416,7 +416,7 @@ export function WrappedLanding({
   const handleEmailExtension = () => {
     track("wrapped_landing_cta_clicked", {
       cta: "email_extension",
-      year: currentYear,
+      year: wrappedYear,
     })
     setShowEmailModal(true)
   }
@@ -465,7 +465,7 @@ export function WrappedLanding({
                 <Badge variant="secondary" className="mb-4 md:mb-5 w-fit">
                   <Gift className="w-3 h-3 mr-1" />
                   <AnimatedShinyText className="text-inherit" shimmerWidth={80}>
-                    {currentYear} Year in Review
+                    {wrappedYear} Year in Review
                   </AnimatedShinyText>
                 </Badge>
               </motion.div>
@@ -604,7 +604,7 @@ export function WrappedLanding({
                       {/* Header */}
                       <div className="absolute top-4 left-0 right-0 text-center">
                         <p className="text-white/60 text-[10px] tracking-wider font-medium">SLACK EMOJIS WRAPPED</p>
-                        <p className="text-white/40 text-[9px]">{currentYear}</p>
+                        <p className="text-white/40 text-[9px]">{wrappedYear}</p>
                       </div>
 
                       {/* Content */}
@@ -677,7 +677,7 @@ export function WrappedLanding({
                     {/* Header */}
                     <div className="absolute top-3 left-0 right-0 text-center">
                       <p className="text-white/60 text-[9px] tracking-wider font-medium">SLACK EMOJIS WRAPPED</p>
-                      <p className="text-white/40 text-[8px]">{currentYear}</p>
+                      <p className="text-white/40 text-[8px]">{wrappedYear}</p>
                     </div>
 
                     {/* Content */}
@@ -837,7 +837,7 @@ export function WrappedLanding({
                       onClick={() => {
                         track("wrapped_landing_cta_clicked", {
                           cta: "learn_more_ios",
-                          year: currentYear,
+                          year: wrappedYear,
                         })
                       }}
                     >
