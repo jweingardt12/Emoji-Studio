@@ -1,18 +1,28 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, Suspense, lazy } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Activity, Calendar, ChartPieIcon, FileText, Users } from "lucide-react"
+import { Activity, Calendar, ChartPieIcon, FileText, Users, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { useVisualizationData, TimeRange } from "./use-visualization-data"
-import { OverviewTab } from "./tabs/overview-tab"
-import { ActivityTab } from "./tabs/activity-tab"
-import { CreatorsTab } from "./tabs/creators-tab"
-import { ContentTab } from "./tabs/content-tab"
+
+// Dynamic imports for heavy visualization components
+const OverviewTab = lazy(() => import("./tabs/overview-tab").then(module => ({ default: module.OverviewTab })))
+const ActivityTab = lazy(() => import("./tabs/activity-tab").then(module => ({ default: module.ActivityTab })))
+const CreatorsTab = lazy(() => import("./tabs/creators-tab").then(module => ({ default: module.CreatorsTab })))
+const ContentTab = lazy(() => import("./tabs/content-tab").then(module => ({ default: module.ContentTab })))
+
+// Loading component for tab transitions
+const TabLoading = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    <span className="ml-2 text-muted-foreground">Loading visualization...</span>
+  </div>
+)
 
 // Helper to format date for display
 const format = (date: Date | number, formatStr: string) => {
@@ -296,30 +306,38 @@ export default function VisualizationsPage() {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <OverviewTab
-                chartData={chartData}
-                timeRange={timeRange}
-                activeEmojiType={activeEmojiType}
-                handleTypeChange={handleTypeChange}
-                handleDateClick={handleDateClick}
-                isClient={isClient}
-                timeRangeOptions={timeRangeOptions}
-              />
+              <Suspense fallback={<TabLoading />}>
+                <OverviewTab
+                  chartData={chartData}
+                  timeRange={timeRange}
+                  activeEmojiType={activeEmojiType}
+                  handleTypeChange={handleTypeChange}
+                  handleDateClick={handleDateClick}
+                  isClient={isClient}
+                  timeRangeOptions={timeRangeOptions}
+                />
+              </Suspense>
             </TabsContent>
 
             {/* Activity Patterns Tab */}
             <TabsContent value="activity" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <ActivityTab chartData={chartData} isClient={isClient} />
+              <Suspense fallback={<TabLoading />}>
+                <ActivityTab chartData={chartData} isClient={isClient} />
+              </Suspense>
             </TabsContent>
 
             {/* Creators & Community Tab */}
             <TabsContent value="creators" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <CreatorsTab chartData={chartData} />
+              <Suspense fallback={<TabLoading />}>
+                <CreatorsTab chartData={chartData} />
+              </Suspense>
             </TabsContent>
 
             {/* Content & Naming Tab */}
             <TabsContent value="content" className="space-y-4 data-[state=active]:animate-in data-[state=active]:fade-in-50 data-[state=active]:slide-in-from-bottom-2 duration-300">
-              <ContentTab chartData={chartData} handleNameLengthClick={handleNameLengthClick} />
+              <Suspense fallback={<TabLoading />}>
+                <ContentTab chartData={chartData} handleNameLengthClick={handleNameLengthClick} />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>

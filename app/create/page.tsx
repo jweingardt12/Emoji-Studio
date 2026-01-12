@@ -1,29 +1,47 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus } from "lucide-react"
-import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
-import { EmojiProcessorPreview } from "@/components/emoji-processor-preview"
-import { EmojiProcessingModal } from "@/components/emoji-processing-modal"
-import { EmojiEditor } from "@/components/emoji-editor"
-import { GifFrameEditorCSS } from "@/components/gif-frame-editor-css"
-import { MobileEmojiCreator } from "@/components/mobile-emoji-creator"
-import { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } from "@/components/pack-browser"
+import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus, Loader2 } from "lucide-react"
+import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
 import { useToast } from "@/components/ui/use-toast"
 import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+
+// Dynamic imports for heavy processing components
+const EmojiProcessor = lazy(() => import("@/lib/utils/emoji-processor").then(module => ({ default: module.EmojiProcessor })))
+const EmojiProcessorPreview = lazy(() => import("@/components/emoji-processor-preview").then(module => ({ default: module.EmojiProcessorPreview })))
+const EmojiProcessingModal = lazy(() => import("@/components/emoji-processing-modal").then(module => ({ default: module.EmojiProcessingModal })))
+const EmojiEditor = lazy(() => import("@/components/emoji-editor").then(module => ({ default: module.EmojiEditor })))
+const GifFrameEditorCSS = lazy(() => import("@/components/gif-frame-editor-css").then(module => ({ default: module.GifFrameEditorCSS })))
+const MobileEmojiCreator = lazy(() => import("@/components/mobile-emoji-creator").then(module => ({ default: module.MobileEmojiCreator })))
+const VideoFrameExtractor = lazy(() => import("@/lib/utils/video-frame-extractor").then(module => ({ default: module.VideoFrameExtractor })))
+
+// Pack browser components
+const PackBrowser = lazy(() => import("@/components/pack-browser").then(module => ({
+  default: function PackBrowserWrapper(props: any) {
+    const { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } = module
+    return <div {...props} />
+  }
+})))
+
+// Loading component for heavy operations
+const ProcessingLoader = ({ message = "Loading..." }: { message?: string }) => (
+  <div className="flex flex-col items-center justify-center p-8 space-y-2 min-h-[200px]">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <p className="text-sm text-muted-foreground">{message}</p>
+  </div>
+)
 
 function EmojiCreatorPage() {
   const { loading, emojiData } = useEmojiData()

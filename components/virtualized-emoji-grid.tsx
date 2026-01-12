@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useMemo, memo, useCallback } from "react"
+import React, { useMemo, memo, useCallback, useRef } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 
 import { Button } from "@/components/ui/button"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -13,7 +14,7 @@ import { useAnalytics } from "@/lib/analytics"
 import { format } from "date-fns"
 
 // Memoized individual emoji item to prevent unnecessary re-renders
-const EmojiItem = memo<{
+const VirtualizedEmojiItem = memo<{
   emoji: Emoji
   imageError: boolean
   onClick: () => void
@@ -25,7 +26,7 @@ const EmojiItem = memo<{
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow hover:border-primary/30 transition-colors cursor-pointer w-full min-h-[112px]"
+      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow hover:border-primary/30 transition-colors cursor-pointer w-full h-28"
       title={emoji.name}
       onClick={onClick}
     >
@@ -64,29 +65,40 @@ const EmojiItem = memo<{
   )
 })
 
-EmojiItem.displayName = "EmojiItem"
+VirtualizedEmojiItem.displayName = "VirtualizedEmojiItem"
 
-export default function EmojiGrid() {
+interface VirtualizedEmojiGridProps {
+  maxHeight?: number // Maximum height in pixels
+  itemsPerRow?: number // Number of items per row (auto-calculated if not provided)
+  showSeeMore?: boolean // Whether to show see more functionality
+}
+
+export default function VirtualizedEmojiGrid({
+  maxHeight = 800,
+  itemsPerRow,
+  showSeeMore = true
+}: VirtualizedEmojiGridProps) {
   const { emojiData, loading } = useEmojiData()
   const analytics = useAnalytics()
   const [dataRefreshKey, setDataRefreshKey] = React.useState(0)
   const [localEmojiData, setLocalEmojiData] = React.useState<Emoji[]>([])
 
+  // Container ref for calculating responsive columns
+  const containerRef = useRef<HTMLDivElement>(null)
+
   // Update local emoji data when context data changes
   React.useEffect(() => {
     setLocalEmojiData(emojiData)
   }, [emojiData])
-  
-  // Listen for emoji data updates to force re-render
+
+  // Listen for emoji data updates
   React.useEffect(() => {
     const handleEmojiDataUpdated = (event: CustomEvent) => {
       setDataRefreshKey(prev => prev + 1)
-      
-      // Use data from event if available
+
       if (event.detail && event.detail.emojiData) {
-        setLocalEmojiData(event.detail.emojiData);
+        setLocalEmojiData(event.detail.emojiData)
       } else {
-        // Fallback to localStorage
         setTimeout(() => {
           try {
             const storedData = localStorage.getItem("emojiData")
@@ -99,18 +111,18 @@ export default function EmojiGrid() {
           } catch (error) {
             // Silent error handling
           }
-        }, 150) // Slightly longer delay than the context update
+        }, 150)
       }
     }
-    
+
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated as EventListener)
-    
+
     return () => {
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated as EventListener)
     }
   }, [])
-  
-  // Get the leaderboard to determine user ranks - optimize with stable timestamp
+
+  // Get the leaderboard to determine user ranks
   const leaderboard = useMemo(() => {
     if (!localEmojiData || localEmojiData.length === 0) return []
     return getUserLeaderboard(localEmojiData, Math.floor(Date.now() / 1000))
@@ -120,27 +132,49 @@ export default function EmojiGrid() {
   const [selectedUser, setSelectedUser] = React.useState<UserWithEmojiCount | null>(null)
   const [imageErrors, setImageErrors] = React.useState<Record<string, boolean>>({})
 
-
-
-  // Memoized sorting function to prevent recalculations
-  const sorted = useMemo(() => {
+  // Memoized sorting function
+  const sortedEmojis = useMemo(() => {
     if (!localEmojiData || localEmojiData.length === 0) return []
 
     return localEmojiData
-      .filter((emoji) => !emoji.is_alias) // Filter out aliases
+      .filter((emoji) => !emoji.is_alias)
       .sort((a, b) => (b.created ?? 0) - (a.created ?? 0))
   }, [localEmojiData, dataRefreshKey])
 
-  // Memoized display values
-  const { displayEmojis, showSeeMore } = useMemo(() => {
-    const displayCount = 20
-    return {
-      displayEmojis: sorted.slice(0, displayCount),
-      showSeeMore: sorted.length > displayCount
-    }
-  }, [sorted])
+  // Calculate responsive columns (auto-fit with min 200px width)
+  const columns = useMemo(() => {
+    if (itemsPerRow) return itemsPerRow
 
-  // Memoized event handlers to prevent child re-renders
+    // Default responsive breakpoints for emoji grid
+    if (typeof window === 'undefined') return 5 // SSR fallback
+
+    const width = containerRef.current?.clientWidth || window.innerWidth
+
+    if (width >= 1280) return 5      // xl and up
+    if (width >= 1024) return 4      // lg
+    if (width >= 768) return 3       // md
+    if (width >= 640) return 2       // sm
+    return 1                         // mobile
+  }, [itemsPerRow, dataRefreshKey]) // Re-calculate on data changes to handle resize
+
+  // Group emojis into rows for virtual scrolling
+  const rows = useMemo(() => {
+    const result: Emoji[][] = []
+    for (let i = 0; i < sortedEmojis.length; i += columns) {
+      result.push(sortedEmojis.slice(i, i + columns))
+    }
+    return result
+  }, [sortedEmojis, columns])
+
+  // Virtual scrolling configuration
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => 140, // Height of each row (112px item + gap)
+    overscan: 3, // Render 3 extra rows above/below viewport
+  })
+
+  // Memoized event handlers
   const handleImageError = useCallback((emojiName: string) => {
     setImageErrors((prev) => ({ ...prev, [emojiName]: true }))
   }, [])
@@ -199,7 +233,7 @@ export default function EmojiGrid() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
         {Array.from({ length: 12 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-20 rounded bg-muted" />
+          <Skeleton key={i} className="h-28 w-full rounded bg-muted" />
         ))}
       </div>
     )
@@ -207,27 +241,65 @@ export default function EmojiGrid() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-2">
-        {displayEmojis.map((emoji) => (
-          <EmojiItem
-            key={`${emoji.name}-${emoji.url}`}
-            emoji={emoji}
-            imageError={imageErrors[emoji.name] || false}
-            onClick={() => handleEmojiClick(emoji)}
-            onImageError={() => handleImageError(emoji.name)}
-          />
-        ))}
+      <div
+        ref={containerRef}
+        className="w-full p-2"
+        style={{ height: `${Math.min(maxHeight, rows.length * 140)}px`, overflow: 'auto' }}
+      >
+        <div
+          style={{
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const row = rows[virtualRow.index]
+            if (!row) return null
+
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <div className={`grid grid-cols-${columns} gap-4 h-full`}>
+                  {row.map((emoji) => (
+                    <VirtualizedEmojiItem
+                      key={`${emoji.name}-${emoji.url}`}
+                      emoji={emoji}
+                      imageError={imageErrors[emoji.name] || false}
+                      onClick={() => handleEmojiClick(emoji)}
+                      onImageError={() => handleImageError(emoji.name)}
+                    />
+                  ))}
+                  {/* Fill empty slots in last row */}
+                  {row.length < columns &&
+                    Array.from({ length: columns - row.length }).map((_, i) => (
+                      <div key={`empty-${i}`} className="w-full" />
+                    ))
+                  }
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
-      {showSeeMore && (
+
+      {showSeeMore && sortedEmojis.length > 0 && (
         <div className="w-full flex justify-center mt-4 mb-2">
-          <Button
-            variant="default"
-            onClick={handleSeeMoreClick}
-          >
-            See More
+          <Button variant="default" onClick={handleSeeMoreClick}>
+            See More ({sortedEmojis.length} total emojis)
           </Button>
         </div>
       )}
+
       {/* Emoji Overlay */}
       {selectedEmoji && (
         <EmojiOverlay

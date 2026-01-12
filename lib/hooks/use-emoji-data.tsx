@@ -325,17 +325,18 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [emojiData, useDemoData, demoData],
   )
 
-  // Calculate stats
+  // Calculate stats with stable timestamp to prevent unnecessary recalculations
+  const currentTimestamp = useMemo(() => Math.floor(Date.now() / 1000), [])
   const stats = useMemo(() => {
     console.log(`Recalculating stats: useDemoData=${useDemoData}, emojiData.length=${emojiData.length}`)
     if (useDemoData) {
       return demoStats
     }
     if (emojiData.length === 0) return null
-    const calculatedStats = calculateEmojiStats(emojiData, Math.floor(Date.now() / 1000))
+    const calculatedStats = calculateEmojiStats(emojiData, currentTimestamp)
     console.log('Calculated stats:', calculatedStats)
     return calculatedStats
-  }, [emojiData, useDemoData, demoStats])
+  }, [emojiData, useDemoData, demoStats, currentTimestamp])
 
   // Calculate user leaderboard
   const [userLeaderboard, setUserLeaderboard] = useState<ReturnType<typeof getUserLeaderboard>>([])
@@ -346,16 +347,16 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Use the demo leaderboard that's already loaded asynchronously
       setUserLeaderboard(demoLeaderboard)
     } else if (emojiData.length > 0) {
-      // Calculate leaderboard from real data
-      const leaderboard = getUserLeaderboard(emojiData, Math.floor(Date.now() / 1000))
+      // Calculate leaderboard from real data using stable timestamp
+      const leaderboard = getUserLeaderboard(emojiData, currentTimestamp)
       setUserLeaderboard(leaderboard)
     } else {
       setUserLeaderboard([])
     }
-  }, [emojiData, useDemoData, demoLeaderboard])
+  }, [emojiData, useDemoData, demoLeaderboard, currentTimestamp])
 
-  // Create the context value
-  const contextValue: EmojiDataContextType = {
+  // Create the context value with memoization to prevent unnecessary re-renders
+  const contextValue: EmojiDataContextType = useMemo(() => ({
     emojiData: useDemoData && demoData.length > 0 ? demoData : emojiData,
     setEmojiData,
     loading: loading || (useDemoData && demoLoading),
@@ -374,7 +375,30 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setWorkspace,
     workspaceDisplayName: workspaceDisplayNameInternal,
     setWorkspaceDisplayName,
-  }
+  }), [
+    useDemoData,
+    demoData,
+    emojiData,
+    setEmojiData,
+    loading,
+    demoLoading,
+    setLoading,
+    error,
+    filterByDateRange,
+    demoStats,
+    stats,
+    demoLeaderboard,
+    userLeaderboard,
+    setUseDemoData,
+    demoChartData,
+    setDemoTimeRange,
+    hasRealData,
+    setHasRealData,
+    workspaceInternal,
+    setWorkspace,
+    workspaceDisplayNameInternal,
+    setWorkspaceDisplayName,
+  ])
 
   return <EmojiDataContext.Provider value={contextValue}>{children}</EmojiDataContext.Provider>
 }

@@ -85,17 +85,26 @@ function calculateTier(isMobile: boolean | null, capabilities: DeviceCapabilitie
   return "high"
 }
 
-export function useAnimationTier(): AnimationTier {
+export function useAnimationTier() {
   const isMobile = useIsMobile()
   const [tier, setTier] = React.useState<AnimationTier>("mid") // Safe default
+  const [capabilities, setCapabilities] = React.useState<DeviceCapabilities | null>(null)
 
   React.useEffect(() => {
-    const capabilities = getDeviceCapabilities()
-    const calculatedTier = calculateTier(isMobile, capabilities)
+    const deviceCapabilities = getDeviceCapabilities()
+    setCapabilities(deviceCapabilities)
+    const calculatedTier = calculateTier(isMobile, deviceCapabilities)
     setTier(calculatedTier)
   }, [isMobile])
 
-  return tier
+  return {
+    tier,
+    deviceMemory: capabilities?.deviceMemory ?? null,
+    hardwareConcurrency: capabilities?.hardwareConcurrency ?? null,
+    connectionType: capabilities?.connectionType ?? null,
+    prefersReducedMotion: capabilities?.prefersReducedMotion ?? false,
+    capabilities
+  }
 }
 
 /**
@@ -268,7 +277,7 @@ export function getStaggerDelay(index: number, baseDelay: number = 0.3, staggerA
  * Returns mobile-friendly springs on low-tier devices
  */
 export function useSpringPresets() {
-  const tier = useAnimationTier()
+  const { tier } = useAnimationTier()
 
   return React.useMemo(() => {
     if (tier === "low") {
@@ -305,7 +314,7 @@ export function useSpringPresets() {
  * Use this to get consistent animation settings across components
  */
 export function useAnimationConfig() {
-  const tier = useAnimationTier()
+  const { tier } = useAnimationTier()
 
   return React.useMemo(() => {
     switch (tier) {
