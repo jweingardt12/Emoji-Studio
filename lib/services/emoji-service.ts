@@ -218,7 +218,7 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
 
     // Extract cookie from -b or --cookie flag if not already in headers
     if (!headers["Cookie"] && !headers["cookie"]) {
-      const cookieMatch = cmd.match(/-b\s+['"](\S+)['"]*/i) || cmd.match(/--cookie\s+['"](\S+)['"]*/i);
+      const cookieMatch = cmd.match(/-b\s+['"]([^'"]+)['"]/i) || cmd.match(/--cookie\s+['"]([^'"]+)['"]/i);
       if (cookieMatch && cookieMatch[1]) {
         headers["Cookie"] = cookieMatch[1].trim();
       }
