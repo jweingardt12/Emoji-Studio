@@ -558,11 +558,13 @@ function EmojiCreatorPage() {
       try {
         setCurrentFileIndex(i)
         setCurrentStep('loading')
-        await new Promise(resolve => setTimeout(resolve, 300))
-        
+        // Minimal delay for UI state to render (reduced from 300ms)
+        await new Promise(resolve => setTimeout(resolve, 50))
+
         setCurrentStep('analyzing')
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
+        // Minimal delay for UI state to render (reduced from 500ms)
+        await new Promise(resolve => setTimeout(resolve, 50))
+
         setCurrentStep('processing')
         
         // Check if this is a video file that needs frame selection
@@ -656,7 +658,8 @@ function EmojiCreatorPage() {
         const processed = await EmojiProcessor.processFile(file, { preserveHDR })
         
         setCurrentStep('finalizing')
-        await new Promise(resolve => setTimeout(resolve, 300))
+        // Minimal delay for UI state to render (reduced from 300ms)
+        await new Promise(resolve => setTimeout(resolve, 50))
         
         newProcessedEmojis.push(processed)
         setCurrentStep('completed')
@@ -680,8 +683,8 @@ function EmojiCreatorPage() {
           error: error instanceof Error ? error.message : 'Unknown error'
         })
         
-        // Wait a bit to show the error
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        // Wait a bit to show the error (reduced from 2000ms)
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
     }
 

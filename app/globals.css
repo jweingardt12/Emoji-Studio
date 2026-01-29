@@ -566,6 +566,19 @@ body {
   object-fit: contain;
 }
 
+/* Performance optimization: content-visibility for large emoji grids */
+/* Allows browser to skip rendering off-screen items */
+.emoji-grid-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80px;
+}
+
+/* For virtualized grids with fixed row heights */
+.virtualized-grid-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 120px;
+}
+
 /* Emoji waterfall animation */
 @keyframes fall {
   0% {

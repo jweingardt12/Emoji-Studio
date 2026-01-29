@@ -4,6 +4,11 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
+  // Optimize barrel file imports for faster builds and smaller bundles
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
+  },
+
   // Enable image optimization with remote patterns for Slack CDN
   images: {
     remotePatterns: [
