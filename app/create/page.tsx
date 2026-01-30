@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Search, Grid3x3, List, Upload, Sparkles } from "lucide-react"
+import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -510,11 +510,11 @@ function EmojiCreatorContent() {
                       })}
                     </div>
                   </div>
-                  {/* Mobile cart button */}
+                  {/* Mobile cart button - only on small screens, tablet uses floating bar */}
                   {activeTab === "browse" && packBrowser.selectedEmojis.length > 0 && (
                     <Button
                       onClick={() => updateCartOpen(true, 'toolbar')}
-                      className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm lg:hidden"
+                      className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm sm:hidden"
                       size="icon"
                       variant="ghost"
                     >
@@ -530,8 +530,8 @@ function EmojiCreatorContent() {
               </TabsContent>
 
               {/* Browse Packs Tab Content */}
-              <TabsContent value="browse" className="flex-1 min-h-0 m-0">
-                <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(360px,30vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4">
+              <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative">
+                <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(320px,28vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4 pb-20 md:pb-4">
                   <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                     <CardHeader className="flex-none pb-3">
                       <div className="flex gap-2 items-center">
@@ -627,6 +627,87 @@ function EmojiCreatorContent() {
                     />
                   </div>
                 </div>
+
+                {/* Floating action bar for mobile/tablet */}
+                {packBrowser.selectedEmojis.length > 0 && (
+                  <motion.div
+                    initial={{ y: 100, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 100, opacity: 0 }}
+                    className="absolute bottom-4 left-4 right-4 lg:hidden"
+                  >
+                    <div className="glass-liquid rounded-xl p-3 shadow-lg border border-border/50">
+                      <div className="flex items-center gap-3">
+                        {/* Selection info - tap to open sheet */}
+                        <button
+                          onClick={() => updateCartOpen(true, 'toolbar')}
+                          className="flex-1 flex items-center gap-3 text-left hover:bg-white/5 rounded-lg p-1 -m-1 transition-colors"
+                        >
+                          <div className="flex -space-x-2">
+                            {packBrowser.selectedEmojis.slice(0, 3).map((emoji, i) => (
+                              <img
+                                key={emoji.id}
+                                src={emoji.imageURL}
+                                alt=""
+                                className="w-8 h-8 rounded-lg border-2 border-background object-contain bg-muted"
+                                style={{ zIndex: 3 - i }}
+                              />
+                            ))}
+                            {packBrowser.selectedEmojis.length > 3 && (
+                              <div className="w-8 h-8 rounded-lg border-2 border-background bg-muted flex items-center justify-center text-xs font-medium">
+                                +{packBrowser.selectedEmojis.length - 3}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {packBrowser.selectedEmojis.length} selected
+                            </p>
+                            <p className="text-xs text-muted-foreground">Tap to edit names</p>
+                          </div>
+                        </button>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={() => {
+                              const previousCount = packBrowser.selectedEmojis.length
+                              setDownloadProgress(null)
+                              setUploadProgress(null)
+                              packBrowser.clearSelection()
+                              track('Emoji Creator: Selection Cleared', { previousCount })
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9"
+                            onClick={handlePackDownload}
+                            disabled={!!downloadProgress}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          {hasSlack && (
+                            <Button
+                              size="sm"
+                              className="h-9 gap-2 bg-gradient-to-r from-primary to-primary/90"
+                              onClick={handleSendToSlack}
+                              disabled={!!uploadProgress}
+                            >
+                              <Send className="h-4 w-4" />
+                              <span className="hidden sm:inline">Send</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </TabsContent>
             </Tabs>
           </div>
