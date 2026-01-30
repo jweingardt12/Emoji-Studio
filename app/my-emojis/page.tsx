@@ -29,6 +29,7 @@ import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 import { downloadEmojisInParallel, saveZipFile } from "@/lib/utils/download-utils"
+import { useTrack } from "@/lib/hooks/use-track"
 
 interface Emoji {
   name: string
@@ -48,6 +49,8 @@ function MyEmojisPage() {
   const isMobile = useIsMobile()
   const { emojiData, loading, hasRealData, workspace, workspaceDisplayName, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
   const { toast } = useToast()
+  const track = useTrack()
+  const hasTrackedPage = useRef(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false)
@@ -119,6 +122,18 @@ function MyEmojisPage() {
     
     checkAuth()
   }, [router, hasRealData])
+
+  // Track page view
+  useEffect(() => {
+    if (isClient && !hasTrackedPage.current) {
+      hasTrackedPage.current = true
+      // We need to compute myEmojis count here for tracking
+      const myEmojiCount = emojiData.filter(emoji =>
+        hasRealData ? emoji.can_delete === true && emoji.is_alias !== 1 : emoji.is_alias !== 1
+      ).length
+      track('my_emojis:viewed', { emoji_count: myEmojiCount })
+    }
+  }, [isClient, emojiData, hasRealData, track])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1338,6 +1353,9 @@ function MyEmojisPage() {
       sonner.success(`Emoji deleted!`, {
         description: `Successfully deleted "${selectedEmoji.name}"`
       })
+
+      // Track emoji deletion
+      track('my_emojis:emoji_deleted', { emoji_name: selectedEmoji.name })
       
       // Optimistically update the UI immediately
       setEmojiData(prevData => {

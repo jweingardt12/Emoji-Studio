@@ -149,6 +149,15 @@ export function ChromeExtensionHandler() {
         source: 'background_sync'
       })
 
+      // Identify user from their own emojis (ones they can delete)
+      const myEmoji = (data.emojiData as Emoji[]).find(e => e.can_delete)
+      if (myEmoji?.user_id && myEmoji?.user_display_name) {
+        // Cache user info for session restore
+        localStorage.setItem("mobileUserId", myEmoji.user_id)
+        localStorage.setItem("userDisplayName", myEmoji.user_display_name)
+        console.log("[ChromeExtensionHandler] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
+      }
+
       // Hide loading overlay after data is successfully processed
       setProgress(100);
       setLoadingStage(`Processing complete!`);
@@ -352,6 +361,14 @@ export function ChromeExtensionHandler() {
         workspace: workspace,
         hasAliases: responseData.emojis.some((e: any) => e.is_alias),
       })
+
+      // Identify user from their own emojis (ones they can delete)
+      const myEmoji = typedEmojis.find(e => e.can_delete)
+      if (myEmoji?.user_id && myEmoji?.user_display_name) {
+        localStorage.setItem("mobileUserId", myEmoji.user_id)
+        localStorage.setItem("userDisplayName", myEmoji.user_display_name)
+        console.log("[ChromeExtensionHandler] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
+      }
 
       // Remove the extension parameter from the URL
       const newUrl = new URL(window.location.href)

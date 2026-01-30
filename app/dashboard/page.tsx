@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
+import { useTrack } from "@/lib/hooks/use-track"
 import {
   DashboardHeroSkeleton,
   DashboardChartSkeleton,
@@ -31,6 +32,7 @@ function DashboardPage() {
   const [pageVisible, setPageVisible] = useState(false)
   // Sync loading is now handled by ChromeExtensionHandler
   const router = useRouter()
+  const track = useTrack()
 
   useEffect(() => {
     setIsClient(true)
@@ -176,6 +178,18 @@ function DashboardPage() {
       return () => clearTimeout(timeout);
     }
   }, [isClient, loading, hasRealData, useDemoData, router])
+
+  // Track dashboard view once data is ready
+  const hasTrackedDashboard = useRef(false)
+  useEffect(() => {
+    if (isClient && hasRealData && !hasTrackedDashboard.current) {
+      hasTrackedDashboard.current = true
+      track('dashboard:viewed', {
+        emoji_count: emojiData.length,
+        has_data: hasRealData,
+      })
+    }
+  }, [isClient, hasRealData, emojiData.length, track])
 
   // Only render when client-side to avoid hydration mismatches
   if (!isClient) return null;

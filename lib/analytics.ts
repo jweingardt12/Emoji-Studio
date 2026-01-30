@@ -175,8 +175,15 @@ export function useAnalytics() {
       });
     },
 
-    // Identify a user
+    // Identify a user - also caches to localStorage for session restore
     identifyUser: (userId: string, username: string, email?: string) => {
+      // Cache for session restore
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mobileUserId", userId)
+        localStorage.setItem("userDisplayName", username)
+        console.log("[Analytics] Identified and cached user:", username, userId)
+      }
+
       op.identify({
         profileId: userId,
         firstName: username,

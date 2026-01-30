@@ -423,6 +423,14 @@ export function SlackCurlInput() {
         hasAliases: data.emojis.some((e: any) => e.is_alias),
       });
 
+      // Identify user from their own emojis (ones they can delete)
+      const myEmoji = typedEmojis.find(e => e.can_delete)
+      if (myEmoji?.user_id && myEmoji?.user_display_name) {
+        localStorage.setItem("mobileUserId", myEmoji.user_id)
+        localStorage.setItem("userDisplayName", myEmoji.user_display_name)
+        console.log("[SlackCurlInput] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
+      }
+
       // Show success state for a moment before redirecting
       await new Promise((resolve) => setTimeout(resolve, 1500))
 

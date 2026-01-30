@@ -1,7 +1,8 @@
 "use client"
 
-import React, { useState, useEffect, useCallback, Suspense, lazy } from "react"
+import React, { useState, useEffect, useCallback, Suspense, lazy, useRef } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { useTrack } from "@/lib/hooks/use-track"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -82,10 +83,21 @@ export default function VisualizationsPage() {
   const [emojisOnDate, setEmojisOnDate] = useState<any[]>([])
   const [showDateEmojiDialog, setShowDateEmojiDialog] = useState(false)
   const [timeRange, setTimeRange] = useState<TimeRange>("all")
+  const [activeTab, setActiveTab] = useState<string>("overview")
+  const track = useTrack()
+  const hasTrackedPage = useRef(false)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Track page view
+  useEffect(() => {
+    if (isClient && !hasTrackedPage.current) {
+      hasTrackedPage.current = true
+      track('visualizations:viewed', { tab: activeTab })
+    }
+  }, [isClient, activeTab, track])
 
   const { emojiData } = useEmojiData()
 
@@ -284,7 +296,17 @@ export default function VisualizationsPage() {
           </div>
 
           {/* Tabbed navigation for charts */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs
+            defaultValue="overview"
+            className="w-full"
+            onValueChange={(value) => {
+              const prevTab = activeTab
+              setActiveTab(value)
+              if (prevTab !== value) {
+                track('visualizations:tab_changed', { from_tab: prevTab, to_tab: value })
+              }
+            }}
+          >
             <TabsList className="grid w-full grid-cols-4 mb-6 h-auto p-1">
               <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
                 <ChartPieIcon className="h-5 w-5" />
