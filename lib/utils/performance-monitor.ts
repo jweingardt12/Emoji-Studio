@@ -1,5 +1,7 @@
 "use client"
 
+import React from 'react'
+
 /**
  * Performance monitoring utilities for tracking Core Web Vitals and component performance
  */
@@ -287,43 +289,3 @@ function generateBundleRecommendations(size: number, loadTime: number, resourceC
 
   return recommendations
 }
-
-// Performance debugging component
-export function PerformanceDebugger() {
-  const { metrics, score } = usePerformanceMonitor()
-  const [showDetails, setShowDetails] = React.useState(false)
-
-  if (process.env.NODE_ENV !== 'development') return null
-  if (!metrics) return null
-
-  const scoreColor = score !== null ?
-    (score > 80 ? 'text-green-600' : score > 60 ? 'text-yellow-600' : 'text-red-600') :
-    'text-gray-600'
-
-  return (
-    <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-sm font-mono z-50">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => setShowDetails(!showDetails)}>
-        <span>Performance Score: </span>
-        <span className={scoreColor}>{score?.toFixed(0) ?? 'N/A'}</span>
-        <span className="text-xs">({showDetails ? '▼' : '▶'})</span>
-      </div>
-
-      {showDetails && (
-        <div className="mt-2 space-y-1 text-xs">
-          <div>LCP: {metrics.lcp?.toFixed(0) ?? 'N/A'}ms</div>
-          <div>CLS: {metrics.cls?.toFixed(3) ?? 'N/A'}</div>
-          <div>FID: {metrics.fid?.toFixed(0) ?? 'N/A'}ms</div>
-          <div>Memory: {metrics.memoryUsage ? (metrics.memoryUsage / 1024 / 1024).toFixed(1) : 'N/A'}MB</div>
-          <div>Avg Render: {
-            metrics.componentRenderTime.length > 0 ?
-            (metrics.componentRenderTime.reduce((a, b) => a + b, 0) / metrics.componentRenderTime.length).toFixed(2) :
-            'N/A'
-          }ms</div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Re-export React for hooks
-import React from 'react'

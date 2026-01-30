@@ -5,7 +5,8 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Upload, Sparkles, X, FileVideo, FileImage, File as FileIcon, Grid3x3, List, Search, SmilePlus, Loader2 } from "lucide-react"
-import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
+import { EmojiProcessor, ProcessedEmoji } from "@/lib/utils/emoji-processor"
+import { VideoFrameExtractor } from "@/lib/utils/video-frame-extractor"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -17,23 +18,14 @@ import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } from "@/components/pack-browser"
 
 // Dynamic imports for heavy processing components
-const EmojiProcessor = lazy(() => import("@/lib/utils/emoji-processor").then(module => ({ default: module.EmojiProcessor })))
 const EmojiProcessorPreview = lazy(() => import("@/components/emoji-processor-preview").then(module => ({ default: module.EmojiProcessorPreview })))
 const EmojiProcessingModal = lazy(() => import("@/components/emoji-processing-modal").then(module => ({ default: module.EmojiProcessingModal })))
 const EmojiEditor = lazy(() => import("@/components/emoji-editor").then(module => ({ default: module.EmojiEditor })))
 const GifFrameEditorCSS = lazy(() => import("@/components/gif-frame-editor-css").then(module => ({ default: module.GifFrameEditorCSS })))
 const MobileEmojiCreator = lazy(() => import("@/components/mobile-emoji-creator").then(module => ({ default: module.MobileEmojiCreator })))
-const VideoFrameExtractor = lazy(() => import("@/lib/utils/video-frame-extractor").then(module => ({ default: module.VideoFrameExtractor })))
-
-// Pack browser components
-const PackBrowser = lazy(() => import("@/components/pack-browser").then(module => ({
-  default: function PackBrowserWrapper(props: any) {
-    const { usePackBrowser, PackBrowserTabs, PackEmojiGrid, PackSelectionSidebar } = module
-    return <div {...props} />
-  }
-})))
 
 // Loading component for heavy operations
 const ProcessingLoader = ({ message = "Loading..." }: { message?: string }) => (
