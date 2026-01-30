@@ -38,8 +38,22 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="512x512" href="/pwa-icon-512.png" />
         <link rel="apple-touch-icon" sizes="1024x1024" href="/pwa-icon-1024.png" />
         <link rel="manifest" href="/manifest.json" />
-        {/* Wrapped Typography: Clash Display + General Sans from Fontshare */}
-        <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* Wrapped Typography: Clash Display + General Sans from Fontshare - async loaded */}
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+        <link
+          id="fontshare-fonts"
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap"
+          rel="stylesheet"
+          media="print"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `var e=document.getElementById('fontshare-fonts');if(e)e.media='all'`
+          }}
+        />
+        <noscript>
+          <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
+        </noscript>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
         <OpenPanelProvider />

@@ -6,35 +6,83 @@ import { getUserLeaderboard, type Emoji } from "@/lib/services/emoji-service"
 import type { UserWithEmojiCount } from "@/components/user-overlay"
 import type { DateRange } from "@/components/leaderboard"
 
-interface DashboardContextType {
-  // Data
+// ============================================================================
+// Data Context - emoji data, loading states, leaderboard
+// ============================================================================
+
+interface DashboardDataContextType {
   emojiData: Emoji[]
   filteredLeaderboard: UserWithEmojiCount[]
   loading: boolean
   hasRealData: boolean
   useDemoData: boolean
+  showDemoData: boolean
+}
 
-  // Filters
+const DashboardDataContext = createContext<DashboardDataContextType | undefined>(undefined)
+
+export function useDashboardData() {
+  const context = useContext(DashboardDataContext)
+  if (context === undefined) {
+    throw new Error("useDashboardData must be used within a DashboardProvider")
+  }
+  return context
+}
+
+// ============================================================================
+// Filters Context - date range, search query, user filter toggles
+// ============================================================================
+
+interface DashboardFiltersContextType {
   dateRange: DateRange
   setDateRange: (range: DateRange) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
   showInactiveUsers: boolean
   setShowInactiveUsers: (show: boolean) => void
+}
 
-  // Selection state
+const DashboardFiltersContext = createContext<DashboardFiltersContextType | undefined>(undefined)
+
+export function useDashboardFilters() {
+  const context = useContext(DashboardFiltersContext)
+  if (context === undefined) {
+    throw new Error("useDashboardFilters must be used within a DashboardProvider")
+  }
+  return context
+}
+
+// ============================================================================
+// Selection Context - selected user, selected emoji, overlay state
+// ============================================================================
+
+interface DashboardSelectionContextType {
   selectedUser: UserWithEmojiCount | null
   setSelectedUser: (user: UserWithEmojiCount | null) => void
   selectedEmojiForOverlay: Emoji | null
   setSelectedEmojiForOverlay: (emoji: Emoji | null) => void
-
-  // Actions
   onViewUser: (user: UserWithEmojiCount) => void
   handleEmojiClickFromUserOverlay: (emoji: Emoji) => void
-
-  // Computed
-  showDemoData: boolean
 }
+
+const DashboardSelectionContext = createContext<DashboardSelectionContextType | undefined>(undefined)
+
+export function useDashboardSelection() {
+  const context = useContext(DashboardSelectionContext)
+  if (context === undefined) {
+    throw new Error("useDashboardSelection must be used within a DashboardProvider")
+  }
+  return context
+}
+
+// ============================================================================
+// Combined Context (for backwards compatibility)
+// ============================================================================
+
+interface DashboardContextType extends
+  DashboardDataContextType,
+  DashboardFiltersContextType,
+  DashboardSelectionContextType {}
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
@@ -105,57 +153,55 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     setSelectedEmojiForOverlay(emoji)
   }, [])
 
-  const value = useMemo<DashboardContextType>(() => ({
-    // Data
+  // Separate memoized values for each context
+  const dataValue = useMemo<DashboardDataContextType>(() => ({
     emojiData,
     filteredLeaderboard,
     loading,
     hasRealData,
     useDemoData,
+    showDemoData,
+  }), [emojiData, filteredLeaderboard, loading, hasRealData, useDemoData, showDemoData])
 
-    // Filters
+  const filtersValue = useMemo<DashboardFiltersContextType>(() => ({
     dateRange,
     setDateRange,
     searchQuery,
     setSearchQuery,
     showInactiveUsers,
     setShowInactiveUsers,
+  }), [dateRange, searchQuery, showInactiveUsers])
 
-    // Selection state
+  const selectionValue = useMemo<DashboardSelectionContextType>(() => ({
     selectedUser,
     setSelectedUser,
     selectedEmojiForOverlay,
     setSelectedEmojiForOverlay,
-
-    // Actions
     onViewUser,
     handleEmojiClickFromUserOverlay,
+  }), [selectedUser, selectedEmojiForOverlay, onViewUser, handleEmojiClickFromUserOverlay])
 
-    // Computed
-    showDemoData,
-  }), [
-    emojiData,
-    filteredLeaderboard,
-    loading,
-    hasRealData,
-    useDemoData,
-    dateRange,
-    searchQuery,
-    showInactiveUsers,
-    selectedUser,
-    selectedEmojiForOverlay,
-    onViewUser,
-    handleEmojiClickFromUserOverlay,
-    showDemoData,
-  ])
+  // Combined value for backwards compatibility
+  const combinedValue = useMemo<DashboardContextType>(() => ({
+    ...dataValue,
+    ...filtersValue,
+    ...selectionValue,
+  }), [dataValue, filtersValue, selectionValue])
 
   return (
-    <DashboardContext.Provider value={value}>
-      {children}
+    <DashboardContext.Provider value={combinedValue}>
+      <DashboardDataContext.Provider value={dataValue}>
+        <DashboardFiltersContext.Provider value={filtersValue}>
+          <DashboardSelectionContext.Provider value={selectionValue}>
+            {children}
+          </DashboardSelectionContext.Provider>
+        </DashboardFiltersContext.Provider>
+      </DashboardDataContext.Provider>
     </DashboardContext.Provider>
   )
 }
 
+// Backwards compatible hook - use the specific hooks for better performance
 export function useDashboardContext() {
   const context = useContext(DashboardContext)
   if (context === undefined) {

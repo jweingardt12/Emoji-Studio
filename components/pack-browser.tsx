@@ -8,7 +8,8 @@
  * Now refactored for composability - can be embedded directly into pages
  */
 
-import { useState, useEffect, useMemo, memo, useCallback } from "react"
+import { useState, useEffect, useMemo, memo, useCallback, useRef } from "react"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
 import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
@@ -507,7 +508,7 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       initial="hidden"
       animate="enter"
       exit="exit"
-      transition={{ delay: Math.min(index * 0.025, 0.25) }}
+      transition={{ duration: 0.15 }}
       onClick={onToggle}
       className={cn(
         "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
@@ -552,7 +553,7 @@ const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, on
       initial="hidden"
       animate="enter"
       exit="exit"
-      transition={{ delay: Math.min(index * 0.02, 0.18) }}
+      transition={{ duration: 0.15 }}
       onClick={onToggle}
       className={cn(
         "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
@@ -581,8 +582,68 @@ const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, on
   )
 })
 
+// Threshold below which we skip virtualization for smoother animations
+const VIRTUALIZATION_THRESHOLD = 30
+
+// Hook to get responsive column count with debounced resize
+function useColumnCount(): number {
+  const [columns, setColumns] = useState(4)
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>
+
+    const updateColumns = () => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        const width = window.innerWidth
+        if (width < 640) setColumns(3)       // sm
+        else if (width < 768) setColumns(4)  // md
+        else if (width < 1280) setColumns(5) // lg
+        else setColumns(6)                   // xl
+      }, 100)
+    }
+
+    // Initial update without debounce
+    const width = window.innerWidth
+    if (width < 640) setColumns(3)
+    else if (width < 768) setColumns(4)
+    else if (width < 1280) setColumns(5)
+    else setColumns(6)
+
+    window.addEventListener('resize', updateColumns)
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', updateColumns)
+    }
+  }, [])
+
+  return columns
+}
+
 export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
   const isGridView = viewMode === "grid"
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const columns = useColumnCount()
+
+  // Calculate rows for virtualization
+  const rowCount = isGridView ? Math.ceil(emojis.length / columns) : emojis.length
+
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => isGridView ? 120 : 64, // row height
+    overscan: 2,
+  })
+
+  // Create stable toggle callbacks using a Map to avoid inline function re-creation
+  const toggleHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    emojis.forEach(emoji => {
+      const key = `${emoji.id}|${emoji.name}`
+      handlers.set(key, () => onToggleSelection(emoji))
+    })
+    return handlers
+  }, [emojis, onToggleSelection])
 
   if (loading && emojis.length === 0) {
     return (
@@ -617,70 +678,143 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
     )
   }
 
-  // Create stable toggle callbacks using a Map to avoid inline function re-creation
-  const toggleHandlers = useMemo(() => {
-    const handlers = new Map<string, () => void>()
-    emojis.forEach(emoji => {
-      const key = `${emoji.id}|${emoji.name}`
-      handlers.set(key, () => onToggleSelection(emoji))
-    })
-    return handlers
-  }, [emojis, onToggleSelection])
+  // For smaller lists, use the non-virtualized approach for smoother animations
+  if (emojis.length <= VIRTUALIZATION_THRESHOLD) {
+    return (
+      <AnimatePresence mode="wait">
+        {isGridView ? (
+          <motion.div
+            key="grid"
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+            variants={gridContainerVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            layout
+          >
+            <AnimatePresence mode="popLayout">
+              {emojis.map((emoji, index) => {
+                const key = `${emoji.id}|${emoji.name}`
+                return (
+                  <EmojiGridItem
+                    key={key}
+                    emoji={emoji}
+                    isSelected={selectedIds.has(key)}
+                    index={index}
+                    onToggle={toggleHandlers.get(key)!}
+                  />
+                )
+              })}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="list"
+            className="space-y-2"
+            variants={listContainerVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            layout
+          >
+            <AnimatePresence mode="popLayout">
+              {emojis.map((emoji, index) => {
+                const key = `${emoji.id}|${emoji.name}`
+                return (
+                  <EmojiListItem
+                    key={key}
+                    emoji={emoji}
+                    isSelected={selectedIds.has(key)}
+                    index={index}
+                    onToggle={toggleHandlers.get(key)!}
+                  />
+                )
+              })}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
+  }
 
+  // Virtualized rendering for larger lists
   return (
-    <AnimatePresence mode="wait">
-      {isGridView ? (
-        <motion.div
-          key="grid"
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
-          variants={gridContainerVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          layout
-        >
-          <AnimatePresence mode="popLayout">
-            {emojis.map((emoji, index) => {
-              const key = `${emoji.id}|${emoji.name}`
-              return (
-                <EmojiGridItem
-                  key={key}
-                  emoji={emoji}
-                  isSelected={selectedIds.has(key)}
-                  index={index}
-                  onToggle={toggleHandlers.get(key)!}
-                />
-              )
-            })}
-          </AnimatePresence>
-        </motion.div>
-      ) : (
-        <motion.div
-          key="list"
-          className="space-y-2"
-          variants={listContainerVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          layout
-        >
-          <AnimatePresence mode="popLayout">
-            {emojis.map((emoji, index) => {
-              const key = `${emoji.id}|${emoji.name}`
-              return (
+    <div
+      ref={scrollRef}
+      className="h-[calc(100vh-300px)] overflow-auto"
+      style={{ contain: 'strict' }}
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          if (isGridView) {
+            // Grid view: each virtual row contains multiple columns
+            const startIndex = virtualRow.index * columns
+            const rowEmojis = emojis.slice(startIndex, startIndex + columns)
+
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+              >
+                {rowEmojis.map((emoji, colIndex) => {
+                  const key = `${emoji.id}|${emoji.name}`
+                  const globalIndex = startIndex + colIndex
+                  return (
+                    <EmojiGridItem
+                      key={key}
+                      emoji={emoji}
+                      isSelected={selectedIds.has(key)}
+                      index={globalIndex}
+                      onToggle={toggleHandlers.get(key)!}
+                    />
+                  )
+                })}
+              </div>
+            )
+          } else {
+            // List view: each virtual row is one item
+            const emoji = emojis[virtualRow.index]
+            if (!emoji) return null
+
+            const key = `${emoji.id}|${emoji.name}`
+            return (
+              <div
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
                 <EmojiListItem
-                  key={key}
                   emoji={emoji}
                   isSelected={selectedIds.has(key)}
-                  index={index}
+                  index={virtualRow.index}
                   onToggle={toggleHandlers.get(key)!}
                 />
-              )
-            })}
-          </AnimatePresence>
-        </motion.div>
-      )}
-    </AnimatePresence>
+              </div>
+            )
+          }
+        })}
+      </div>
+    </div>
   )
 })
 

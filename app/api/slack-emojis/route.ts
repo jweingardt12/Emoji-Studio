@@ -332,7 +332,10 @@ export async function POST(request: NextRequest) {
       }
 
       if (emojiArray && Array.isArray(emojiArray) && emojiArray.length > 0) {
-        return NextResponse.json({ emojis: emojiArray })
+        const response = NextResponse.json({ emojis: emojiArray })
+        // Cache for 5 minutes with stale-while-revalidate for 1 minute
+        response.headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=60')
+        return response
       } else {
         // Check if this is a successful operation that doesn't return emoji data
         if (data.ok === true) {
