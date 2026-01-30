@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 
@@ -214,10 +215,13 @@ function DashboardPage() {
       {/* Mobile Header - Only show on mobile */}
       <div className="md:hidden flex items-center justify-between px-3 py-3 border-b border-border">
         <div className="flex items-center gap-3">
-          <img
+          <Image
             src="/logo.png"
             alt="Emoji Studio"
-            className="h-8 w-8 rounded-lg shadow-sm"
+            width={32}
+            height={32}
+            className="rounded-lg shadow-sm"
+            priority
           />
           <h1 className="text-lg font-semibold">Emoji Studio</h1>
         </div>

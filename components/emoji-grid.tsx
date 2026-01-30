@@ -195,6 +195,24 @@ export default function EmojiGrid() {
     }
   }, [localEmojiData, leaderboard])
 
+  // Create stable click handlers to prevent child re-renders
+  const emojiClickHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    displayEmojis.forEach(emoji => {
+      const key = `${emoji.name}-${emoji.url}`
+      handlers.set(key, () => handleEmojiClick(emoji))
+    })
+    return handlers
+  }, [displayEmojis, handleEmojiClick])
+
+  const imageErrorHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    displayEmojis.forEach(emoji => {
+      handlers.set(emoji.name, () => handleImageError(emoji.name))
+    })
+    return handlers
+  }, [displayEmojis, handleImageError])
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
@@ -208,15 +226,18 @@ export default function EmojiGrid() {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 p-2">
-        {displayEmojis.map((emoji) => (
-          <EmojiItem
-            key={`${emoji.name}-${emoji.url}`}
-            emoji={emoji}
-            imageError={imageErrors[emoji.name] || false}
-            onClick={() => handleEmojiClick(emoji)}
-            onImageError={() => handleImageError(emoji.name)}
-          />
-        ))}
+        {displayEmojis.map((emoji) => {
+          const key = `${emoji.name}-${emoji.url}`
+          return (
+            <EmojiItem
+              key={key}
+              emoji={emoji}
+              imageError={imageErrors[emoji.name] || false}
+              onClick={emojiClickHandlers.get(key)!}
+              onImageError={imageErrorHandlers.get(emoji.name)!}
+            />
+          )
+        })}
       </div>
       {showSeeMore && (
         <div className="w-full flex justify-center mt-4 mb-2">

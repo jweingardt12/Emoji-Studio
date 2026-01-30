@@ -8,7 +8,7 @@
  * Now refactored for composability - can be embedded directly into pages
  */
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, memo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import type { Variants } from "framer-motion"
 import { Search, Grid3x3, List, Loader2, Download, X, CheckCircle2, AlertCircle, Edit2, Send, TrendingUp, Clock, Laugh, Cat, Bird, Sparkles } from "lucide-react"
@@ -490,7 +490,98 @@ interface PackEmojiGridProps {
   onToggleSelection: (emoji: PackEmoji) => void
 }
 
-export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
+// Memoized individual emoji item to prevent re-renders when other items change
+interface EmojiGridItemProps {
+  emoji: PackEmoji
+  isSelected: boolean
+  index: number
+  onToggle: () => void
+}
+
+const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, onToggle }: EmojiGridItemProps) {
+  return (
+    <motion.button
+      type="button"
+      layout
+      variants={gridItemVariants}
+      initial="hidden"
+      animate="enter"
+      exit="exit"
+      transition={{ delay: Math.min(index * 0.025, 0.25) }}
+      onClick={onToggle}
+      className={cn(
+        "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
+        isSelected
+          ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))]"
+          : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm"
+      )}
+    >
+      <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
+        <OptimizedEmojiImage
+          src={emoji.imageURL}
+          alt={emoji.name}
+          className="max-w-full max-h-full object-contain drop-shadow-sm"
+        />
+      </div>
+
+      <div className={cn(
+        "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
+        isSelected
+          ? "bg-primary text-primary-foreground scale-100 opacity-100"
+          : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
+      )}>
+        {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
+      </div>
+
+      <div className="absolute bottom-2 left-1 right-1">
+        <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
+          :{emoji.name}:
+        </p>
+      </div>
+    </motion.button>
+  )
+})
+
+// Memoized list item
+const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, onToggle }: EmojiGridItemProps) {
+  return (
+    <motion.button
+      type="button"
+      layout
+      variants={listItemVariants}
+      initial="hidden"
+      animate="enter"
+      exit="exit"
+      transition={{ delay: Math.min(index * 0.02, 0.18) }}
+      onClick={onToggle}
+      className={cn(
+        "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
+        isSelected
+          ? "border-primary bg-primary/5"
+          : "border-transparent bg-card hover:border-border hover:shadow-sm"
+      )}
+    >
+      <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
+        <OptimizedEmojiImage
+          src={emoji.imageURL}
+          alt={emoji.name}
+          className="w-8 h-8 object-contain"
+        />
+      </div>
+      <span className="flex-1 text-left font-medium text-sm">
+        :{emoji.name}:
+      </span>
+      <div className={cn(
+        "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+        isSelected ? "text-primary" : "text-muted-foreground/30"
+      )}>
+        {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-4 h-4 rounded-full border-2 border-current" />}
+      </div>
+    </motion.button>
+  )
+})
+
+export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggleSelection }: PackEmojiGridProps) {
   const isGridView = viewMode === "grid"
 
   if (loading && emojis.length === 0) {
@@ -526,6 +617,16 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
     )
   }
 
+  // Create stable toggle callbacks using a Map to avoid inline function re-creation
+  const toggleHandlers = useMemo(() => {
+    const handlers = new Map<string, () => void>()
+    emojis.forEach(emoji => {
+      const key = `${emoji.id}|${emoji.name}`
+      handlers.set(key, () => onToggleSelection(emoji))
+    })
+    return handlers
+  }, [emojis, onToggleSelection])
+
   return (
     <AnimatePresence mode="wait">
       {isGridView ? (
@@ -541,49 +642,14 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
           <AnimatePresence mode="popLayout">
             {emojis.map((emoji, index) => {
               const key = `${emoji.id}|${emoji.name}`
-              const isSelected = selectedIds.has(key)
-
               return (
-                <motion.button
-                  type="button"
-                  layout
+                <EmojiGridItem
                   key={key}
-                  variants={gridItemVariants}
-                  initial="hidden"
-                  animate="enter"
-                  exit="exit"
-                  transition={{ delay: Math.min(index * 0.025, 0.25) }}
-                  onClick={() => onToggleSelection(emoji)}
-                  className={cn(
-                    "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
-                    isSelected
-                      ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))]"
-                      : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm"
-                  )}
-                >
-                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
-                    <OptimizedEmojiImage
-                      src={emoji.imageURL}
-                      alt={emoji.name}
-                      className="max-w-full max-h-full object-contain drop-shadow-sm"
-                    />
-                  </div>
-
-                  <div className={cn(
-                    "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
-                    isSelected
-                      ? "bg-primary text-primary-foreground scale-100 opacity-100"
-                      : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
-                  )}>
-                    {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
-                  </div>
-
-                  <div className="absolute bottom-2 left-1 right-1">
-                    <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
-                      :{emoji.name}:
-                    </p>
-                  </div>
-                </motion.button>
+                  emoji={emoji}
+                  isSelected={selectedIds.has(key)}
+                  index={index}
+                  onToggle={toggleHandlers.get(key)!}
+                />
               )
             })}
           </AnimatePresence>
@@ -601,43 +667,14 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
           <AnimatePresence mode="popLayout">
             {emojis.map((emoji, index) => {
               const key = `${emoji.id}|${emoji.name}`
-              const isSelected = selectedIds.has(key)
-
               return (
-                <motion.button
-                  type="button"
-                  layout
+                <EmojiListItem
                   key={key}
-                  variants={listItemVariants}
-                  initial="hidden"
-                  animate="enter"
-                  exit="exit"
-                  transition={{ delay: Math.min(index * 0.02, 0.18) }}
-                  onClick={() => onToggleSelection(emoji)}
-                  className={cn(
-                    "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
-                    isSelected
-                      ? "border-primary bg-primary/5"
-                      : "border-transparent bg-card hover:border-border hover:shadow-sm"
-                  )}
-                >
-                  <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
-                    <OptimizedEmojiImage
-                      src={emoji.imageURL}
-                      alt={emoji.name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                  <span className="flex-1 text-left font-medium text-sm">
-                    :{emoji.name}:
-                  </span>
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-                    isSelected ? "text-primary" : "text-muted-foreground/30"
-                  )}>
-                    {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-4 h-4 rounded-full border-2 border-current" />}
-                  </div>
-                </motion.button>
+                  emoji={emoji}
+                  isSelected={selectedIds.has(key)}
+                  index={index}
+                  onToggle={toggleHandlers.get(key)!}
+                />
               )
             })}
           </AnimatePresence>
@@ -645,7 +682,7 @@ export function PackEmojiGrid({ emojis, loading, viewMode, selectedIds, onToggle
       )}
     </AnimatePresence>
   )
-}
+})
 
 interface PackSelectionSidebarProps {
   selectedEmojis: PackEmoji[]

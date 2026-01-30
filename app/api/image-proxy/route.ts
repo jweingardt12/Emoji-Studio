@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
     if (contentType) {
       headers.set('Content-Type', contentType);
     }
-    // Optionally, add Cache-Control headers
-    // headers.set('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    // Enable caching for proxied images (emojis are static content)
+    headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800'); // Cache 1 day, stale for 7 days
 
     return new NextResponse(imageBlob, { status: 200, headers });
 

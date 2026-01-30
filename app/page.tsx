@@ -4,17 +4,21 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTrack } from "@/lib/hooks/use-track"
 
+/**
+ * Root Page - Handles client-side redirects that require browser APIs
+ * Note: Extension redirects (extension=true) are handled by middleware.ts
+ */
 export default function RootPage() {
   const router = useRouter()
   const track = useTrack()
 
   useEffect(() => {
-    // Check if it's a PWA
+    // Check if it's a PWA (requires client-side matchMedia)
     const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
                   (window.navigator as any).standalone === true ||
                   document.referrer.includes('android-app://');
 
-    // Check for existing data
+    // Check for existing data (requires localStorage)
     const hasEmojiData = localStorage.getItem('emojiData');
     const hasSlackCurl = localStorage.getItem('slackCurlCommand');
 
@@ -25,15 +29,6 @@ export default function RootPage() {
       hasSlackCurl: !!hasSlackCurl,
       referrer: document.referrer
     })
-
-    // Check if opened from extension
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('extension') === 'true') {
-      // Redirect to dashboard with extension parameter to show processing
-      track("Landing Page: Extension Redirect", {})
-      router.push("/dashboard?extension=true")
-      return;
-    }
 
     // For PWA users, check if it's their first time
     if (isPWA) {

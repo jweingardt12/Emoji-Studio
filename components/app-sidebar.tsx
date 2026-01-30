@@ -680,7 +680,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Wrapped",
       url: "/wrapped",
       icon: Gift,
-      badge: "NEW",
     },
     {
       title: "Settings",
