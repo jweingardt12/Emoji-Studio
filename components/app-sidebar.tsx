@@ -53,8 +53,8 @@ function Modal({ open, onClose, onSubmit }: { open: boolean; onClose: () => void
   const [curl, setCurl] = useState("")
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-card rounded-lg shadow-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-card rounded-lg shadow-lg border border-border p-6 w-full max-w-md">
         <h2 className="text-lg font-semibold mb-2">Enter Slack Curl Command</h2>
         <textarea
           className="w-full border rounded p-2 mb-4 text-sm bg-background"
@@ -245,7 +245,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
   if (!open) return null
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       <div className={`relative bg-card rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <ShineBorder
           borderWidth={2}
@@ -256,7 +256,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
           {showSuccess ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
               <div className="relative">
-                <div className="absolute inset-0 animate-ping rounded-full h-20 w-20 bg-green-500/20"></div>
+                <div className="absolute inset-0 animate-ping rounded-full h-20 w-20 bg-green-500/20" style={{ animationIterationCount: 3 }}></div>
                 <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-green-500">
                   <svg className="h-10 w-10 text-white animate-[scale-in_0.3s_ease-out]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -796,7 +796,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     onClick={() => {
                       handleNavigate({ title: "Create", url: "/create" });
                     }}
-                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150"
+                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <CirclePlus className="h-4 w-4" />
                     <span>Create Emoji</span>

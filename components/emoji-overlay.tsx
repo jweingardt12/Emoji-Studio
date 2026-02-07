@@ -460,7 +460,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                 <div className="flex flex-col gap-6">
                   {/* Emoji Image and Actions */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className="relative w-48 h-48 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <div className="relative w-40 h-40 bg-primary/10 rounded-lg flex items-center justify-center">
                       {imageError ? (
                         <div className="flex h-full w-full items-center justify-center rounded bg-muted text-4xl">
                           {emoji.name.slice(0, 2)}
@@ -615,7 +615,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
           {isMobile && (
             <div className="sticky top-0 z-10 bg-card rounded-t-xl">
               <div className="flex justify-center pt-2 pb-1">
-                <div className="w-12 h-1 bg-border rounded-full" />
+                <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
               </div>
             </div>
           )}
@@ -665,7 +665,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                 <div className={`flex ${isMobile ? "flex-col" : "flex-col md:flex-row"} gap-6`}>
                   {/* Left Column - Emoji Image and Actions */}
                   <div className="flex flex-col items-center gap-3">
-                    <div className={`relative ${isMobile ? "w-48 h-48" : "w-36 h-36"} bg-primary/10 rounded-lg flex items-center justify-center`}>
+                    <div className={`relative ${isMobile ? "w-40 h-40" : "w-32 h-32"} bg-primary/10 rounded-lg flex items-center justify-center`}>
                       {imageError ? (
                         <div className="flex h-full w-full items-center justify-center rounded bg-muted text-4xl">
                           {emoji.name.slice(0, 2)}

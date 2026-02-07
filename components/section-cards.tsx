@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
 
+/** Returns badge color classes based on positive/negative trend */
+function trendBadgeColors(isPositive: boolean) {
+  return isPositive
+    ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
+    : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20";
+}
+
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -115,6 +122,7 @@ export function SectionCards() {
   const activeUsersCount = activeUserIds.size;
   const emojisPerUser = activeUsersCount > 0 ? recentEmojis.length / activeUsersCount : 0;
 
+  // Previous week EPU for week-over-week comparison
   const twoWeeksAgo = now - 14 * 24 * 60 * 60;
   const previousWeekEmojis = nonAliasEmojis
     .filter(e => e.created >= twoWeeksAgo && e.created < oneWeekAgo);
@@ -122,6 +130,10 @@ export function SectionCards() {
   const previousAeu = previousWeekUserIds.size;
   const aeu = activeUsersCount;
   const aeuChange = previousAeu > 0 ? ((aeu - previousAeu) / previousAeu) * 100 : 0;
+
+  // EPU week-over-week change
+  const previousEpu = previousAeu > 0 ? previousWeekEmojis.length / previousAeu : 0;
+  const epuChange = previousEpu > 0 ? ((emojisPerUser - previousEpu) / previousEpu) * 100 : 0;
 
   const epw = userLeaderboard && userLeaderboard.length > 0
     ? Math.round(userLeaderboard.reduce((sum, user) => sum + (user.l4wepw || 0), 0))
@@ -170,7 +182,7 @@ export function SectionCards() {
         <InfoDrawerResponsive
           trigger={
             <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-1)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Emojis</CardTitle>
@@ -178,11 +190,7 @@ export function SectionCards() {
                     variant="secondary"
                     className={cn(
                       "font-mono text-[10px] px-1.5 py-0.5 h-5",
-                      emojisLastYear.length > 0
-                        ? totalNonAliasEmojis > emojisLastYear.length
-                          ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-                          : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
-                        : "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
+                      trendBadgeColors(emojisLastYear.length > 0 ? totalNonAliasEmojis > emojisLastYear.length : true)
                     )}
                   >
                     {emojisLastYear.length > 0 ? (
@@ -236,7 +244,7 @@ export function SectionCards() {
         <InfoDrawerResponsive
           trigger={
             <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-2)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Active Uploaders</CardTitle>
@@ -244,9 +252,7 @@ export function SectionCards() {
                     variant="secondary"
                     className={cn(
                       "font-mono text-[10px] px-1.5 py-0.5 h-5",
-                      aeuChange >= 0
-                        ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-                        : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
+                      trendBadgeColors(aeuChange >= 0)
                     )}
                   >
                     {aeuChange >= 0 ? <TrendingUpIcon className="mr-1 h-3 w-3" /> : <TrendingDownIcon className="mr-1 h-3 w-3" />}
@@ -296,7 +302,7 @@ export function SectionCards() {
         <InfoDrawerResponsive
           trigger={
             <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-3)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per User</CardTitle>
@@ -306,17 +312,15 @@ export function SectionCards() {
                       "font-mono text-[10px] px-1.5 py-0.5 h-5",
                       activeUsersCount === 0
                         ? "text-muted-foreground bg-muted"
-                        : emojisPerUser > 10
-                          ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-                          : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
+                        : trendBadgeColors(epuChange >= 0)
                     )}
                   >
                     {activeUsersCount === 0 ? (
                       "N/A"
                     ) : (
                       <>
-                        {emojisPerUser > 10 ? <TrendingUpIcon className="mr-1 h-3 w-3" /> : <TrendingDownIcon className="mr-1 h-3 w-3" />}
-                        {emojisPerUser > 10 ? "+7.2%" : "-3.5%"}
+                        {epuChange >= 0 ? <TrendingUpIcon className="mr-1 h-3 w-3" /> : <TrendingDownIcon className="mr-1 h-3 w-3" />}
+                        {epuChange >= 0 ? "+" : ""}{Math.abs(epuChange).toFixed(1)}%
                       </>
                     )}
                   </Badge>
@@ -362,7 +366,7 @@ export function SectionCards() {
         <InfoDrawerResponsive
           trigger={
             <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-4)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per Week</CardTitle>
@@ -370,9 +374,7 @@ export function SectionCards() {
                     variant="secondary"
                     className={cn(
                       "font-mono text-[10px] px-1.5 py-0.5 h-5",
-                      epwChange >= 0
-                        ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-                        : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
+                      trendBadgeColors(epwChange >= 0)
                     )}
                   >
                     {epwChange >= 0 ? <TrendingUpIcon className="mr-1 h-3 w-3" /> : <TrendingDownIcon className="mr-1 h-3 w-3" />}

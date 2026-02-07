@@ -452,7 +452,7 @@ function ExplorerPage() {
                 <Input
                   type="search"
                   placeholder="Search by name, creator, or user ID..."
-                  className="w-full rounded-lg bg-background pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm shadow-sm"
+                  className="w-full rounded-lg bg-background pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchQuery(e.target.value);
@@ -507,7 +507,7 @@ function ExplorerPage() {
 
               {/* Bulk Selection Actions Bar */}
               {bulkSelectionMode && (
-                <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <span className="text-sm font-medium">
                     {selectedEmojis.size} selected
                   </span>

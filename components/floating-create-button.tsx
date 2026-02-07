@@ -51,8 +51,6 @@ export function FloatingCreateButton({ isPWA = false }: FloatingCreateButtonProp
           "right-6",
           "flex h-14 w-14 items-center justify-center rounded-full",
           "bg-primary text-primary-foreground",
-          "shadow-2xl hover:shadow-2xl",
-          "drop-shadow-2xl hover:drop-shadow-2xl",
           "[box-shadow:0_20px_25px_-5px_rgba(0,0,0,0.3),0_10px_10px_-5px_rgba(0,0,0,0.2)]",
           "hover:scale-110 active:scale-95",
           "transition-all duration-200",

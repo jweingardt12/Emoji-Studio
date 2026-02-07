@@ -86,10 +86,6 @@ body {
   touch-action: manipulation;
 }
 
-*::-webkit-scrollbar {
-  display: none;
-}
-
 /* Hide scrollbar for specific class */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -117,21 +113,6 @@ body {
   touch-action: auto !important;
   user-select: auto !important;
   pointer-events: auto !important;
-}
-
-/* Sparkline scan animation */
-@keyframes scan {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  50% {
-    transform: translateX(calc(100% + 100vw));
-  }
-
-  100% {
-    transform: translateX(calc(100% + 100vw));
-  }
 }
 
 /* Smooth momentum scrolling for all scrollable containers */
@@ -343,20 +324,6 @@ body {
     animation-delay: 4s;
   }
 
-  /* Grid pattern background */
-  .bg-grid-pattern {
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 50px 50px;
-  }
-
-  /* Support for container queries if needed */
-  @supports (container-type: size) {
-    .supports-container-queries {
-      container-type: size;
-    }
-  }
 }
 
 @keyframes fadeUp {
@@ -500,6 +467,18 @@ body {
   }
 }
 
+/* Accessibility: reduce motion for users who prefer it (WCAG 2.1 Level A) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Glowing border animation */
 @keyframes rotate {
   0% {
@@ -624,23 +603,26 @@ body {
   background: hsl(var(--primary) / 0.8);
 }
 
-/* Fix for Radix UI Tooltip content z-index issue */
+/*
+ * Z-index layer system:
+ *   50  - Floating buttons, mobile nav
+ *  100  - Dialog/Drawer overlays
+ *  101  - Dialog/Drawer content (above its overlay)
+ *  200  - Tooltips (always topmost)
+ * 9999  - Fullscreen overlays (user-overlay, emoji-overlay portals)
+ */
 .radix-tooltip-content-wrapper {
   z-index: 200 !important;
-  /* Ensure tooltips are above other elements */
 }
 
-/* Ensure Radix UI Dialog/Drawer overlays are above other fixed elements */
 .radix-dialog-overlay,
 .radix-drawer-overlay {
   z-index: 100 !important;
-  /* Higher than most fixed elements */
 }
 
 .radix-dialog-content,
 .radix-drawer-content {
   z-index: 101 !important;
-  /* Above its own overlay */
 }
 
 /* Gradient text animation */
@@ -658,23 +640,6 @@ body {
 
 .animate-gradient-x {
   animation: gradient-x 3s ease infinite;
-}
-
-@keyframes ripple {
-  0% {
-    transform: translate(-50%, -50%) scale(0.8);
-    opacity: 0.5;
-  }
-
-  50% {
-    transform: translate(-50%, -50%) scale(1.1);
-    opacity: 0.3;
-  }
-
-  100% {
-    transform: translate(-50%, -50%) scale(0.8);
-    opacity: 0.5;
-  }
 }
 
 .animate-ripple {

@@ -183,7 +183,7 @@ function LeaderboardPage() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setShowShareModal(true)}
-                  className="h-10 px-6 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                  className="h-10 px-6 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-sm"
                   disabled={filteredLeaderboard.length === 0}
                 >
                   <Share2 className="h-4 w-4" />
@@ -216,7 +216,7 @@ function LeaderboardPage() {
               </h2>
               <Button
                 onClick={() => setShowShareModal(true)}
-                className="h-10 px-12 gap-2 relative bg-white hover:bg-gray-50 text-gray-900 border border-gray-200 shadow-sm"
+                className="h-10 px-12 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-sm"
                 disabled={filteredLeaderboard.length === 0}
               >
                 <Share2 className="h-4 w-4" />

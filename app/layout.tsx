@@ -56,6 +56,9 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
+          Skip to main content
+        </a>
         <OpenPanelProvider />
         <ThemeProvider
           attribute="class"
@@ -78,7 +81,7 @@ export default function RootLayout({
                 <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0 w-full">
                   <SiteHeader className="flex-shrink-0" />
                   <div className="flex flex-1 flex-col overflow-hidden">
-                    <div className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto native-scroll no-horizontal-scroll">
+                    <div id="main-content" className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto native-scroll no-horizontal-scroll">
                       <PullToRefreshWrapper>
                         <div className="flex flex-col gap-4 p-4 pt-safe md:p-6 lg:px-6">
                           <ErrorBoundary>

@@ -531,14 +531,14 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                         dot={{
                           r: 4,
                           fill: 'hsl(var(--primary))',
-                          stroke: 'white',
+                          stroke: 'hsl(var(--background))',
                           strokeWidth: 1,
                         }}
                         activeDot={{
                           r: 6,
                           stroke: 'hsl(var(--primary))',
                           strokeWidth: 2,
-                          fill: 'white'
+                          fill: 'hsl(var(--background))'
                         }}
                         animationDuration={700}
                       />

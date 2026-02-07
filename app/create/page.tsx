@@ -490,7 +490,7 @@ function EmojiCreatorContent() {
                               "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                               isSelected
                                 ? "text-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
                           >
                             {isSelected && (
