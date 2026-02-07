@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { useCreatePageContext } from "./CreatePageContext"
 import { useTrack } from "@/lib/hooks/use-track"
+import { DotPattern } from "@/components/ui/dot-pattern"
 
 interface FileUploadZoneProps {
   onProcessFiles: (files?: File[]) => void
@@ -100,7 +101,7 @@ const FilePreviewItem = memo(function FilePreviewItem({
   return (
     <motion.div
       variants={itemVariants}
-      className="relative group rounded-xl border border-border/50 bg-card overflow-hidden aspect-square shadow-sm hover:shadow-lg hover:border-border transition-all duration-300"
+      className="relative group rounded-2xl border border-border/30 bg-card/90 backdrop-blur-sm overflow-hidden aspect-square shadow-sm hover:shadow-xl hover:border-border transition-all duration-300"
       whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
     >
@@ -127,7 +128,7 @@ const FilePreviewItem = memo(function FilePreviewItem({
       )}
 
       {/* Format badge */}
-      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-medium text-white">
+      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-semibold text-white shadow-sm">
         {getFormatBadge(file)}
       </div>
 
@@ -278,19 +279,39 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
       onDrop={handleDrop}
     >
       {selectedFiles.length === 0 ? (
-        // Empty state with glass effect and floating icons
-        <div className="h-full bg-gradient-to-br from-muted/40 via-background to-muted/20 rounded-xl">
+        // Empty state with immersive layered design
+        <div className="h-full relative rounded-2xl overflow-hidden bg-gradient-to-br from-muted/30 via-background to-muted/20">
+          {/* Background layers */}
+          <div className="absolute inset-0 pointer-events-none">
+            <DotPattern className="absolute inset-0 opacity-[0.12] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)]" />
+            <motion.div
+              className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full bg-purple-500/10 blur-3xl"
+              animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl"
+              animate={{ x: [0, -20, 0], y: [0, 15, 0] }}
+              transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            />
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-pink-500/8 blur-3xl"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            />
+          </div>
+
           <div className={cn(
-            "h-full glass-liquid rounded-xl m-2 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-300",
-            isDragging && "bg-primary/5 scale-[1.01]"
+            "h-full glass-liquid rounded-2xl m-2 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all duration-300",
+            isDragging && "ring-2 ring-primary/50 scale-[1.01] drop-zone-active"
           )}>
-            {/* Floating format icons */}
+            {/* Floating format badges */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               {FORMAT_ICONS.map((format, i) => (
                 <motion.div
                   key={format.type}
                   className={cn(
-                    "absolute flex items-center gap-1 px-2 py-1 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm",
+                    "absolute flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-background/90 backdrop-blur-md border border-border/40 shadow-md",
                     format.color
                   )}
                   style={{
@@ -304,68 +325,87 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
                   transition={{ delay: format.delay }}
                 >
                   <format.icon className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">{format.type}</span>
+                  <span className="text-xs font-semibold">{format.type}</span>
                 </motion.div>
               ))}
             </div>
 
-            {/* Main upload prompt */}
+            {/* Main upload prompt with fade-up entrance */}
             <motion.div
-              className={cn(
-                "relative z-10 h-20 w-20 rounded-2xl flex items-center justify-center mb-6 transition-all duration-300",
-                isDragging
-                  ? "bg-primary/20 scale-110"
-                  : "bg-gradient-to-br from-primary/10 to-primary/5"
-              )}
-              animate={isDragging ? { scale: [1.1, 1.15, 1.1] } : {}}
-              transition={{ duration: 0.5, repeat: isDragging ? Infinity : 0 }}
+              className="relative z-10 flex flex-col items-center"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              <Upload className={cn(
-                "h-10 w-10 transition-colors duration-300",
-                isDragging ? "text-primary" : "text-muted-foreground"
-              )} />
-            </motion.div>
-
-            <h3 className="text-xl font-semibold mb-2">
-              {isDragging ? "Drop files here" : "Drag and drop files here"}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-8 max-w-md">
-              Drop your images, videos, or GIFs to convert them to Slack-ready emojis
-            </p>
-
-            <input
-              type="file"
-              id="file-upload-tab"
-              className="hidden"
-              multiple
-              accept="image/*,video/*,.gif,.webp"
-              onChange={handleFileSelect}
-            />
-
-            {/* Enhanced CTA button with shimmer effect */}
-            <Button
-              asChild
-              size="lg"
-              className="relative overflow-hidden group bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <label htmlFor="file-upload-tab" className="cursor-pointer">
-                <Upload className="mr-2 h-4 w-4" />
-                Choose Files
-                <ShimmerOverlay />
-              </label>
-            </Button>
-
-            {/* Format badges */}
-            <div className="flex flex-wrap gap-2 mt-6 justify-center">
-              {["JPG", "PNG", "GIF", "WebP", "MP4", "MOV", "WebM"].map((format) => (
-                <span
-                  key={format}
-                  className="px-2 py-0.5 text-xs font-medium rounded-full bg-muted/80 text-muted-foreground border border-border/50"
+              {/* Icon with glow ring */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-purple-500/30 via-blue-500/20 to-pink-500/30 blur-xl opacity-60" />
+                <motion.div
+                  className={cn(
+                    "relative h-24 w-24 rounded-3xl flex items-center justify-center transition-all duration-300",
+                    "bg-gradient-to-br from-purple-500/15 via-blue-500/10 to-pink-500/15",
+                    "ring-1 ring-purple-500/20 ring-offset-2 ring-offset-background",
+                    isDragging && "bg-primary/20 scale-110"
+                  )}
+                  animate={isDragging ? { scale: [1.1, 1.15, 1.1] } : {}}
+                  transition={{ duration: 0.5, repeat: isDragging ? Infinity : 0 }}
                 >
-                  {format}
-                </span>
-              ))}
-            </div>
+                  <Upload className={cn(
+                    "h-10 w-10 transition-colors duration-300",
+                    isDragging ? "text-primary" : "text-muted-foreground"
+                  )} />
+                </motion.div>
+              </div>
+
+              <h3 className="text-2xl font-bold mb-2" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>
+                {isDragging ? "Drop files here" : "Drag and drop files here"}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">
+                Drop your images, videos, or GIFs to transform them into Slack-ready emojis
+              </p>
+
+              <input
+                type="file"
+                id="file-upload-tab"
+                className="hidden"
+                multiple
+                accept="image/*,video/*,.gif,.webp"
+                onChange={handleFileSelect}
+              />
+
+              {/* Enhanced CTA button with purple-blue gradient */}
+              <Button
+                asChild
+                size="lg"
+                className="relative overflow-hidden group h-12 px-8 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 border-0"
+              >
+                <label htmlFor="file-upload-tab" className="cursor-pointer">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Choose Files
+                  <ShimmerOverlay />
+                </label>
+              </Button>
+
+              {/* Format badges with staggered entrance */}
+              <motion.div
+                className="flex flex-wrap gap-2 mt-6 justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                {["JPG", "PNG", "GIF", "WebP", "MP4", "MOV", "WebM"].map((format, i) => (
+                  <motion.span
+                    key={format}
+                    className="px-2.5 py-1 text-xs font-medium rounded-lg bg-muted/50 text-muted-foreground border border-border/30 backdrop-blur-sm"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                  >
+                    {format}
+                  </motion.span>
+                ))}
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       ) : (
@@ -436,9 +476,9 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
           </div>
 
           {/* Desktop action panel - only visible on lg+ */}
-          <div className="hidden lg:flex lg:flex-col lg:w-72 xl:w-80 glass-liquid rounded-xl p-5 gap-5">
+          <div className="hidden lg:flex lg:flex-col lg:w-72 xl:w-80 glass-liquid rounded-2xl p-6 gap-5 border border-border/30">
             <div>
-              <h4 className="font-semibold text-lg mb-1">Ready to Process</h4>
+              <h4 className="font-bold text-lg mb-1" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>Ready to Process</h4>
               <p className="text-sm text-muted-foreground">
                 {fileStats.total} file{fileStats.total !== 1 ? 's' : ''} selected
               </p>
@@ -454,6 +494,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
               {fileStats.images > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
                     <Image className="h-4 w-4" />
                     Images
                   </span>
@@ -464,6 +505,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
               {fileStats.videos > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-purple-500" />
                     <Film className="h-4 w-4" />
                     Videos
                   </span>
@@ -480,7 +522,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
                   {Array.from(fileStats.formats.entries()).map(([format, count]) => (
                     <span
                       key={format}
-                      className="px-2 py-0.5 text-xs font-medium rounded-full bg-muted/80 text-muted-foreground border border-border/50"
+                      className="px-2 py-0.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-muted/60 to-muted/40 text-muted-foreground border border-border/30"
                     >
                       {format} ({count})
                     </span>
@@ -520,7 +562,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
                 size="lg"
                 onClick={() => onProcessFiles()}
                 disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl hover:shadow-purple-500/20 transition-all duration-300 relative overflow-hidden group border-0"
               >
                 <Sparkles className="mr-2 h-5 w-5" />
                 Process All ({selectedFiles.length})

@@ -38,9 +38,9 @@ export const ExtensionBanner = memo(function ExtensionBanner({
       className="flex-none mb-4 relative overflow-hidden"
     >
       {/* Glass container */}
-      <div className="glass-liquid rounded-xl p-4 relative">
+      <div className="glass-liquid rounded-2xl p-4 relative" style={{ boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.12), 0 8px 32px 0 rgba(0,0,0,0.4), 0 0 0 1px var(--wrapped-glass-border)' }}>
         {/* Floating gradient blobs in background */}
-        <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
+        <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
           {FLOATING_BLOBS.map((blob, i) => (
             <motion.div
               key={i}
@@ -60,7 +60,7 @@ export const ExtensionBanner = memo(function ExtensionBanner({
           <div className="flex items-center gap-3">
             {/* Animated icon container */}
             <motion.div
-              className="flex-shrink-0 h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 shadow-lg"
+              className="flex-shrink-0 h-11 w-11 rounded-2xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center border border-white/10 shadow-lg"
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >

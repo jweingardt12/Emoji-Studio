@@ -448,7 +448,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
 
   return (
     <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-      <div className="flex p-1 bg-muted/50 rounded-xl w-max min-w-full sm:min-w-0">
+      <div className="flex p-1.5 bg-muted/30 rounded-2xl border border-border/20 backdrop-blur-sm w-max min-w-full sm:min-w-0">
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
 
@@ -457,7 +457,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               className={cn(
-                "relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 isSelected
                   ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
@@ -466,7 +466,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               {isSelected && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border/50"
+                  className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/40"
                   initial={false}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
@@ -511,10 +511,10 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       transition={{ duration: 0.15 }}
       onClick={onToggle}
       className={cn(
-        "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
+        "group relative flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all duration-200",
         isSelected
-          ? "border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary))]"
-          : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-sm"
+          ? "border-primary/60 bg-primary/5 shadow-md shadow-primary/10"
+          : "border-transparent bg-card/80 hover:bg-accent/50 hover:border-border hover:shadow-md hover:-translate-y-0.5"
       )}
     >
       <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
@@ -875,10 +875,10 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:shadow bg-card">
-      <div className="p-4 sm:p-5 border-b">
+    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-2xl xl:border xl:border-border/40 xl:shadow-lg bg-card/95 xl:backdrop-blur-sm">
+      <div className="p-5 sm:p-6 border-b border-border/40">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-sm">Selected Emojis</h3>
+          <h3 className="font-bold text-sm" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>Selected Emojis</h3>
           {selectedEmojis.length > 0 && (
             <Button
               variant="ghost"
@@ -891,14 +891,14 @@ export function PackSelectionSidebar({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          {selectedEmojis.length}/{maxSelection} selected
+          <span className="font-bold text-foreground">{selectedEmojis.length}</span>/{maxSelection} selected
         </p>
       </div>
 
       <ScrollArea className="flex-1 min-h-0 p-4">
         {selectedEmojis.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground p-4">
-            <div className="w-20 h-20 rounded-2xl bg-muted/30 flex items-center justify-center mb-4 rotate-3">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/10 flex items-center justify-center mb-4 rotate-3">
               <Sparkles className="h-10 w-10 opacity-20" />
             </div>
             <h4 className="font-medium text-foreground mb-1">No emojis selected</h4>
@@ -925,7 +925,7 @@ export function PackSelectionSidebar({
                     exit="exit"
                     transition={{ delay: Math.min(index * 0.03, 0.2) }}
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
+                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
                       hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
                       hasNameChecking && status === "available" && "border-green-500/30 bg-green-50/10"
                     )}

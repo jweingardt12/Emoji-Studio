@@ -755,6 +755,15 @@ body {
   animation: rainbow var(--speed, 2s) linear infinite;
 }
 
+/* Drop zone pulse animation for active drag state */
+@keyframes drop-zone-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2); }
+  50% { box-shadow: 0 0 0 12px rgba(147, 51, 234, 0); }
+}
+.drop-zone-active {
+  animation: drop-zone-pulse 1.5s ease-in-out infinite;
+}
+
 /* Checkerboard pattern for transparent backgrounds */
 .bg-checkerboard {
   background-image:
