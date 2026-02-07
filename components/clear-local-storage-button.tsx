@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { idb } from "@/lib/storage/indexed-db"
+import { idb, emojiStorage } from "@/lib/storage/indexed-db"
 
 export function ClearLocalStorageButton() {
   const { setEmojiData, setHasRealData, setUseDemoData, setWorkspace } = useEmojiData()
@@ -12,38 +12,60 @@ export function ClearLocalStorageButton() {
     event.stopPropagation();
 
     try {
-      // Reset the IndexedDB singleton connection first
+      // Step 1: Clear all IndexedDB stores WHILE the connection is still open.
+      // This is reliable because it uses a normal readwrite transaction, unlike
+      // deleteDatabase() which can be blocked by open connections and silently fail.
+      try {
+        await emojiStorage.clearEmojis()
+        await idb.clear('settings')
+        await idb.clear('cache')
+        console.log('[ClearData] IndexedDB stores cleared')
+      } catch (e) {
+        console.warn('[ClearData] Failed to clear IndexedDB stores:', e)
+      }
+
+      // Step 2: Close the IndexedDB connection after stores are cleared
       idb.reset();
 
-      // Clear all localStorage
+      // Step 3: Clear all localStorage
       localStorage.clear()
 
-      // Clear all sessionStorage
+      // Step 4: Clear all sessionStorage
       sessionStorage.clear()
 
-      // Clear all cookies for this domain
+      // Step 5: Clear all cookies for this domain
       document.cookie.split(";").forEach((c) => {
         document.cookie = c
           .replace(/^ +/, "")
           .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
       })
 
-      // Clear IndexedDB databases and wait for completion
+      // Step 6: Try to delete the IndexedDB database entirely.
+      // Wait for onsuccess even if onblocked fires first — the delete will
+      // eventually complete once all connections close (which we did in step 2).
       if ('indexedDB' in window) {
-        // Delete the main emoji database
         await new Promise<void>((resolve) => {
           const deleteRequest = indexedDB.deleteDatabase('EmojiStudioDB')
+          let resolved = false
+          const done = () => {
+            if (!resolved) {
+              resolved = true
+              resolve()
+            }
+          }
           deleteRequest.onsuccess = () => {
-            console.log('IndexedDB cleared')
-            resolve()
+            console.log('[ClearData] IndexedDB database deleted')
+            done()
           }
           deleteRequest.onerror = () => {
-            console.error('Failed to clear IndexedDB')
-            resolve() // Continue anyway
+            console.error('[ClearData] Failed to delete IndexedDB database')
+            done()
           }
           deleteRequest.onblocked = () => {
-            console.warn('IndexedDB delete blocked - closing connections')
-            resolve() // Continue anyway
+            console.warn('[ClearData] IndexedDB delete blocked, stores already cleared — continuing')
+            // Don't resolve yet — wait for onsuccess. But set a timeout as fallback
+            // in case the delete never completes (e.g. leaked connection in another tab).
+            setTimeout(done, 2000)
           }
         })
 
@@ -62,13 +84,13 @@ export function ClearLocalStorageButton() {
         }
       }
 
-      // Clear all in-memory state
+      // Step 7: Clear all in-memory state
       setEmojiData([])
       setHasRealData(false)
       setUseDemoData(false)
       setWorkspace("")
 
-      // Clear any cached data (Service Worker caches)
+      // Step 8: Clear any cached data (Service Worker caches)
       if ('caches' in window) {
         const names = await caches.keys()
         await Promise.all(names.map(name => caches.delete(name)))
