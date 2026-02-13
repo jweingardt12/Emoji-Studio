@@ -91,7 +91,7 @@ export function VirtualizedExplorerGrid({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 200, // Estimated row height including padding
+    estimateSize: () => 260, // Row height: card (~200px) + grid gap (~20px) + row padding (~16px) + buffer
     overscan: 3,
   })
 
@@ -143,7 +143,7 @@ export function VirtualizedExplorerGrid({
                     <div
                       key={`${emoji.name}-${emoji.url}`}
                       className={cn(
-                        "group relative flex flex-col items-center justify-between rounded-xl border-2 bg-card p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full",
+                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full overflow-hidden",
                         isNew && "ring-2 ring-primary/50 bg-primary/5",
                         isSelected && "ring-2 ring-primary bg-primary/5 border-primary",
                         !bulkSelectionMode && "hover:border-primary/40"
@@ -172,14 +172,14 @@ export function VirtualizedExplorerGrid({
                       )}
 
                       {/* Emoji Image */}
-                      <div className="flex-shrink-0 mb-3 mt-2">
+                      <div className="flex-shrink-0 my-2">
                         <OptimizedEmojiImage
                           src={emoji.url || getPlaceholderImage(emoji.name)}
                           alt={`:${emoji.name}:`}
-                          className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
+                          className="h-14 w-14 sm:h-16 sm:w-16 object-contain rounded-lg group-hover:scale-110 transition-transform duration-200"
                           onError={() => onImageError(emoji.name)}
                           fallback={
-                            <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
+                            <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
                               {emoji.name.slice(0, 2).toUpperCase()}
                             </div>
                           }
@@ -187,17 +187,17 @@ export function VirtualizedExplorerGrid({
                       </div>
 
                       {/* Emoji Details */}
-                      <div className="w-full space-y-1">
-                        <p className="text-sm font-semibold text-foreground text-center truncate px-1" title={`:${emoji.name}:`}>
+                      <div className="w-full mt-auto space-y-0.5 min-w-0">
+                        <p className="text-xs sm:text-sm font-semibold text-card-foreground text-center truncate px-0.5" title={`:${emoji.name}:`}>
                           :{emoji.name.length > 14 ? emoji.name.slice(0, 14) + "…" : emoji.name}:
                         </p>
                         {emoji.user_display_name && (
-                          <p className="text-xs text-muted-foreground text-center truncate px-1" title={emoji.user_display_name}>
+                          <p className="text-[11px] sm:text-xs text-muted-foreground text-center truncate px-0.5" title={emoji.user_display_name}>
                             by {emoji.user_display_name.split(" ")[0]}
                           </p>
                         )}
                         {emoji.created && (
-                          <p className="text-xs text-muted-foreground/80 text-center">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground/70 text-center">
                             {new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
                           </p>
                         )}
