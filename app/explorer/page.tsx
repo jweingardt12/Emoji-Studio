@@ -545,18 +545,18 @@ function ExplorerPage() {
               <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                   {Array.from({ length: 24 }).map((_, i) => (
-                    <div key={i} className="flex flex-col items-center justify-between rounded-xl border-2 bg-card p-4 shadow-sm">
-                      {/* Emoji Image Skeleton - Larger */}
-                      <div className="flex-shrink-0 mb-3 mt-2">
-                        <Skeleton className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg" />
+                    <div key={i} className="flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm overflow-hidden">
+                      {/* Emoji Image Skeleton */}
+                      <div className="flex-shrink-0 my-2">
+                        <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg" />
                       </div>
-                      <div className="w-full space-y-2">
+                      <div className="w-full mt-auto space-y-1">
                         {/* Emoji Name Skeleton */}
-                        <Skeleton className="h-4 w-24 mx-auto" />
+                        <Skeleton className="h-3.5 w-20 mx-auto" />
                         {/* Creator Name Skeleton */}
-                        <Skeleton className="h-3 w-16 mx-auto" />
+                        <Skeleton className="h-3 w-14 mx-auto" />
                         {/* Date Skeleton */}
-                        <Skeleton className="h-3 w-20 mx-auto" />
+                        <Skeleton className="h-2.5 w-16 mx-auto" />
                       </div>
                     </div>
                   ))}
