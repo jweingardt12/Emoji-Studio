@@ -17,7 +17,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.120",
+    "@anthropic-ai/claude-code": "^2.1.7",
     "@dnd-kit/core": "latest",
     "@dnd-kit/modifiers": "latest",
     "@dnd-kit/sortable": "latest",
