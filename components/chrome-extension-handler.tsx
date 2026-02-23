@@ -36,6 +36,14 @@ export function ChromeExtensionHandler() {
     })
     console.log('[ChromeExtensionHandler] Sync meta:', meta)
 
+    // Don't re-sync if data was just cleared by the user
+    const dataClearedAt = sessionStorage.getItem('dataClearedAt')
+    if (dataClearedAt && (Date.now() - parseInt(dataClearedAt)) < 10000) {
+      console.log('[ChromeExtensionHandler] Data was recently cleared, ignoring sync data');
+      sessionStorage.removeItem('dataClearedAt')
+      return;
+    }
+
     // Prevent duplicate processing of the same sync
     const syncTime = data.lastSyncTime || Date.now();
     if (syncTime === lastSyncTimeProcessed.current) {

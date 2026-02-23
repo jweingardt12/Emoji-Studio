@@ -489,7 +489,7 @@ function EmojiCreatorContent() {
                 </div>
 
                 {/* Pill-style tabs with animated indicator */}
-                <div className="hidden sm:flex p-1.5 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border/50">
+                <div className="hidden sm:flex p-1.5 bg-muted backdrop-blur-sm rounded-2xl border border-border">
                   {[
                     { id: "upload", label: "Upload", icon: Upload },
                     { id: "browse", label: "Browse Packs", icon: Grid3x3 },
@@ -528,7 +528,7 @@ function EmojiCreatorContent() {
                 </div>
 
                 {/* Mobile tabs - visible on sm and below */}
-                <div className="flex sm:hidden p-1 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border/50">
+                <div className="flex sm:hidden p-1 bg-muted backdrop-blur-sm rounded-2xl border border-border">
                   {[
                     { id: "upload", label: "Upload", icon: Upload },
                     { id: "browse", label: "Browse", icon: Grid3x3 },
