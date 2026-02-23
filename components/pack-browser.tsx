@@ -448,7 +448,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
 
   return (
     <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-      <div className="flex p-1.5 bg-muted/50 rounded-2xl border border-border/50 backdrop-blur-sm w-max min-w-full sm:min-w-0">
+      <div className="flex p-1.5 bg-muted rounded-2xl border border-border backdrop-blur-sm w-max min-w-full sm:min-w-0">
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
 
@@ -513,7 +513,7 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       className={cn(
         "group relative flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all duration-200",
         isSelected
-          ? "border-primary/60 bg-primary/10 shadow-md shadow-primary/10"
+          ? "border-primary bg-primary/15 shadow-md shadow-primary/10"
           : "border-transparent bg-card hover:bg-accent hover:border-border hover:shadow-md hover:-translate-y-0.5"
       )}
     >
@@ -535,7 +535,7 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       </div>
 
       <div className="absolute bottom-2 left-1 right-1">
-        <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/50 rounded-md">
+        <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted rounded-md">
           :{emoji.name}:
         </p>
       </div>
@@ -562,7 +562,7 @@ const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, on
           : "border-transparent bg-card hover:border-border hover:shadow-sm"
       )}
     >
-      <div className="w-10 h-10 flex items-center justify-center bg-muted/50 rounded-lg">
+      <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-lg">
         <OptimizedEmojiImage
           src={emoji.imageURL}
           alt={emoji.name}
@@ -574,7 +574,7 @@ const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, on
       </span>
       <div className={cn(
         "w-6 h-6 rounded-full flex items-center justify-center transition-colors",
-        isSelected ? "text-primary" : "text-muted-foreground/60"
+        isSelected ? "text-primary" : "text-muted-foreground"
       )}>
         {isSelected ? <CheckCircle2 className="w-5 h-5" /> : <div className="w-4 h-4 rounded-full border-2 border-current" />}
       </div>
@@ -657,7 +657,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
           <div
             key={i}
             className={cn(
-              "animate-pulse bg-muted/50 rounded-xl",
+              "animate-pulse bg-muted rounded-xl",
               isGridView ? "aspect-square" : "h-16"
             )}
           />
@@ -669,7 +669,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   if (emojis.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-        <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
           <Search className="w-8 h-8 opacity-50" />
         </div>
         <p className="font-medium">No emojis found</p>
