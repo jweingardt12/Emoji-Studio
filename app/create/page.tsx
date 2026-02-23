@@ -489,7 +489,7 @@ function EmojiCreatorContent() {
                 </div>
 
                 {/* Pill-style tabs with animated indicator */}
-                <div className="hidden sm:flex p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl border border-border/30">
+                <div className="hidden sm:flex p-1.5 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border/50">
                   {[
                     { id: "upload", label: "Upload", icon: Upload },
                     { id: "browse", label: "Browse Packs", icon: Grid3x3 },
@@ -513,7 +513,7 @@ function EmojiCreatorContent() {
                         {isSelected && (
                           <motion.div
                             layoutId="createPageActiveTab"
-                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/50"
+                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border"
                             initial={false}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -528,7 +528,7 @@ function EmojiCreatorContent() {
                 </div>
 
                 {/* Mobile tabs - visible on sm and below */}
-                <div className="flex sm:hidden p-1 bg-muted/30 backdrop-blur-sm rounded-2xl border border-border/30">
+                <div className="flex sm:hidden p-1 bg-muted/50 backdrop-blur-sm rounded-2xl border border-border/50">
                   {[
                     { id: "upload", label: "Upload", icon: Upload },
                     { id: "browse", label: "Browse", icon: Grid3x3 },
@@ -552,7 +552,7 @@ function EmojiCreatorContent() {
                         {isSelected && (
                           <motion.div
                             layoutId="createPageActiveTabMobile"
-                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/50"
+                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border"
                             initial={false}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -570,7 +570,7 @@ function EmojiCreatorContent() {
               {activeTab === "browse" && packBrowser.selectedEmojis.length > 0 && (
                 <Button
                   onClick={() => updateCartOpen(true, 'toolbar')}
-                  className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm sm:hidden"
+                  className="relative h-9 w-9 rounded-xl border border-border bg-card shadow-sm sm:hidden"
                   size="icon"
                   variant="ghost"
                 >
@@ -581,7 +581,7 @@ function EmojiCreatorContent() {
           </div>
 
           {/* Main content card */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl bg-card backdrop-blur-sm border border-border shadow-lg">
             <Tabs value={activeTab} className="flex flex-col flex-1 min-h-0">
               {/* Upload Tab Content */}
               <TabsContent value="upload" className="flex-1 min-h-0 m-0 p-4">
@@ -591,7 +591,7 @@ function EmojiCreatorContent() {
               {/* Browse Packs Tab Content */}
               <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative">
                 <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(320px,28vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4 pb-20 md:pb-4">
-                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border/40 shadow-md bg-card/90 backdrop-blur-sm">
+                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border shadow-md bg-card backdrop-blur-sm">
                     <CardHeader className="flex-none pb-3">
                       <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
@@ -695,7 +695,7 @@ function EmojiCreatorContent() {
                     exit={{ y: 100, opacity: 0 }}
                     className="absolute bottom-4 left-4 right-4 lg:hidden"
                   >
-                    <div className="glass-liquid rounded-xl p-3 shadow-lg border border-border/50">
+                    <div className="glass-liquid rounded-xl p-3 shadow-lg border border-border">
                       <div className="flex items-center gap-3">
                         {/* Selection info - tap to open sheet */}
                         <button
