@@ -15,14 +15,17 @@ export function ClearLocalStorageButton() {
       // Step 1: Clear all IndexedDB stores WHILE the connection is still open.
       // This is reliable because it uses a normal readwrite transaction, unlike
       // deleteDatabase() which can be blocked by open connections and silently fail.
-      try {
-        await emojiStorage.clearEmojis()
-        await idb.clear('settings')
-        await idb.clear('cache')
-        console.log('[ClearData] IndexedDB stores cleared')
-      } catch (e) {
-        console.warn('[ClearData] Failed to clear IndexedDB stores:', e)
+      // Each operation is independent so one failure doesn't block the others.
+      try { await emojiStorage.clearEmojis() } catch (e) {
+        console.warn('[ClearData] Failed to clear emoji store:', e)
       }
+      try { await idb.clear('settings') } catch (e) {
+        console.warn('[ClearData] Failed to clear settings store:', e)
+      }
+      try { await idb.clear('cache') } catch (e) {
+        console.warn('[ClearData] Failed to clear cache store:', e)
+      }
+      console.log('[ClearData] IndexedDB stores cleared')
 
       // Step 2: Close the IndexedDB connection after stores are cleared
       idb.reset();
@@ -34,10 +37,26 @@ export function ClearLocalStorageButton() {
       sessionStorage.clear()
 
       // Step 5: Clear all cookies for this domain
+      // Try multiple path/domain combinations to catch cookies set at different scopes
+      const expiry = "=;expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      const hostname = window.location.hostname
+      const paths = ["/", ""]
+      const domains = ["", hostname]
+      // Add parent domain (e.g. "example.com" from "www.example.com")
+      const parts = hostname.split(".")
+      if (parts.length > 2) {
+        domains.push(parts.slice(1).join("."))
+      }
       document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+        const name = c.replace(/^ +/, "").split("=")[0]
+        if (!name) return
+        for (const path of paths) {
+          for (const domain of domains) {
+            const domainPart = domain ? `;domain=${domain}` : ""
+            document.cookie = `${name}${expiry};path=${path || "/"}${domainPart}`
+            document.cookie = `${name}${expiry};path=${path || "/"}${domainPart};secure`
+          }
+        }
       })
 
       // Step 6: Try to delete the IndexedDB database entirely.
@@ -107,6 +126,11 @@ export function ClearLocalStorageButton() {
       if (typeof window !== 'undefined') {
         window.postMessage({ type: 'EMOJI_STUDIO_CLEAR_DATA' }, '*')
       }
+
+      // Set a flag AFTER clearing sessionStorage to prevent the Chrome extension
+      // from immediately re-syncing data on the next page load. sessionStorage
+      // persists across same-tab navigations, so this survives the reload below.
+      sessionStorage.setItem('dataClearedAt', Date.now().toString())
 
       // Force reload to ensure clean state
       setTimeout(() => {

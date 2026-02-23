@@ -103,6 +103,14 @@ export function initializeExtensionListener(
         if (onSyncedDataReceived) {
           onSyncedDataReceived(event.data.data, event.data.meta);
         } else {
+          // Don't re-sync if data was just cleared
+          const clearedAt = sessionStorage.getItem('dataClearedAt')
+          if (clearedAt && (Date.now() - parseInt(clearedAt)) < 10000) {
+            console.log('[Emoji Studio] Data was recently cleared, ignoring sync data');
+            sessionStorage.removeItem('dataClearedAt')
+            return;
+          }
+
           // Default handling - store in localStorage
           console.log('[Emoji Studio] No handler provided, using default storage');
 
@@ -188,9 +196,18 @@ export function initializeExtensionListener(
     window.postMessage({ type: 'REQUEST_EXTENSION_DATA' }, '*');
   }
   
-  // Always request synced data on page load
-  console.log('[Emoji Studio] Requesting synced data from extension');
-  window.postMessage({ type: 'REQUEST_EXTENSION_SYNC_DATA' }, '*');
+  // Request synced data on page load, but skip if data was just cleared
+  // to prevent the extension from immediately restoring the data we just wiped.
+  const dataClearedAt = sessionStorage.getItem('dataClearedAt')
+  const clearWasRecent = dataClearedAt && (Date.now() - parseInt(dataClearedAt)) < 10000
+
+  if (clearWasRecent) {
+    console.log('[Emoji Studio] Data was recently cleared, skipping extension sync request');
+    sessionStorage.removeItem('dataClearedAt')
+  } else {
+    console.log('[Emoji Studio] Requesting synced data from extension');
+    window.postMessage({ type: 'REQUEST_EXTENSION_SYNC_DATA' }, '*');
+  }
 }
 
 // Function to reset the listener initialization state (for testing/cleanup)
