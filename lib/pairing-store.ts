@@ -36,13 +36,18 @@ function cleanupExpired() {
 }
 
 function randomCode(): string {
-  // 6 digit numeric code using cryptographically secure randomness
-  // Range: 100000-999999 (avoids leading zeros)
+  // 8-character alphanumeric code for higher entropy (~48 bits vs ~20 bits for 6-digit numeric)
   const crypto = require("crypto") as typeof import("crypto")
-  return String(crypto.randomInt(100000, 1000000))
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Omit confusing chars: 0/O, 1/I/L
+  let code = ''
+  const bytes = crypto.randomBytes(8)
+  for (let i = 0; i < 8; i++) {
+    code += chars[bytes[i] % chars.length]
+  }
+  return code
 }
 
-function randomSid(length = 12): string {
+function randomSid(length = 24): string {
   // Generate an alphanumeric session id using crypto (required, no fallback)
   const crypto = require("crypto") as typeof import("crypto")
   return crypto.randomBytes(Math.ceil(length / 2)).toString("hex").slice(0, length)

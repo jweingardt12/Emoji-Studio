@@ -281,6 +281,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
   const [imageError, setImageError] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const triggerRef = useRef<Element | null>(null)
 
   // Mount effect for portal
   useEffect(() => {
@@ -291,6 +292,8 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
   // Animation effect - matching UserOverlay pattern
   useEffect(() => {
     if (emoji) {
+      // Store the currently focused element to restore on close
+      triggerRef.current = document.activeElement
       if (isMobile) {
         // For mobile, use drawer state
         setIsDrawerOpen(true)
@@ -338,6 +341,11 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
     } else {
       setIsVisible(false)
       setIsDrawerOpen(false)
+      // Restore focus to the element that opened the overlay
+      if (triggerRef.current && triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus()
+        triggerRef.current = null
+      }
       // Restore scroll when closing
       if (!isMobile) {
         document.body.style.overflow = ''

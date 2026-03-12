@@ -142,13 +142,22 @@ export function VirtualizedExplorerGrid({
                   return (
                     <div
                       key={`${emoji.name}-${emoji.url}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`:${emoji.name}: emoji`}
                       className={cn(
-                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full overflow-hidden",
+                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         isNew && "ring-2 ring-primary/50 bg-primary/5",
                         isSelected && "ring-2 ring-primary bg-primary/5 border-primary",
                         !bulkSelectionMode && "hover:border-primary/40"
                       )}
                       onClick={(e) => handleEmojiClick(emoji, e)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleEmojiClick(emoji, e as unknown as React.MouseEvent)
+                        }
+                      }}
                     >
                       {/* Bulk Selection Checkbox */}
                       {bulkSelectionMode && (

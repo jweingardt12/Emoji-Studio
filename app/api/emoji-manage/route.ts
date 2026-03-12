@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateProxyUrl, sanitizeErrorResponse, shouldLogSensitive } from "@/lib/utils/url-validation"
+import { sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
 
-export async function POST(request: NextRequest) {
-  console.log('API emoji-manage endpoint hit')
+// Validate emoji name: alphanumeric, hyphens, underscores, 1-100 chars
+const EMOJI_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
+function isValidEmojiName(name: string): boolean {
+  return typeof name === 'string' && name.length >= 1 && name.length <= 100 && EMOJI_NAME_PATTERN.test(name)
+}
 
+export async function POST(request: NextRequest) {
   try {
     // Apply rate limiting
     const rateLimitResponse = await applyRateLimit(request)
@@ -12,37 +16,26 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { action, emojiName, newName, newAlias, imageData, workspace, slackCurl } = body
-    
-    console.log('API emoji-manage received:', { action, emojiName, newName, newAlias, workspace })
+
+    console.log('API emoji-manage:', { action, emojiName, workspace })
 
     // Get Slack credentials from body or fallback to headers
     const curlCommand = slackCurl || request.headers.get('x-slack-curl') || ''
-    
-    console.log('Curl command length:', curlCommand.length)
-    console.log('Curl command preview:', curlCommand.substring(0, 200) + '...')
-    
+
     if (!curlCommand) {
-      return NextResponse.json({ 
-        error: 'No Slack credentials found. Please configure in Settings.' 
+      return NextResponse.json({
+        error: 'No Slack credentials found. Please configure in Settings.'
       }, { status: 401 })
     }
 
     // Parse the curl command to extract token and cookie
     const parseCurl = (curl: string) => {
-      // First look for token in the form data section of curl
-      // The token appears after 'name="token"' and some newlines
-      const tokenMatch = curl.match(/name=["']token["']\s*\r?\n\s*\r?\n([^\r\n\\]+)/) || 
-                        curl.match(/token["']?\s*\r?\n\r?\n([^\\]+)/) || 
+      const tokenMatch = curl.match(/name=["']token["']\s*\r?\n\s*\r?\n([^\r\n\\]+)/) ||
+                        curl.match(/token["']?\s*\r?\n\r?\n([^\\]+)/) ||
                         curl.match(/token=([^&\s'"]+)/)
       const cookieMatch = curl.match(/-H\s+["']Cookie:\s*([^"']+)["']/) || curl.match(/--cookie\s+["']([^"']+)["']/)
       const workspaceMatch = curl.match(/https:\/\/([^\.]+)\.slack\.com/)
-      
-      console.log('Parsing curl command, found:', {
-        hasToken: !!tokenMatch,
-        hasCookie: !!cookieMatch,
-        workspace: workspaceMatch?.[1]
-      })
-      
+
       return {
         token: tokenMatch?.[1] || '',
         cookie: cookieMatch?.[1] || '',
@@ -56,6 +49,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Invalid Slack credentials. Please update in Settings.' 
       }, { status: 401 })
+    }
+
+    // Validate emoji names before any Slack API call
+    if (emojiName && !isValidEmojiName(emojiName)) {
+      return NextResponse.json({ error: 'Invalid emoji name. Use only letters, numbers, hyphens, and underscores (1-100 chars).' }, { status: 400 })
+    }
+    if (newName && !isValidEmojiName(newName)) {
+      return NextResponse.json({ error: 'Invalid new emoji name. Use only letters, numbers, hyphens, and underscores (1-100 chars).' }, { status: 400 })
+    }
+    if (newAlias && !isValidEmojiName(newAlias)) {
+      return NextResponse.json({ error: 'Invalid alias name. Use only letters, numbers, hyphens, and underscores (1-100 chars).' }, { status: 400 })
     }
 
     // Handle different actions
@@ -82,8 +86,9 @@ export async function POST(request: NextRequest) {
 
         const deleteResult = await deleteResponse.json()
         if (!deleteResult.ok) {
-          return NextResponse.json({ 
-            error: `Failed to delete old emoji: ${deleteResult.error}` 
+          console.error('Slack emoji.remove error:', deleteResult.error)
+          return NextResponse.json({
+            error: 'Failed to delete old emoji. Please check your credentials and try again.'
           }, { status: 400 })
         }
 
@@ -120,6 +125,10 @@ export async function POST(request: NextRequest) {
         })
 
         const result = await response.json()
+        if (!result.ok) {
+          console.error('Slack emoji.add (replace) error:', result.error)
+          return NextResponse.json({ ok: false, error: 'Failed to replace emoji. Please check your credentials and try again.' }, { status: 400 })
+        }
         return NextResponse.json(result)
       }
 
@@ -146,22 +155,19 @@ export async function POST(request: NextRequest) {
         })
 
         const result = await response.json()
+        if (!result.ok) {
+          console.error('Slack emoji.add (alias) error:', result.error)
+          return NextResponse.json({ ok: false, error: 'Failed to create alias. Please check your credentials and try again.' }, { status: 400 })
+        }
         return NextResponse.json(result)
       }
 
       case 'delete': {
         // Get pre-parsed values from the client
         const { token: directToken, cookie: directCookie, boundary, formData: rawFormData } = body
-        
+
         if (!emojiName || !directToken || !directCookie) {
           return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-        }
-
-        console.log('Processing delete for emoji:', emojiName)
-        if (shouldLogSensitive()) {
-          console.log('Using direct token (dev):', directToken.substring(0, 10) + '...')
-        } else {
-          console.log('Using direct token: [REDACTED]')
         }
 
         // Make the request exactly as the browser would
@@ -181,7 +187,10 @@ export async function POST(request: NextRequest) {
         })
 
         const result = await response.json()
-        console.log('Slack API response:', result)
+        if (!result.ok) {
+          console.error('Slack emoji.remove error:', result.error)
+          return NextResponse.json({ ok: false, error: 'Failed to delete emoji. Please check your credentials and try again.' }, { status: 400 })
+        }
         return NextResponse.json(result)
       }
 
