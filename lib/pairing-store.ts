@@ -38,7 +38,7 @@ function cleanupExpired() {
 function randomCode(): string {
   // 8-character alphanumeric code for higher entropy (~48 bits vs ~20 bits for 6-digit numeric)
   const crypto = require("crypto") as typeof import("crypto")
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // Omit confusing chars: 0/O, 1/I/L
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789' // Omit confusing chars: 0/O, 1/I/L
   let code = ''
   const bytes = crypto.randomBytes(8)
   for (let i = 0; i < 8; i++) {
@@ -76,10 +76,10 @@ export function createPairing(curl: string): { code: string; expiresAt: number }
 
 export function createQrSession(curl: string): { sid: string; expiresAt: number } {
   cleanupExpired()
-  let sid = randomSid(12)
+  let sid = randomSid()
   let guard = 0
   while (store.has(sid) && guard < 20) {
-    sid = randomSid(12)
+    sid = randomSid()
     guard++
   }
   const now = Date.now()
