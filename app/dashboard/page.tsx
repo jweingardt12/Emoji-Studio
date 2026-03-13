@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { SectionCards } from "@/components/section-cards"
+import dynamic from "next/dynamic"
 
 import { DashboardTabbedContent } from "@/components/dashboard-tabbed-content"
 import UserOverlay, { UserWithEmojiCount } from "@/components/user-overlay"
@@ -22,6 +21,16 @@ import {
   DashboardTabbedContentSkeleton,
   EmptyStateEmojis,
 } from "@/components/dashboard-loading-states"
+
+// Lazy load heavy chart components (recharts bundle)
+const ChartAreaInteractive = dynamic(
+  () => import("@/components/chart-area-interactive").then(mod => ({ default: mod.ChartAreaInteractive })),
+  { loading: () => <DashboardChartSkeleton /> }
+)
+const SectionCards = dynamic(
+  () => import("@/components/section-cards").then(mod => ({ default: mod.SectionCards })),
+  { loading: () => <DashboardHeroSkeleton /> }
+)
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
@@ -78,7 +87,7 @@ function DashboardPage() {
           // Navigate to create page
           window.location.href = createUrl.toString();
         } catch (error) {
-
+          console.error('Failed to handle extension emoji:', error)
         }
       }
     };

@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { timingSafeEqual } from "crypto"
 
 /**
  * Rate limiter using in-memory storage (for production, use Redis)
  */
 class RateLimiter {
   private requests = new Map<string, { count: number; resetTime: number }>()
-  
+  private lastCleanup = Date.now()
+  private cleanupInterval = 60 * 1000 // Clean up every minute
+
   constructor(
     private maxRequests: number = 60,
     private windowMs: number = 60 * 1000 // 1 minute
   ) {}
 
+  private cleanup() {
+    const now = Date.now()
+    if (now - this.lastCleanup < this.cleanupInterval) return
+    this.lastCleanup = now
+    for (const [key, record] of this.requests) {
+      if (record.resetTime < now) {
+        this.requests.delete(key)
+      }
+    }
+  }
+
   async check(identifier: string): Promise<boolean> {
+    this.cleanup()
     const now = Date.now()
     const record = this.requests.get(identifier)
-    
+
     if (!record || record.resetTime < now) {
       this.requests.set(identifier, {
         count: 1,
@@ -23,11 +38,11 @@ class RateLimiter {
       })
       return true
     }
-    
+
     if (record.count >= this.maxRequests) {
       return false
     }
-    
+
     record.count++
     return true
   }
@@ -48,6 +63,16 @@ class RateLimiter {
 
 // Singleton rate limiter
 export const rateLimiter = new RateLimiter()
+
+/**
+ * Timing-safe string comparison to prevent timing attacks
+ */
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
 
 /**
  * Get client identifier for rate limiting
@@ -140,13 +165,12 @@ export async function verifyAuth(
 ): Promise<{ authorized: boolean; userId?: string; error?: NextResponse }> {
   // Check for API key in header
   const apiKey = request.headers.get("x-api-key")
-  if (apiKey) {
-    // In production, validate against database
-    if (apiKey === process.env.API_KEY) {
+  if (apiKey && process.env.API_KEY) {
+    if (safeCompare(apiKey, process.env.API_KEY)) {
       return { authorized: true, userId: "api" }
     }
   }
-  
+
   // Check for session cookie
   const sessionCookie = request.cookies.get("session")
   if (sessionCookie) {
@@ -154,13 +178,12 @@ export async function verifyAuth(
     // For now, just check if it exists
     return { authorized: true, userId: "session" }
   }
-  
+
   // Check for Bearer token
   const authHeader = request.headers.get("authorization")
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.substring(7)
-    // In production, validate JWT or OAuth token
-    if (token === process.env.BEARER_TOKEN) {
+    if (process.env.BEARER_TOKEN && safeCompare(token, process.env.BEARER_TOKEN)) {
       return { authorized: true, userId: "bearer" }
     }
   }

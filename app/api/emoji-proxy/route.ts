@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
+import { getCorsOrigin } from "@/lib/utils/cors"
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=86400", // Cache for 24 hours
-        "Access-Control-Allow-Origin": "*", // Allow cross-origin requests
+        "Access-Control-Allow-Origin": getCorsOrigin(request),
       },
     })
   } catch (error: unknown) {

@@ -110,7 +110,7 @@ export function validateImageProxyUrl(url: string): UrlValidationResult {
 
   return validateProxyUrl(url, {
     allowedDomains: imageAllowedDomains,
-    requireHttps: false // Allow HTTP for some image sources
+    requireHttps: true // All image sources support HTTPS
   })
 }
 

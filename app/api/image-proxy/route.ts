@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
+import { getCorsOrigin } from "@/lib/utils/cors"
 
 export async function GET(request: NextRequest) {
   // Note: Rate limiting removed to support bulk emoji downloads (500+ emojis)
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
     }
     // Enable caching for proxied images (emojis are static content)
     headers.set('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800'); // Cache 1 day, stale for 7 days
+    headers.set('Access-Control-Allow-Origin', getCorsOrigin(request));
 
     return new NextResponse(imageBlob, { status: 200, headers });
 

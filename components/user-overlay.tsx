@@ -39,6 +39,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const triggerRef = useRef<Element | null>(null)
 
   // Get user's emojis from the global emoji data, filtering out aliases
   const userEmojis = useMemo(() => {
@@ -152,6 +153,8 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   // Animation effect
   useEffect(() => {
     if (user) {
+      // Store the currently focused element to restore on close
+      triggerRef.current = document.activeElement
       if (isMobile) {
         // For mobile, use drawer state
         setIsDrawerOpen(true)
@@ -194,6 +197,11 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
     } else {
       setIsVisible(false)
       setIsDrawerOpen(false)
+      // Restore focus to the element that opened the overlay
+      if (triggerRef.current && triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus()
+        triggerRef.current = null
+      }
     }
   }, [user, analytics, isMobile])
   
