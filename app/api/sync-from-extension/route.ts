@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
-
-// Allowed origins for CORS
-const ALLOWED_ORIGINS = [
-  'chrome-extension://', // Allow any Chrome extension (IDs are dynamic)
-  'https://app.emojistudio.xyz',
-  'https://emojistudio.xyz',
-  'http://localhost:3000', // Development
-]
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false
-  return ALLOWED_ORIGINS.some(allowed =>
-    origin.startsWith(allowed) || origin === allowed
-  )
-}
+import { isAllowedOrigin } from "@/lib/utils/cors"
 
 export async function POST(request: NextRequest) {
   try {

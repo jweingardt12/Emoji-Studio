@@ -7,16 +7,30 @@ import { timingSafeEqual } from "crypto"
  */
 class RateLimiter {
   private requests = new Map<string, { count: number; resetTime: number }>()
-  
+  private lastCleanup = Date.now()
+  private cleanupInterval = 60 * 1000 // Clean up every minute
+
   constructor(
     private maxRequests: number = 60,
     private windowMs: number = 60 * 1000 // 1 minute
   ) {}
 
+  private cleanup() {
+    const now = Date.now()
+    if (now - this.lastCleanup < this.cleanupInterval) return
+    this.lastCleanup = now
+    for (const [key, record] of this.requests) {
+      if (record.resetTime < now) {
+        this.requests.delete(key)
+      }
+    }
+  }
+
   async check(identifier: string): Promise<boolean> {
+    this.cleanup()
     const now = Date.now()
     const record = this.requests.get(identifier)
-    
+
     if (!record || record.resetTime < now) {
       this.requests.set(identifier, {
         count: 1,
@@ -24,11 +38,11 @@ class RateLimiter {
       })
       return true
     }
-    
+
     if (record.count >= this.maxRequests) {
       return false
     }
-    
+
     record.count++
     return true
   }

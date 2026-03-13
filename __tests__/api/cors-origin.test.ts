@@ -6,23 +6,7 @@
  */
 
 import { NextRequest } from 'next/server'
-
-// Recreate the CORS logic from emoji-proxy and image-proxy routes
-// This is the same logic used in both routes
-const ALLOWED_ORIGINS = [
-  'chrome-extension://',
-  'https://app.emojistudio.xyz',
-  'https://emojistudio.xyz',
-  'http://localhost:3000',
-]
-
-function getCorsOrigin(request: NextRequest): string {
-  const origin = request.headers.get('origin')
-  if (origin && ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed) || origin === allowed)) {
-    return origin
-  }
-  return 'https://app.emojistudio.xyz'
-}
+import { getCorsOrigin } from '@/lib/utils/cors'
 
 function createRequestWithOrigin(origin: string | null): NextRequest {
   const headers: Record<string, string> = {}

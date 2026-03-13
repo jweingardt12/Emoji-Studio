@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
-
-// Validate emoji name: alphanumeric, hyphens, underscores, 1-100 chars
-const EMOJI_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
-function isValidEmojiName(name: string): boolean {
-  return typeof name === 'string' && name.length >= 1 && name.length <= 100 && EMOJI_NAME_PATTERN.test(name)
-}
+import { isValidEmojiName } from "@/lib/utils/emoji-validation"
 
 export async function POST(request: NextRequest) {
   try {

@@ -3,12 +3,7 @@
  * Tests the isValidEmojiName function that prevents injection attacks
  */
 
-// The function is defined inline in the route file, so we recreate the same logic for testing
-// This ensures our validation rules match Slack's emoji naming constraints
-const EMOJI_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/
-function isValidEmojiName(name: string): boolean {
-  return typeof name === 'string' && name.length >= 1 && name.length <= 100 && EMOJI_NAME_PATTERN.test(name)
-}
+import { isValidEmojiName } from '@/lib/utils/emoji-validation'
 
 describe('isValidEmojiName', () => {
   describe('valid names', () => {

@@ -1,21 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateImageProxyUrl, sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
-
-const ALLOWED_ORIGINS = [
-  'chrome-extension://',
-  'https://app.emojistudio.xyz',
-  'https://emojistudio.xyz',
-  'http://localhost:3000',
-]
-
-function getCorsOrigin(request: NextRequest): string {
-  const origin = request.headers.get('origin')
-  if (origin && ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed) || origin === allowed)) {
-    return origin
-  }
-  return 'https://app.emojistudio.xyz'
-}
+import { getCorsOrigin } from "@/lib/utils/cors"
 
 export async function GET(request: NextRequest) {
   // Apply rate limiting
