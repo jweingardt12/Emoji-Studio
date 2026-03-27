@@ -490,11 +490,11 @@ function EmojiCreatorContent() {
                   })}
                 </div>
               </div>
-              {/* Mobile cart button - only on small screens, tablet uses floating bar */}
+              {/* Cart button */}
               {activeTab === "browse" && packBrowser.selectedEmojis.length > 0 && (
                 <Button
                   onClick={() => updateCartOpen(true, 'toolbar')}
-                  className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm sm:hidden"
+                  className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm"
                   size="icon"
                   variant="ghost"
                 >
@@ -514,7 +514,7 @@ function EmojiCreatorContent() {
 
               {/* Browse Packs Tab Content */}
               <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative">
-                <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(320px,28vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4 pb-20 md:pb-4">
+                <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full p-4 pb-20">
                   <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border shadow-sm">
                     <CardHeader className="flex-none pb-3">
                       <div className="flex gap-2 items-center">
@@ -572,52 +572,15 @@ function EmojiCreatorContent() {
                     </CardContent>
                   </Card>
 
-                  {/* Desktop sidebar */}
-                  <div className="hidden lg:flex lg:flex-col lg:min-h-0 lg:h-full">
-                    <PackSelectionSidebar
-                      selectedEmojis={packBrowser.selectedEmojis}
-                      maxSelection={20}
-                      nameStatuses={packBrowser.nameStatuses}
-                      editingName={packBrowser.editingName}
-                      editingValue={packBrowser.editingValue}
-                      onSetEditingName={packBrowser.setEditingName}
-                      onSetEditingValue={packBrowser.setEditingValue}
-                      onSaveCustomName={packBrowser.saveCustomName}
-                      customNames={packBrowser.customNames}
-                      onRemove={(emoji) => {
-                        const remainingCount = Math.max(packBrowser.selectedEmojis.length - 1, 0)
-                        packBrowser.removeFromSelection(emoji)
-                        track('Emoji Creator: Selection Item Removed', {
-                          id: emoji.id,
-                          name: emoji.name,
-                          remainingCount,
-                        })
-                      }}
-                      onClear={() => {
-                        const previousCount = packBrowser.selectedEmojis.length
-                        setDownloadProgress(null)
-                        setUploadProgress(null)
-                        packBrowser.clearSelection()
-                        track('Emoji Creator: Selection Cleared', {
-                          previousCount,
-                        })
-                      }}
-                      hasSlackConnection={hasSlack}
-                      downloadProgress={downloadProgress}
-                      uploadProgress={uploadProgress}
-                      onDownload={handlePackDownload}
-                      onSendToSlack={handleSendToSlack}
-                    />
-                  </div>
                 </div>
 
-                {/* Floating action bar for mobile/tablet */}
+                {/* Floating action bar */}
                 {packBrowser.selectedEmojis.length > 0 && (
                   <motion.div
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 lg:hidden"
+                    className="absolute bottom-4 left-4 right-4"
                   >
                     <div className="bg-card rounded-xl p-3 shadow-lg border border-border">
                       <div className="flex items-center gap-3">
@@ -697,9 +660,9 @@ function EmojiCreatorContent() {
         </div>
       </div>
 
-      {/* Mobile selection sheet */}
+      {/* Selection sheet */}
       <Sheet open={isCartOpen} onOpenChange={(open) => updateCartOpen(open, 'sheet')}>
-        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+        <SheetContent side="right" className="w-full sm:max-w-md lg:max-w-lg p-0">
           <PackSelectionSidebar
             selectedEmojis={packBrowser.selectedEmojis}
             maxSelection={20}

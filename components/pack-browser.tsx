@@ -447,8 +447,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
   ]
 
   return (
-    <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-      <div className="flex p-1.5 bg-muted/50 rounded-xl border border-border w-max min-w-full sm:min-w-0">
+    <div className="w-full">
+      <div className="flex flex-wrap gap-1.5">
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
 
@@ -457,24 +457,14 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               className={cn(
-                "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  ? "bg-background text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              {isSelected && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-background rounded-xl shadow-md border border-border"
-                  initial={false}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-base leading-none">{tab.emoji}</span>
-                {tab.label}
-              </span>
+              <span className="text-sm leading-none">{tab.emoji}</span>
+              {tab.label}
             </button>
           )
         })}
@@ -598,8 +588,9 @@ function useColumnCount(): number {
         const width = window.innerWidth
         if (width < 640) setColumns(3)       // sm
         else if (width < 768) setColumns(4)  // md
-        else if (width < 1280) setColumns(5) // lg
-        else setColumns(6)                   // xl
+        else if (width < 1024) setColumns(5) // lg
+        else if (width < 1280) setColumns(7) // xl (full width now, no sidebar)
+        else setColumns(8)                   // 2xl
       }, 100)
     }
 
@@ -607,8 +598,9 @@ function useColumnCount(): number {
     const width = window.innerWidth
     if (width < 640) setColumns(3)
     else if (width < 768) setColumns(4)
-    else if (width < 1280) setColumns(5)
-    else setColumns(6)
+    else if (width < 1024) setColumns(5)
+    else if (width < 1280) setColumns(7)
+    else setColumns(8)
 
     window.addEventListener('resize', updateColumns)
     return () => {
@@ -650,7 +642,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
       <div className={cn(
         "grid gap-4",
         isGridView
-          ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6"
+          ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8"
           : "grid-cols-1"
       )}>
         {Array.from({ length: 24 }).map((_, i) => (
@@ -685,7 +677,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
         {isGridView ? (
           <motion.div
             key="grid"
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-3 p-1"
             variants={gridContainerVariants}
             initial="initial"
             animate="animate"
@@ -768,7 +760,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-3 p-1"
               >
                 {rowEmojis.map((emoji, colIndex) => {
                   const key = `${emoji.id}|${emoji.name}`
