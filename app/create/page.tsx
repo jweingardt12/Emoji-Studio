@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback, Suspense, lazy } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X } from "lucide-react"
-import { DotPattern } from "@/components/ui/dot-pattern"
-import { TextShimmer } from "@/components/ui/text-shimmer"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -433,21 +431,14 @@ function EmojiCreatorContent() {
     <>
       <div
         ref={desktopLayoutRef}
-        className="relative flex flex-col overflow-hidden min-h-0"
+        className="flex flex-col overflow-hidden min-h-0"
         style={availableLayoutHeight ? { height: availableLayoutHeight, maxHeight: availableLayoutHeight } : undefined}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {/* Ambient background layer */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <DotPattern className="absolute inset-0 opacity-[0.15] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
-          <div className="absolute -top-32 -left-32 w-64 h-64 rounded-full bg-purple-500/8 blur-3xl" />
-          <div className="absolute -bottom-32 -right-32 w-64 h-64 rounded-full bg-blue-500/8 blur-3xl" />
-        </div>
-
-        <div className="relative flex-1 flex flex-col min-h-0 p-4">
+        <div className="flex-1 flex flex-col min-h-0 p-4">
           {/* Extension Banner */}
           <ExtensionBanner hasSlack={hasSlack} loading={loading} />
 
@@ -456,24 +447,24 @@ function EmojiCreatorContent() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/10">
-                    <Sparkles className="h-5 w-5 text-purple-500" />
+                  <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>
+                    <h1 className="text-2xl font-bold tracking-tight">
                       Create Emojis
                     </h1>
-                    <TextShimmer className="text-sm text-muted-foreground" duration={4}>
+                    <p className="text-sm text-muted-foreground">
                       Transform any image into Slack-ready emojis
-                    </TextShimmer>
+                    </p>
                   </div>
                 </div>
 
-                {/* Pill-style tabs with animated indicator */}
-                <div className="hidden sm:flex p-1.5 bg-muted/30 backdrop-blur-sm rounded-2xl border border-border/30">
+                {/* Tab switcher */}
+                <div className="flex p-1 bg-muted/50 rounded-xl border border-border">
                   {[
-                    { id: "upload", label: "Upload", icon: Upload },
-                    { id: "browse", label: "Browse Packs", icon: Grid3x3 },
+                    { id: "upload", label: "Upload", mobileLabel: "Upload", icon: Upload },
+                    { id: "browse", label: "Browse Packs", mobileLabel: "Browse", icon: Grid3x3 },
                   ].map((tab) => {
                     const isSelected = activeTab === tab.id
                     const Icon = tab.icon
@@ -485,63 +476,15 @@ function EmojiCreatorContent() {
                           track('Emoji Creator: Tab Changed', { tab: tab.id })
                         }}
                         className={cn(
-                          "relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                          "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           isSelected
-                            ? "text-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            ? "bg-background text-foreground shadow-sm border border-border"
+                            : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        {isSelected && (
-                          <motion.div
-                            layoutId="createPageActiveTab"
-                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/50"
-                            initial={false}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          {tab.label}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* Mobile tabs - visible on sm and below */}
-                <div className="flex sm:hidden p-1 bg-muted/30 backdrop-blur-sm rounded-2xl border border-border/30">
-                  {[
-                    { id: "upload", label: "Upload", icon: Upload },
-                    { id: "browse", label: "Browse", icon: Grid3x3 },
-                  ].map((tab) => {
-                    const isSelected = activeTab === tab.id
-                    const Icon = tab.icon
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => {
-                          setActiveTab(tab.id as "upload" | "browse")
-                          track('Emoji Creator: Tab Changed', { tab: tab.id })
-                        }}
-                        className={cn(
-                          "relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-200 outline-none",
-                          isSelected
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {isSelected && (
-                          <motion.div
-                            layoutId="createPageActiveTabMobile"
-                            className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/50"
-                            initial={false}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          />
-                        )}
-                        <span className="relative z-10 flex items-center gap-1.5">
-                          <Icon className="h-3.5 w-3.5" />
-                          {tab.label}
-                        </span>
+                        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">{tab.label}</span>
+                        <span className="sm:hidden">{tab.mobileLabel}</span>
                       </button>
                     )
                   })}
@@ -562,7 +505,7 @@ function EmojiCreatorContent() {
           </div>
 
           {/* Main content card */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow-sm">
             <Tabs value={activeTab} className="flex flex-col flex-1 min-h-0">
               {/* Upload Tab Content */}
               <TabsContent value="upload" className="flex-1 min-h-0 m-0 p-4">
@@ -572,7 +515,7 @@ function EmojiCreatorContent() {
               {/* Browse Packs Tab Content */}
               <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative">
                 <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_min(320px,28vw)] lg:auto-rows-[minmax(0,1fr)] gap-4 min-w-0 min-h-0 h-full p-4 pb-20 md:pb-4">
-                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border/40 shadow-md bg-card/90 backdrop-blur-sm">
+                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border shadow-sm">
                     <CardHeader className="flex-none pb-3">
                       <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
@@ -676,7 +619,7 @@ function EmojiCreatorContent() {
                     exit={{ y: 100, opacity: 0 }}
                     className="absolute bottom-4 left-4 right-4 lg:hidden"
                   >
-                    <div className="glass-liquid rounded-xl p-3 shadow-lg border border-border/50">
+                    <div className="bg-card rounded-xl p-3 shadow-lg border border-border">
                       <div className="flex items-center gap-3">
                         {/* Selection info - tap to open sheet */}
                         <button
@@ -735,7 +678,7 @@ function EmojiCreatorContent() {
                           {hasSlack && (
                             <Button
                               size="sm"
-                              className="h-9 gap-2 bg-gradient-to-r from-primary to-primary/90"
+                              className="h-9 gap-2"
                               onClick={handleSendToSlack}
                               disabled={!!uploadProgress}
                             >
