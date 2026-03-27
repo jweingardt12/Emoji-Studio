@@ -163,6 +163,13 @@ export default function SettingsPage() {
     hasMountedRef.current = true
   }, [])
 
+  // Compute last sync date once on mount
+  const [lastSyncDate, setLastSyncDate] = useState<string | null>(null)
+  useEffect(() => {
+    const ts = localStorage.getItem('lastFetchTime')
+    if (ts) setLastSyncDate(new Date(ts).toLocaleDateString())
+  }, [hasSlack])
+
   // Listen for data updates
   useEffect(() => {
     const handleUpdate = () => setHasSlack(hasSlackConnection())
@@ -381,7 +388,7 @@ export default function SettingsPage() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {hasSlack
-                            ? `${emojiData.length.toLocaleString()} emojis synced${typeof window !== 'undefined' && localStorage.getItem('lastFetchTime') ? ` · Last sync: ${new Date(localStorage.getItem('lastFetchTime')!).toLocaleDateString()}` : ''}`
+                            ? `${emojiData.length.toLocaleString()} emojis synced${lastSyncDate ? ` · Last sync: ${lastSyncDate}` : ''}`
                             : "Connect to import emojis"
                           }
                         </p>

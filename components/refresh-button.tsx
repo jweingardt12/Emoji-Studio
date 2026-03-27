@@ -7,7 +7,7 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { emojiStorage } from "@/lib/storage/indexed-db"
 import { toast } from "sonner"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function RefreshButton() {
@@ -211,29 +211,32 @@ export function RefreshButton() {
   const [lastFetchLabel, setLastFetchLabel] = useState<string | null>(null)
   const [isStale, setIsStale] = useState(false)
 
+  const updateFreshnessLabel = useCallback(() => {
+    const lastFetch = localStorage.getItem("lastFetchTime")
+    if (!lastFetch) { setLastFetchLabel(null); return }
+    const diff = Date.now() - new Date(lastFetch).getTime()
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    setIsStale(hours >= 24)
+
+    if (minutes < 1) setLastFetchLabel("Just now")
+    else if (minutes < 60) setLastFetchLabel(`${minutes}m ago`)
+    else if (hours < 24) setLastFetchLabel(`${hours}h ago`)
+    else setLastFetchLabel(`${days}d ago`)
+  }, [])
+
   useEffect(() => {
-    const update = () => {
-      const lastFetch = localStorage.getItem("lastFetchTime")
-      if (!lastFetch) {
-        setLastFetchLabel(null)
-        return
-      }
-      const diff = Date.now() - new Date(lastFetch).getTime()
-      const minutes = Math.floor(diff / 60000)
-      const hours = Math.floor(minutes / 60)
-      const days = Math.floor(hours / 24)
-
-      setIsStale(hours >= 24)
-
-      if (minutes < 1) setLastFetchLabel("Just now")
-      else if (minutes < 60) setLastFetchLabel(`${minutes}m ago`)
-      else if (hours < 24) setLastFetchLabel(`${hours}h ago`)
-      else setLastFetchLabel(`${days}d ago`)
-    }
-    update()
-    const interval = setInterval(update, 60000)
+    updateFreshnessLabel()
+    const interval = setInterval(updateFreshnessLabel, 60000)
     return () => clearInterval(interval)
-  }, [refreshing])
+  }, [updateFreshnessLabel])
+
+  // Update label immediately after refresh completes
+  useEffect(() => {
+    if (!refreshing) updateFreshnessLabel()
+  }, [refreshing, updateFreshnessLabel])
 
   if (!hasRealData) {
     return null

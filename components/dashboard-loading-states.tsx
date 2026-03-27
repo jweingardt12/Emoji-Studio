@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Settings, Chrome, Terminal, Sparkles } from "lucide-react";
+import { Plus, RefreshCw, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export function DashboardHeroSkeleton() {

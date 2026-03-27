@@ -103,7 +103,6 @@ function EmojiCreatorContent() {
     onProcessFiles: processFiles,
     onSetSelectedFiles: setSelectedFiles,
     onSetPendingMobileFile: setPendingMobileFile,
-    toast,
     isMobile,
   })
 

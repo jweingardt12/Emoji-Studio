@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, useRef, useMemo, type ReactNode } from "react"
 import type { ProcessedEmoji } from "@/lib/utils/emoji-processor"
-import { toast } from "sonner"
 import { useTrack } from "@/lib/hooks/use-track"
 
 // Types
@@ -87,7 +86,6 @@ interface CreatePageContextType {
   lastTrackedSearchQuery: React.MutableRefObject<string>
 
   // Utilities
-  toast: typeof toast
   track: ReturnType<typeof useTrack>
 
   // Actions
@@ -237,7 +235,6 @@ export function CreatePageProvider({ children }: CreatePageProviderProps) {
     lastTrackedSearchQuery,
 
     // Utilities
-    toast,
     track,
 
     // Actions
@@ -266,7 +263,6 @@ export function CreatePageProvider({ children }: CreatePageProviderProps) {
     failedFrameExtraction,
     hasSlack,
     availableLayoutHeight,
-    toast,
     track,
     updateCartOpen,
     handleDismissExtensionBanner,

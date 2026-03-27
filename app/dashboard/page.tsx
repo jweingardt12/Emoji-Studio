@@ -273,27 +273,20 @@ function DashboardPage() {
       {/* Quick Actions */}
       <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
         <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            href="/create"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-          >
-            <CirclePlus className="h-3.5 w-3.5" />
-            Create Emoji
-          </Link>
-          <Link
-            href="/create?tab=browse"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-          >
-            <Package className="h-3.5 w-3.5" />
-            Browse Packs
-          </Link>
-          <Link
-            href="/explorer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            View All Emojis
-          </Link>
+          {[
+            { href: "/create", icon: CirclePlus, label: "Create Emoji" },
+            { href: "/create?tab=browse", icon: Package, label: "Browse Packs" },
+            { href: "/explorer", icon: LayoutGrid, label: "View All Emojis" },
+          ].map(({ href, icon: Icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Link>
+          ))}
         </div>
       </div>
 

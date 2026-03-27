@@ -140,11 +140,6 @@ body {
 }
 
 @layer utilities {
-  /* Consistent page-level horizontal padding */
-  .page-px {
-    @apply px-3 sm:px-4 lg:px-6;
-  }
-
   .animate-fade-up {
     opacity: 0;
     transform: translateY(20px);

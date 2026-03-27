@@ -372,7 +372,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const [hasCurl, setHasCurl] = useState<boolean>(false)
   const [slackLoaded, setSlackLoaded] = useState<boolean>(false)
-  const { emojiData, hasRealData } = useEmojiData()
+  const { emojiData, hasRealData, workspace } = useEmojiData()
 
   // initialize on client mount and track emoji data changes
   useEffect(() => {
@@ -779,14 +779,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   )} />
                   <span className="text-[10px] text-muted-foreground truncate">
                     {hasRealData
-                      ? (typeof window !== "undefined" && localStorage.getItem("workspace")) || "Connected"
+                      ? workspace || "Connected"
                       : "Not connected"}
                   </span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>{hasRealData
-                  ? `Connected to ${(typeof window !== "undefined" && localStorage.getItem("workspace")) || "workspace"}`
+                  ? `Connected to ${workspace || "workspace"}`
                   : "Go to Settings to connect your Slack workspace"
                 }</p>
               </TooltipContent>

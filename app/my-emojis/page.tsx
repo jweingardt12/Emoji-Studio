@@ -47,7 +47,6 @@ function MyEmojisPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
   const { emojiData, loading, hasRealData, workspace, workspaceDisplayName, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
-  // toast from sonner is used directly
   const track = useTrack()
   const hasTrackedPage = useRef(false)
   const [searchQuery, setSearchQuery] = useState("")
