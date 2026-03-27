@@ -8,8 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
-import { toast as sonner } from "sonner"
+import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -48,7 +47,7 @@ function MyEmojisPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
   const { emojiData, loading, hasRealData, workspace, workspaceDisplayName, setEmojiData, setWorkspace, setHasRealData } = useEmojiData()
-  const { toast } = useToast()
+  // toast from sonner is used directly
   const track = useTrack()
   const hasTrackedPage = useRef(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -293,10 +292,8 @@ function MyEmojisPage() {
       }
     } catch (error) {
       console.error("Error refreshing emoji data:", error)
-      toast({
-        title: "Failed to refresh emoji data",
+      toast.error("Failed to refresh emoji data", {
         description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
       })
     } finally {
       setIsRefreshing(false)
@@ -447,9 +444,9 @@ function MyEmojisPage() {
   const copyToClipboard = async (text: string, message: string) => {
     try {
       await navigator.clipboard.writeText(text)
-      sonner.success(message)
+      toast.success(message)
     } catch (error) {
-      sonner.error("Failed to copy to clipboard")
+      toast.error("Failed to copy to clipboard")
     }
   }
 
@@ -471,7 +468,7 @@ function MyEmojisPage() {
       // GIFs can't be reliably copied to clipboard, so copy URL instead
       if (emoji.url.toLowerCase().includes('.gif')) {
         await navigator.clipboard.writeText(emoji.url)
-        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)")
+        toast.success("GIF URL copied! (Animated GIFs can't be copied as images)")
         return
       }
 
@@ -484,7 +481,7 @@ function MyEmojisPage() {
       if (!ClipboardItem.supports(blob.type)) {
         // Fallback to copying URL
         await navigator.clipboard.writeText(emoji.url)
-        sonner.success("Image URL copied! (Image format not supported for clipboard)")
+        toast.success("Image URL copied! (Image format not supported for clipboard)")
         return
       }
 
@@ -493,9 +490,9 @@ function MyEmojisPage() {
           [blob.type]: blob
         })
       ])
-      sonner.success("Image copied to clipboard!")
+      toast.success("Image copied to clipboard!")
     } catch (error) {
-      sonner.error("Failed to copy image to clipboard")
+      toast.error("Failed to copy image to clipboard")
     }
   }
 
@@ -506,7 +503,7 @@ function MyEmojisPage() {
     const confirmed = confirm(`Are you sure you want to delete ${selectedEmojiNames.size} emoji${selectedEmojiNames.size > 1 ? 's' : ''}?`)
     if (!confirmed) return
 
-    sonner.loading(`Deleting ${selectedEmojiNames.size} emojis...`, { id: "bulk-delete" })
+    toast.loading(`Deleting ${selectedEmojiNames.size} emojis...`, { id: "bulk-delete" })
 
     try {
       const slackCurl = localStorage.getItem("slackCurlCommand")
@@ -566,7 +563,7 @@ function MyEmojisPage() {
       }
 
       if (successCount > 0) {
-        sonner.success(`Deleted ${successCount} emoji${successCount > 1 ? 's' : ''}`, {
+        toast.success(`Deleted ${successCount} emoji${successCount > 1 ? 's' : ''}`, {
           id: "bulk-delete",
           description: failCount > 0 ? `${failCount} failed` : undefined
         })
@@ -597,7 +594,7 @@ function MyEmojisPage() {
         throw new Error("All deletions failed")
       }
     } catch (error) {
-      sonner.error("Bulk delete failed", {
+      toast.error("Bulk delete failed", {
         id: "bulk-delete",
         description: error instanceof Error ? error.message : "An error occurred"
       })
@@ -607,7 +604,7 @@ function MyEmojisPage() {
   const handleBulkDownload = async () => {
     if (selectedEmojiNames.size === 0) return
 
-    sonner.loading(`Downloading ${selectedEmojiNames.size} emojis...`, { id: "bulk-download" })
+    toast.loading(`Downloading ${selectedEmojiNames.size} emojis...`, { id: "bulk-download" })
 
     try {
       const emojisToDownload = sortedEmojis.filter(e => selectedEmojiNames.has(e.name))
@@ -619,12 +616,12 @@ function MyEmojisPage() {
       await saveZipFile(zip, `my-emojis-${Date.now()}.zip`)
 
       if (errors.length > 0) {
-        sonner.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download" })
+        toast.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download" })
       } else {
-        sonner.success(`Downloaded ${successCount} emojis`, { id: "bulk-download" })
+        toast.success(`Downloaded ${successCount} emojis`, { id: "bulk-download" })
       }
     } catch (error) {
-      sonner.error("Failed to download emojis", { id: "bulk-download" })
+      toast.error("Failed to download emojis", { id: "bulk-download" })
     }
   }
 
@@ -674,7 +671,7 @@ function MyEmojisPage() {
 
     // Check if this is an alias
     if (selectedEmoji.is_alias === 1) {
-      sonner.error("Cannot rename an alias", {
+      toast.error("Cannot rename an alias", {
         description: "You can only rename actual emojis, not aliases"
       })
       return
@@ -682,7 +679,7 @@ function MyEmojisPage() {
 
     // Check if new name already exists
     if (emojiData.some(e => e.name === newName)) {
-      sonner.error("Name already exists", {
+      toast.error("Name already exists", {
         description: `An emoji with the name "${newName}" already exists.`
       })
       return
@@ -693,7 +690,7 @@ function MyEmojisPage() {
     try {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl) {
-        sonner.error("No Slack connection", {
+        toast.error("No Slack connection", {
           description: "Please configure Slack in Settings first."
         })
         setIsRenamingEmoji(false)
@@ -703,7 +700,7 @@ function MyEmojisPage() {
       // Parse the curl command
       const parsed = parseSlackCurl(slackCurl)
       if (!parsed.isValid) {
-        sonner.error("Invalid Slack credentials", {
+        toast.error("Invalid Slack credentials", {
           description: parsed.error || "Please update your curl command in Settings."
         })
         setIsRenamingEmoji(false)
@@ -713,7 +710,7 @@ function MyEmojisPage() {
       const { token, cookie, workspace: workspaceUrl } = parsed
       
       if (!token) {
-        sonner.error("No authentication token found", {
+        toast.error("No authentication token found", {
           id: "rename-emoji",
           description: "Please reconnect to Slack in Settings"
         })
@@ -721,7 +718,7 @@ function MyEmojisPage() {
         return
       }
 
-      sonner.loading("Downloading emoji...", { id: "rename-emoji" })
+      toast.loading("Downloading emoji...", { id: "rename-emoji" })
 
       // Step 1: Download the emoji image through our proxy to avoid CORS issues
       const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(selectedEmoji.url)}`
@@ -747,7 +744,7 @@ function MyEmojisPage() {
       reader.readAsDataURL(imageBlob)
       const downloadedImage = await base64Promise
 
-      sonner.loading("Deleting old emoji...", { id: "rename-emoji" })
+      toast.loading("Deleting old emoji...", { id: "rename-emoji" })
 
       // Step 2: Delete the old emoji
       // Ensure we're using the correct emoji name (strip colons if present)
@@ -789,7 +786,7 @@ function MyEmojisPage() {
         throw new Error(deleteSlackResponse.error || "Failed to delete old emoji")
       }
 
-      sonner.loading("Uploading with new name...", { id: "rename-emoji" })
+      toast.loading("Uploading with new name...", { id: "rename-emoji" })
 
       // Step 3: Upload the emoji with the new name
       // Extract workspace URL and other parameters
@@ -872,7 +869,7 @@ function MyEmojisPage() {
       }
       
       // Success!
-      sonner.success('Emoji renamed successfully', {
+      toast.success('Emoji renamed successfully', {
         id: "rename-emoji",
         description: `"${selectedEmoji.name}" → "${newName}"`
       })
@@ -906,7 +903,7 @@ function MyEmojisPage() {
         }
       }, 2000)
     } catch (error) {
-      sonner.error("Failed to rename emoji", {
+      toast.error("Failed to rename emoji", {
         id: "rename-emoji",
         description: error instanceof Error ? error.message : "An error occurred"
       })
@@ -955,10 +952,8 @@ function MyEmojisPage() {
     try {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl) {
-        toast({
-          title: "No Slack connection",
+        toast.error("No Slack connection", {
           description: "Please configure Slack in Settings first.",
-          variant: "destructive",
         })
         return
       }
@@ -973,7 +968,7 @@ function MyEmojisPage() {
       const boundary = `----WebKitFormBoundaryReplace${Date.now()}`
       
       // Step 1: Delete the existing emoji
-      sonner.loading("Deleting old emoji...", { id: "replace-emoji" })
+      toast.loading("Deleting old emoji...", { id: "replace-emoji" })
       
       const deleteData = `------${boundary}\r\nContent-Disposition: form-data; name="token"\r\n\r\n${parsed.token}\r\n------${boundary}\r\nContent-Disposition: form-data; name="name"\r\n\r\n${selectedEmoji.name}\r\n------${boundary}\r\nContent-Disposition: form-data; name="_x_reason"\r\n\r\ncustomize-emoji-remove\r\n------${boundary}\r\nContent-Disposition: form-data; name="_x_mode"\r\n\r\nonline\r\n------${boundary}--\r\n`
       
@@ -1006,7 +1001,7 @@ function MyEmojisPage() {
       }
       
       // Step 2: Upload the new image with the same name
-      sonner.loading("Uploading new image...", { id: "replace-emoji" })
+      toast.loading("Uploading new image...", { id: "replace-emoji" })
       
       // Get the file from the processed emoji
       const response = await fetch(processedEmoji.blob)
@@ -1043,7 +1038,7 @@ function MyEmojisPage() {
         throw new Error(uploadResult.error || "Failed to upload new image")
       }
       
-      sonner.success("Emoji replaced successfully", { 
+      toast.success("Emoji replaced successfully", { 
         id: "replace-emoji",
         description: `"${selectedEmoji.name}" has been updated with the new image`
       })
@@ -1076,7 +1071,7 @@ function MyEmojisPage() {
         }
       }, 2000)
     } catch (error) {
-      sonner.error("Failed to replace emoji", {
+      toast.error("Failed to replace emoji", {
         id: "replace-emoji",
         description: error instanceof Error ? error.message : "An error occurred"
       })
@@ -1088,19 +1083,19 @@ function MyEmojisPage() {
 
     // Check if alias already exists
     if (emojiData.some(e => e.name === newAlias)) {
-      sonner.error("Alias already exists", {
+      toast.error("Alias already exists", {
         description: `The alias "${newAlias}" is already in use.`
       })
       return
     }
 
     setIsAddingAlias(true)
-    sonner.loading("Creating alias...", { id: "add-alias" })
+    toast.loading("Creating alias...", { id: "add-alias" })
 
     try {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl) {
-        sonner.error("No Slack connection", {
+        toast.error("No Slack connection", {
           id: "add-alias",
           description: "Please configure Slack in Settings first."
         })
@@ -1112,7 +1107,7 @@ function MyEmojisPage() {
       const parsed = parseSlackCurl(slackCurl)
 
       if (!parsed.isValid) {
-        sonner.error("Invalid Slack credentials", {
+        toast.error("Invalid Slack credentials", {
           id: "add-alias",
           description: parsed.error || "Please update your curl command in Settings."
         })
@@ -1123,7 +1118,7 @@ function MyEmojisPage() {
       const { token, cookie, workspace: workspaceUrl } = parsed
       
       if (!token) {
-        sonner.error("No authentication token found", {
+        toast.error("No authentication token found", {
           id: "add-alias",
           description: "Please reconnect to Slack in Settings"
         })
@@ -1205,7 +1200,7 @@ function MyEmojisPage() {
         throw new Error(errorMessage)
       }
       
-      sonner.success("Alias added successfully", {
+      toast.success("Alias added successfully", {
         id: "add-alias",
         description: `"${newAlias}" → "${selectedEmoji.name}"`
       })
@@ -1247,7 +1242,7 @@ function MyEmojisPage() {
         }
       }, 2000)
     } catch (error) {
-      sonner.error("Failed to add alias", {
+      toast.error("Failed to add alias", {
         id: "add-alias",
         description: error instanceof Error ? error.message : "An error occurred"
       })
@@ -1273,7 +1268,7 @@ function MyEmojisPage() {
     try {
       const slackCurl = localStorage.getItem("slackCurlCommand")
       if (!slackCurl) {
-        sonner.error("No Slack connection", {
+        toast.error("No Slack connection", {
           description: "Please configure Slack in Settings first."
         })
         setIsDeletingEmoji(false)
@@ -1284,10 +1279,8 @@ function MyEmojisPage() {
       const parsed = parseSlackCurl(slackCurl)
 
       if (!parsed.isValid) {
-        toast({
-          title: "Invalid Slack credentials",
+        toast.error("Invalid Slack credentials", {
           description: parsed.error || "Please update your curl command in Settings.",
-          variant: "destructive",
         })
         return
       }
@@ -1350,7 +1343,7 @@ function MyEmojisPage() {
         throw new Error(slackResponse.error || "Failed to delete emoji")
       }
       
-      sonner.success(`Emoji deleted!`, {
+      toast.success(`Emoji deleted!`, {
         description: `Successfully deleted "${selectedEmoji.name}"`
       })
 
@@ -1382,7 +1375,7 @@ function MyEmojisPage() {
         }
       }, 2000)
     } catch (error) {
-      sonner.error("Failed to delete emoji", {
+      toast.error("Failed to delete emoji", {
         description: error instanceof Error ? error.message : "An error occurred"
       })
     } finally {

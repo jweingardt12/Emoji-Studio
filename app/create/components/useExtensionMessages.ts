@@ -2,12 +2,13 @@
 
 import { useEffect, useCallback } from "react"
 import { useTrack } from "@/lib/hooks/use-track"
+import { toast as sonnerToast } from "sonner"
 
 interface ExtensionMessageHandlerOptions {
   onProcessFiles: (files: File[]) => void
   onSetSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>
   onSetPendingMobileFile: React.Dispatch<React.SetStateAction<File | null>>
-  toast: (props: { title: string; description?: string; variant?: "default" | "destructive" }) => void
+  toast?: unknown // kept for backwards compatibility but unused — we use sonner directly
   isMobile: boolean | null
 }
 
@@ -28,8 +29,7 @@ export function useExtensionMessages({
       const emojis = cartData?.emojis || []
 
       if (emojis.length > 0) {
-        toast({
-          title: `Processing ${emojis.length} emojis from cart`,
+        sonnerToast(`Processing ${emojis.length} emojis from cart`, {
           description: "Please wait while we load your emojis...",
         })
 
@@ -107,8 +107,7 @@ export function useExtensionMessages({
 
       try {
         // Show loading toast
-        toast({
-          title: "Loading image from extension...",
+        sonnerToast.loading("Loading image from extension...", {
           description: "Please wait while we process the image.",
         })
 
@@ -225,10 +224,8 @@ export function useExtensionMessages({
 
       } catch (error) {
         console.error('Failed to load image from extension:', error)
-        toast({
-          title: "Failed to load image",
+        sonnerToast.error("Failed to load image", {
           description: error instanceof Error ? error.message : "Unknown error occurred",
-          variant: "destructive",
         })
 
         track("Emoji Creator: Extension Image Load Failed", {
@@ -294,8 +291,7 @@ export function useExtensionMessages({
               // Use desktop flow
               onSetSelectedFiles([file])
 
-              toast({
-                title: `Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`,
+              sonnerToast(`Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`, {
                 description: "Converting to emoji format...",
               })
 

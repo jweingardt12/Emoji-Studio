@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useRef, useMemo, type ReactNode } from "react"
 import type { ProcessedEmoji } from "@/lib/utils/emoji-processor"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useTrack } from "@/lib/hooks/use-track"
 
 // Types
@@ -87,7 +87,7 @@ interface CreatePageContextType {
   lastTrackedSearchQuery: React.MutableRefObject<string>
 
   // Utilities
-  toast: ReturnType<typeof useToast>["toast"]
+  toast: typeof toast
   track: ReturnType<typeof useTrack>
 
   // Actions
@@ -102,7 +102,6 @@ interface CreatePageProviderProps {
 }
 
 export function CreatePageProvider({ children }: CreatePageProviderProps) {
-  const { toast } = useToast()
   const track = useTrack()
 
   // File state

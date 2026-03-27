@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import { cn } from "@/lib/utils"
@@ -37,8 +37,6 @@ function EmojiCreatorContent() {
   const { loading, emojiData } = useEmojiData()
   const isMobile = useIsMobile()
   const track = useTrack()
-  const { toast } = useToast()
-
   const {
     // State from context
     selectedFiles,
@@ -105,7 +103,7 @@ function EmojiCreatorContent() {
     onProcessFiles: processFiles,
     onSetSelectedFiles: setSelectedFiles,
     onSetPendingMobileFile: setPendingMobileFile,
-    toast: (props) => toast(props),
+    toast,
     isMobile,
   })
 
@@ -269,18 +267,14 @@ function EmojiCreatorContent() {
 
     setDownloadProgress({ stage: "downloading", completed: 0, total })
 
-    const progressToast = toast({
-      title: "Creating zip file...",
+    const progressToastId = toast.loading("Creating zip file...", {
       description: `Starting download...`,
-      duration: Infinity,
     })
 
     const updateProgressToast = (message: string) => {
-      progressToast.update({
-        id: progressToast.id,
-        title: "Creating zip file...",
+      toast.loading("Creating zip file...", {
+        id: progressToastId,
         description: message,
-        duration: Infinity,
       })
     }
 
@@ -313,12 +307,10 @@ function EmojiCreatorContent() {
     }
 
     if (completed === 0) {
-      progressToast.dismiss()
+      toast.dismiss(progressToastId)
       setDownloadProgress(null)
-      toast({
-        title: "Download failed",
+      toast.error("Download failed", {
         description: "Could not download any emojis",
-        variant: "destructive",
       })
       return
     }
@@ -340,22 +332,19 @@ function EmojiCreatorContent() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      progressToast.dismiss()
+      toast.dismiss(progressToastId)
       setDownloadProgress(null)
       packBrowser.clearSelectionsAndStorage()
 
-      toast({
-        title: "Download complete",
+      toast.success("Download complete", {
         description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
       })
     } catch (error) {
       console.error('Failed to create zip:', error)
-      progressToast.dismiss()
+      toast.dismiss(progressToastId)
       setDownloadProgress(null)
-      toast({
-        title: "Failed to create zip",
+      toast.error("Failed to create zip", {
         description: "Could not create zip file",
-        variant: "destructive",
       })
     }
   }
@@ -374,18 +363,14 @@ function EmojiCreatorContent() {
 
     setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
 
-    const uploadToast = toast({
-      title: "Uploading to Slack...",
+    const uploadToastId = toast.loading("Uploading to Slack...", {
       description: `0/${total} (0%)`,
-      duration: Infinity,
     })
 
     const updateUploadToast = (message: string) => {
-      uploadToast.update({
-        id: uploadToast.id,
-        title: "Uploading to Slack...",
+      toast.loading("Uploading to Slack...", {
+        id: uploadToastId,
         description: message,
-        duration: Infinity,
       })
     }
 
@@ -420,13 +405,12 @@ function EmojiCreatorContent() {
       }
     }
 
-    uploadToast.dismiss()
+    toast.dismiss(uploadToastId)
     setUploadProgress((prev) => (prev ? { ...prev, stage: "complete" } : prev))
 
     if (successCount > 0) {
       packBrowser.clearSelectionsAndStorage()
-      toast({
-        title: "Upload complete",
+      toast.success("Upload complete", {
         description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
         duration: 8000,
       })
@@ -434,10 +418,8 @@ function EmojiCreatorContent() {
 
     if (failedCount > 0) {
       console.error('Upload errors:', errors)
-      toast({
-        title: `${failedCount} upload${failedCount > 1 ? 's' : ''} failed`,
+      toast.error(`${failedCount} upload${failedCount > 1 ? 's' : ''} failed`, {
         description: errors[0] || 'Unknown error',
-        variant: "destructive",
       })
     }
 
