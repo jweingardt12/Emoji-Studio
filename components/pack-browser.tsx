@@ -501,13 +501,13 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       transition={{ duration: 0.15 }}
       onClick={onToggle}
       className={cn(
-        "group relative flex flex-col items-center justify-center aspect-square rounded-xl border transition-all duration-200",
+        "group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200",
         isSelected
           ? "border-primary/60 bg-primary/5 shadow-md shadow-primary/10"
           : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-md hover:-translate-y-0.5"
       )}
     >
-      <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
+      <div className="relative w-10 h-10 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
         <OptimizedEmojiImage
           src={emoji.imageURL}
           alt={emoji.name}
@@ -516,19 +516,17 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       </div>
 
       <div className={cn(
-        "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
+        "absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-200 shadow-sm z-10",
         isSelected
           ? "bg-primary text-primary-foreground scale-100 opacity-100"
           : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
       )}>
-        {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
+        {isSelected ? <CheckCircle2 className="w-3 h-3" /> : "+"}
       </div>
 
-      <div className="absolute bottom-2 left-1 right-1">
-        <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
-          :{emoji.name}:
-        </p>
-      </div>
+      <p className="text-[10px] text-center text-muted-foreground font-medium truncate w-full px-1 mt-1.5">
+        :{emoji.name}:
+      </p>
     </motion.button>
   )
 })
@@ -623,7 +621,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => isGridView ? 120 : 64, // row height
+    estimateSize: () => isGridView ? 80 : 64, // row height
     overscan: 2,
   })
 
@@ -650,7 +648,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
             key={i}
             className={cn(
               "animate-pulse bg-muted/50 rounded-xl",
-              isGridView ? "aspect-square" : "h-16"
+              isGridView ? "h-[76px]" : "h-16"
             )}
           />
         ))}
@@ -677,7 +675,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
         {isGridView ? (
           <motion.div
             key="grid"
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-3 p-1"
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-1.5 p-1"
             variants={gridContainerVariants}
             initial="initial"
             animate="animate"
@@ -760,7 +758,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-3 p-1"
+                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-1.5 p-1"
               >
                 {rowEmojis.map((emoji, colIndex) => {
                   const key = `${emoji.id}|${emoji.name}`
