@@ -507,12 +507,14 @@ function EmojiCreatorContent() {
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow-sm">
             <Tabs value={activeTab} className="flex flex-col flex-1 min-h-0">
               {/* Upload Tab Content */}
-              <TabsContent value="upload" className="flex-1 min-h-0 m-0 p-4">
-                <FileUploadZone onProcessFiles={processFiles} />
+              <TabsContent value="upload" className="flex-1 min-h-0 m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="flex-1 min-h-0 p-4 flex flex-col">
+                  <FileUploadZone onProcessFiles={processFiles} />
+                </div>
               </TabsContent>
 
               {/* Browse Packs Tab Content */}
-              <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative flex flex-col">
+              <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative data-[state=active]:flex data-[state=active]:flex-col">
                 <div className="flex-none px-4 pt-4 pb-3 space-y-3">
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">

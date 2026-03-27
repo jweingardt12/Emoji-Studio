@@ -239,7 +239,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
   return (
     <div
       className={cn(
-        "h-full rounded-xl transition-all duration-300 flex flex-col",
+        "flex-1 min-h-0 rounded-xl transition-all duration-300 flex flex-col",
         isDragging && "ring-2 ring-primary ring-offset-2 ring-offset-background"
       )}
       onDragEnter={handleDragEnter}
@@ -250,7 +250,7 @@ export function FileUploadZone({ onProcessFiles }: FileUploadZoneProps) {
       {selectedFiles.length === 0 ? (
         // Empty state — clean drop zone
         <div className={cn(
-          "h-full rounded-xl border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center text-center p-8 transition-all duration-200",
+          "flex-1 min-h-0 rounded-xl border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center text-center p-8 transition-all duration-200",
           isDragging && "ring-2 ring-primary border-primary bg-primary/5"
         )}>
           <div className={cn(
