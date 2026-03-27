@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 
@@ -16,6 +17,7 @@ import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
 import { useTrack } from "@/lib/hooks/use-track"
+import { CirclePlus, Package, LayoutGrid } from "lucide-react"
 import {
   DashboardHeroSkeleton,
   DashboardChartSkeleton,
@@ -243,7 +245,7 @@ function DashboardPage() {
       </div>
 
       {/* Hero Metrics Section - Staggered animation delay: 0ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-all duration-700 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-all duration-500 ease-out ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
         }`}>
         {loading && !showDemoData ? (
           <div className="grid grid-cols-1 gap-4">
@@ -268,8 +270,28 @@ function DashboardPage() {
         )}
       </div>
 
+      {/* Quick Actions */}
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { href: "/create", icon: CirclePlus, label: "Create Emoji" },
+            { href: "/create?tab=browse", icon: Package, label: "Browse Packs" },
+            { href: "/explorer", icon: LayoutGrid, label: "View All Emojis" },
+          ].map(({ href, icon: Icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* ChartAreaInteractive with skeleton - Staggered animation delay: 150ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-150 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-150 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
         }`}>
         {loading && !showDemoData ? (
           <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
@@ -285,7 +307,7 @@ function DashboardPage() {
         )}
       </div>
       {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-300 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-300 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
         }`}>
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}

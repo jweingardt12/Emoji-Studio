@@ -110,7 +110,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         
         const linkContent = (
           <>
-            <Icon className={cn("h-5 w-5 shrink-0", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-[hsl(var(--brand))]" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
             <span className="truncate">{item.title}</span>
             {item.badge && (
               <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
@@ -150,12 +150,15 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             onClick={handleClick}
             prefetch={true}
             className={cn(
-              "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors duration-200",
               isActive && "bg-accent text-accent-foreground",
               isDisabled && "pointer-events-none opacity-50",
             )}
             aria-current={isActive ? "page" : undefined}
           >
+            {isActive && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[hsl(var(--brand))]" />
+            )}
             {isWrapped && !isActive ? wrappedLinkContent : linkContent}
           </Link>
         )

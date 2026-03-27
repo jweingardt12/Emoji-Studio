@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Settings } from "lucide-react";
+import { Plus, RefreshCw, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export function DashboardHeroSkeleton() {
@@ -123,23 +123,49 @@ export function DashboardTabbedContentSkeleton() {
 
 export function EmptyStateEmojis() {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 text-6xl">😢</div>
-      <h3 className="text-lg font-semibold mb-2">No Emojis Yet</h3>
-      <p className="text-sm text-muted-foreground max-w-sm mb-4">
-        Start creating custom emojis to see them appear here. Your workspace's creativity awaits!
+    <div className="flex flex-col items-center justify-center py-10 text-center max-w-lg mx-auto">
+      <div className="mb-5 text-5xl">✨</div>
+      <h3 className="text-xl font-semibold mb-2">Welcome to Emoji Studio</h3>
+      <p className="text-sm text-muted-foreground mb-8">
+        Get started in three quick steps to unlock your workspace's emoji analytics.
       </p>
-      <div className="flex gap-2">
-        <Button asChild>
-          <Link href="/create">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Emoji
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
+
+      {/* Onboarding steps */}
+      <div className="w-full space-y-4 mb-8 text-left">
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--brand))] text-white text-xs font-bold flex-shrink-0">1</div>
+          <div>
+            <p className="text-sm font-medium">Connect your Slack workspace</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Use the Chrome extension or paste a curl command from Slack admin</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold flex-shrink-0">2</div>
+          <div>
+            <p className="text-sm font-medium">Sync your emoji data</p>
+            <p className="text-xs text-muted-foreground mt-0.5">We'll pull in all your custom emojis and creator info</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold flex-shrink-0">3</div>
+          <div>
+            <p className="text-sm font-medium">Explore analytics & create emojis</p>
+            <p className="text-xs text-muted-foreground mt-0.5">View leaderboards, visualizations, and upload new emojis</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/settings">
             <Settings className="h-4 w-4 mr-2" />
             Connect Slack
+          </Link>
+        </Button>
+        <Button variant="outline" asChild className="w-full sm:w-auto">
+          <Link href="/settings?demo=true">
+            <Sparkles className="h-4 w-4 mr-2" />
+            Try Demo
           </Link>
         </Button>
       </div>

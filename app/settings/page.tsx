@@ -163,6 +163,13 @@ export default function SettingsPage() {
     hasMountedRef.current = true
   }, [])
 
+  // Compute last sync date once on mount
+  const [lastSyncDate, setLastSyncDate] = useState<string | null>(null)
+  useEffect(() => {
+    const ts = localStorage.getItem('lastFetchTime')
+    if (ts) setLastSyncDate(new Date(ts).toLocaleDateString())
+  }, [hasSlack])
+
   // Listen for data updates
   useEffect(() => {
     const handleUpdate = () => setHasSlack(hasSlackConnection())
@@ -324,7 +331,7 @@ export default function SettingsPage() {
           {/* Navigation */}
           <nav className="lg:w-48 flex-shrink-0">
             <div className={cn(
-              "flex gap-1",
+              "flex gap-1 lg:sticky lg:top-6",
               isMobile ? "overflow-x-auto pb-2 -mx-4 px-4" : "flex-col"
             )}>
               {sections.map((section) => {
@@ -380,7 +387,10 @@ export default function SettingsPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {hasSlack ? "Your Slack workspace is synced" : "Connect to import emojis"}
+                          {hasSlack
+                            ? `${emojiData.length.toLocaleString()} emojis synced${lastSyncDate ? ` · Last sync: ${lastSyncDate}` : ''}`
+                            : "Connect to import emojis"
+                          }
                         </p>
                       </div>
                       {hasSlack && (
