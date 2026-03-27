@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, Suspense, lazy } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -513,65 +512,58 @@ function EmojiCreatorContent() {
               </TabsContent>
 
               {/* Browse Packs Tab Content */}
-              <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative">
-                <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full p-4 pb-20">
-                  <Card className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden border-border shadow-sm">
-                    <CardHeader className="flex-none pb-3">
-                      <div className="flex gap-2 items-center">
-                        <div className="relative flex-1">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Search emoji packs..."
-                            value={packBrowser.searchQuery}
-                            onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
-                            className="pl-9"
-                          />
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            const nextView = packBrowser.viewMode === "grid" ? "list" : "grid"
-                            packBrowser.setViewMode(nextView)
-                            track('Emoji Creator: Pack View Changed', {
-                              view: nextView,
-                            })
-                          }}
-                        >
-                          {packBrowser.viewMode === "grid" ? (
-                            <List className="h-4 w-4" />
-                          ) : (
-                            <Grid3x3 className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">Toggle view mode</span>
-                        </Button>
-                      </div>
-                      <div className="mt-4">
-                        <PackBrowserTabs
-                          selectedTab={packBrowser.selectedTab}
-                          onSelectTab={(tab) => {
-                            packBrowser.setSelectedTab(tab)
-                            track('Emoji Creator: Pack Tab Selected', {
-                              tab,
-                            })
-                          }}
-                          searchQuery={packBrowser.searchQuery}
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-hidden pt-2 min-h-0">
-                      <ScrollArea className="h-full">
-                        <PackEmojiGrid
-                          emojis={packBrowser.currentEmojis}
-                          loading={packBrowser.loading}
-                          viewMode={packBrowser.viewMode}
-                          selectedIds={packBrowser.selectedIds}
-                          onToggleSelection={packBrowser.toggleSelection}
-                        />
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-
+              <TabsContent value="browse" className="flex-1 min-h-0 m-0 relative flex flex-col">
+                <div className="flex-none px-4 pt-4 pb-3 space-y-3">
+                  <div className="flex gap-2 items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search emoji packs..."
+                        value={packBrowser.searchQuery}
+                        onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        const nextView = packBrowser.viewMode === "grid" ? "list" : "grid"
+                        packBrowser.setViewMode(nextView)
+                        track('Emoji Creator: Pack View Changed', {
+                          view: nextView,
+                        })
+                      }}
+                    >
+                      {packBrowser.viewMode === "grid" ? (
+                        <List className="h-4 w-4" />
+                      ) : (
+                        <Grid3x3 className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">Toggle view mode</span>
+                    </Button>
+                  </div>
+                  <PackBrowserTabs
+                    selectedTab={packBrowser.selectedTab}
+                    onSelectTab={(tab) => {
+                      packBrowser.setSelectedTab(tab)
+                      track('Emoji Creator: Pack Tab Selected', {
+                        tab,
+                      })
+                    }}
+                    searchQuery={packBrowser.searchQuery}
+                  />
+                </div>
+                <div className="flex-1 overflow-hidden min-h-0 px-4 pb-20">
+                  <ScrollArea className="h-full">
+                    <PackEmojiGrid
+                      emojis={packBrowser.currentEmojis}
+                      loading={packBrowser.loading}
+                      viewMode={packBrowser.viewMode}
+                      selectedIds={packBrowser.selectedIds}
+                      onToggleSelection={packBrowser.toggleSelection}
+                    />
+                  </ScrollArea>
                 </div>
 
                 {/* Floating action bar */}
