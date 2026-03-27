@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Button } from "@/components/ui/button"
 import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
@@ -557,7 +556,6 @@ function EmojiCreatorContent() {
                   />
                 </div>
                 <div className="flex-1 overflow-hidden min-h-0 px-4 pb-20">
-                  <ScrollArea className="h-full">
                     <PackEmojiGrid
                       emojis={packBrowser.currentEmojis}
                       loading={packBrowser.loading}
@@ -565,7 +563,6 @@ function EmojiCreatorContent() {
                       selectedIds={packBrowser.selectedIds}
                       onToggleSelection={packBrowser.toggleSelection}
                     />
-                  </ScrollArea>
                 </div>
 
                 {/* Floating action bar */}

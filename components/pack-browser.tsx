@@ -671,6 +671,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   // For smaller lists, use the non-virtualized approach for smoother animations
   if (emojis.length <= VIRTUALIZATION_THRESHOLD) {
     return (
+      <div className="h-full overflow-auto">
       <AnimatePresence mode="wait">
         {isGridView ? (
           <motion.div
@@ -724,6 +725,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     )
   }
 
@@ -731,7 +733,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   return (
     <div
       ref={scrollRef}
-      className="h-[calc(100vh-300px)] overflow-auto"
+      className="h-full overflow-auto"
       style={{ contain: 'strict' }}
     >
       <div
