@@ -181,7 +181,7 @@ export function SectionCards() {
       <div className="min-w-0">
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 border-l-2 border-l-[hsl(var(--chart-1))] bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-1)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
@@ -243,7 +243,7 @@ export function SectionCards() {
       <div className="min-w-0">
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 border-l-2 border-l-[hsl(var(--chart-2))] bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-2)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
@@ -301,7 +301,7 @@ export function SectionCards() {
       <div className="min-w-0">
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 border-l-2 border-l-[hsl(var(--chart-3))] bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-3)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
@@ -365,7 +365,7 @@ export function SectionCards() {
       <div className="min-w-0">
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 border-l-2 border-l-[hsl(var(--chart-4))] bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-4)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
