@@ -12,5 +12,6 @@ function openPanelEventFilter(event: TrackHandlerPayload): boolean {
 export const openpanel = new OpenPanel({
   clientId: process.env.NEXT_PUBLIC_OPENPANEL_CLIENT_ID!,
   clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+  apiUrl: process.env.OPENPANEL_API_URL,
   filter: openPanelEventFilter, // Add the filter here
 });

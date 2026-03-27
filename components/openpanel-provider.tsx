@@ -138,6 +138,7 @@ export function OpenPanelProvider() {
     <>
       <OpenPanelComponent
         clientId={OPENPANEL_CLIENT_ID}
+        apiUrl={process.env.NEXT_PUBLIC_OPENPANEL_API_URL}
         trackScreenViews={false}
         trackAttributes={true}
         trackOutgoingLinks={true}
