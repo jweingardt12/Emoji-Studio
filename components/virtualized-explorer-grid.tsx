@@ -143,10 +143,10 @@ export function VirtualizedExplorerGrid({
                     <div
                       key={`${emoji.name}-${emoji.url}`}
                       className={cn(
-                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer w-full overflow-hidden",
+                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer w-full overflow-hidden",
                         isNew && "ring-2 ring-primary/50 bg-primary/5",
                         isSelected && "ring-2 ring-primary bg-primary/5 border-primary",
-                        !bulkSelectionMode && "hover:border-primary/40"
+                        !bulkSelectionMode && "hover:border-foreground/20"
                       )}
                       onClick={(e) => handleEmojiClick(emoji, e)}
                     >

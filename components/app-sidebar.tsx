@@ -44,42 +44,39 @@ import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { fetchSlackEmojis } from "@/lib/services/emoji-service"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
-// Simple Modal implementation
-function Modal({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (curl: string) => void }) {
+// Curl command modal using proper Dialog component
+function CurlCommandModal({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (curl: string) => void }) {
   const [curl, setCurl] = useState("")
-  if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card rounded-lg shadow-lg border border-border p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-2">Enter Slack Curl Command</h2>
-        <textarea
-          className="w-full border rounded p-2 mb-4 text-sm bg-background"
-          rows={5}
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Enter Slack Curl Command</DialogTitle>
+        </DialogHeader>
+        <Textarea
+          className="min-h-[120px] text-sm"
           placeholder="Paste your Slack curl command here..."
           value={curl}
           onChange={(e) => setCurl(e.target.value)}
         />
-        <div className="flex gap-2 justify-end">
-          <button className="px-4 py-1 rounded bg-muted" onClick={onClose} type="button">
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            className="px-4 py-1 rounded bg-primary text-white disabled:opacity-60"
-            onClick={() => {
-              if (curl.trim()) onSubmit(curl.trim())
-            }}
+          </Button>
+          <Button
+            onClick={() => { if (curl.trim()) onSubmit(curl.trim()) }}
             disabled={!curl.trim()}
-            type="button"
           >
             Submit
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -93,7 +90,6 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
   const [isVisible, setIsVisible] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({})
-  const { toast } = useToast()
   const pathname = usePathname()
   const { trackFeedbackSubmitted, trackFeedbackSubmissionFailed, trackFeedbackModalClosed, trackFeedbackModalOpened } = useAnalytics()
 
@@ -222,8 +218,7 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
         handleClose()
         // Show toast after modal closes
         setTimeout(() => {
-          toast({
-            title: "Feedback sent!",
+          toast.success("Feedback sent!", {
             description: "Thank you for your feedback. We'll get back to you soon.",
           })
         }, 300)
@@ -232,10 +227,8 @@ function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }
       console.error("Error submitting feedback:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
       trackFeedbackSubmissionFailed(errorMessage)
-      toast({
-        title: "Error submitting feedback",
+      toast.error("Error submitting feedback", {
         description: "Please try again later.",
-        variant: "destructive",
       })
     } finally {
       setSubmitting(false)
@@ -373,14 +366,13 @@ import { useRouter } from "next/navigation";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
-  const { toast } = useToast();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
   const [hasCurl, setHasCurl] = useState<boolean>(false)
   const [slackLoaded, setSlackLoaded] = useState<boolean>(false)
-  const { emojiData, hasRealData } = useEmojiData()
+  const { emojiData, hasRealData, workspace } = useEmojiData()
 
   // initialize on client mount and track emoji data changes
   useEffect(() => {
@@ -463,10 +455,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     try {
       const parsed = parseSlackCurl(curl)
       if (!parsed.isValid) {
-        toast({
-          title: "Invalid Slack curl command",
+        toast.error("Invalid Slack curl command", {
           description: parsed.error || "Please check your curl command and try again. You can update it in Settings.",
-          variant: "destructive",
         })
         // Don't show modal for validation errors, just show toast and return
         setRefreshing(false)
@@ -605,10 +595,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }))
         console.log('Event dispatched!');
       } else {
-        toast({
-          title: "Failed to load emojis",
+        toast.error("Failed to load emojis", {
           description: "No emoji data returned from Slack. Please check your curl command in Settings or try again later.",
-          variant: "destructive",
         })
         setSlackLoaded(false)
         // Don't show modal for API errors, just show toast
@@ -618,12 +606,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred."
       const isAuthError = errorMessage.includes("invalid_auth")
 
-      toast({
-        title: isAuthError ? "Slack Authentication Expired" : "Error refreshing emoji data",
+      toast.error(isAuthError ? "Slack Authentication Expired" : "Error refreshing emoji data", {
         description: isAuthError
           ? "Your Slack token has expired. Please get a fresh curl command from Slack and update it in Settings."
           : errorMessage || "Failed to fetch emojis from Slack. You can update your curl command in Settings.",
-        variant: "destructive",
       })
       setSlackLoaded(false)
       // Don't show modal for fetch errors, just show toast
@@ -782,6 +768,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </div>
             <span className="text-xl font-bold">Emoji Studio</span>
           </Link>
+          {/* Connection status indicator */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 mt-2 pl-1 cursor-default">
+                  <span className={cn(
+                    "h-2 w-2 rounded-full flex-shrink-0",
+                    hasRealData ? "bg-green-500" : "bg-red-400"
+                  )} />
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {hasRealData
+                      ? workspace || "Connected"
+                      : "Not connected"}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{hasRealData
+                  ? `Connected to ${workspace || "workspace"}`
+                  : "Go to Settings to connect your Slack workspace"
+                }</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col h-full">
@@ -818,7 +828,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <MadeWithLove />
         </div>
       </SidebarContent>
-      {modalOpen && <Modal open={modalOpen} onClose={handleModalClose} onSubmit={handleModalSubmit} />}
+      {modalOpen && <CurlCommandModal open={modalOpen} onClose={handleModalClose} onSubmit={handleModalSubmit} />}
       {feedbackModalOpen && <FeedbackModal open={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />}
     </Sidebar>
   );

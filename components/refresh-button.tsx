@@ -7,7 +7,8 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { emojiStorage } from "@/lib/storage/indexed-db"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function RefreshButton() {
   const [refreshing, setRefreshing] = useState(false)
@@ -206,20 +207,70 @@ export function RefreshButton() {
     }
   }
 
+  // Data freshness indicator
+  const [lastFetchLabel, setLastFetchLabel] = useState<string | null>(null)
+  const [isStale, setIsStale] = useState(false)
+
+  const updateFreshnessLabel = useCallback(() => {
+    const lastFetch = localStorage.getItem("lastFetchTime")
+    if (!lastFetch) { setLastFetchLabel(null); return }
+    const diff = Date.now() - new Date(lastFetch).getTime()
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    setIsStale(hours >= 24)
+
+    if (minutes < 1) setLastFetchLabel("Just now")
+    else if (minutes < 60) setLastFetchLabel(`${minutes}m ago`)
+    else if (hours < 24) setLastFetchLabel(`${hours}h ago`)
+    else setLastFetchLabel(`${days}d ago`)
+  }, [])
+
+  useEffect(() => {
+    updateFreshnessLabel()
+    const interval = setInterval(updateFreshnessLabel, 60000)
+    return () => clearInterval(interval)
+  }, [updateFreshnessLabel])
+
+  // Update label immediately after refresh completes
+  useEffect(() => {
+    if (!refreshing) updateFreshnessLabel()
+  }, [refreshing, updateFreshnessLabel])
+
   if (!hasRealData) {
     return null
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleRefresh}
-      disabled={refreshing}
-      className="h-8 w-8 p-0"
-    >
-      <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-      <span className="sr-only">Refresh emoji data</span>
-    </Button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex items-center gap-1.5">
+            {lastFetchLabel && (
+              <span className={cn("text-[10px] tabular-nums hidden sm:inline", isStale ? "text-warning" : "text-muted-foreground")}>
+                {lastFetchLabel}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-8 w-8 p-0 relative"
+            >
+              {isStale && (
+                <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-warning" />
+              )}
+              <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+              <span className="sr-only">Refresh emoji data</span>
+            </Button>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{lastFetchLabel ? `Updated ${lastFetchLabel}` : "Refresh emoji data"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
