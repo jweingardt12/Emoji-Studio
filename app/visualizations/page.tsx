@@ -44,7 +44,7 @@ const EmojiName = ({ name }: { name: string }) => {
 
   // Format the display name with a character limit
   const displayName = isLong
-    ? `${name.substring(0, MAX_DISPLAY_LENGTH)}...`
+    ? `${name.substring(0, MAX_DISPLAY_LENGTH)}\u2026`
     : name;
 
   return (
@@ -185,16 +185,18 @@ export default function VisualizationsPage() {
           <ScrollArea className="h-[60vh]">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
               {emojisWithLength.map((emoji) => (
-                <div
+                <button
                   key={emoji.name}
-                  className="flex flex-col items-center p-2 border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                  className="flex flex-col items-center p-2 border rounded-md hover:bg-accent cursor-pointer transition-colors text-center"
                   onClick={() => handleEmojiClick(emoji)}
                 >
                   <div className="relative w-16 h-16 mb-2">
                     {emoji.url && (
                       <img
                         src={emoji.url}
-                        alt={emoji.name}
+                        alt={`:${emoji.name}:`}
+                        width={64}
+                        height={64}
                         className="object-contain w-full h-full"
                         loading="lazy"
                       />
@@ -209,7 +211,7 @@ export default function VisualizationsPage() {
                       {emoji.created ? format(new Date(emoji.created * 1000), 'MMM d, yyyy') : 'Unknown date'}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </ScrollArea>
@@ -228,16 +230,18 @@ export default function VisualizationsPage() {
           <ScrollArea className="h-[60vh]">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
               {emojisOnDate.map((emoji) => (
-                <div
+                <button
                   key={emoji.name}
-                  className="flex flex-col items-center p-2 border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                  className="flex flex-col items-center p-2 border rounded-md hover:bg-accent cursor-pointer transition-colors text-center"
                   onClick={() => handleEmojiClick(emoji)}
                 >
                   <div className="relative w-16 h-16 mb-2">
                     {emoji.url && (
                       <img
                         src={emoji.url}
-                        alt={emoji.name}
+                        alt={`:${emoji.name}:`}
+                        width={64}
+                        height={64}
                         className="object-contain w-full h-full"
                         loading="lazy"
                       />
@@ -252,7 +256,7 @@ export default function VisualizationsPage() {
                       {emoji.created ? format(new Date(emoji.created * 1000), 'h:mm a') : 'Unknown time'}
                     </p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </ScrollArea>
@@ -272,7 +276,7 @@ export default function VisualizationsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
+                  <Activity className="h-5 w-5" aria-hidden="true" />
                   <span>Emoji Visualizations</span>
                 </h1>
                 <p className="text-muted-foreground text-sm sm:text-base">Deep insights into your workspace emoji usage and trends.</p>
@@ -308,19 +312,19 @@ export default function VisualizationsPage() {
             }}
           >
             <TabsList className="grid w-full grid-cols-4 mb-6 h-auto p-1">
-              <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+              <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
                 <ChartPieIcon className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="activity" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+              <TabsTrigger value="activity" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
                 <Activity className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Activity Patterns</span>
               </TabsTrigger>
-              <TabsTrigger value="creators" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+              <TabsTrigger value="creators" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
                 <Users className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Creators</span>
               </TabsTrigger>
-              <TabsTrigger value="content" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all">
+              <TabsTrigger value="content" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
                 <FileText className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Content</span>
               </TabsTrigger>

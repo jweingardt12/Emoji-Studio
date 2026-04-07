@@ -155,7 +155,7 @@ function LeaderboardPage() {
   }
   
   return (
-    <div className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-4'} transition-all duration-700 ${
+    <div className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-4'} transition-[opacity,transform] duration-700 motion-reduce:transition-none ${
       pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
     }`} key={dataRefreshKey}>
       <ChromeExtensionHandler />
@@ -163,9 +163,11 @@ function LeaderboardPage() {
       {/* Mobile Header - Only show on mobile */}
       {!isMobile && (
         <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border">
-          <img 
-            src="/logo.png" 
-            alt="Emoji Studio" 
+          <img
+            src="/logo.png"
+            alt="Emoji Studio"
+            width={32}
+            height={32}
             className="h-8 w-8 rounded-lg shadow-sm"
           />
           <h1 className="text-lg font-semibold">Leaderboard</h1>
@@ -186,7 +188,7 @@ function LeaderboardPage() {
                   className="h-10 px-6 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-sm"
                   disabled={filteredLeaderboard.length === 0}
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-4 w-4" aria-hidden="true" />
                   <span className="font-semibold">Share</span>
                   <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-primary-foreground rounded-full leading-none">
                     NEW

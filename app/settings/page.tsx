@@ -56,7 +56,7 @@ function ThemeSelector() {
           key={value}
           onClick={() => setTheme(value)}
           className={cn(
-            "flex items-center justify-center w-9 h-9 rounded-lg transition-all",
+            "flex items-center justify-center w-9 h-9 rounded-lg transition-[color,background-color] duration-150",
             theme === value
               ? "bg-primary text-primary-foreground"
               : "bg-muted hover:bg-muted/80"
@@ -636,7 +636,7 @@ export default function SettingsPage() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
-                      <img src="/logo-192.png" alt="Emoji Studio" className="h-12 w-12 rounded-xl" />
+                      <img src="/logo-192.png" alt="Emoji Studio" width={48} height={48} className="h-12 w-12 rounded-xl" />
                       <div>
                         <h3 className="font-semibold">Emoji Studio</h3>
                         <p className="text-xs text-muted-foreground">Manage your Slack emojis</p>

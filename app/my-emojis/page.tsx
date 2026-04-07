@@ -1426,7 +1426,7 @@ function MyEmojisPage() {
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder="Search emojis..."
+                    placeholder="Search emojis\u2026"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 h-9"
@@ -1643,7 +1643,7 @@ function MyEmojisPage() {
                       <Input
                         ref={searchInputRef}
                         type="search"
-                        placeholder="Search emojis... (⌘K)"
+                        placeholder="Search emojis\u2026 (\u2318K)"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full sm:w-[300px] pl-9"
@@ -2194,7 +2194,7 @@ function MyEmojisPage() {
                       <ContextMenu key={emoji.name}>
                         <ContextMenuTrigger asChild>
                           <div
-                            className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+                            className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-[border-color,background-color,box-shadow] duration-200 cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
                             onClick={() => toggleEmojiSelection(emoji.name)}
                             onContextMenu={(e) => {
                               e.stopPropagation()
@@ -2284,7 +2284,7 @@ function MyEmojisPage() {
                           </Button>
                         ) : (
                           /* Desktop Quick Actions - Floating Toolbar positioned at top to avoid covering text */
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
