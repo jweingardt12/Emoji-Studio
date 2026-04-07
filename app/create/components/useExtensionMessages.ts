@@ -2,12 +2,12 @@
 
 import { useEffect, useCallback } from "react"
 import { useTrack } from "@/lib/hooks/use-track"
+import { toast } from "sonner"
 
 interface ExtensionMessageHandlerOptions {
   onProcessFiles: (files: File[]) => void
   onSetSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>
   onSetPendingMobileFile: React.Dispatch<React.SetStateAction<File | null>>
-  toast: (props: { title: string; description?: string; variant?: "default" | "destructive" }) => void
   isMobile: boolean | null
 }
 
@@ -15,7 +15,6 @@ export function useExtensionMessages({
   onProcessFiles,
   onSetSelectedFiles,
   onSetPendingMobileFile,
-  toast,
   isMobile,
 }: ExtensionMessageHandlerOptions) {
   const track = useTrack()
@@ -28,8 +27,7 @@ export function useExtensionMessages({
       const emojis = cartData?.emojis || []
 
       if (emojis.length > 0) {
-        toast({
-          title: `Processing ${emojis.length} emojis from cart`,
+        toast(`Processing ${emojis.length} emojis from cart`, {
           description: "Please wait while we load your emojis...",
         })
 
@@ -107,8 +105,7 @@ export function useExtensionMessages({
 
       try {
         // Show loading toast
-        toast({
-          title: "Loading image from extension...",
+        toast.loading("Loading image from extension...", {
           description: "Please wait while we process the image.",
         })
 
@@ -225,10 +222,8 @@ export function useExtensionMessages({
 
       } catch (error) {
         console.error('Failed to load image from extension:', error)
-        toast({
-          title: "Failed to load image",
+        toast.error("Failed to load image", {
           description: error instanceof Error ? error.message : "Unknown error occurred",
-          variant: "destructive",
         })
 
         track("Emoji Creator: Extension Image Load Failed", {
@@ -237,7 +232,7 @@ export function useExtensionMessages({
         })
       }
     }
-  }, [onProcessFiles, onSetSelectedFiles, toast, track])
+  }, [onProcessFiles, onSetSelectedFiles, track])
 
   useEffect(() => {
     console.log('[Create Page] Component mounted, URL:', window.location.href)
@@ -294,8 +289,7 @@ export function useExtensionMessages({
               // Use desktop flow
               onSetSelectedFiles([file])
 
-              toast({
-                title: `Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`,
+              toast(`Processing ${fileData.source === 'camera' ? 'captured photo' : fileData.source === 'video' ? 'recorded video' : 'uploaded file'}`, {
                 description: "Converting to emoji format...",
               })
 
@@ -348,5 +342,5 @@ export function useExtensionMessages({
 
     window.addEventListener('message', handleExtensionMessage)
     return () => window.removeEventListener('message', handleExtensionMessage)
-  }, [handleExtensionMessage, isMobile, onProcessFiles, onSetPendingMobileFile, onSetSelectedFiles, toast])
+  }, [handleExtensionMessage, isMobile, onProcessFiles, onSetPendingMobileFile, onSetSelectedFiles])
 }

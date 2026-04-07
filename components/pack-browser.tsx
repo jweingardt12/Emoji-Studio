@@ -447,8 +447,8 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
   ]
 
   return (
-    <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-      <div className="flex p-1.5 bg-muted/30 rounded-2xl border border-border/20 backdrop-blur-sm w-max min-w-full sm:min-w-0">
+    <div className="w-full">
+      <div className="flex flex-wrap gap-1.5">
         {tabs.map((tab) => {
           const isSelected = selectedTab === tab.id
 
@@ -457,24 +457,14 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               className={cn(
-                "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 isSelected
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  ? "bg-background text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
-              {isSelected && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-background rounded-xl shadow-md border border-border/40"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <span className="text-base leading-none">{tab.emoji}</span>
-                {tab.label}
-              </span>
+              <span className="text-sm leading-none">{tab.emoji}</span>
+              {tab.label}
             </button>
           )
         })}
@@ -511,13 +501,13 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       transition={{ duration: 0.15 }}
       onClick={onToggle}
       className={cn(
-        "group relative flex flex-col items-center justify-center aspect-square rounded-2xl border transition-all duration-200",
+        "group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-200",
         isSelected
           ? "border-primary/60 bg-primary/5 shadow-md shadow-primary/10"
-          : "border-transparent bg-card/80 hover:bg-accent/50 hover:border-border hover:shadow-md hover:-translate-y-0.5"
+          : "border-transparent bg-card hover:bg-accent/50 hover:border-border hover:shadow-md hover:-translate-y-0.5"
       )}
     >
-      <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-transform duration-200 group-hover:scale-110 mb-6">
+      <div className="relative w-10 h-10 flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
         <OptimizedEmojiImage
           src={emoji.imageURL}
           alt={emoji.name}
@@ -526,19 +516,17 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
       </div>
 
       <div className={cn(
-        "absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-200 shadow-sm z-10",
+        "absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-200 shadow-sm z-10",
         isSelected
           ? "bg-primary text-primary-foreground scale-100 opacity-100"
           : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
       )}>
-        {isSelected ? <CheckCircle2 className="w-3.5 h-3.5" /> : "+"}
+        {isSelected ? <CheckCircle2 className="w-3 h-3" /> : "+"}
       </div>
 
-      <div className="absolute bottom-2 left-1 right-1">
-        <p className="text-[10px] text-center text-muted-foreground font-medium truncate px-1.5 py-0.5 bg-muted/30 rounded-md">
-          :{emoji.name}:
-        </p>
-      </div>
+      <p className="text-[10px] text-center text-muted-foreground font-medium truncate w-full px-1 mt-1.5">
+        :{emoji.name}:
+      </p>
     </motion.button>
   )
 })
@@ -598,8 +586,9 @@ function useColumnCount(): number {
         const width = window.innerWidth
         if (width < 640) setColumns(3)       // sm
         else if (width < 768) setColumns(4)  // md
-        else if (width < 1280) setColumns(5) // lg
-        else setColumns(6)                   // xl
+        else if (width < 1024) setColumns(5) // lg
+        else if (width < 1280) setColumns(7) // xl (full width now, no sidebar)
+        else setColumns(8)                   // 2xl
       }, 100)
     }
 
@@ -607,8 +596,9 @@ function useColumnCount(): number {
     const width = window.innerWidth
     if (width < 640) setColumns(3)
     else if (width < 768) setColumns(4)
-    else if (width < 1280) setColumns(5)
-    else setColumns(6)
+    else if (width < 1024) setColumns(5)
+    else if (width < 1280) setColumns(7)
+    else setColumns(8)
 
     window.addEventListener('resize', updateColumns)
     return () => {
@@ -631,7 +621,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => isGridView ? 120 : 64, // row height
+    estimateSize: () => isGridView ? 80 : 64, // row height
     overscan: 2,
   })
 
@@ -650,7 +640,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
       <div className={cn(
         "grid gap-4",
         isGridView
-          ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6"
+          ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8"
           : "grid-cols-1"
       )}>
         {Array.from({ length: 24 }).map((_, i) => (
@@ -658,7 +648,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
             key={i}
             className={cn(
               "animate-pulse bg-muted/50 rounded-xl",
-              isGridView ? "aspect-square" : "h-16"
+              isGridView ? "h-[76px]" : "h-16"
             )}
           />
         ))}
@@ -681,11 +671,12 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   // For smaller lists, use the non-virtualized approach for smoother animations
   if (emojis.length <= VIRTUALIZATION_THRESHOLD) {
     return (
+      <div className="h-full overflow-auto">
       <AnimatePresence mode="wait">
         {isGridView ? (
           <motion.div
             key="grid"
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-1.5 p-1"
             variants={gridContainerVariants}
             initial="initial"
             animate="animate"
@@ -734,6 +725,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     )
   }
 
@@ -741,7 +733,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
   return (
     <div
       ref={scrollRef}
-      className="h-[calc(100vh-300px)] overflow-auto"
+      className="h-full overflow-auto"
       style={{ contain: 'strict' }}
     >
       <div
@@ -768,7 +760,7 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6 gap-3 p-1"
+                className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-1.5 p-1"
               >
                 {rowEmojis.map((emoji, colIndex) => {
                   const key = `${emoji.id}|${emoji.name}`
@@ -875,10 +867,10 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-2xl xl:border xl:border-border/40 xl:shadow-lg bg-card/95 xl:backdrop-blur-sm">
-      <div className="p-5 sm:p-6 border-b border-border/40">
+    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:border-border xl:shadow-sm bg-card">
+      <div className="p-5 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-bold text-sm" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>Selected Emojis</h3>
+          <h3 className="font-bold text-sm">Selected Emojis</h3>
           {selectedEmojis.length > 0 && (
             <Button
               variant="ghost"
@@ -898,7 +890,7 @@ export function PackSelectionSidebar({
       <ScrollArea className="flex-1 min-h-0 p-4">
         {selectedEmojis.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground p-4">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/10 flex items-center justify-center mb-4 rotate-3">
+            <div className="w-20 h-20 rounded-xl bg-muted border border-border flex items-center justify-center mb-4">
               <Sparkles className="h-10 w-10 opacity-20" />
             </div>
             <h4 className="font-medium text-foreground mb-1">No emojis selected</h4>
@@ -925,7 +917,7 @@ export function PackSelectionSidebar({
                     exit="exit"
                     transition={{ delay: Math.min(index * 0.03, 0.2) }}
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-2xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
+                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
                       hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
                       hasNameChecking && status === "available" && "border-green-500/30 bg-green-50/10"
                     )}

@@ -113,13 +113,14 @@ const DesktopLayout = memo(function DesktopLayout({
   return (
     <div className="hidden md:flex md:flex-col gap-6">
       <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/20">
+        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
-            <Link href="/my-emojis" className="focus:outline-none cursor-pointer hover:opacity-80 transition-opacity">
-              <span className="border-b border-dotted border-muted-foreground hover:border-primary transition-colors">Recent Emojis</span>
-            </Link>
+            <span>Recent Emojis</span>
           </h2>
+          <Link href="/explorer?sort=newest" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            View all &rarr;
+          </Link>
         </div>
         <div className="p-6">
           <EmojiGrid />
@@ -127,13 +128,14 @@ const DesktopLayout = memo(function DesktopLayout({
       </div>
 
       <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/20">
+        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" />
-            <Link href="/leaderboard" className="focus:outline-none cursor-pointer hover:opacity-80 transition-opacity">
-              <span className="border-b border-dotted border-muted-foreground hover:border-primary transition-colors">Leaderboard</span>
-            </Link>
+            <span>Leaderboard</span>
           </h2>
+          <Link href="/leaderboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            View all &rarr;
+          </Link>
         </div>
         <div className="p-0">
           <Leaderboard

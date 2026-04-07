@@ -459,7 +459,7 @@ const Leaderboard = ({
                 return (
                   <TableRow
                     key={user.user_id}
-                    className={`transition-colors hover:bg-muted cursor-pointer border-b border-border last:border-0 active:bg-muted/80 ${
+                    className={`transition-all duration-200 hover:bg-muted hover:translate-x-0.5 cursor-pointer border-b border-border last:border-0 active:bg-muted/80 ${
                       variant === "compact" ? "h-14 sm:h-auto" : ""
                     }`}
                     style={{ WebkitTapHighlightColor: 'transparent' }}

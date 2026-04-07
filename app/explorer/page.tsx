@@ -13,7 +13,7 @@ const EmojiOverlay = React.lazy(() => import("@/components/emoji-overlay"))
 const UserOverlay = React.lazy(() => import("@/components/user-overlay"))
 import { getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { toast as sonner } from "sonner"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 // Lightweight date formatter to replace date-fns
 const format = (date: Date | number, formatStr: string) => {
@@ -171,9 +171,9 @@ function ExplorerPage() {
     }
     try {
       await navigator.clipboard.writeText(text);
-      sonner.success(message);
+      toast.success(message);
     } catch (error) {
-      sonner.error("Failed to copy to clipboard");
+      toast.error("Failed to copy to clipboard");
     }
   };
 
@@ -193,7 +193,7 @@ function ExplorerPage() {
       // GIFs can't be reliably copied to clipboard, so copy URL instead
       if (emoji.url.toLowerCase().includes('.gif')) {
         await navigator.clipboard.writeText(emoji.url);
-        sonner.success("GIF URL copied! (Animated GIFs can't be copied as images)");
+        toast.success("GIF URL copied! (Animated GIFs can't be copied as images)");
         return;
       }
 
@@ -206,7 +206,7 @@ function ExplorerPage() {
       if (!ClipboardItem.supports(blob.type)) {
         // Fallback to copying URL
         await navigator.clipboard.writeText(emoji.url);
-        sonner.success("Image URL copied! (Image format not supported for clipboard)");
+        toast.success("Image URL copied! (Image format not supported for clipboard)");
         return;
       }
 
@@ -215,9 +215,9 @@ function ExplorerPage() {
           [blob.type]: blob
         })
       ]);
-      sonner.success("Image copied to clipboard!");
+      toast.success("Image copied to clipboard!");
     } catch (error) {
-      sonner.error("Failed to copy image to clipboard");
+      toast.error("Failed to copy image to clipboard");
     }
   };
 
@@ -246,9 +246,9 @@ function ExplorerPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      sonner.success(`Downloaded :${emoji.name}:`);
+      toast.success(`Downloaded :${emoji.name}:`);
     } catch (error) {
-      sonner.error("Failed to download emoji");
+      toast.error("Failed to download emoji");
     }
   };
 
@@ -256,6 +256,10 @@ function ExplorerPage() {
   const toggleEmojiSelection = (emojiName: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
+      // Shift+click auto-enables bulk selection mode
+      if (e.shiftKey && !bulkSelectionMode) {
+        setBulkSelectionMode(true);
+      }
     }
     setSelectedEmojis(prev => {
       const newSet = new Set(prev);
@@ -281,7 +285,7 @@ function ExplorerPage() {
   const downloadSelectedEmojis = async () => {
     if (selectedEmojis.size === 0) return;
 
-    sonner.loading(`Downloading ${selectedEmojis.size} emojis...`, { id: "bulk-download-selected" });
+    toast.loading(`Downloading ${selectedEmojis.size} emojis...`, { id: "bulk-download-selected" });
 
     try {
       const emojisToDownload = sortedEmojis.filter(e => selectedEmojis.has(e.name));
@@ -293,13 +297,13 @@ function ExplorerPage() {
       await saveZipFile(zip, `emoji-selection-${Date.now()}.zip`);
 
       if (errors.length > 0) {
-        sonner.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download-selected" });
+        toast.success(`Downloaded ${successCount} emojis (${errors.length} failed)`, { id: "bulk-download-selected" });
       } else {
-        sonner.success(`Downloaded ${successCount} emojis`, { id: "bulk-download-selected" });
+        toast.success(`Downloaded ${successCount} emojis`, { id: "bulk-download-selected" });
       }
       clearSelection();
     } catch (error) {
-      sonner.error("Failed to download selected emojis", { id: "bulk-download-selected" });
+      toast.error("Failed to download selected emojis", { id: "bulk-download-selected" });
     }
   };
 
@@ -424,7 +428,7 @@ function ExplorerPage() {
               {sinceFilter && (
                 <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary animate-pulse motion-reduce:animate-none" aria-hidden="true" />
+                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
                     <span className="font-medium">Showing new emojis from the last 24 hours</span>
                   </div>
                   <Button
@@ -447,12 +451,12 @@ function ExplorerPage() {
               )}
               
               {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" aria-hidden="true" />
+              <div className="relative group">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search by name, creator, or user ID\u2026"
-                  className="w-full rounded-lg bg-background pl-9 sm:pl-10 pr-4 py-2 sm:py-2.5 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                  placeholder="Search by name, creator, or user ID..."
+                  className="w-full rounded-xl bg-muted/50 border-muted pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-background transition-colors"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchQuery(e.target.value);
@@ -494,7 +498,7 @@ function ExplorerPage() {
                   {isDownloading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Downloading\u2026
+                      Downloading...
                     </>
                   ) : (
                     <>
@@ -505,38 +509,10 @@ function ExplorerPage() {
                 </Button>
               </div>
 
-              {/* Bulk Selection Actions Bar */}
-              {bulkSelectionMode && (
-                <div className="flex flex-wrap items-center gap-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                  <span className="text-sm font-medium">
-                    {selectedEmojis.size} selected
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllEmojis}
-                    disabled={selectedEmojis.size === sortedEmojis.length}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearSelection}
-                    disabled={selectedEmojis.size === 0}
-                  >
-                    Clear
-                  </Button>
-                  <div className="flex-1" />
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={downloadSelectedEmojis}
-                    disabled={selectedEmojis.size === 0}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Selected ({selectedEmojis.size})
-                  </Button>
+              {/* Inline bulk mode hint */}
+              {bulkSelectionMode && selectedEmojis.size === 0 && (
+                <div className="p-3 bg-muted/50 rounded-lg border border-border text-sm text-muted-foreground text-center">
+                  Click emojis to select them, or use Shift+Click for quick selection
                 </div>
               )}
             </div>
@@ -567,7 +543,7 @@ function ExplorerPage() {
                 {sortedEmojis.length === 0 ? (
                   <div className="text-center py-8 sm:py-12">
                     <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 mb-4 rounded-full bg-muted flex items-center justify-center">
-                      <Search className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" aria-hidden="true" />
+                      <Search className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-sm sm:text-base font-medium mb-2">No emojis found</h3>
                     <p className="text-xs sm:text-sm text-muted-foreground">
@@ -664,13 +640,34 @@ function ExplorerPage() {
         </Suspense>
       )}
       {/* Download Progress Overlay */}
-      <DownloadProgressOverlay 
+      <DownloadProgressOverlay
         isOpen={isDownloading}
         progress={downloadProgress}
         processedFiles={processedFileCount}
         totalFiles={totalFilesToDownload}
         onCancel={handleCancelDownload} // Pass the cancel handler
       />
+
+      {/* Floating bulk selection action bar */}
+      {bulkSelectionMode && selectedEmojis.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <span className="text-sm font-medium tabular-nums">
+            {selectedEmojis.size} selected
+          </span>
+          <div className="h-4 w-px bg-border" />
+          <Button variant="ghost" size="sm" onClick={selectAllEmojis} disabled={selectedEmojis.size === sortedEmojis.length}>
+            Select All
+          </Button>
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
+            Clear
+          </Button>
+          <div className="h-4 w-px bg-border" />
+          <Button size="sm" onClick={downloadSelectedEmojis}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            Download ({selectedEmojis.size})
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

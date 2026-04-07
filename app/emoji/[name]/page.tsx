@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from "next/navigation"
 import { useMemo, useState, useEffect } from "react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Emoji, getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoji-service"
-import { ArrowLeft, Copy, Download, User, Calendar, Hash, ExternalLink } from "lucide-react"
+import { ArrowLeft, Copy, Download, User, Calendar, Hash, ExternalLink, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -166,11 +166,14 @@ function EmojiDetailContent({
 }) {
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
-      {/* Back navigation */}
-      <Link href="/explorer" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Explorer
-      </Link>
+      {/* Breadcrumb navigation */}
+      <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
+        <Link href="/explorer" className="hover:text-foreground transition-colors">
+          Explorer
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-foreground font-medium truncate max-w-[200px]">:{emoji.name}:</span>
+      </nav>
 
       {/* Main emoji card */}
       <Card className="mb-8">

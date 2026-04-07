@@ -62,8 +62,6 @@ export const CreatePageModals = memo(function CreatePageModals({
     // Failed frame extraction tracking
     failedFrameExtraction,
     setFailedFrameExtraction,
-
-    toast,
   } = useCreatePageContext()
   const track = useTrack()
 
