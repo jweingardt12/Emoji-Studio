@@ -281,7 +281,7 @@ export default function PairPage() {
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               <p className="text-sm text-muted-foreground">
-                {submitting ? "Importing workspace data..." : "Establishing connection..."}
+                {submitting ? "Importing workspace data\u2026" : "Establishing connection\u2026"}
               </p>
             </div>
           </CardContent>

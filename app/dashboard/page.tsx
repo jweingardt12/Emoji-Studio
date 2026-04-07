@@ -243,7 +243,7 @@ function DashboardPage() {
       </div>
 
       {/* Hero Metrics Section - Staggered animation delay: 0ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-all duration-700 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-[opacity,transform] duration-700 motion-reduce:transition-none ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
         {loading && !showDemoData ? (
           <div className="grid grid-cols-1 gap-4">
@@ -269,7 +269,7 @@ function DashboardPage() {
       </div>
 
       {/* ChartAreaInteractive with skeleton - Staggered animation delay: 150ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-150 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 transition-[opacity,transform] duration-700 delay-150 motion-reduce:transition-none ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
         {loading && !showDemoData ? (
           <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
@@ -285,7 +285,7 @@ function DashboardPage() {
         )}
       </div>
       {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-700 delay-300 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+      <div className={`px-3 sm:px-4 lg:px-6 transition-[opacity,transform] duration-700 delay-300 motion-reduce:transition-none ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
         }`}>
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}

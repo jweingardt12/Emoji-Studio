@@ -205,7 +205,7 @@ function EmojiCreatorContent() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading\u2026</div>}>
           <MobileEmojiCreator
             initialFile={pendingMobileFile || undefined}
             onCancel={() => setPendingMobileFile(null)}
@@ -270,15 +270,15 @@ function EmojiCreatorContent() {
     setDownloadProgress({ stage: "downloading", completed: 0, total })
 
     const progressToast = toast({
-      title: "Creating zip file...",
-      description: `Starting download...`,
+      title: "Creating zip file\u2026",
+      description: `Starting download\u2026`,
       duration: Infinity,
     })
 
     const updateProgressToast = (message: string) => {
       progressToast.update({
         id: progressToast.id,
-        title: "Creating zip file...",
+        title: "Creating zip file\u2026",
         description: message,
         duration: Infinity,
       })
@@ -326,7 +326,7 @@ function EmojiCreatorContent() {
     setDownloadProgress((prev) =>
       prev ? { ...prev, stage: "finalizing" } : prev
     )
-    updateProgressToast("Finalizing download...")
+    updateProgressToast("Finalizing download\u2026")
 
     try {
       const zipBlob = await zip.generateAsync({ type: 'blob' })
@@ -375,7 +375,7 @@ function EmojiCreatorContent() {
     setUploadProgress({ completed: 0, failed: 0, total, stage: "uploading" })
 
     const uploadToast = toast({
-      title: "Uploading to Slack...",
+      title: "Uploading to Slack\u2026",
       description: `0/${total} (0%)`,
       duration: Infinity,
     })
@@ -383,7 +383,7 @@ function EmojiCreatorContent() {
     const updateUploadToast = (message: string) => {
       uploadToast.update({
         id: uploadToast.id,
-        title: "Uploading to Slack...",
+        title: "Uploading to Slack\u2026",
         description: message,
         duration: Infinity,
       })
@@ -476,7 +476,7 @@ function EmojiCreatorContent() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/10">
-                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    <Sparkles className="h-5 w-5 text-purple-500" aria-hidden="true" />
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "'Clash Display', var(--font-sans)" }}>
@@ -504,7 +504,7 @@ function EmojiCreatorContent() {
                           track('Emoji Creator: Tab Changed', { tab: tab.id })
                         }}
                         className={cn(
-                          "relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                          "relative flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-[color,background-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                           isSelected
                             ? "text-foreground"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -543,7 +543,7 @@ function EmojiCreatorContent() {
                           track('Emoji Creator: Tab Changed', { tab: tab.id })
                         }}
                         className={cn(
-                          "relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-200 outline-none",
+                          "relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl transition-[color,background-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                           isSelected
                             ? "text-foreground"
                             : "text-muted-foreground"
@@ -575,6 +575,7 @@ function EmojiCreatorContent() {
                   variant="ghost"
                 >
                   <span className="text-sm font-semibold">{packBrowser.selectedEmojis.length}</span>
+                  <span className="sr-only">View cart</span>
                 </Button>
               )}
             </div>
@@ -595,9 +596,9 @@ function EmojiCreatorContent() {
                     <CardHeader className="flex-none pb-3">
                       <div className="flex gap-2 items-center">
                         <div className="relative flex-1">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                           <Input
-                            placeholder="Search emoji packs..."
+                            placeholder="Search emoji packs\u2026"
                             value={packBrowser.searchQuery}
                             onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
                             className="pl-9"
@@ -693,7 +694,8 @@ function EmojiCreatorContent() {
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
-                    className="absolute bottom-4 left-4 right-4 lg:hidden"
+                    transition={{ duration: 0.3 }}
+                    className="absolute bottom-4 left-4 right-4 lg:hidden motion-reduce:transition-none"
                   >
                     <div className="glass-liquid rounded-xl p-3 shadow-lg border border-border/50">
                       <div className="flex items-center gap-3">
@@ -732,6 +734,7 @@ function EmojiCreatorContent() {
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9"
+                            aria-label="Clear selection"
                             onClick={() => {
                               const previousCount = packBrowser.selectedEmojis.length
                               setDownloadProgress(null)
@@ -746,6 +749,7 @@ function EmojiCreatorContent() {
                             variant="outline"
                             size="icon"
                             className="h-9 w-9"
+                            aria-label="Download selected emojis"
                             onClick={handlePackDownload}
                             disabled={!!downloadProgress}
                           >

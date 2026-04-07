@@ -182,6 +182,8 @@ function EmojiDetailContent({
                 <img
                   src={emoji.url}
                   alt={`:${emoji.name}:`}
+                  width={192}
+                  height={192}
                   className="max-w-full max-h-full object-contain"
                 />
               </div>
@@ -278,10 +280,12 @@ function EmojiDetailContent({
                   <img
                     src={e.url}
                     alt={`:${e.name}:`}
+                    width={40}
+                    height={40}
                     className="w-10 h-10 object-contain group-hover:scale-110 transition-transform"
                   />
                   <span className="text-xs text-muted-foreground truncate w-full text-center mt-1">
-                    :{e.name.length > 10 ? e.name.slice(0, 10) + '...' : e.name}:
+                    :{e.name.length > 10 ? e.name.slice(0, 10) + '\u2026' : e.name}:
                   </span>
                 </Link>
               ))}
