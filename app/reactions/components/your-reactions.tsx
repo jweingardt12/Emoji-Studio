@@ -46,7 +46,7 @@ export function YourReactions({
   return (
     <Card>
       <CardHeader className="pb-4">
-        <CardTitle className="text-base">Your Reactions</CardTitle>
+        <CardTitle className="text-base">Your Top Emojis</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

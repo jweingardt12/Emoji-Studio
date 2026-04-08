@@ -170,7 +170,7 @@ export function ChannelPicker({
           className="gap-2"
         >
           <Scan className="h-4 w-4" />
-          Scan Reactions
+          Scan Channels
         </Button>
       </div>
 

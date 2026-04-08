@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import {
-  BarChart3,
+  Activity,
   BarChartIcon,
   LayoutDashboardIcon,
   SettingsIcon,
@@ -628,9 +628,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Gift,
     },
     {
-      title: "Reactions",
+      title: "Usage",
       url: "/reactions",
-      icon: BarChart3,
+      icon: Activity,
     },
     {
       title: "Settings",
