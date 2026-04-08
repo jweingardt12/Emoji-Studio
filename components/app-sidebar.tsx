@@ -603,6 +603,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: LayoutDashboardIcon,
     },
     {
+      title: "Usage",
+      url: "/reactions",
+      icon: Activity,
+      badge: "NEW",
+    },
+    {
       title: "Leaderboard",
       url: "/leaderboard",
       icon: TrophyIcon,
@@ -626,12 +632,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Wrapped",
       url: "/wrapped",
       icon: Gift,
-    },
-    {
-      title: "Usage",
-      url: "/reactions",
-      icon: Activity,
-      badge: "NEW",
     },
     {
       title: "Settings",

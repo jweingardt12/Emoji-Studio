@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { TextShimmer } from "@/components/ui/text-shimmer"
 
 interface NavMainProps {
   items: {
@@ -39,8 +38,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         const isRefresh = item.action === "refresh"
         const isFeedback = item.action === "feedback"
         const isSettings = item.url === "/settings"
-        const isWrapped = item.url === "/wrapped"
-        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && !isWrapped && !item.external && !isFeedback)
+        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && item.url !== "/wrapped" && !item.external && !isFeedback)
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {
@@ -123,26 +121,6 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
           </>
         )
 
-        // Special content for Wrapped link with shimmer effect
-        const wrappedLinkContent = (
-          <>
-            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <TextShimmer
-              as="span"
-              className="text-sm font-medium [--base-color:#f97316] [--base-gradient-color:#fbbf24] dark:[--base-color:#f97316] dark:[--base-gradient-color:#fef3c7]"
-              duration={1.5}
-              spread={1.5}
-            >
-              {item.title}
-            </TextShimmer>
-            {item.badge && (
-              <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
-                {item.badge}
-              </span>
-            )}
-          </>
-        )
-
         const link = (
           <Link
             key={item.title}
@@ -159,7 +137,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             {isActive && (
               <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[hsl(var(--brand))]" />
             )}
-            {isWrapped && !isActive ? wrappedLinkContent : linkContent}
+            {linkContent}
           </Link>
         )
 
