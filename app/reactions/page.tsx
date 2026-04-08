@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { InfoDrawerResponsive } from "@/components/info-drawer-responsive"
+import EmojiOverlay from "@/components/emoji-overlay"
+import type { Emoji } from "@/lib/services/emoji-service"
 import { useReactionsState } from "./hooks/use-reactions-state"
 import { ChannelPicker } from "./components/channel-picker"
 import { ScanProgress } from "./components/scan-progress"
@@ -20,6 +22,7 @@ import { YourReactions } from "./components/your-reactions"
 import { ChannelBreakdown } from "./components/channel-breakdown"
 import { ShareCardGenerator } from "./components/share-card-generator"
 import { TopCreators } from "./components/top-creators"
+import { TopReactors } from "./components/top-reactors"
 
 export default function ReactionsPage() {
   const isClient = useIsClient()
@@ -46,6 +49,22 @@ export default function ReactionsPage() {
     }
     return { customEmojiNames: names, customEmojiUrls: urls }
   }, [emojiData])
+
+  // Lookup map for opening emoji overlay by name
+  const emojiByName = useMemo(() => {
+    const map = new Map<string, Emoji>()
+    for (const emoji of emojiData) {
+      if (!emoji.is_alias) map.set(emoji.name, emoji)
+    }
+    return map
+  }, [emojiData])
+
+  const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
+
+  const handleEmojiClick = (name: string) => {
+    const emoji = emojiByName.get(name)
+    if (emoji) setSelectedEmoji(emoji)
+  }
 
   const analytics = useAnalytics()
   const state = useReactionsState(curlCommand, customEmojiNames)
@@ -269,31 +288,38 @@ export default function ReactionsPage() {
         <>
           {/* Stats Cards */}
           <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
-            <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} />
+            <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} />
           </div>
 
-          {/* Top Reactions + Top Creators (2/3 + 1/3 on desktop) */}
+          {/* Top Reactions */}
           <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-150 ${pageVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"}`}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
-              <div className="lg:col-span-2">
-                <TopReactionsChart
-                  topReactions={state.topReactions}
-                  emojiFilter={state.emojiFilter}
-                  setEmojiFilter={(filter) => {
-                    analytics.trackReactionsFilterChanged(filter)
-                    state.setEmojiFilter(filter)
-                  }}
-                  customEmojiUrls={customEmojiUrls}
-                  emojiData={emojiData}
-                />
-              </div>
-              <div className="lg:col-span-1">
-                <TopCreators
-                  topReactions={state.topReactions}
-                  emojiData={emojiData}
-                  customEmojiUrls={customEmojiUrls}
-                />
-              </div>
+            <TopReactionsChart
+              topReactions={state.topReactions}
+              emojiFilter={state.emojiFilter}
+              setEmojiFilter={(filter) => {
+                analytics.trackReactionsFilterChanged(filter)
+                state.setEmojiFilter(filter)
+              }}
+              customEmojiUrls={customEmojiUrls}
+              emojiData={emojiData}
+              onEmojiClick={handleEmojiClick}
+            />
+          </div>
+
+          {/* Top Reactors + Top Creators (side by side on desktop) */}
+          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-200 ${pageVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"}`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <TopReactors
+                userStats={state.userStats}
+                emojiData={emojiData}
+                customEmojiUrls={customEmojiUrls}
+                onEmojiClick={handleEmojiClick}
+              />
+              <TopCreators
+                topReactions={state.topReactions}
+                emojiData={emojiData}
+                customEmojiUrls={customEmojiUrls}
+              />
             </div>
           </div>
 
@@ -309,6 +335,7 @@ export default function ReactionsPage() {
                 userStats={state.userStats}
                 currentUserId={currentUserId}
                 customEmojiUrls={customEmojiUrls}
+                onEmojiClick={handleEmojiClick}
               />
               <ShareCardGenerator
                 stats={state.stats}
@@ -328,10 +355,16 @@ export default function ReactionsPage() {
               breakdown={state.channelBreakdown}
               channels={state.channels}
               customEmojiUrls={customEmojiUrls}
+              onEmojiClick={handleEmojiClick}
             />
           </div>
         </>
       )}
+
+      <EmojiOverlay
+        emoji={selectedEmoji}
+        onClose={() => setSelectedEmoji(null)}
+      />
     </div>
   )
 }

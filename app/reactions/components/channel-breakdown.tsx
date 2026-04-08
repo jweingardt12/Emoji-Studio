@@ -22,6 +22,7 @@ interface ChannelBreakdownProps {
   breakdown: ChannelReactionBreakdown[]
   channels: SlackChannel[]
   customEmojiUrls: Map<string, string>
+  onEmojiClick?: (name: string) => void
 }
 
 function EmojiDisplay({
@@ -50,10 +51,12 @@ function ChannelRow({
   item,
   channel,
   customEmojiUrls,
+  onEmojiClick,
 }: {
   item: ChannelReactionBreakdown
   channel: SlackChannel | undefined
   customEmojiUrls: Map<string, string>
+  onEmojiClick?: (name: string) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -86,7 +89,10 @@ function ChannelRow({
               {item.top_reactions.map((reaction) => (
                 <Tooltip key={reaction.emoji_name}>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 cursor-default">
+                    <div
+                      className={`flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 ${onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? "cursor-pointer hover:bg-muted/60" : "cursor-default"}`}
+                      onClick={onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? () => onEmojiClick(reaction.emoji_name) : undefined}
+                    >
                       <EmojiDisplay
                         name={reaction.emoji_name}
                         customEmojiUrls={customEmojiUrls}
@@ -119,6 +125,7 @@ export function ChannelBreakdown({
   breakdown,
   channels,
   customEmojiUrls,
+  onEmojiClick,
 }: ChannelBreakdownProps) {
   const channelMap = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels])
   const sorted = useMemo(() => [...breakdown].sort((a, b) => b.total_count - a.total_count), [breakdown])
@@ -137,6 +144,7 @@ export function ChannelBreakdown({
             item={item}
             channel={channelMap.get(item.channel_id)}
             customEmojiUrls={customEmojiUrls}
+            onEmojiClick={onEmojiClick}
           />
         ))}
       </CardContent>

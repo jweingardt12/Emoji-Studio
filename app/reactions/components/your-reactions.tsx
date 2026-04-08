@@ -7,6 +7,7 @@ interface YourReactionsProps {
   userStats: UserReactionStat[]
   currentUserId: string | null
   customEmojiUrls: Map<string, string>
+  onEmojiClick?: (name: string) => void
 }
 
 function EmojiDisplay({
@@ -35,6 +36,7 @@ export function YourReactions({
   userStats,
   currentUserId,
   customEmojiUrls,
+  onEmojiClick,
 }: YourReactionsProps) {
   if (!currentUserId) return null
 
@@ -67,7 +69,8 @@ export function YourReactions({
               {topFive.map((name, i) => (
                 <div
                   key={name}
-                  className="flex flex-col items-center gap-1.5 group"
+                  className={`flex flex-col items-center gap-1.5 group ${onEmojiClick ? "cursor-pointer" : ""}`}
+                  onClick={onEmojiClick ? () => onEmojiClick(name) : undefined}
                 >
                   <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center group-hover:bg-accent transition-colors">
                     <EmojiDisplay
