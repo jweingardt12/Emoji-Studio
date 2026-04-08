@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { packDiscovery } from "@/lib/services/pack-discovery"
 import type { PackEmoji } from "@/lib/types/emoji-pack"
@@ -453,19 +456,19 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
           const isSelected = selectedTab === tab.id
 
           return (
-            <button
+            <Button
               key={tab.id}
+              variant={isSelected ? "outline" : "ghost"}
+              size="sm"
               onClick={() => onSelectTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                isSelected
-                  ? "bg-background text-foreground shadow-sm border border-border"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                "gap-1.5 text-xs h-8",
+                isSelected && "shadow-sm"
               )}
             >
               <span className="text-sm leading-none">{tab.emoji}</span>
               {tab.label}
-            </button>
+            </Button>
           )
         })}
       </div>
@@ -644,10 +647,10 @@ export const PackEmojiGrid = memo(function PackEmojiGrid({ emojis, loading, view
           : "grid-cols-1"
       )}>
         {Array.from({ length: 24 }).map((_, i) => (
-          <div
+          <Skeleton
             key={i}
             className={cn(
-              "animate-pulse bg-muted/50 rounded-xl",
+              "rounded-xl",
               isGridView ? "h-[76px]" : "h-16"
             )}
           />
@@ -970,16 +973,18 @@ export function PackSelectionSidebar({
                           >
                             :{customNames?.get(key) || emoji.name}:
                           </span>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity"
                             onClick={() => {
                               const displayName = customNames?.get(key) || emoji.name
                               onSetEditingName(key)
                               onSetEditingValue(displayName)
                             }}
-                            className="group/name flex-shrink-0"
                           >
-                            <Edit2 className="h-4 w-4 opacity-0 group-hover:opacity-50 transition-opacity" />
-                          </button>
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
                         </>
                       )}
                     </div>
@@ -994,7 +999,10 @@ export function PackSelectionSidebar({
                       {hasNameChecking && status === "taken" && (
                         <HoverCard openDelay={200} closeDelay={100}>
                           <HoverCardTrigger asChild>
-                            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 cursor-help" />
+                            <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 text-[10px] px-1.5 cursor-help gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Taken
+                            </Badge>
                           </HoverCardTrigger>
                           <HoverCardContent className="w-64 text-xs">
                             This name is already taken in your workspace. Click the pencil to edit it before continuing.
@@ -1043,31 +1051,40 @@ export function PackSelectionSidebar({
           </Button>
         </div>
 
-        {/* Status messages */}
+        {/* Progress indicators */}
         {downloadProgress && (
-          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            {downloadProgress.stage === "downloading"
-              ? `Downloading ${downloadProgress.completed}/${downloadProgress.total} emojis...`
-              : "Finalizing download..."}
-          </p>
+          <div className="space-y-1.5">
+            <Progress value={downloadProgress.total > 0 ? (downloadProgress.completed / downloadProgress.total) * 100 : 0} className="h-2" />
+            <p className="text-xs text-muted-foreground text-center">
+              {downloadProgress.stage === "downloading"
+                ? `Downloading ${downloadProgress.completed}/${downloadProgress.total} emojis...`
+                : "Finalizing download..."}
+            </p>
+          </div>
         )}
         {uploadProgress && (
-          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-            {uploadProgress.stage === "complete" ? (
-              <>
-                <CheckCircle2 className="h-3 w-3 text-green-500" />
-                {`Upload complete! ${uploadProgress.completed}/${uploadProgress.total} emojis`}
-                {uploadProgress.failed > 0 && ` (${uploadProgress.failed} failed)`}
-              </>
-            ) : (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {`Uploading ${uploadProgress.completed}/${uploadProgress.total} emojis`}
-                {uploadProgress.failed > 0 && ` (${uploadProgress.failed} failed)`}
-              </>
+          <div className="space-y-1.5">
+            {uploadProgress.stage !== "complete" && (
+              <Progress value={uploadProgress.total > 0 ? ((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100 : 0} className="h-2" />
             )}
-          </p>
+            <p className={cn(
+              "text-xs text-center flex items-center justify-center gap-1",
+              uploadProgress.stage === "complete" ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+            )}>
+              {uploadProgress.stage === "complete" ? (
+                <>
+                  <CheckCircle2 className="h-3 w-3" />
+                  Upload complete! {uploadProgress.completed}/{uploadProgress.total} emojis
+                  {uploadProgress.failed > 0 && <span className="text-destructive"> ({uploadProgress.failed} failed)</span>}
+                </>
+              ) : (
+                <>
+                  Uploading {uploadProgress.completed + uploadProgress.failed}/{uploadProgress.total}
+                  {uploadProgress.failed > 0 && <span className="text-destructive"> ({uploadProgress.failed} failed)</span>}
+                </>
+              )}
+            </p>
+          </div>
         )}
         {!hasSlackConnection && selectedEmojis.length > 0 && (
           <p className="text-xs text-muted-foreground text-center">
