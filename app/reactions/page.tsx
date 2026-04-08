@@ -16,35 +16,27 @@ import { ChannelBreakdown } from "./components/channel-breakdown"
 import { ShareCardGenerator } from "./components/share-card-generator"
 import { TopCreators } from "./components/top-creators"
 
-function ReactionsPage() {
+export default function ReactionsPage() {
   const isClient = useIsClient()
   const { emojiData, hasRealData } = useEmojiData()
 
-  const curlCommand =
-    isClient ? (typeof window !== "undefined" ? localStorage.getItem("slackCurlCommand") : null) : null
+  const curlCommand = isClient ? localStorage.getItem("slackCurlCommand") : null
+  const currentUserId = isClient ? localStorage.getItem("slackUserId") : null
 
-  const currentUserId =
-    isClient ? (typeof window !== "undefined" ? localStorage.getItem("slackUserId") : null) : null
-
-  const customEmojiNames = useMemo(() => {
+  // Single pass over emojiData to build both the name set and URL map
+  const { customEmojiNames, customEmojiUrls } = useMemo(() => {
     const names = new Set<string>()
+    const urls = new Map<string, string>()
     for (const emoji of emojiData) {
-      if (emoji.url && !emoji.is_alias) names.add(emoji.name)
+      if (!emoji.is_alias && emoji.url) {
+        names.add(emoji.name)
+        urls.set(emoji.name, emoji.url)
+      }
     }
-    return names
+    return { customEmojiNames: names, customEmojiUrls: urls }
   }, [emojiData])
 
   const state = useReactionsState(curlCommand, customEmojiNames)
-
-  const customEmojiUrls = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const emoji of emojiData) {
-      if (!emoji.is_alias) {
-        map.set(emoji.name, emoji.url)
-      }
-    }
-    return map
-  }, [emojiData])
 
   const hasData = state.reactionEvents.length > 0
 
@@ -65,7 +57,6 @@ function ReactionsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 pb-8 w-full">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Reactions Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -73,7 +64,6 @@ function ReactionsPage() {
         </p>
       </div>
 
-      {/* Channel picker + scan controls */}
       <ChannelPicker
         channels={state.channels}
         selectedChannels={state.selectedChannels}
@@ -86,7 +76,6 @@ function ReactionsPage() {
         scanStatus={state.scanProgress.status}
       />
 
-      {/* Scan progress indicator */}
       <ScanProgress
         status={state.scanProgress.status}
         currentChannel={state.scanProgress.current_channel}
@@ -96,7 +85,6 @@ function ReactionsPage() {
         onCancel={state.cancelScan}
       />
 
-      {/* Empty state */}
       {!hasData && (
         <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
           <BarChart3 className="h-12 w-12 opacity-30" />
@@ -108,7 +96,6 @@ function ReactionsPage() {
         </div>
       )}
 
-      {/* Results */}
       {hasData && (
         <>
           <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} />
@@ -148,8 +135,4 @@ function ReactionsPage() {
       )}
     </div>
   )
-}
-
-export default function ReactionsPageWrapper() {
-  return <ReactionsPage />
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import {
   Card,
   CardContent,
@@ -7,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Smile } from "lucide-react"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
 import type { EmojiFilter } from "@/app/reactions/hooks/use-reactions-state"
@@ -43,13 +43,15 @@ export function TopReactionsChart({
   const data = filtered.slice(0, 20)
   const maxCount = data[0]?.total_count || 1
 
-  // Build creator lookup from emoji data
-  const creatorMap = new Map<string, string>()
-  for (const emoji of emojiData) {
-    if (!emoji.is_alias && emoji.user_display_name) {
-      creatorMap.set(emoji.name, emoji.user_display_name)
+  const creatorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const emoji of emojiData) {
+      if (!emoji.is_alias && emoji.user_display_name) {
+        map.set(emoji.name, emoji.user_display_name)
+      }
     }
-  }
+    return map
+  }, [emojiData])
 
   return (
     <Card>
@@ -94,33 +96,25 @@ export function TopReactionsChart({
                     {i + 1}
                   </span>
 
-                  {/* Emoji image or placeholder */}
-                  <div className="h-7 w-7 shrink-0 flex items-center justify-center rounded bg-muted/50">
-                    {isCustom ? (
+                  {isCustom && (
+                    <div className="h-7 w-7 shrink-0 flex items-center justify-center">
                       <img
                         src={url}
                         alt={reaction.emoji_name}
                         className="h-6 w-6 object-contain"
                       />
-                    ) : (
-                      <Smile className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  {/* Name + creator */}
-                  <div className="w-32 sm:w-40 shrink-0 min-w-0">
+                  <div className={`${isCustom ? "w-32 sm:w-40" : "w-40 sm:w-48"} shrink-0 min-w-0`}>
                     <p className="text-sm font-medium truncate leading-tight">
                       :{reaction.emoji_name}:
                     </p>
-                    {creator ? (
+                    {creator && (
                       <p className="text-[10px] text-muted-foreground truncate leading-tight">
                         by {creator.split(" ")[0]}
                       </p>
-                    ) : !isCustom ? (
-                      <p className="text-[10px] text-muted-foreground leading-tight">
-                        built-in
-                      </p>
-                    ) : null}
+                    )}
                   </div>
 
                   {/* Bar */}

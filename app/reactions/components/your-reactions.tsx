@@ -28,15 +28,7 @@ function EmojiDisplay({
       />
     )
   }
-  return (
-    <span
-      className="text-xl leading-none"
-      title={`:${name}:`}
-      aria-label={`:${name}:`}
-    >
-      {name}
-    </span>
-  )
+  return null
 }
 
 export function YourReactions({

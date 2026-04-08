@@ -37,11 +37,7 @@ function EmojiDisplay({
       />
     )
   }
-  return (
-    <span className="text-base leading-none" title={`:${name}:`}>
-      {name}
-    </span>
-  )
+  return null
 }
 
 function ChannelRow({

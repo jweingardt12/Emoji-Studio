@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import {
   type ReactionEvent,
   type ReactionScanMeta,
-  aggregateReactions,
+
   getTopReactions,
   getTrendingReactions,
   getUserReactionStats,
@@ -280,28 +280,32 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   }, [reactionEvents, emojiFilter, customEmojiNames])
 
   const stats = useMemo(() => calculateReactionStats(filteredEvents), [filteredEvents])
-  const aggregated = useMemo(() => aggregateReactions(filteredEvents), [filteredEvents])
-  const topReactions = useMemo(() => getTopReactions(aggregated, 20), [aggregated])
-  const trending = useMemo(() => getTrendingReactions(filteredEvents, 7 * 86400), [filteredEvents])
+  const topReactions = useMemo(() => stats.top_reactions.slice(0, 20), [stats])
+  const trending = useMemo(() => stats.trending, [stats])
   const userStats = useMemo(() => getUserReactionStats(filteredEvents), [filteredEvents])
   const channelBreakdown = useMemo(() => getChannelBreakdown(filteredEvents, 10), [filteredEvents])
 
-  // Timeline data for chart (daily buckets)
+  // Timeline data — single pass bucketing instead of per-day filter
   const timelineData = useMemo(() => {
     if (filteredEvents.length === 0) return []
     const days = dateRange === "7d" ? 7 : 30
     const now = Math.floor(Date.now() / 1000)
-    const buckets: { date: string; count: number }[] = []
 
+    // Single pass: bucket events by day offset
+    const countByDay = new Map<number, number>()
+    for (const e of filteredEvents) {
+      const dayOffset = Math.floor((now - e.timestamp) / 86400)
+      if (dayOffset >= 0 && dayOffset < days) {
+        countByDay.set(dayOffset, (countByDay.get(dayOffset) || 0) + e.count)
+      }
+    }
+
+    const buckets: { date: string; count: number }[] = []
     for (let d = days - 1; d >= 0; d--) {
       const dayStart = now - (d + 1) * 86400
-      const dayEnd = now - d * 86400
-      const dayEvents = filteredEvents.filter(e => e.timestamp >= dayStart && e.timestamp < dayEnd)
-      const count = dayEvents.reduce((sum, e) => sum + e.count, 0)
-      const date = new Date(dayStart * 1000)
       buckets.push({
-        date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        count,
+        date: new Date(dayStart * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        count: countByDay.get(d) || 0,
       })
     }
     return buckets
@@ -327,6 +331,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     userStats,
     channelBreakdown,
     timelineData,
-    aggregated,
+    aggregated: stats.top_reactions,
   }
 }
