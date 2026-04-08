@@ -30,12 +30,11 @@ export async function POST(request: NextRequest) {
     // Only allow conversations endpoints
     const isConversationsEndpoint =
       curlRequest.url.includes("/conversations.list") ||
-      curlRequest.url.includes("/conversations.view") ||
       curlRequest.url.includes("/conversations.history")
 
     if (!isConversationsEndpoint) {
       return NextResponse.json(
-        { error: "Only conversations.list, conversations.view, and conversations.history endpoints are supported" },
+        { error: "Only conversations.list and conversations.history endpoints are supported" },
         { status: 400 }
       )
     }
@@ -88,11 +87,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         ok: true,
         channels,
-        response_metadata: slackData.response_metadata,
+        response_metadata: slackData.response_metadata?.next_cursor
+          ? { next_cursor: slackData.response_metadata.next_cursor }
+          : undefined,
       })
     }
 
-    // For conversations.view / conversations.history:
+    // For conversations.history:
     // STRIP ALL MESSAGE CONTENT. Return ONLY reactions + timestamp.
     const messages = slackData.messages || []
     const reactions: Array<{
@@ -119,7 +120,9 @@ export async function POST(request: NextRequest) {
       ok: true,
       reactions,
       has_more: slackData.has_more || false,
-      response_metadata: slackData.response_metadata,
+      response_metadata: slackData.response_metadata?.next_cursor
+        ? { next_cursor: slackData.response_metadata.next_cursor }
+        : undefined,
     })
   } catch (err: unknown) {
     console.error("Slack reactions proxy error:", err)

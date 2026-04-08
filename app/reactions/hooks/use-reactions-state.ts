@@ -33,7 +33,7 @@ interface ScanProgress {
   reactions_found: number
 }
 
-export function useReactionsState(curlCommand: string | null) {
+export function useReactionsState(curlCommand: string | null, customEmojiNames: Set<string> = new Set()) {
   // Channel state
   const [channels, setChannels] = useState<SlackChannel[]>([])
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
@@ -87,6 +87,12 @@ export function useReactionsState(curlCommand: string | null) {
       const tokenMatch = curlCommand.match(/token=([^&\s'"]+)/)
       const token = tokenMatch ? tokenMatch[1] : ""
 
+      if (!token) {
+        toast.error("Could not extract auth token from Slack settings")
+        setChannelsLoading(false)
+        return
+      }
+
       const curlRequest = buildCurlRequest(url, {
         token,
         types: "public_channel,private_channel",
@@ -138,6 +144,8 @@ export function useReactionsState(curlCommand: string | null) {
       const tokenMatch = curlCommand?.match(/token=([^&\s'"]+)/)
       const token = tokenMatch ? tokenMatch[1] : ""
 
+      if (!token) return events  // silently return empty — error shown by fetchChannels
+
       const daysBack = dateRange === "7d" ? 7 : 30
       const oldest = Math.floor(Date.now() / 1000) - daysBack * 86400
       let cursor: string | undefined
@@ -157,8 +165,11 @@ export function useReactionsState(curlCommand: string | null) {
         const curlRequest = buildCurlRequest(url, formData)
         if (!curlRequest) break
 
-        // Rate limit: 1.2s between requests
-        await new Promise(resolve => setTimeout(resolve, 1200))
+        // Rate limit: 1.2s between requests (abort-aware)
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, 1200)
+          signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+        })
 
         const response = await fetch("/api/slack-reactions", {
           method: "POST",
@@ -267,9 +278,9 @@ export function useReactionsState(curlCommand: string | null) {
 
   // Computed data
   const filteredEvents = useMemo(() => {
-    if (emojiFilter === "all") return reactionEvents
-    return reactionEvents
-  }, [reactionEvents, emojiFilter])
+    if (emojiFilter !== "custom") return reactionEvents
+    return reactionEvents.filter(e => customEmojiNames.has(e.emoji_name))
+  }, [reactionEvents, emojiFilter, customEmojiNames])
 
   const stats = useMemo(() => calculateReactionStats(filteredEvents), [filteredEvents])
   const aggregated = useMemo(() => aggregateReactions(filteredEvents), [filteredEvents])

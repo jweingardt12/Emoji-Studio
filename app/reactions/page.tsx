@@ -25,7 +25,15 @@ function ReactionsPage() {
   const currentUserId =
     isClient ? (typeof window !== "undefined" ? localStorage.getItem("slackUserId") : null) : null
 
-  const state = useReactionsState(curlCommand)
+  const customEmojiNames = useMemo(() => {
+    const names = new Set<string>()
+    for (const emoji of emojiData) {
+      if (emoji.url && !emoji.is_alias) names.add(emoji.name)
+    }
+    return names
+  }, [emojiData])
+
+  const state = useReactionsState(curlCommand, customEmojiNames)
 
   const customEmojiUrls = useMemo(() => {
     const map = new Map<string, string>()

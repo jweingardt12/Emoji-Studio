@@ -341,7 +341,10 @@ export function ShareCardGenerator({
 
   async function getBlob(): Promise<Blob | null> {
     const canvas = await generateCanvas(stats, topReactions, customEmojiUrls, channelNames, dateRange)
-    return new Promise(resolve => canvas.toBlob(blob => resolve(blob), "image/png"))
+    return new Promise(resolve => canvas.toBlob(blob => {
+      canvas.width = 0  // release GPU backing store
+      resolve(blob)
+    }, "image/png"))
   }
 
   async function handleDownload() {
