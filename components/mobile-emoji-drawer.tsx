@@ -517,7 +517,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           
           canvas.width = 128;
           canvas.height = 128;
-          ctx!.clearRect(0, 0, 128, 128);
           const scale = Math.min(128 / img.width, 128 / img.height);
           const scaledWidth = img.width * scale;
           const scaledHeight = img.height * scale;
@@ -1088,7 +1087,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                                         
                                         canvas.width = 128;
                                         canvas.height = 128;
-                                        ctx!.clearRect(0, 0, 128, 128);
                                         const scale = Math.min(128 / img.width, 128 / img.height);
                                         const scaledWidth = img.width * scale;
                                         const scaledHeight = img.height * scale;

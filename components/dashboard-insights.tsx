@@ -31,7 +31,7 @@ export function DashboardInsights() {
   if (!isClient || !isVisible) return null;
 
   // Memoize insight calculations
-  const { primaryInsight, secondaryInsight, sentiment, icon } = useMemo(() => {
+  const { primaryInsight, secondaryInsight, sentiment, iconType } = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
     const weekAgo = now - (7 * 24 * 60 * 60);
     const twoWeeksAgo = now - (14 * 24 * 60 * 60);
@@ -68,16 +68,16 @@ export function DashboardInsights() {
     let primary = "";
     let secondary = "";
     let sent: 'positive' | 'neutral' = 'neutral';
-    let ic = <Sparkles className="h-4 w-4" />;
+    let iconType: 'sparkles' | 'trending-up' | 'users' = 'sparkles';
 
     if (weeklyChange > 20) {
       primary = `Your workspace is ${weeklyChange}% more active this week`;
       sent = 'positive';
-      ic = <TrendingUp className="h-4 w-4" />;
+      iconType = 'trending-up';
     } else if (newCreators.length > 0) {
       primary = `${newCreators.length} new ${newCreators.length === 1 ? 'creator' : 'creators'} joined this week`;
       sent = 'positive';
-      ic = <Users className="h-4 w-4" />;
+      iconType = 'users';
     } else if (thisWeekEmojis > 0) {
       primary = `${thisWeekEmojis} ${thisWeekEmojis === 1 ? 'emoji' : 'emojis'} added this week`;
       sent = thisWeekEmojis > 10 ? 'positive' : 'neutral';
@@ -101,8 +101,12 @@ export function DashboardInsights() {
       secondary = insights.slice(0, 2).join(' \u2022 ');
     }
 
-    return { primaryInsight: primary, secondaryInsight: secondary, sentiment: sent, icon: ic };
+    return { primaryInsight: primary, secondaryInsight: secondary, sentiment: sent, iconType };
   }, [emojiData]);
+
+  const icon = iconType === 'trending-up' ? <TrendingUp className="h-4 w-4" />
+    : iconType === 'users' ? <Users className="h-4 w-4" />
+    : <Sparkles className="h-4 w-4" />;
 
   const handleDismiss = () => {
     setIsVisible(false);

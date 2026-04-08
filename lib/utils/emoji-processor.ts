@@ -113,7 +113,6 @@ export class EmojiProcessor {
     if (dimensions.width <= this.TARGET_SIZE &&
         dimensions.height <= this.TARGET_SIZE) {
       console.log(`Image ${file.name} already at correct dimensions`)
-      const preview = URL.createObjectURL(imageBlob)
       const blobUrl = await this.blobToDataURL(imageBlob)
 
       return {
@@ -124,7 +123,7 @@ export class EmojiProcessor {
         processedSize: imageBlob.size,
         dimensions,
         format: 'PNG',
-        preview,
+        preview: blobUrl,
         blob: blobUrl,
         processingNote: 'Ready for Slack'
       }
