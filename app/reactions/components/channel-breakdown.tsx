@@ -17,13 +17,12 @@ import {
 import { Hash, Lock, ChevronDown, ChevronRight } from "lucide-react"
 import type { ChannelReactionBreakdown } from "@/lib/services/reaction-service"
 import type { SlackChannel } from "@/app/reactions/hooks/use-reactions-state"
-import type { Emoji } from "@/lib/services/emoji-service"
 
 interface ChannelBreakdownProps {
   breakdown: ChannelReactionBreakdown[]
   channels: SlackChannel[]
   customEmojiUrls: Map<string, string>
-  emojiData: Emoji[]
+  userNameMap: Map<string, string>
   onEmojiClick?: (name: string) => void
 }
 
@@ -154,21 +153,11 @@ export function ChannelBreakdown({
   breakdown,
   channels,
   customEmojiUrls,
-  emojiData,
+  userNameMap,
   onEmojiClick,
 }: ChannelBreakdownProps) {
   const channelMap = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels])
   const sorted = useMemo(() => [...breakdown].sort((a, b) => b.total_count - a.total_count), [breakdown])
-
-  const userNameMap = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const emoji of emojiData) {
-      if (emoji.user_id && emoji.user_display_name && !map.has(emoji.user_id)) {
-        map.set(emoji.user_id, emoji.user_display_name)
-      }
-    }
-    return map
-  }, [emojiData])
 
   if (breakdown.length === 0) return null
 

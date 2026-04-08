@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import {
   Tooltip,
   TooltipContent,
@@ -10,26 +11,15 @@ import {
 } from "@/components/ui/tooltip"
 import { SmilePlus } from "lucide-react"
 import type { UserReactionStat } from "@/lib/services/reaction-service"
-import type { Emoji } from "@/lib/services/emoji-service"
 
 interface TopReactorsProps {
   userStats: UserReactionStat[]
-  emojiData: Emoji[]
+  userNameMap: Map<string, string>
   customEmojiUrls: Map<string, string>
   onEmojiClick?: (name: string) => void
 }
 
-export function TopReactors({ userStats, emojiData, customEmojiUrls, onEmojiClick }: TopReactorsProps) {
-  // Build user_id → display_name lookup from emoji creators
-  const userNameMap = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const emoji of emojiData) {
-      if (emoji.user_id && emoji.user_display_name && !map.has(emoji.user_id)) {
-        map.set(emoji.user_id, emoji.user_display_name)
-      }
-    }
-    return map
-  }, [emojiData])
+export function TopReactors({ userStats, userNameMap, customEmojiUrls, onEmojiClick }: TopReactorsProps) {
 
   const { topReactors, unnamedCount } = useMemo(() => {
     const sorted = [...userStats].sort((a, b) => b.reaction_count - a.reaction_count)
@@ -84,12 +74,7 @@ export function TopReactors({ userStats, emojiData, customEmojiUrls, onEmojiClic
 
                   {/* Bar */}
                   <div className="flex-1 min-w-0 hidden sm:block">
-                    <div className="w-full bg-muted/60 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full bg-primary transition-all"
-                        style={{ width: `${barPct}%` }}
-                      />
-                    </div>
+                    <Progress value={barPct} className="h-2 bg-muted/60" />
                   </div>
 
                   {/* Count */}

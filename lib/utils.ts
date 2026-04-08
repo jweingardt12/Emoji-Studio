@@ -55,3 +55,10 @@ export function formatEmojiName(name: string): string {
 export function formatSlackEmojiDisplay(name: string): string {
   return `:${formatEmojiName(name)}:`
 }
+
+/** Returns badge color classes for positive/negative trend indicators */
+export function trendBadgeColors(isPositive: boolean) {
+  return isPositive
+    ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
+    : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
+}

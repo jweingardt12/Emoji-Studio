@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn, trendBadgeColors } from "@/lib/utils"
 import {
   Card,
   CardContent,
@@ -16,13 +16,6 @@ interface ReactionStatsCardsProps {
   stats: ReactionStats
   customEmojiUrls: Map<string, string>
   onEmojiClick?: (name: string) => void
-}
-
-/** Returns badge color classes based on positive/negative trend */
-function trendBadgeColors(isPositive: boolean) {
-  return isPositive
-    ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-    : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
 }
 
 export function ReactionStatsCards({

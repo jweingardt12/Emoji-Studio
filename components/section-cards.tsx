@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, trendBadgeColors } from "@/lib/utils";
 import { useEmojiData } from "@/lib/hooks/use-emoji-data";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,13 +15,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
-
-/** Returns badge color classes based on positive/negative trend */
-function trendBadgeColors(isPositive: boolean) {
-  return isPositive
-    ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
-    : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20";
-}
 
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();

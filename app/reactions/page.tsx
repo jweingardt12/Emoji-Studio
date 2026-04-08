@@ -1,15 +1,13 @@
 "use client"
 
-import { useMemo, useEffect, useRef, useState } from "react"
-import { Activity, Hash, Settings, Info, Shield, Globe, HardDrive, Zap } from "lucide-react"
+import { useMemo, useEffect, useRef, useState, useCallback } from "react"
+import { Activity, Settings } from "lucide-react"
 import Link from "next/link"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useAnalytics } from "@/lib/analytics"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { InfoDrawerResponsive } from "@/components/info-drawer-responsive"
 import EmojiOverlay from "@/components/emoji-overlay"
 import type { Emoji } from "@/lib/services/emoji-service"
 import { useReactionsState } from "./hooks/use-reactions-state"
@@ -23,6 +21,7 @@ import { ChannelBreakdown } from "./components/channel-breakdown"
 import { ShareCardGenerator } from "./components/share-card-generator"
 import { TopCreators } from "./components/top-creators"
 import { TopReactors } from "./components/top-reactors"
+import { HowItWorksModal } from "./components/how-it-works-modal"
 
 export default function ReactionsPage() {
   const isClient = useIsClient()
@@ -37,34 +36,33 @@ export default function ReactionsPage() {
   const curlCommand = isClient ? localStorage.getItem("slackCurlCommand") : null
   const currentUserId = isClient ? localStorage.getItem("slackUserId") : null
 
-  // Single pass over emojiData to build both the name set and URL map
-  const { customEmojiNames, customEmojiUrls } = useMemo(() => {
+  // Single pass over emojiData to build all lookup maps
+  const { customEmojiNames, customEmojiUrls, emojiByName, userNameMap } = useMemo(() => {
     const names = new Set<string>()
     const urls = new Map<string, string>()
+    const byName = new Map<string, Emoji>()
+    const users = new Map<string, string>()
     for (const emoji of emojiData) {
-      if (!emoji.is_alias && emoji.url) {
-        names.add(emoji.name)
-        urls.set(emoji.name, emoji.url)
+      if (!emoji.is_alias) {
+        byName.set(emoji.name, emoji)
+        if (emoji.url) {
+          names.add(emoji.name)
+          urls.set(emoji.name, emoji.url)
+        }
+        if (emoji.user_id && emoji.user_display_name && !users.has(emoji.user_id)) {
+          users.set(emoji.user_id, emoji.user_display_name)
+        }
       }
     }
-    return { customEmojiNames: names, customEmojiUrls: urls }
-  }, [emojiData])
-
-  // Lookup map for opening emoji overlay by name
-  const emojiByName = useMemo(() => {
-    const map = new Map<string, Emoji>()
-    for (const emoji of emojiData) {
-      if (!emoji.is_alias) map.set(emoji.name, emoji)
-    }
-    return map
+    return { customEmojiNames: names, customEmojiUrls: urls, emojiByName: byName, userNameMap: users }
   }, [emojiData])
 
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
 
-  const handleEmojiClick = (name: string) => {
+  const handleEmojiClick = useCallback((name: string) => {
     const emoji = emojiByName.get(name)
     if (emoji) setSelectedEmoji(emoji)
-  }
+  }, [emojiByName])
 
   const analytics = useAnalytics()
   const state = useReactionsState(curlCommand, customEmojiNames)
@@ -125,79 +123,7 @@ export default function ReactionsPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight">Usage</h1>
-              <InfoDrawerResponsive
-                trigger={
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                    <Info className="h-4 w-4" />
-                    <span className="sr-only">How this works</span>
-                  </Button>
-                }
-                title="How Usage Scanning Works"
-                description="Understand how Emoji Studio scans your Slack workspace and keeps your data secure."
-              >
-                <div className="space-y-6 text-sm">
-                  <div className="flex gap-3">
-                    <div className="rounded-lg bg-primary/10 p-2 h-fit shrink-0">
-                      <Zap className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">How it works</p>
-                      <p className="text-muted-foreground mt-1">
-                        Usage scanning reads message history from the Slack channels you select using the
-                        Slack <code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.history</code> API.
-                        It looks at emoji reactions on messages and aggregates them into charts
-                        and leaderboards &mdash; it does not read or store message content.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="rounded-lg bg-green-500/10 p-2 h-fit shrink-0">
-                      <Shield className="h-4 w-4 text-green-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Your credentials</p>
-                      <p className="text-muted-foreground mt-1">
-                        Authentication uses the same Slack session you set up in Settings.
-                        Your token is stored only in your browser&apos;s local storage and is never
-                        sent to any third-party server. API calls are proxied through a
-                        server-side route that <strong>only</strong> allows
-                        {" "}<code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.list</code> and
-                        {" "}<code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.history</code> &mdash;
-                        no other Slack endpoints are reachable.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="rounded-lg bg-blue-500/10 p-2 h-fit shrink-0">
-                      <HardDrive className="h-4 w-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Data storage</p>
-                      <p className="text-muted-foreground mt-1">
-                        All reaction data is processed entirely in your browser. Scan results are
-                        cached locally so you don&apos;t have to re-scan every time. Nothing is uploaded
-                        to any external server or database &mdash; your data stays on your device.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="rounded-lg bg-orange-500/10 p-2 h-fit shrink-0">
-                      <Globe className="h-4 w-4 text-orange-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Rate limiting</p>
-                      <p className="text-muted-foreground mt-1">
-                        Scans are rate-limited to avoid hitting Slack&apos;s API limits. Each channel
-                        is scanned sequentially with a delay between requests. Larger channels or
-                        longer date ranges will take more time.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </InfoDrawerResponsive>
+              <HowItWorksModal />
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               See how your workspace&apos;s emojis are being used across Slack.
@@ -311,7 +237,7 @@ export default function ReactionsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <TopReactors
                 userStats={state.userStats}
-                emojiData={emojiData}
+                userNameMap={userNameMap}
                 customEmojiUrls={customEmojiUrls}
                 onEmojiClick={handleEmojiClick}
               />
@@ -355,7 +281,7 @@ export default function ReactionsPage() {
               breakdown={state.channelBreakdown}
               channels={state.channels}
               customEmojiUrls={customEmojiUrls}
-              emojiData={emojiData}
+              userNameMap={userNameMap}
               onEmojiClick={handleEmojiClick}
             />
           </div>
