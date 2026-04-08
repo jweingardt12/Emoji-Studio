@@ -14,6 +14,7 @@ import { ReactionTimeline } from "./components/reaction-timeline"
 import { YourReactions } from "./components/your-reactions"
 import { ChannelBreakdown } from "./components/channel-breakdown"
 import { ShareCardGenerator } from "./components/share-card-generator"
+import { TopCreators } from "./components/top-creators"
 
 function ReactionsPage() {
   const isClient = useIsClient()
@@ -115,6 +116,12 @@ function ReactionsPage() {
             topReactions={state.topReactions}
             emojiFilter={state.emojiFilter}
             setEmojiFilter={state.setEmojiFilter}
+            customEmojiUrls={customEmojiUrls}
+            emojiData={emojiData}
+          />
+          <TopCreators
+            topReactions={state.topReactions}
+            emojiData={emojiData}
             customEmojiUrls={customEmojiUrls}
           />
           <ReactionTimeline data={state.timelineData} />
