@@ -1,0 +1,343 @@
+// app/reactions/hooks/use-reactions-state.ts
+"use client"
+
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
+import { toast } from "sonner"
+import {
+  type ReactionEvent,
+  type ReactionScanMeta,
+  getUserReactionStats,
+  getChannelBreakdown,
+  calculateReactionStats,
+  reactionStorage,
+} from "@/lib/services/reaction-service"
+import { parseCurlToRequest } from "@/lib/services/emoji-service"
+
+export interface SlackChannel {
+  id: string
+  name: string
+  is_private: boolean
+  num_members: number
+}
+
+export type DateRange = "24h" | "7d" | "30d" | "90d"
+export type EmojiFilter = "all" | "custom"
+
+const DATE_RANGE_DAYS: Record<DateRange, number> = { "24h": 1, "7d": 7, "30d": 30, "90d": 90 }
+
+interface ScanProgress {
+  status: "idle" | "scanning" | "complete" | "error"
+  current_channel: string
+  channels_done: number
+  channels_total: number
+  reactions_found: number
+  scanned_channels: string[]
+}
+
+export function useReactionsState(curlCommand: string | null, customEmojiNames: Set<string> = new Set()) {
+  // Channel state
+  const [channels, setChannels] = useState<SlackChannel[]>([])
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([])
+  const [channelsLoading, setChannelsLoading] = useState(false)
+
+  // Scan state
+  const [dateRange, setDateRange] = useState<DateRange>("7d")
+  const [emojiFilter, setEmojiFilter] = useState<EmojiFilter>("custom")
+  const [scanProgress, setScanProgress] = useState<ScanProgress>({
+    status: "idle",
+    current_channel: "",
+    channels_done: 0,
+    channels_total: 0,
+    reactions_found: 0,
+    scanned_channels: [],
+  })
+  const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
+  const abortRef = useRef<AbortController | null>(null)
+
+  const parsedCurl = useMemo(() => {
+    if (!curlCommand) return null
+    try {
+      return parseCurlToRequest(curlCommand)
+    } catch {
+      return null
+    }
+  }, [curlCommand])
+
+  // Extract workspace and token from the parsed curl command
+  const workspace = useMemo(() => {
+    if (!parsedCurl?.url) return ""
+    const match = parsedCurl.url.match(/https:\/\/([^.]+)\.slack\.com/)
+    return match ? match[1] : ""
+  }, [parsedCurl])
+
+  const token = useMemo(() => {
+    return parsedCurl?.formData?.token || ""
+  }, [parsedCurl])
+
+  // Build a curlRequest for a different Slack API endpoint, reusing auth from the stored curl
+  const buildCurlRequest = useCallback(
+    (url: string, formData?: Record<string, string>) => {
+      if (!parsedCurl) return null
+      return { url, headers: parsedCurl.headers || {}, formData }
+    },
+    [parsedCurl]
+  )
+
+  // Fetch channel list
+  const fetchChannels = useCallback(async () => {
+    if (!parsedCurl || !workspace) return
+    setChannelsLoading(true)
+    try {
+      if (!token) {
+        toast.error("Could not extract auth token from Slack settings")
+        setChannelsLoading(false)
+        return
+      }
+
+      const url = `https://${workspace}.slack.com/api/conversations.list`
+      const curlRequest = buildCurlRequest(url, {
+        token,
+        types: "public_channel,private_channel",
+        exclude_archived: "true",
+        limit: "200",
+      })
+      if (!curlRequest) return
+
+      const response = await fetch("/api/slack-reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ curlRequest }),
+      })
+
+      const data = await response.json()
+      if (data.ok && data.channels) {
+        setChannels(data.channels.sort((a: SlackChannel, b: SlackChannel) => b.num_members - a.num_members))
+      } else {
+        toast.error(data.error || "Failed to fetch channels")
+      }
+    } catch (error) {
+      console.error("Failed to fetch channels:", error)
+      toast.error("Failed to fetch channels")
+    } finally {
+      setChannelsLoading(false)
+    }
+  }, [parsedCurl, workspace, token, buildCurlRequest])
+
+  // Load cached data on mount and fetch channel names
+  useEffect(() => {
+    async function loadCache() {
+      const cached = await reactionStorage.loadReactions()
+      if (cached) {
+        setReactionEvents(cached.events)
+        const channelIds = cached.meta?.channel_ids ?? []
+        setSelectedChannels(channelIds)
+        setScanProgress({ status: "complete", current_channel: "", channels_done: channelIds.length, channels_total: channelIds.length, reactions_found: cached.events.length, scanned_channels: [] })
+      }
+    }
+    loadCache()
+  }, [])
+
+  // Fetch channel names whenever we have auth but no channel list loaded yet
+  useEffect(() => {
+    if (token && workspace && channels.length === 0) {
+      fetchChannels()
+    }
+  }, [token, workspace, channels.length, fetchChannels])
+
+  // Scan a single channel for reactions
+  const scanChannel = useCallback(
+    async (channelId: string, channelName: string, signal: AbortSignal): Promise<ReactionEvent[]> => {
+      const events: ReactionEvent[] = []
+      if (!workspace || !token) return events
+
+      const daysBack = DATE_RANGE_DAYS[dateRange]
+      const oldest = Math.floor(Date.now() / 1000) - daysBack * 86400
+      let cursor: string | undefined
+
+      do {
+        if (signal.aborted) break
+
+        const url = `https://${workspace}.slack.com/api/conversations.history`
+        const formData: Record<string, string> = {
+          token,
+          channel: channelId,
+          oldest: String(oldest),
+          limit: "200",
+        }
+        if (cursor) formData.cursor = cursor
+
+        const curlRequest = buildCurlRequest(url, formData)
+        if (!curlRequest) break
+
+        // Rate limit: 1.2s between requests (abort-aware)
+        await new Promise<void>((resolve, reject) => {
+          const t = setTimeout(resolve, 1200)
+          signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+        })
+
+        const response = await fetch("/api/slack-reactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ curlRequest }),
+          signal,
+        })
+
+        const data = await response.json()
+        if (!data.ok) {
+          console.error(`Scan error for #${channelName}:`, data.error)
+          break
+        }
+
+        for (const reaction of data.reactions || []) {
+          events.push({
+            emoji_name: reaction.emoji_name,
+            count: reaction.count,
+            user_ids: reaction.users,
+            channel_id: channelId,
+            timestamp: reaction.timestamp,
+          })
+        }
+
+        cursor = data.has_more ? data.response_metadata?.next_cursor : undefined
+      } while (cursor)
+
+      return events
+    },
+    [workspace, token, dateRange, buildCurlRequest]
+  )
+
+  // Start scan across selected channels
+  const startScan = useCallback(async () => {
+    if (selectedChannels.length === 0) {
+      toast.error("Select at least one channel to scan")
+      return
+    }
+    if (!token || !workspace) {
+      toast.error("Connect to Slack in Settings first")
+      return
+    }
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    const allEvents: ReactionEvent[] = []
+    setScanProgress({
+      status: "scanning",
+      current_channel: "",
+      channels_done: 0,
+      channels_total: selectedChannels.length,
+      reactions_found: 0,
+      scanned_channels: [],
+    })
+    setReactionEvents([])
+
+    const channelNames = new Map(channels.map(c => [c.id, c.name]))
+
+    for (let i = 0; i < selectedChannels.length; i++) {
+      if (controller.signal.aborted) break
+
+      const channelId = selectedChannels[i]
+      const channelName = channelNames.get(channelId) || channelId
+
+      setScanProgress(prev => ({
+        ...prev,
+        current_channel: channelName,
+        channels_done: i,
+      }))
+
+      try {
+        const channelEvents = await scanChannel(channelId, channelName, controller.signal)
+        allEvents.push(...channelEvents)
+
+        setReactionEvents([...allEvents])
+        setScanProgress(prev => ({
+          ...prev,
+          channels_done: i + 1,
+          reactions_found: allEvents.length,
+          scanned_channels: [...prev.scanned_channels, channelName],
+        }))
+      } catch (error) {
+        if ((error as Error).name === "AbortError") break
+        console.error(`Error scanning #${channelName}:`, error)
+      }
+    }
+
+    if (!controller.signal.aborted) {
+      setScanProgress(prev => ({ ...prev, status: "complete" }))
+
+      const meta: ReactionScanMeta = {
+        channel_ids: selectedChannels,
+        scanned_at: Date.now(),
+        event_count: allEvents.length,
+      }
+      await reactionStorage.saveReactions(allEvents, meta)
+      toast.success(`Scan complete! Found ${allEvents.length} reactions.`)
+    }
+  }, [selectedChannels, token, channels, dateRange, scanChannel])
+
+  // Cancel scan
+  const cancelScan = useCallback(() => {
+    abortRef.current?.abort()
+    setScanProgress(prev => ({ ...prev, status: "idle" }))
+  }, [])
+
+  // Computed data
+  const filteredEvents = useMemo(() => {
+    if (emojiFilter !== "custom") return reactionEvents
+    return reactionEvents.filter(e => customEmojiNames.has(e.emoji_name))
+  }, [reactionEvents, emojiFilter, customEmojiNames])
+
+  const stats = useMemo(() => calculateReactionStats(filteredEvents), [filteredEvents])
+  const topReactions = useMemo(() => stats.top_reactions.slice(0, 20), [stats])
+  const userStats = useMemo(() => getUserReactionStats(filteredEvents), [filteredEvents])
+  const channelBreakdown = useMemo(() => getChannelBreakdown(filteredEvents, 10), [filteredEvents])
+
+  const timelineData = useMemo(() => {
+    if (filteredEvents.length === 0) return []
+    const now = Math.floor(Date.now() / 1000)
+    const isHourly = dateRange === "24h"
+    const bucketCount = isHourly ? 24 : DATE_RANGE_DAYS[dateRange]
+    const bucketSize = isHourly ? 3600 : 86400
+
+    const countByBucket = new Map<number, number>()
+    for (const e of filteredEvents) {
+      const offset = Math.floor((now - e.timestamp) / bucketSize)
+      if (offset >= 0 && offset < bucketCount) {
+        countByBucket.set(offset, (countByBucket.get(offset) || 0) + e.count)
+      }
+    }
+
+    const buckets: { date: string; count: number }[] = []
+    for (let i = bucketCount - 1; i >= 0; i--) {
+      const ts = now - (i + 1) * bucketSize
+      const d = new Date(ts * 1000)
+      const label = isHourly
+        ? d.toLocaleTimeString("en-US", { hour: "numeric" })
+        : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      buckets.push({ date: label, count: countByBucket.get(i) || 0 })
+    }
+    return buckets
+  }, [filteredEvents, dateRange])
+
+  return {
+    channels,
+    selectedChannels,
+    setSelectedChannels,
+    channelsLoading,
+    fetchChannels,
+    dateRange,
+    setDateRange,
+    emojiFilter,
+    setEmojiFilter,
+    scanProgress,
+    startScan,
+    cancelScan,
+    reactionEvents: filteredEvents,
+    stats,
+    topReactions,
+    userStats,
+    channelBreakdown,
+    timelineData,
+  }
+}

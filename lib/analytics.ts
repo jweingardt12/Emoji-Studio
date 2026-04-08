@@ -20,6 +20,12 @@ export enum AnalyticsEvent {
   FEEDBACK_MODAL_CLOSED = 'Feedback Modal Closed',
   FEEDBACK_SUBMITTED = 'Feedback Submitted',
   FEEDBACK_SUBMISSION_FAILED = 'Feedback Submission Failed',
+  REACTIONS_SCAN_STARTED = 'Reactions Scan Started',
+  REACTIONS_SCAN_COMPLETED = 'Reactions Scan Completed',
+  REACTIONS_FILTER_CHANGED = 'Reactions Filter Changed',
+  REACTIONS_DATE_RANGE_CHANGED = 'Reactions Date Range Changed',
+  REACTIONS_SHARE_CARD_DOWNLOADED = 'Reactions Share Card Downloaded',
+  REACTIONS_SHARE_CARD_COPIED = 'Reactions Share Card Copied',
 }
 
 // Analytics utility hook to track events in the emoji dashboard
@@ -173,6 +179,45 @@ export function useAnalytics() {
         error_message: error,
         workspace,
       });
+    },
+
+    trackReactionsScanStarted: (channelCount: number, dateRange: string) => {
+      op.track(AnalyticsEvent.REACTIONS_SCAN_STARTED, {
+        channel_count: channelCount,
+        date_range: dateRange,
+        workspace,
+      });
+    },
+
+    trackReactionsScanCompleted: (channelCount: number, reactionsFound: number, dateRange: string) => {
+      op.track(AnalyticsEvent.REACTIONS_SCAN_COMPLETED, {
+        channel_count: channelCount,
+        reactions_found: reactionsFound,
+        date_range: dateRange,
+        workspace,
+      });
+    },
+
+    trackReactionsFilterChanged: (filter: string) => {
+      op.track(AnalyticsEvent.REACTIONS_FILTER_CHANGED, {
+        filter,
+        workspace,
+      });
+    },
+
+    trackReactionsDateRangeChanged: (dateRange: string) => {
+      op.track(AnalyticsEvent.REACTIONS_DATE_RANGE_CHANGED, {
+        date_range: dateRange,
+        workspace,
+      });
+    },
+
+    trackReactionsShareCardDownloaded: () => {
+      op.track(AnalyticsEvent.REACTIONS_SHARE_CARD_DOWNLOADED, { workspace });
+    },
+
+    trackReactionsShareCardCopied: () => {
+      op.track(AnalyticsEvent.REACTIONS_SHARE_CARD_COPIED, { workspace });
     },
 
     // Identify a user - also caches to localStorage for session restore
