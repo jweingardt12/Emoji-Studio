@@ -8,6 +8,12 @@ import {
 } from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Hash, Lock, ChevronDown, ChevronRight } from "lucide-react"
 import type { ChannelReactionBreakdown } from "@/lib/services/reaction-service"
 import type { SlackChannel } from "@/app/reactions/hooks/use-reactions-state"
@@ -75,27 +81,34 @@ function ChannelRow({
 
       <CollapsibleContent>
         <div className="px-3 pb-3 pt-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {item.top_reactions.map((reaction) => (
-              <div
-                key={reaction.emoji_name}
-                className="flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5"
-              >
-                <EmojiDisplay
-                  name={reaction.emoji_name}
-                  customEmojiUrls={customEmojiUrls}
-                />
-                <div className="min-w-0">
-                  <p className="text-xs font-medium truncate">
-                    :{reaction.emoji_name}:
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {reaction.total_count.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TooltipProvider delayDuration={200}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+              {item.top_reactions.map((reaction) => (
+                <Tooltip key={reaction.emoji_name}>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 cursor-default">
+                      <EmojiDisplay
+                        name={reaction.emoji_name}
+                        customEmojiUrls={customEmojiUrls}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          :{reaction.emoji_name}:
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {reaction.total_count.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="font-medium">:{reaction.emoji_name}:</p>
+                    <p className="text-xs text-muted-foreground">{reaction.total_count.toLocaleString()} reactions</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
         </div>
       </CollapsibleContent>
     </Collapsible>

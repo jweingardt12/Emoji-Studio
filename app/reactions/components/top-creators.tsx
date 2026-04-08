@@ -2,6 +2,12 @@
 
 import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Crown } from "lucide-react"
 import {
   BarChart,
@@ -149,26 +155,32 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
               <span className="text-xs font-medium truncate w-20 shrink-0">
                 {creator.user_display_name.split(" ")[0]}
               </span>
-              <div className="flex items-center gap-1 flex-1 min-w-0">
-                {creator.top_emojis.map((emoji) => (
-                  <div
-                    key={emoji.name}
-                    className="flex items-center gap-0.5 bg-muted/50 rounded px-1.5 py-0.5"
-                    title={`:${emoji.name}: (${emoji.reactions} reactions)`}
-                  >
-                    {emoji.url ? (
-                      <img
-                        src={emoji.url}
-                        alt={emoji.name}
-                        className="h-4 w-4 object-contain"
-                      />
-                    ) : null}
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
-                      {emoji.reactions}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <TooltipProvider delayDuration={200}>
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  {creator.top_emojis.map((emoji) => (
+                    <Tooltip key={emoji.name}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-0.5 bg-muted/50 rounded px-1.5 py-0.5 cursor-default">
+                          {emoji.url ? (
+                            <img
+                              src={emoji.url}
+                              alt={emoji.name}
+                              className="h-4 w-4 object-contain"
+                            />
+                          ) : null}
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {emoji.reactions}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="font-medium">:{emoji.name}:</p>
+                        <p className="text-xs text-muted-foreground">{emoji.reactions.toLocaleString()} reactions</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
           ))}
         </div>

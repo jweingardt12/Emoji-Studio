@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
 import { X, Check, Hash, Radio } from "lucide-react"
 
 interface ScanProgressProps {
@@ -38,9 +39,7 @@ export function ScanProgress({
           </div>
           <div className="text-sm font-medium">
             Scanning channels
-            <span className="inline-flex w-6 text-muted-foreground">
-              <span className="animate-[ellipsis_1.5s_infinite]">...</span>
-            </span>
+            <span className="inline-flex w-6 text-muted-foreground animate-pulse">...</span>
           </div>
         </div>
         <Button
@@ -54,22 +53,9 @@ export function ScanProgress({
         </Button>
       </div>
 
-      {/* Channel segments */}
+      {/* Progress bar */}
       <div className="px-4 py-2">
-        <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted">
-          {Array.from({ length: channelsTotal }).map((_, i) => (
-            <div
-              key={i}
-              className={`flex-1 rounded-full transition-all duration-500 ${
-                i < channelsDone
-                  ? "bg-primary"
-                  : i === channelsDone
-                    ? "bg-primary/60 animate-pulse"
-                    : "bg-transparent"
-              }`}
-            />
-          ))}
-        </div>
+        <Progress value={percent} className="h-2" />
       </div>
 
       {/* Channel list */}
@@ -98,15 +84,6 @@ export function ScanProgress({
         </span>
         <span>{percent}%</span>
       </div>
-
-      <style jsx>{`
-        @keyframes ellipsis {
-          0% { content: ''; }
-          25% { content: '.'; }
-          50% { content: '..'; }
-          75% { content: '...'; }
-        }
-      `}</style>
     </div>
   )
 }

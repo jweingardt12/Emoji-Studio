@@ -1,17 +1,27 @@
 "use client"
 
+import { cn } from "@/lib/utils"
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Activity, Hash, Crown, TrendingUp, TrendingDown } from "lucide-react"
 import type { ReactionStats } from "@/lib/services/reaction-service"
 
 interface ReactionStatsCardsProps {
   stats: ReactionStats
   customEmojiUrls: Map<string, string>
+}
+
+/** Returns badge color classes based on positive/negative trend */
+function trendBadgeColors(isPositive: boolean) {
+  return isPositive
+    ? "text-green-600 bg-green-500/10 dark:text-green-400 dark:bg-green-500/20"
+    : "text-red-600 bg-red-500/10 dark:text-red-400 dark:bg-red-500/20"
 }
 
 export function ReactionStatsCards({
@@ -43,9 +53,9 @@ export function ReactionStatsCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.total_reactions.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <CardDescription className="text-xs mt-0.5">
             from {stats.unique_users.toLocaleString()} users
-          </p>
+          </CardDescription>
         </CardContent>
       </Card>
 
@@ -59,9 +69,9 @@ export function ReactionStatsCards({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{stats.unique_emojis.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <CardDescription className="text-xs mt-0.5">
             distinct emoji used
-          </p>
+          </CardDescription>
         </CardContent>
       </Card>
 
@@ -81,7 +91,7 @@ export function ReactionStatsCards({
               )}
               <div className="min-w-0">
                 <p className="text-sm font-bold truncate">:{topEmoji.emoji_name}:</p>
-                <p className="text-xs text-muted-foreground">{topEmoji.total_count.toLocaleString()} uses</p>
+                <CardDescription className="text-xs">{topEmoji.total_count.toLocaleString()} uses</CardDescription>
               </div>
             </div>
           ) : (
@@ -93,16 +103,28 @@ export function ReactionStatsCards({
       {/* This Week */}
       <Card>
         <CardHeader className="pb-1">
-          <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-            {trendPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            This Week
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              {trendPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+              This Week
+            </CardTitle>
+            <Badge
+              variant="secondary"
+              className={cn(
+                "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                trendBadgeColors(trendPositive)
+              )}
+            >
+              {trendPositive ? <TrendingUp className="mr-0.5 h-3 w-3" /> : <TrendingDown className="mr-0.5 h-3 w-3" />}
+              {trendPositive ? "+" : ""}{Math.round(weekTrend)}%
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{thisWeekCount.toLocaleString()}</div>
-          <p className={`text-xs mt-0.5 ${trendPositive ? "text-green-500" : "text-red-500"}`}>
-            {trendPositive ? "+" : ""}{Math.round(weekTrend)}% vs last week
-          </p>
+          <CardDescription className="text-xs mt-0.5">
+            vs last week
+          </CardDescription>
         </CardContent>
       </Card>
     </div>

@@ -8,6 +8,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Progress } from "@/components/ui/progress"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
 import type { EmojiFilter } from "@/app/reactions/hooks/use-reactions-state"
@@ -79,65 +86,74 @@ export function TopReactionsChart({
               : "No data yet — run a scan first."}
           </p>
         ) : (
-          <div className="space-y-0.5">
-            {data.map((reaction, i) => {
-              const url = customEmojiUrls.get(reaction.emoji_name)
-              const isCustom = !!url
-              const creator = creatorMap.get(reaction.emoji_name)
-              const barPct = Math.max(3, (reaction.total_count / maxCount) * 100)
+          <TooltipProvider delayDuration={200}>
+            <div className="space-y-0.5">
+              {data.map((reaction, i) => {
+                const url = customEmojiUrls.get(reaction.emoji_name)
+                const isCustom = !!url
+                const creator = creatorMap.get(reaction.emoji_name)
+                const barPct = Math.max(3, (reaction.total_count / maxCount) * 100)
+                const barColor = BAR_COLORS[i % BAR_COLORS.length]
 
-              return (
-                <div
-                  key={reaction.emoji_name}
-                  className="flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors"
-                >
-                  {/* Rank */}
-                  <span className="text-xs font-semibold text-muted-foreground w-5 text-right tabular-nums shrink-0">
-                    {i + 1}
-                  </span>
+                return (
+                  <Tooltip key={reaction.emoji_name}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors cursor-default">
+                        {/* Rank */}
+                        <span className="text-xs font-semibold text-muted-foreground w-5 text-right tabular-nums shrink-0">
+                          {i + 1}
+                        </span>
 
-                  <div className="h-7 w-7 shrink-0 flex items-center justify-center">
-                    {isCustom && (
-                      <img
-                        src={url}
-                        alt={reaction.emoji_name}
-                        className="h-6 w-6 object-contain"
-                      />
-                    )}
-                  </div>
+                        <div className="h-7 w-7 shrink-0 flex items-center justify-center">
+                          {isCustom && (
+                            <img
+                              src={url}
+                              alt={reaction.emoji_name}
+                              className="h-6 w-6 object-contain"
+                            />
+                          )}
+                        </div>
 
-                  <div className="w-32 sm:w-40 shrink-0 min-w-0">
-                    <p className="text-sm font-medium truncate leading-tight">
-                      :{reaction.emoji_name}:
-                    </p>
-                    {creator && (
-                      <p className="text-[10px] text-muted-foreground truncate leading-tight">
-                        by {creator.split(" ")[0]}
+                        <div className="w-32 sm:w-40 shrink-0 min-w-0">
+                          <p className="text-sm font-medium truncate leading-tight">
+                            :{reaction.emoji_name}:
+                          </p>
+                          {creator && (
+                            <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                              by {creator.split(" ")[0]}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Bar — shadcn Progress with colored indicator */}
+                        <div className="flex-1 min-w-0 hidden sm:block">
+                          <Progress
+                            value={barPct}
+                            className="h-2.5 bg-muted/60"
+                            style={{ ["--progress-color" as string]: barColor }}
+                          />
+                        </div>
+
+                        {/* Count */}
+                        <span className="text-xs font-semibold tabular-nums shrink-0 ml-auto sm:ml-0 sm:w-12 text-right">
+                          {reaction.total_count.toLocaleString()}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="font-medium">:{reaction.emoji_name}:</p>
+                      <p className="text-xs text-muted-foreground">
+                        {reaction.total_count.toLocaleString()} reactions from {reaction.unique_users} users
                       </p>
-                    )}
-                  </div>
-
-                  {/* Bar */}
-                  <div className="flex-1 min-w-0 hidden sm:block">
-                    <div className="w-full bg-muted/60 rounded-full h-2.5">
-                      <div
-                        className="h-2.5 rounded-full"
-                        style={{
-                          width: `${barPct}%`,
-                          backgroundColor: BAR_COLORS[i % BAR_COLORS.length],
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Count */}
-                  <span className="text-xs font-semibold tabular-nums shrink-0 ml-auto sm:ml-0 sm:w-12 text-right">
-                    {reaction.total_count.toLocaleString()}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+                      {creator && (
+                        <p className="text-xs text-muted-foreground">Created by {creator}</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </div>
+          </TooltipProvider>
         )}
       </CardContent>
     </Card>
