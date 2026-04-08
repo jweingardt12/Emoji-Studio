@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense, lazy } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Button } from "@/components/ui/button"
-import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X, Loader2, CheckCircle2 } from "lucide-react"
+import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
@@ -28,6 +28,24 @@ import {
 
 // Dynamic import for mobile component
 const MobileEmojiCreator = lazy(() => import("@/components/mobile-emoji-creator").then(module => ({ default: module.MobileEmojiCreator })))
+
+function ProgressBar({ completed, total, label }: { completed: number; total: number; label: string }) {
+  const pct = total > 0 ? (completed / total) * 100 : 0
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <Progress value={pct} className="h-2" />
+        </div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {completed}/{total}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground text-center">{label}</p>
+    </div>
+  )
+}
 
 // Main page content component
 function EmojiCreatorContent() {
@@ -530,12 +548,14 @@ function EmojiCreatorContent() {
                         className={cn("pl-9", packBrowser.searchQuery && "pr-8")}
                       />
                       {packBrowser.searchQuery && (
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
                           onClick={() => packBrowser.setSearchQuery("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <X className="h-4 w-4" />
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <Button
@@ -569,7 +589,7 @@ function EmojiCreatorContent() {
                   />
                   {packBrowser.searchQuery.trim() && !packBrowser.loading && packBrowser.currentEmojis.length > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      {packBrowser.currentEmojis.length} result{packBrowser.currentEmojis.length !== 1 ? "s" : ""} for &ldquo;{packBrowser.searchQuery.trim()}&rdquo;
+                      {packBrowser.currentEmojis.length} result{packBrowser.currentEmojis.length !== 1 ? "s" : ""} for &quot;{packBrowser.searchQuery.trim()}&quot;
                     </p>
                   )}
                 </div>
@@ -593,34 +613,11 @@ function EmojiCreatorContent() {
                   >
                     <div className="bg-card rounded-xl p-3 shadow-lg border border-border">
                       {downloadProgress || uploadProgress ? (
-                        /* Progress state */
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <Progress
-                                value={downloadProgress
-                                  ? (downloadProgress.total > 0 ? (downloadProgress.completed / downloadProgress.total) * 100 : 0)
-                                  : uploadProgress
-                                    ? (uploadProgress.total > 0 ? ((uploadProgress.completed + uploadProgress.failed) / uploadProgress.total) * 100 : 0)
-                                    : 0}
-                                className="h-2"
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {downloadProgress
-                                ? `${downloadProgress.completed}/${downloadProgress.total}`
-                                : uploadProgress
-                                  ? `${uploadProgress.completed + uploadProgress.failed}/${uploadProgress.total}`
-                                  : ""}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground text-center">
-                            {downloadProgress
-                              ? (downloadProgress.stage === "downloading" ? "Downloading emojis..." : "Finalizing...")
-                              : "Uploading to Slack..."}
-                          </p>
-                        </div>
+                        <ProgressBar
+                          completed={downloadProgress ? downloadProgress.completed : (uploadProgress!.completed + uploadProgress!.failed)}
+                          total={(downloadProgress || uploadProgress!).total}
+                          label={downloadProgress ? (downloadProgress.stage === "downloading" ? "Downloading emojis..." : "Finalizing...") : "Uploading to Slack..."}
+                        />
                       ) : (
                       <div className="flex items-center gap-3">
                         {/* Selection info - tap to open sheet */}
