@@ -13,6 +13,7 @@ import { TopReactionsChart } from "./components/top-reactions-chart"
 import { ReactionTimeline } from "./components/reaction-timeline"
 import { YourReactions } from "./components/your-reactions"
 import { ChannelBreakdown } from "./components/channel-breakdown"
+import { ShareCardGenerator } from "./components/share-card-generator"
 
 function ReactionsPage() {
   const isClient = useIsClient()
@@ -118,6 +119,15 @@ function ReactionsPage() {
             breakdown={state.channelBreakdown}
             channels={state.channels}
             customEmojiUrls={customEmojiUrls}
+          />
+          <ShareCardGenerator
+            stats={state.stats}
+            topReactions={state.topReactions}
+            customEmojiUrls={customEmojiUrls}
+            channelNames={state.selectedChannels.map(
+              id => state.channels.find(c => c.id === id)?.name ?? id
+            )}
+            dateRange={state.dateRange}
           />
         </>
       )}
