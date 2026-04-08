@@ -6,9 +6,6 @@ import { toast } from "sonner"
 import {
   type ReactionEvent,
   type ReactionScanMeta,
-
-  getTopReactions,
-  getTrendingReactions,
   getUserReactionStats,
   getChannelBreakdown,
   calculateReactionStats,
@@ -53,7 +50,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
   const abortRef = useRef<AbortController | null>(null)
 
-  // Parse the stored curl command once using the existing robust parser
   const parsedCurl = useMemo(() => {
     if (!curlCommand) return null
     try {
@@ -288,7 +284,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
 
   const stats = useMemo(() => calculateReactionStats(filteredEvents), [filteredEvents])
   const topReactions = useMemo(() => stats.top_reactions.slice(0, 20), [stats])
-  const trending = useMemo(() => stats.trending, [stats])
   const userStats = useMemo(() => getUserReactionStats(filteredEvents), [filteredEvents])
   const channelBreakdown = useMemo(() => getChannelBreakdown(filteredEvents, 10), [filteredEvents])
 
@@ -334,10 +329,8 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     reactionEvents: filteredEvents,
     stats,
     topReactions,
-    trending,
     userStats,
     channelBreakdown,
     timelineData,
-    aggregated: stats.top_reactions,
   }
 }

@@ -1,10 +1,3 @@
-/**
- * Reaction Service
- *
- * Core types and pure aggregation functions for the Reactions Dashboard.
- * No React, no I/O — pure data transformations only (plus storage helpers).
- */
-
 import { idb } from '@/lib/storage/indexed-db'
 
 // ---------------------------------------------------------------------------

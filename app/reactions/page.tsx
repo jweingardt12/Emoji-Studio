@@ -40,6 +40,11 @@ export default function ReactionsPage() {
 
   const hasData = state.reactionEvents.length > 0
 
+  const channelNames = useMemo(
+    () => state.selectedChannels.map(id => state.channels.find(c => c.id === id)?.name ?? id),
+    [state.selectedChannels, state.channels]
+  )
+
   if (!isClient) {
     return (
       <div className="flex flex-col gap-6 p-4 md:p-6 pb-8 w-full">
@@ -126,9 +131,7 @@ export default function ReactionsPage() {
             stats={state.stats}
             topReactions={state.topReactions}
             customEmojiUrls={customEmojiUrls}
-            channelNames={state.selectedChannels.map(
-              id => state.channels.find(c => c.id === id)?.name ?? id
-            )}
+            channelNames={channelNames}
             dateRange={state.dateRange}
           />
         </>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -107,11 +107,10 @@ export function ChannelBreakdown({
   channels,
   customEmojiUrls,
 }: ChannelBreakdownProps) {
+  const channelMap = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels])
+  const sorted = useMemo(() => [...breakdown].sort((a, b) => b.total_count - a.total_count), [breakdown])
+
   if (breakdown.length === 0) return null
-
-  const channelMap = new Map(channels.map((c) => [c.id, c]))
-
-  const sorted = [...breakdown].sort((a, b) => b.total_count - a.total_count)
 
   return (
     <Card>
