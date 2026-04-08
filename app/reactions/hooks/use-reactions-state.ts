@@ -14,6 +14,7 @@ import {
   calculateReactionStats,
   reactionStorage,
 } from "@/lib/services/reaction-service"
+import { parseCurlToRequest } from "@/lib/services/emoji-service"
 
 export interface SlackChannel {
   id: string
@@ -52,47 +53,48 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
   const abortRef = useRef<AbortController | null>(null)
 
-  // Build curlRequest from stored curl command
+  // Parse the stored curl command once using the existing robust parser
+  const parsedCurl = useMemo(() => {
+    if (!curlCommand) return null
+    try {
+      return parseCurlToRequest(curlCommand)
+    } catch {
+      return null
+    }
+  }, [curlCommand])
+
+  // Extract workspace and token from the parsed curl command
+  const workspace = useMemo(() => {
+    if (!parsedCurl?.url) return ""
+    const match = parsedCurl.url.match(/https:\/\/([^.]+)\.slack\.com/)
+    return match ? match[1] : ""
+  }, [parsedCurl])
+
+  const token = useMemo(() => {
+    return parsedCurl?.formData?.token || ""
+  }, [parsedCurl])
+
+  // Build a curlRequest for a different Slack API endpoint, reusing auth from the stored curl
   const buildCurlRequest = useCallback(
     (url: string, formData?: Record<string, string>) => {
-      if (!curlCommand) return null
-      const headerRegex = /-H\s+'([^:]+):\s*([^']+)'/g
-      const headers: Record<string, string> = {}
-      let match
-      while ((match = headerRegex.exec(curlCommand)) !== null) {
-        headers[match[1]] = match[2]
-      }
-      const headerRegex2 = /-H\s+"([^:]+):\s*([^"]+)"/g
-      while ((match = headerRegex2.exec(curlCommand)) !== null) {
-        headers[match[1]] = match[2]
-      }
-      return { url, headers, formData }
+      if (!parsedCurl) return null
+      return { url, headers: parsedCurl.headers || {}, formData }
     },
-    [curlCommand]
+    [parsedCurl]
   )
 
   // Fetch channel list
   const fetchChannels = useCallback(async () => {
-    if (!curlCommand) return
+    if (!parsedCurl || !workspace) return
     setChannelsLoading(true)
     try {
-      const workspaceMatch = curlCommand.match(/https:\/\/([^.]+)\.slack\.com/)
-      const workspace = workspaceMatch ? workspaceMatch[1] : ""
-      if (!workspace) {
-        toast.error("Could not determine workspace from settings")
-        return
-      }
-
-      const url = `https://${workspace}.slack.com/api/conversations.list`
-      const tokenMatch = curlCommand.match(/token=([^&\s'"]+)/)
-      const token = tokenMatch ? tokenMatch[1] : ""
-
       if (!token) {
         toast.error("Could not extract auth token from Slack settings")
         setChannelsLoading(false)
         return
       }
 
+      const url = `https://${workspace}.slack.com/api/conversations.list`
       const curlRequest = buildCurlRequest(url, {
         token,
         types: "public_channel,private_channel",
@@ -119,7 +121,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     } finally {
       setChannelsLoading(false)
     }
-  }, [curlCommand, buildCurlRequest])
+  }, [parsedCurl, workspace, token, buildCurlRequest])
 
   // Load cached data on mount
   useEffect(() => {
@@ -139,12 +141,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   const scanChannel = useCallback(
     async (channelId: string, channelName: string, signal: AbortSignal): Promise<ReactionEvent[]> => {
       const events: ReactionEvent[] = []
-      const workspaceMatch = curlCommand?.match(/https:\/\/([^.]+)\.slack\.com/)
-      const workspace = workspaceMatch ? workspaceMatch![1] : ""
-      const tokenMatch = curlCommand?.match(/token=([^&\s'"]+)/)
-      const token = tokenMatch ? tokenMatch[1] : ""
-
-      if (!token) return events  // silently return empty — error shown by fetchChannels
+      if (!workspace || !token) return events
 
       const daysBack = dateRange === "7d" ? 7 : 30
       const oldest = Math.floor(Date.now() / 1000) - daysBack * 86400
@@ -199,7 +196,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
 
       return events
     },
-    [curlCommand, dateRange, buildCurlRequest]
+    [workspace, token, dateRange, buildCurlRequest]
   )
 
   // Start scan across selected channels
@@ -208,7 +205,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       toast.error("Select at least one channel to scan")
       return
     }
-    if (!curlCommand) {
+    if (!token || !workspace) {
       toast.error("Connect to Slack in Settings first")
       return
     }
@@ -268,7 +265,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       await reactionStorage.saveReactions(allEvents, meta)
       toast.success(`Scan complete! Found ${allEvents.length} reactions.`)
     }
-  }, [selectedChannels, curlCommand, channels, dateRange, scanChannel])
+  }, [selectedChannels, token, channels, dateRange, scanChannel])
 
   // Cancel scan
   const cancelScan = useCallback(() => {
