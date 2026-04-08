@@ -1,13 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Crown } from "lucide-react"
 import {
   BarChart,
@@ -107,10 +101,12 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
           <Crown className="h-4 w-4" />
           Top Creators
         </CardTitle>
+        <CardDescription className="text-xs">
+          People whose custom emojis received the most reactions
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4">
-        {/* Horizontal bar chart */}
-        <ChartContainer config={chartConfig} className="aspect-auto h-[240px] w-full">
+      <CardContent className="flex-1">
+        <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
           <BarChart
             data={chartData}
             layout="vertical"
@@ -129,9 +125,9 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  labelFormatter={(_: string, payload: Array<{ payload?: { fullName?: string } }>) => {
+                  labelFormatter={(_: string, payload: Array<{ payload?: { fullName?: string; emojiCount?: number } }>) => {
                     const item = payload?.[0]?.payload
-                    return item?.fullName ?? ""
+                    return item ? `${item.fullName} (${item.emojiCount} emoji${item.emojiCount === 1 ? "" : "s"})` : ""
                   }}
                 />
               }
@@ -144,46 +140,6 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
             />
           </BarChart>
         </ChartContainer>
-
-        {/* Creator emoji badges below the chart */}
-        <div className="space-y-2">
-          {creators.slice(0, 5).map((creator, i) => (
-            <div key={creator.user_id} className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground w-4 text-right tabular-nums shrink-0">
-                {i + 1}
-              </span>
-              <span className="text-xs font-medium truncate w-20 shrink-0">
-                {creator.user_display_name.split(" ")[0]}
-              </span>
-              <TooltipProvider delayDuration={200}>
-                <div className="flex items-center gap-1 flex-1 min-w-0">
-                  {creator.top_emojis.map((emoji) => (
-                    <Tooltip key={emoji.name}>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-0.5 bg-muted/50 rounded px-1.5 py-0.5 cursor-default">
-                          {emoji.url ? (
-                            <img
-                              src={emoji.url}
-                              alt={emoji.name}
-                              className="h-4 w-4 object-contain"
-                            />
-                          ) : null}
-                          <span className="text-[10px] text-muted-foreground tabular-nums">
-                            {emoji.reactions}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p className="font-medium">:{emoji.name}:</p>
-                        <p className="text-xs text-muted-foreground">{emoji.reactions.toLocaleString()} reactions</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
-              </TooltipProvider>
-            </div>
-          ))}
-        </div>
       </CardContent>
     </Card>
   )
