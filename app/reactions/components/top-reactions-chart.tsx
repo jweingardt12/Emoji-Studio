@@ -96,17 +96,17 @@ export function TopReactionsChart({
                     {i + 1}
                   </span>
 
-                  {isCustom && (
-                    <div className="h-7 w-7 shrink-0 flex items-center justify-center">
+                  <div className="h-7 w-7 shrink-0 flex items-center justify-center">
+                    {isCustom && (
                       <img
                         src={url}
                         alt={reaction.emoji_name}
                         className="h-6 w-6 object-contain"
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  <div className={`${isCustom ? "w-32 sm:w-40" : "w-40 sm:w-48"} shrink-0 min-w-0`}>
+                  <div className="w-32 sm:w-40 shrink-0 min-w-0">
                     <p className="text-sm font-medium truncate leading-tight">
                       :{reaction.emoji_name}:
                     </p>
