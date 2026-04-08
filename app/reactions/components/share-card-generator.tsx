@@ -18,6 +18,8 @@ interface ShareCardGeneratorProps {
   customEmojiUrls: Map<string, string>
   channelNames: string[]
   dateRange: string
+  onDownload?: () => void
+  onCopy?: () => void
 }
 
 const CARD_W = 1200
@@ -333,6 +335,8 @@ export function ShareCardGenerator({
   customEmojiUrls,
   channelNames,
   dateRange,
+  onDownload,
+  onCopy,
 }: ShareCardGeneratorProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -362,6 +366,7 @@ export function ShareCardGenerator({
       a.click()
       URL.revokeObjectURL(url)
       toast.success("Card downloaded!")
+      onDownload?.()
     } catch (err) {
       console.error("Download error:", err)
       toast.error("Failed to generate card")
@@ -383,6 +388,7 @@ export function ShareCardGenerator({
       ])
       setCopied(true)
       toast.success("Card copied to clipboard!")
+      onCopy?.()
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
       console.error("Copy error:", err)

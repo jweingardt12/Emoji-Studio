@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect, useRef } from "react"
 import { BarChart3 } from "lucide-react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsClient } from "@/hooks/use-is-client"
+import { useAnalytics } from "@/lib/analytics"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useReactionsState } from "./hooks/use-reactions-state"
 import { ChannelPicker } from "./components/channel-picker"
@@ -36,9 +37,23 @@ export default function ReactionsPage() {
     return { customEmojiNames: names, customEmojiUrls: urls }
   }, [emojiData])
 
+  const analytics = useAnalytics()
   const state = useReactionsState(curlCommand, customEmojiNames)
 
   const hasData = state.reactionEvents.length > 0
+
+  // Track scan completion
+  const prevStatusRef = useRef(state.scanProgress.status)
+  useEffect(() => {
+    if (prevStatusRef.current === "scanning" && state.scanProgress.status === "complete") {
+      analytics.trackReactionsScanCompleted(
+        state.scanProgress.channels_done,
+        state.scanProgress.reactions_found,
+        state.dateRange
+      )
+    }
+    prevStatusRef.current = state.scanProgress.status
+  }, [state.scanProgress.status, state.scanProgress.channels_done, state.scanProgress.reactions_found, state.dateRange, analytics])
 
   const channelNames = useMemo(
     () => state.selectedChannels.map(id => state.channels.find(c => c.id === id)?.name ?? id),
@@ -76,8 +91,14 @@ export default function ReactionsPage() {
         channelsLoading={state.channelsLoading}
         fetchChannels={state.fetchChannels}
         dateRange={state.dateRange}
-        setDateRange={state.setDateRange}
-        onScan={state.startScan}
+        setDateRange={(range) => {
+          analytics.trackReactionsDateRangeChanged(range)
+          state.setDateRange(range)
+        }}
+        onScan={() => {
+          analytics.trackReactionsScanStarted(state.selectedChannels.length, state.dateRange)
+          state.startScan()
+        }}
         scanStatus={state.scanProgress.status}
       />
 
@@ -108,7 +129,10 @@ export default function ReactionsPage() {
           <TopReactionsChart
             topReactions={state.topReactions}
             emojiFilter={state.emojiFilter}
-            setEmojiFilter={state.setEmojiFilter}
+            setEmojiFilter={(filter) => {
+              analytics.trackReactionsFilterChanged(filter)
+              state.setEmojiFilter(filter)
+            }}
             customEmojiUrls={customEmojiUrls}
             emojiData={emojiData}
           />
@@ -134,6 +158,8 @@ export default function ReactionsPage() {
             customEmojiUrls={customEmojiUrls}
             channelNames={channelNames}
             dateRange={state.dateRange}
+            onDownload={analytics.trackReactionsShareCardDownloaded}
+            onCopy={analytics.trackReactionsShareCardCopied}
           />
         </>
       )}
