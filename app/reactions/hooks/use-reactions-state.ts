@@ -31,6 +31,7 @@ interface ScanProgress {
   channels_done: number
   channels_total: number
   reactions_found: number
+  scanned_channels: string[]
 }
 
 export function useReactionsState(curlCommand: string | null, customEmojiNames: Set<string> = new Set()) {
@@ -48,6 +49,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     channels_done: 0,
     channels_total: 0,
     reactions_found: 0,
+    scanned_channels: [],
   })
   const [reactionEvents, setReactionEvents] = useState<ReactionEvent[]>([])
   const abortRef = useRef<AbortController | null>(null)
@@ -129,7 +131,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
         setReactionEvents(cached.events)
         const channelIds = cached.meta?.channel_ids ?? []
         setSelectedChannels(channelIds)
-        setScanProgress({ status: "complete", current_channel: "", channels_done: channelIds.length, channels_total: channelIds.length, reactions_found: cached.events.length })
+        setScanProgress({ status: "complete", current_channel: "", channels_done: channelIds.length, channels_total: channelIds.length, reactions_found: cached.events.length, scanned_channels: [] })
       }
     }
     loadCache()
@@ -226,6 +228,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       channels_done: 0,
       channels_total: selectedChannels.length,
       reactions_found: 0,
+      scanned_channels: [],
     })
     setReactionEvents([])
 
@@ -252,6 +255,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
           ...prev,
           channels_done: i + 1,
           reactions_found: allEvents.length,
+          scanned_channels: [...prev.scanned_channels, channelName],
         }))
       } catch (error) {
         if ((error as Error).name === "AbortError") break

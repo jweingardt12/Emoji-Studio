@@ -88,6 +88,7 @@ export default function ReactionsPage() {
         channelsTotal={state.scanProgress.channels_total}
         reactionsFound={state.scanProgress.reactions_found}
         onCancel={state.cancelScan}
+        scannedChannels={state.scanProgress.scanned_channels}
       />
 
       {!hasData && (
