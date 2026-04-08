@@ -20,8 +20,18 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 
 ## Features
 
+### Usage Analytics (New in 2.0)
+- Scan Slack channels to see how custom emojis are actually used as reactions
+- Stats overview: total reactions, unique emojis, unique reactors, trending emojis
+- Top Reactions chart with emoji previews, creator info, and reaction counts
+- Channel Breakdown showing top reactions and top reactors per channel
+- Reaction Timeline tracking usage patterns over time
+- Shareable PNG card generator for sharing stats
+- Usage data surfaces across the entire app: emoji detail pages, overlay, explorer sort, and dashboard cards
+- All scanning happens in-browser via Slack's conversations API — no data leaves your machine
+
 ### Analytics Dashboard
-- Real-time metrics for total emojis, unique creators, and weekly growth
+- Real-time metrics for total emojis, unique creators, weekly growth, and top reactions
 - Contributor leaderboard with historical performance tracking
 - Time-series analysis of emoji creation patterns
 - Activity heatmaps showing peak creation periods
@@ -30,11 +40,12 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 
 ### Emoji Explorer
 - Full-text search across emoji names, creators, and user IDs
-- Advanced filtering by date ranges with sort options (newest, oldest, A-Z)
+- Advanced filtering by date ranges with sort options (newest, oldest, A-Z, most used)
 - Bulk selection with Shift+Click support and bulk ZIP download
 - Virtualized grid for smooth performance with large collections
 - Copy emoji code (`:name:`), URL, or image directly to clipboard
 - Individual emoji download and inline bulk action bar
+- Reaction count badges when sorting by usage
 
 ### Emoji Creator
 - Drag-and-drop upload for images, GIFs, and videos (PNG, JPG, GIF, WebP, MP4, MOV)
@@ -67,6 +78,7 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 ### Emoji Detail Pages
 - Individual pages for each emoji with large preview
 - Creator information, creation date, and alias status
+- Usage stats: reaction count, rank, and unique reactors (when scan data available)
 - Copy emoji code, download, and browse the creator's other emojis
 
 ### Data Visualizations

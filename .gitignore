@@ -76,6 +76,8 @@ middleware.ts
 pnpm-lock.yaml
 yarn.lock
 
-# Documentation files in root (except README)
+# Documentation files in root (except README, CHANGELOG, RELEASE_NOTES)
 /*.md
 !README.md
+!CHANGELOG.md
+!RELEASE_NOTES.md
