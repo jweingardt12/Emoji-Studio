@@ -16,20 +16,18 @@ interface ReactionStatsCardsProps {
 function EmojiDisplay({
   name,
   customEmojiUrls,
-  size = "text-2xl",
 }: {
   name: string
   customEmojiUrls: Map<string, string>
-  size?: string
 }) {
   const url = customEmojiUrls.get(name)
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt={`:${name}:`} className="w-8 h-8 object-contain" />
+      <img src={url} alt={`:${name}:`} className="w-7 h-7 object-contain" />
     )
   }
-  return <span className={size}>:{name}:</span>
+  return null
 }
 
 export function ReactionStatsCards({
@@ -67,9 +65,7 @@ export function ReactionStatsCards({
       value: topEmoji ? (
         <div className="flex items-center gap-2">
           <EmojiDisplay name={topEmoji.emoji_name} customEmojiUrls={customEmojiUrls} />
-          <span className="text-sm font-normal text-muted-foreground truncate max-w-[100px]">
-            :{topEmoji.emoji_name}:
-          </span>
+          <span className="truncate">:{topEmoji.emoji_name}:</span>
         </div>
       ) : (
         "—"
@@ -98,7 +94,9 @@ export function ReactionStatsCards({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold leading-none">{card.value}</div>
+            <div className={`font-bold leading-none ${typeof card.value === 'string' ? 'text-2xl' : 'text-base'}`}>
+              {card.value}
+            </div>
             {card.sub && (
               <p className="mt-1 text-xs text-muted-foreground">{card.sub}</p>
             )}

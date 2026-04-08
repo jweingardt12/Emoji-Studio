@@ -20,11 +20,11 @@ interface TopReactionsChartProps {
 }
 
 const BAR_COLORS = [
-  "bg-chart-1",
-  "bg-chart-2",
-  "bg-chart-3",
-  "bg-chart-4",
-  "bg-chart-5",
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
 ]
 
 export function TopReactionsChart({
@@ -123,8 +123,11 @@ export function TopReactionsChart({
                   <div className="flex-1 min-w-0">
                     <div className="w-full bg-muted rounded-full h-3">
                       <div
-                        className={`h-3 rounded-full transition-all ${BAR_COLORS[i % BAR_COLORS.length]}`}
-                        style={{ width: `${barPct}%` }}
+                        className="h-3 rounded-full transition-all"
+                        style={{
+                          width: `${barPct}%`,
+                          backgroundColor: BAR_COLORS[i % BAR_COLORS.length],
+                        }}
                       />
                     </div>
                   </div>
