@@ -31,11 +31,19 @@ export function TopReactors({ userStats, emojiData, customEmojiUrls, onEmojiClic
     return map
   }, [emojiData])
 
-  const topReactors = useMemo(() => {
-    return [...userStats]
-      .sort((a, b) => b.reaction_count - a.reaction_count)
-      .slice(0, 10)
-  }, [userStats])
+  const { topReactors, unnamedCount } = useMemo(() => {
+    const sorted = [...userStats].sort((a, b) => b.reaction_count - a.reaction_count)
+    const named: UserReactionStat[] = []
+    let unnamed = 0
+    for (const user of sorted) {
+      if (userNameMap.has(user.user_id)) {
+        if (named.length < 10) named.push(user)
+      } else {
+        unnamed++
+      }
+    }
+    return { topReactors: named, unnamedCount: unnamed }
+  }, [userStats, userNameMap])
 
   if (topReactors.length === 0) return null
 
@@ -71,7 +79,7 @@ export function TopReactors({ userStats, emojiData, customEmojiUrls, onEmojiClic
 
                   {/* Name */}
                   <span className="text-sm font-medium truncate w-28 sm:w-36 shrink-0">
-                    {displayName ? displayName.split(" ")[0] : user.user_id.slice(0, 8)}
+                    {displayName?.split(" ")[0] ?? user.user_id}
                   </span>
 
                   {/* Bar */}
@@ -113,6 +121,11 @@ export function TopReactors({ userStats, emojiData, customEmojiUrls, onEmojiClic
               )
             })}
           </div>
+          {unnamedCount > 0 && (
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              + {unnamedCount} more {unnamedCount === 1 ? "person" : "people"} not shown
+            </p>
+          )}
         </TooltipProvider>
       </CardContent>
     </Card>
