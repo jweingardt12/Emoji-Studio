@@ -631,6 +631,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Usage",
       url: "/reactions",
       icon: Activity,
+      badge: "NEW",
     },
     {
       title: "Settings",

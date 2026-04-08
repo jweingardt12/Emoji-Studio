@@ -3,6 +3,19 @@
 import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Crown } from "lucide-react"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts"
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
 
@@ -12,17 +25,12 @@ interface TopCreatorsProps {
   customEmojiUrls: Map<string, string>
 }
 
-interface CreatorStat {
-  user_display_name: string
-  user_id: string
-  total_reactions: number
-  emoji_count: number
-  top_emojis: { name: string; url: string; reactions: number }[]
-}
+const chartConfig = {
+  reactions: { label: "Reactions", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig
 
 export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCreatorsProps) {
   const creators = useMemo(() => {
-    // Build a lookup: emoji name -> creator info
     const emojiCreatorMap = new Map<string, { user_id: string; user_display_name: string }>()
     for (const emoji of emojiData) {
       if (!emoji.is_alias && emoji.user_display_name) {
@@ -33,7 +41,6 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
       }
     }
 
-    // Aggregate: for each creator, sum reactions across their emojis
     const creatorMap = new Map<string, {
       user_display_name: string
       total_reactions: number
@@ -42,7 +49,7 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
 
     for (const reaction of topReactions) {
       const creator = emojiCreatorMap.get(reaction.emoji_name)
-      if (!creator) continue // skip standard emoji or unknown creators
+      if (!creator) continue
 
       const existing = creatorMap.get(creator.user_id)
       const emojiEntry = {
@@ -63,7 +70,6 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
       }
     }
 
-    // Sort by total reactions, take top 10
     return Array.from(creatorMap.entries())
       .map(([user_id, data]) => ({
         user_id,
@@ -75,75 +81,93 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
           .slice(0, 5),
       }))
       .sort((a, b) => b.total_reactions - a.total_reactions)
-      .slice(0, 10)
+      .slice(0, 8)
   }, [topReactions, emojiData, customEmojiUrls])
 
   if (creators.length === 0) return null
 
+  // Transform for recharts: horizontal bar chart with creator names on Y axis
+  const chartData = creators.map((c) => ({
+    name: c.user_display_name.split(" ")[0],
+    reactions: c.total_reactions,
+    fullName: c.user_display_name,
+    emojiCount: c.emoji_count,
+  }))
+
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Crown className="h-4 w-4" />
-          Top Emoji Creators by Reaction Usage
+          Top Creators
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {creators.map((creator, i) => (
-            <div
-              key={creator.user_id}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              {/* Rank */}
-              <span className="text-lg font-bold text-muted-foreground w-6 text-right shrink-0">
+      <CardContent className="flex-1 flex flex-col gap-4">
+        {/* Horizontal bar chart */}
+        <ChartContainer config={chartConfig} className="aspect-auto h-[240px] w-full">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
+          >
+            <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <XAxis type="number" tickLine={false} axisLine={false} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              width={72}
+              tick={{ fontSize: 12 }}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(_: string, payload: Array<{ payload?: { fullName?: string } }>) => {
+                    const item = payload?.[0]?.payload
+                    return item?.fullName ?? ""
+                  }}
+                />
+              }
+            />
+            <Bar
+              dataKey="reactions"
+              name="reactions"
+              fill="var(--color-reactions)"
+              radius={[0, 4, 4, 0]}
+            />
+          </BarChart>
+        </ChartContainer>
+
+        {/* Creator emoji badges below the chart */}
+        <div className="space-y-2">
+          {creators.slice(0, 5).map((creator, i) => (
+            <div key={creator.user_id} className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground w-4 text-right tabular-nums shrink-0">
                 {i + 1}
               </span>
-
-              {/* Creator info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm truncate">
-                    {creator.user_display_name}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {creator.total_reactions.toLocaleString()} reactions on {creator.emoji_count} emoji{creator.emoji_count !== 1 ? "s" : ""}
-                  </span>
-                </div>
-
-                {/* Top emojis by this creator */}
-                <div className="flex items-center gap-1.5 mt-1">
-                  {creator.top_emojis.map((emoji) => (
-                    <div
-                      key={emoji.name}
-                      className="flex items-center gap-1 bg-muted/50 rounded px-1.5 py-0.5"
-                      title={`:${emoji.name}: (${emoji.reactions} reactions)`}
-                    >
-                      {emoji.url ? (
-                        <img
-                          src={emoji.url}
-                          alt={emoji.name}
-                          className="h-4 w-4 object-contain"
-                        />
-                      ) : null}
-                      <span className="text-[10px] text-muted-foreground">
-                        {emoji.reactions}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Reaction bar */}
-              <div className="w-24 shrink-0 hidden sm:block">
-                <div className="w-full bg-muted rounded-full h-2">
+              <span className="text-xs font-medium truncate w-20 shrink-0">
+                {creator.user_display_name.split(" ")[0]}
+              </span>
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                {creator.top_emojis.map((emoji) => (
                   <div
-                    className="bg-primary h-2 rounded-full transition-all"
-                    style={{
-                      width: `${Math.max(4, (creator.total_reactions / creators[0].total_reactions) * 100)}%`,
-                    }}
-                  />
-                </div>
+                    key={emoji.name}
+                    className="flex items-center gap-0.5 bg-muted/50 rounded px-1.5 py-0.5"
+                    title={`:${emoji.name}: (${emoji.reactions} reactions)`}
+                  >
+                    {emoji.url ? (
+                      <img
+                        src={emoji.url}
+                        alt={emoji.name}
+                        className="h-4 w-4 object-contain"
+                      />
+                    ) : null}
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {emoji.reactions}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
