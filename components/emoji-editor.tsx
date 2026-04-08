@@ -489,7 +489,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
           // Since we already applied HDR in the preview, we'll use a lighter touch
           // for the final Apple HDR to avoid over-processing
           const hdrBlob = await HDRProcessor.createAppleHDR(editedBlob, {
-            intensity: hdrIntensity * 0.7, // Reduce intensity since preview already has HDR
+            intensity: hdrIntensity * 0.2, // Light touch since preview already applied full HDR
             toneMapping: 'aces',
             maxContentBoost: 1 + (hdrIntensity / 150)
           })

@@ -71,6 +71,7 @@
     "geist": "latest",
     "gif.js": "^0.2.0",
     "gifuct-js": "^2.1.2",
+    "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",
     "input-otp": "1.4.2",
     "jimp": "^1.6.0",

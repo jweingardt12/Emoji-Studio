@@ -183,8 +183,6 @@ export class HDRProcessor {
    */
   private static enhanceHDRImage(data: Uint8ClampedArray, options: HDRProcessingOptions) {
     const factor = options.intensity / 100
-    const width = Math.sqrt(data.length / 4)
-    const height = width
 
     // First pass: analyze image statistics
     const luminanceMap = new Float32Array(data.length / 4)
@@ -192,18 +190,18 @@ export class HDRProcessor {
     let minLum = 255, maxLum = 0
     let totalLuminance = 0
     let pixelCount = 0
-    
+
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i]
       const g = data[i + 1]
       const b = data[i + 2]
       const a = data[i + 3]
-      
+
       if (a > 0) {
         const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
         luminanceMap[i / 4] = lum
         histogram[Math.floor(lum)]++
-        
+
         totalLuminance += lum
         pixelCount++
         minLum = Math.min(minLum, lum)
@@ -212,13 +210,13 @@ export class HDRProcessor {
     }
 
     const avgLuminance = totalLuminance / pixelCount
-    
+
     // Find percentiles for better tone mapping
     let cumulative = 0
     let lowPercentile = 0, highPercentile = 255
     const fivePercent = pixelCount * 0.05
     const ninetyFivePercent = pixelCount * 0.95
-    
+
     for (let i = 0; i < 256; i++) {
       cumulative += histogram[i]
       if (cumulative >= fivePercent && lowPercentile === 0) {
@@ -239,105 +237,100 @@ export class HDRProcessor {
 
       if (a > 0) {
         const lum = luminanceMap[i / 4]
-        
+
         // Determine tone zone
         const isDeepShadow = lum < lowPercentile
         const isShadow = lum < avgLuminance * 0.6
         const isHighlight = lum > avgLuminance * 1.5
         const isBrightHighlight = lum > highPercentile
-        
+
         // Natural tone adjustment
         let adjustment = 1.0
-        
+
         if (isDeepShadow) {
-          // Crush deep shadows for contrast
-          const shadowCrush = 1 - (factor * 0.4 * (1 - lum / lowPercentile))
+          // Darken deep shadows for contrast
+          const shadowCrush = 1 - (factor * 0.15 * (1 - lum / lowPercentile))
           adjustment = shadowCrush
         } else if (isShadow) {
-          // Darken shadows while preserving some detail
+          // Darken shadows while preserving detail
           const shadowFactor = (avgLuminance * 0.6 - lum) / (avgLuminance * 0.6)
-          adjustment = 1 - (factor * 0.2 * shadowFactor) + (factor * 0.1 * shadowFactor * (lum / (avgLuminance * 0.6)))
+          adjustment = 1 - (factor * 0.1 * shadowFactor) + (factor * 0.05 * shadowFactor * (lum / (avgLuminance * 0.6)))
         } else if (isBrightHighlight) {
-          // Maximum highlight boost for pure whites
+          // Boost bright highlights
           const highlightFactor = (lum - highPercentile) / (255 - highPercentile)
-          adjustment = 1 + (factor * 1.2 * highlightFactor)
+          adjustment = 1 + (factor * 0.5 * highlightFactor)
         } else if (isHighlight) {
-          // Very strong highlight enhancement
+          // Highlight enhancement
           const highlightFactor = (lum - avgLuminance * 1.5) / (maxLum - avgLuminance * 1.5)
-          adjustment = 1 + (factor * 0.8 * highlightFactor)
+          adjustment = 1 + (factor * 0.4 * highlightFactor)
         } else if (lum > avgLuminance * 1.2) {
-          // Strong boost for bright midtones
+          // Boost bright midtones
           const upperMidFactor = (lum - avgLuminance * 1.2) / (avgLuminance * 0.6)
-          adjustment = 1 + (factor * 0.5 * upperMidFactor)
+          adjustment = 1 + (factor * 0.25 * upperMidFactor)
         } else if (lum < avgLuminance * 0.8) {
           // Darken lower midtones
           const lowerMidFactor = (avgLuminance * 0.8 - lum) / (avgLuminance * 0.8)
-          adjustment = 1 - (factor * 0.2 * lowerMidFactor)
+          adjustment = 1 - (factor * 0.1 * lowerMidFactor)
         } else {
           // Regular midtones - minimal change
-          adjustment = 1 + (factor * 0.05)
+          adjustment = 1 + (factor * 0.03)
         }
-        
+
         // Apply adjustment preserving color ratios
         r = Math.min(255, Math.max(0, r * adjustment))
         g = Math.min(255, Math.max(0, g * adjustment))
         b = Math.min(255, Math.max(0, b * adjustment))
-        
+
         // Natural color enhancement
         const maxChannel = Math.max(r, g, b)
         const minChannel = Math.min(r, g, b)
         const saturation = maxChannel > 0 ? (maxChannel - minChannel) / maxChannel : 0
-        
-        // Enhance colors more aggressively
+
+        // Subtle vibrance
         if (saturation < 0.8) {
-          const vibranceAmount = factor * 0.3 * (1 - saturation * saturation)
+          const vibranceAmount = factor * 0.15 * (1 - saturation * saturation)
           const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b
-          
+
           r = Math.min(255, Math.max(0, gray + (r - gray) * (1 + vibranceAmount)))
           g = Math.min(255, Math.max(0, gray + (g - gray) * (1 + vibranceAmount)))
           b = Math.min(255, Math.max(0, gray + (b - gray) * (1 + vibranceAmount)))
         }
-        
-        // Add micro-contrast for more punch
-        const contrast = 1 + factor * 0.1
+
+        // Subtle micro-contrast
+        const contrast = 1 + factor * 0.05
         const mid = 128
         r = Math.min(255, Math.max(0, mid + (r - mid) * contrast))
         g = Math.min(255, Math.max(0, mid + (g - mid) * contrast))
         b = Math.min(255, Math.max(0, mid + (b - mid) * contrast))
-        
-        // Intense bloom effect for bright areas
+
+        // Gentle bloom for bright areas
         if (isHighlight && factor > 0.2) {
-          const bloomAmount = factor * 0.4 * ((lum - avgLuminance * 1.5) / (maxLum - avgLuminance * 1.5))
+          const bloomAmount = factor * 0.15 * ((lum - avgLuminance * 1.5) / (maxLum - avgLuminance * 1.5))
           r = Math.min(255, r + (255 - r) * bloomAmount)
           g = Math.min(255, g + (255 - g) * bloomAmount)
           b = Math.min(255, b + (255 - b) * bloomAmount)
         }
-        
-        // Aggressively push brightest areas to pure white
+
+        // Moderate white push for brightest areas
         if (isBrightHighlight && factor > 0.2) {
-          const whitePush = factor * 0.9 * ((lum - highPercentile) / (255 - highPercentile))
+          const whitePush = factor * 0.3 * ((lum - highPercentile) / (255 - highPercentile))
           r = Math.min(255, r + (255 - r) * whitePush)
           g = Math.min(255, g + (255 - g) * whitePush)
           b = Math.min(255, b + (255 - b) * whitePush)
         }
-        
-        // Crush deep blacks for maximum contrast
+
+        // Subtle black crush for contrast
         if (lum < lowPercentile && factor > 0.3) {
-          const blackCrush = factor * 0.6 * (1 - lum / lowPercentile)
+          const blackCrush = factor * 0.2 * (1 - lum / lowPercentile)
           r = Math.max(0, r * (1 - blackCrush))
           g = Math.max(0, g * (1 - blackCrush))
           b = Math.max(0, b * (1 - blackCrush))
         }
-        
-        // Allow highlights to reach maximum brightness
-        r = Math.min(255, r)
-        g = Math.min(255, g)
-        b = Math.min(255, b)
 
         // Update pixel data
-        data[i] = Math.round(r)
-        data[i + 1] = Math.round(g)
-        data[i + 2] = Math.round(b)
+        data[i] = Math.round(Math.min(255, r))
+        data[i + 1] = Math.round(Math.min(255, g))
+        data[i + 2] = Math.round(Math.min(255, b))
       }
     }
   }
