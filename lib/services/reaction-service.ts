@@ -32,10 +32,16 @@ export interface UserReactionStat {
   top_emojis: string[]
 }
 
+export interface ChannelReactorStat {
+  user_id: string
+  reaction_count: number
+}
+
 export interface ChannelReactionBreakdown {
   channel_id: string
   total_count: number
   top_reactions: AggregatedReaction[]
+  top_reactors: ChannelReactorStat[]
 }
 
 export interface ReactionScanMeta {
@@ -188,7 +194,20 @@ export function getChannelBreakdown(events: ReactionEvent[], topN: number): Chan
     const aggregated = aggregateReactions(evts)
     const sorted = getTopReactions(aggregated, topN)
     const total_count = aggregated.reduce((sum, r) => sum + r.total_count, 0)
-    return { channel_id, total_count, top_reactions: sorted }
+
+    // Compute top reactors for this channel
+    const userCounts = new Map<string, number>()
+    for (const evt of evts) {
+      for (const uid of evt.user_ids) {
+        userCounts.set(uid, (userCounts.get(uid) ?? 0) + 1)
+      }
+    }
+    const top_reactors = Array.from(userCounts.entries())
+      .map(([user_id, reaction_count]) => ({ user_id, reaction_count }))
+      .sort((a, b) => b.reaction_count - a.reaction_count)
+      .slice(0, 5)
+
+    return { channel_id, total_count, top_reactions: sorted, top_reactors }
   })
 }
 

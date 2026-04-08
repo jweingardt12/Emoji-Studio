@@ -355,6 +355,7 @@ export default function ReactionsPage() {
               breakdown={state.channelBreakdown}
               channels={state.channels}
               customEmojiUrls={customEmojiUrls}
+              emojiData={emojiData}
               onEmojiClick={handleEmojiClick}
             />
           </div>

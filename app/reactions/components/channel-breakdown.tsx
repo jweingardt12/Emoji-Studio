@@ -17,11 +17,13 @@ import {
 import { Hash, Lock, ChevronDown, ChevronRight } from "lucide-react"
 import type { ChannelReactionBreakdown } from "@/lib/services/reaction-service"
 import type { SlackChannel } from "@/app/reactions/hooks/use-reactions-state"
+import type { Emoji } from "@/lib/services/emoji-service"
 
 interface ChannelBreakdownProps {
   breakdown: ChannelReactionBreakdown[]
   channels: SlackChannel[]
   customEmojiUrls: Map<string, string>
+  emojiData: Emoji[]
   onEmojiClick?: (name: string) => void
 }
 
@@ -51,17 +53,22 @@ function ChannelRow({
   item,
   channel,
   customEmojiUrls,
+  userNameMap,
   onEmojiClick,
 }: {
   item: ChannelReactionBreakdown
   channel: SlackChannel | undefined
   customEmojiUrls: Map<string, string>
+  userNameMap: Map<string, string>
   onEmojiClick?: (name: string) => void
 }) {
   const [open, setOpen] = useState(false)
 
   const displayName = channel?.name ?? item.channel_id
   const isPrivate = channel?.is_private ?? false
+
+  // Filter to named reactors only
+  const namedReactors = item.top_reactors.filter((r) => userNameMap.has(r.user_id))
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -83,38 +90,60 @@ function ChannelRow({
       </CollapsibleTrigger>
 
       <CollapsibleContent>
-        <div className="px-3 pb-3 pt-1">
-          <TooltipProvider delayDuration={200}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              {item.top_reactions.map((reaction) => (
-                <Tooltip key={reaction.emoji_name}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={`flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 ${onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? "cursor-pointer hover:bg-muted/60" : "cursor-default"}`}
-                      onClick={onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? () => onEmojiClick(reaction.emoji_name) : undefined}
-                    >
-                      <EmojiDisplay
-                        name={reaction.emoji_name}
-                        customEmojiUrls={customEmojiUrls}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium truncate">
-                          :{reaction.emoji_name}:
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {reaction.total_count.toLocaleString()}
-                        </p>
+        <div className="px-3 pb-3 pt-1 space-y-3">
+          {/* Top emojis */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-2 font-medium">Most reacted emojis</p>
+            <TooltipProvider delayDuration={200}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                {item.top_reactions.map((reaction) => (
+                  <Tooltip key={reaction.emoji_name}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 ${onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? "cursor-pointer hover:bg-muted/60" : "cursor-default"}`}
+                        onClick={onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? () => onEmojiClick(reaction.emoji_name) : undefined}
+                      >
+                        <EmojiDisplay
+                          name={reaction.emoji_name}
+                          customEmojiUrls={customEmojiUrls}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium truncate">
+                            :{reaction.emoji_name}:
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {reaction.total_count.toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="font-medium">:{reaction.emoji_name}:</p>
-                    <p className="text-xs text-muted-foreground">{reaction.total_count.toLocaleString()} reactions</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="font-medium">:{reaction.emoji_name}:</p>
+                      <p className="text-xs text-muted-foreground">{reaction.total_count.toLocaleString()} reactions</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          </div>
+
+          {/* Top reactors in this channel */}
+          {namedReactors.length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-2 font-medium">Top reactors</p>
+              <div className="flex flex-wrap gap-2">
+                {namedReactors.map((reactor) => {
+                  const name = userNameMap.get(reactor.user_id)
+                  return (
+                    <Badge key={reactor.user_id} variant="outline" className="gap-1.5 text-xs font-normal py-1">
+                      <span className="font-medium">{name?.split(" ")[0]}</span>
+                      <span className="text-muted-foreground">{reactor.reaction_count}</span>
+                    </Badge>
+                  )
+                })}
+              </div>
             </div>
-          </TooltipProvider>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -125,10 +154,21 @@ export function ChannelBreakdown({
   breakdown,
   channels,
   customEmojiUrls,
+  emojiData,
   onEmojiClick,
 }: ChannelBreakdownProps) {
   const channelMap = useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels])
   const sorted = useMemo(() => [...breakdown].sort((a, b) => b.total_count - a.total_count), [breakdown])
+
+  const userNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const emoji of emojiData) {
+      if (emoji.user_id && emoji.user_display_name && !map.has(emoji.user_id)) {
+        map.set(emoji.user_id, emoji.user_display_name)
+      }
+    }
+    return map
+  }, [emojiData])
 
   if (breakdown.length === 0) return null
 
@@ -144,6 +184,7 @@ export function ChannelBreakdown({
             item={item}
             channel={channelMap.get(item.channel_id)}
             customEmojiUrls={customEmojiUrls}
+            userNameMap={userNameMap}
             onEmojiClick={onEmojiClick}
           />
         ))}
