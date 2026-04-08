@@ -10,8 +10,6 @@ export interface RenderedFrame {
 
 export class GifFrameRenderer {
   static async renderFrames(file: File): Promise<RenderedFrame[]> {
-    console.log(`[GifFrameRenderer] Processing: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB`)
-    
     // For static rendering, we'll create a single frame
     const url = URL.createObjectURL(file)
     
@@ -33,8 +31,6 @@ export class GifFrameRenderer {
       
       // Draw the image - browser handles GIF rendering natively
       ctx.drawImage(img, 0, 0)
-      
-      console.log(`[GifFrameRenderer] Rendered 1 frame (static)`)
       
       return [{
         canvas,

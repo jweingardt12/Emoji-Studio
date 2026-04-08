@@ -35,13 +35,11 @@ export function RequireData({
       
       // If we're syncing, don't redirect - wait for the sync to complete
       if (isSyncing) {
-        console.log('[RequireData] Sync in progress, waiting for data...');
         // Give ChromeExtensionHandler plenty of time to complete the sync
         // Extension needs time to: fetch data, process it, store it, and update context
         setTimeout(() => {
           const hasAnyData = hasRealData || useDemoData
           if (!hasAnyData) {
-            console.log('[RequireData] No data after sync wait, redirecting to settings');
             router.replace(redirectTo)
           }
           setHasChecked(true);

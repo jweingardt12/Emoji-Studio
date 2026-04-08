@@ -13,15 +13,6 @@ export class GifVideoProcessor {
     maxFileSize: number = 128 * 1024,
     options?: VideoProcessingOptions
   ): Promise<Blob> {
-    console.log('[GifVideoProcessor] Starting video to GIF conversion:', {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      targetSize,
-      maxFrames,
-      maxFileSize
-    })
-    
     return new Promise((resolve, reject) => {
       const video = document.createElement('video')
       const canvas = document.createElement('canvas')
@@ -38,12 +29,6 @@ export class GifVideoProcessor {
       canvas.height = targetSize
 
       video.onloadedmetadata = async () => {
-        console.log('[GifVideoProcessor] Video metadata loaded:', {
-          duration: video.duration,
-          videoWidth: video.videoWidth,
-          videoHeight: video.videoHeight,
-          options
-        })
         try {
           // Apply options
           const speed = options?.speed || 1
@@ -91,8 +76,6 @@ export class GifVideoProcessor {
               { fps: outputFps, quality: 40, frames: framesToUse, scale: 0.5, speedup: speedup, captureInterval: captureInterval },
               { fps: outputFps, quality: 50, frames: framesToUse, scale: 0.4, speedup: speedup, captureInterval: captureInterval }
             )
-            
-            console.log(`Video duration: ${duration}s, using ${framesToUse} frames, speedup: ${speedup.toFixed(1)}x`)
             
             return settings
           }
@@ -154,15 +137,13 @@ export class GifVideoProcessor {
         }
       }
 
-      video.onerror = (e) => {
-        console.error('[GifVideoProcessor] Video loading error:', e)
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src)
         reject(new Error(`Failed to load video: ${file.name}`))
       }
       
       // Set up video source
-      const videoUrl = URL.createObjectURL(file)
-      console.log('[GifVideoProcessor] Setting video source:', videoUrl)
-      video.src = videoUrl
+      video.src = URL.createObjectURL(file)
     })
   }
 
@@ -255,7 +236,6 @@ export class GifVideoProcessor {
       }
 
       gif.on('finished', (blob: Blob) => {
-        console.log(`GIF created: ${framesAdded} frames, ${blob.size} bytes, user speed: ${userSpeed}x`)
         resolve(blob)
       })
 

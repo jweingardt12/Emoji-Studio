@@ -96,8 +96,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
     const img = new Image()
     img.onload = () => {
-      console.log('Image loaded:', img.width, 'x', img.height)
-      
       // Set up main canvas
       canvas.width = img.width
       canvas.height = img.height
@@ -471,7 +469,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
 
     setIsProcessing(true)
     try {
-      console.log('Starting save process...')
       let finalBlob = editedBlob
       let isAppleHDR = false
 
@@ -479,8 +476,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       // Note: The preview already shows the HDR enhancement, but we need to create
       // the proper Apple HDR format with P3 color space for saving
       if (makeHDR && hdrIntensity > 0) {
-        console.log('HDR enabled, creating Apple HDR format...')
-        
         toast("Saving with HDR enhancement...", {
           description: "Creating Apple-compatible HDR image"
         })
@@ -497,7 +492,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
           if (hdrBlob) {
             finalBlob = hdrBlob
             isAppleHDR = true
-            console.log('Successfully created Apple HDR image')
           } else {
             toast("HDR format conversion failed", {
               description: "Using enhanced standard format",

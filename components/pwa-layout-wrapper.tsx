@@ -41,8 +41,6 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
     if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('Service Worker registered successfully')
-
           track("PWA: Service Worker Registered", {
             scope: registration.scope
           })
@@ -53,7 +51,6 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('New service worker available, refresh to update')
                   track("PWA: Update Available", {})
                 }
               })
@@ -66,8 +63,6 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
             error: error.message
           })
         })
-    } else if (window.location.protocol !== 'https:') {
-      console.log('Service Worker requires HTTPS')
     }
 
     window.addEventListener('resize', checkPWA)

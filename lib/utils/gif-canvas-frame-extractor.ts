@@ -14,8 +14,6 @@ export type ProgressCallback = (progress: number, message?: string) => void
 
 export class GifCanvasFrameExtractor {
   static async extractFrames(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
-    console.log(`[GifCanvasFrameExtractor] Processing: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB`)
-    
     // Report initial progress
     onProgress?.(15, 'Reading GIF file...')
     
@@ -24,7 +22,6 @@ export class GifCanvasFrameExtractor {
     const uint8Array = new Uint8Array(arrayBuffer)
     const reader = new GifReader(uint8Array as any)
     
-    console.log(`[GifCanvasFrameExtractor] GIF has ${reader.numFrames()} frames`)
     onProgress?.(20, `Found ${reader.numFrames()} frames`)
     
     // Get frame delays from omggif (this part works correctly)
@@ -186,8 +183,6 @@ export class GifCanvasFrameExtractor {
       
       // Clean up
       document.body.removeChild(container)
-      
-      console.log(`[GifCanvasFrameExtractor] Captured ${frames.length} unique frames`)
       
       // If we only captured 1 frame but the GIF has multiple frames, this method failed
       if (frames.length <= 1 && reader.numFrames() > 1) {

@@ -49,12 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    // Log request without sensitive data
-    if (shouldLogSensitive()) {
-      console.log("Received curl request (dev mode):", JSON.stringify(curlRequest, null, 2))
-    } else {
-      console.log("Received curl request for URL:", curlRequest.url?.split("?")[0] || "[no url]")
-    }
+    // Sensitive request logging removed
 
     // Ensure _x_id is in the URL
     const xIdMatch = curlRequest.url.match(/[?&]_x_id=([^&\s'"]+)/)
@@ -69,20 +64,13 @@ export async function POST(request: NextRequest) {
       // Add _x_id to the URL
       const separator = curlRequest.url.includes("?") ? "&" : "?"
       curlRequest.url = `${curlRequest.url}${separator}_x_id=${xId}`
-      console.log("Added _x_id to URL:", curlRequest.url)
-    } else {
-      console.log("Found _x_id in URL:", xIdMatch[1])
     }
-
-    // Log the URL for debugging
-    console.log("Processing URL:", curlRequest.url)
 
     // Rewrite emoji.list to emoji.adminList to get full metadata
     // This ensures desktop gets the same data quality as mobile
     // (user_id, created timestamps, user_display_name, etc.)
     if (curlRequest.url.includes('/emoji.list')) {
       curlRequest.url = curlRequest.url.replace('/emoji.list', '/emoji.adminList')
-      console.log("[Proxy] Rewrote emoji.list to emoji.adminList for full metadata")
     }
 
     // Check if this is an emoji-related endpoint
@@ -122,18 +110,6 @@ export async function POST(request: NextRequest) {
       
       // Preserve original Cookie header if present - critical for Slack auth
       const hasCookie = headers["Cookie"] || headers["cookie"]
-      console.log("[Proxy] Cookie header present:", !!hasCookie)
-      
-      // Check for d= cookie which is essential for Slack auth
-      const dCookie = hasCookie ? (hasCookie.match(/d=[a-zA-Z0-9%_\-+.]+/) || ["none"])[0] : "none"
-      console.log("[Proxy] d= cookie found:", dCookie !== "none")
-      
-      // Check for token in form data
-      const hasToken = curlRequest.formData && (
-        curlRequest.formData["token"] || 
-        Object.keys(curlRequest.formData).some(k => k.includes("token"))
-      )
-      console.log("[Proxy] Token in form data:", !!hasToken)
       
       // Only set default content type if not already multipart
       const existingContentType = headers["Content-Type"] || headers["content-type"] || ""
@@ -153,14 +129,12 @@ export async function POST(request: NextRequest) {
       
       // Check if token exists in formData
       const hasToken = "token" in curlRequest.formData
-      console.log("[Proxy] Token exists in formData:", hasToken)
 
       // If token is missing but we found one in the URL or elsewhere, add it
       if (!hasToken && curlRequest.url) {
         const tokenMatch = curlRequest.url.match(/[?&]token=([^&\s'"]+)/)
         if (tokenMatch && tokenMatch[1]) {
           params.append("token", tokenMatch[1])
-          console.log("[Proxy] Added token from URL: [REDACTED]")
         }
       }
 
@@ -168,32 +142,18 @@ export async function POST(request: NextRequest) {
       for (const [key, value] of Object.entries(curlRequest.formData)) {
         if (value !== undefined && value !== null && value !== "") {
           params.append(key, String(value))
-          // Never log token values
-          if (shouldLogSensitive() && !key.includes("token")) {
-            console.log(`Added form field: ${key}=${value}`)
-          }
         }
       }
 
       // Set the body
       options.body = params.toString()
-      console.log("[Proxy] Using URLSearchParams for request (length):", params.toString().length)
     } else if (curlRequest.data) {
       // Use raw data if provided
       options.body = curlRequest.data
-      console.log("[Proxy] Using raw data for request")
     } else {
       // Ensure we at least have post_type=json
       options.body = "post_type=json"
-      console.log("[Proxy] Using minimal form data: post_type=json")
     }
-
-    console.log("Making request to Slack API with method:", options.method)
-    // Only log headers in development, and redact sensitive ones
-    if (shouldLogSensitive()) {
-      console.log("Headers:", options.headers ? JSON.stringify(options.headers) : "(none)")
-    }
-    console.log("Body length:", (options.body as string)?.length || 0)
 
     // Ensure we have all required headers for Slack auth
     if (options.headers && typeof options.headers === 'object') {
@@ -210,17 +170,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    console.log("[Proxy] Final request URL:", curlRequest.url)
-    console.log("[Proxy] Final request headers:", JSON.stringify(options.headers))
-    console.log("[Proxy] Final request method:", options.method)
-    
     // Forward the request to Slack
     try {
       const response = await fetch(curlRequest.url, options)
 
       // Get the response text first for debugging
       const responseText = await response.text()
-      console.log("Raw response from Slack API:", responseText)
 
       // Try to parse as JSON
       let data
@@ -245,10 +200,6 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      console.log("Received response from Slack API with status:", response.status)
-      console.log("Slack API response data structure:", Object.keys(data))
-      console.log("Slack API response ok status:", data.ok)
-
       // Process the emoji data
       let emojiArray: any[] = []
 
@@ -256,11 +207,6 @@ export async function POST(request: NextRequest) {
       if (Array.isArray(data.emoji)) {
         // Handle array format
         emojiArray = data.emoji
-        console.log("Found emoji array with", emojiArray.length, "items")
-        // Log sample to see structure
-        if (emojiArray.length > 0) {
-          console.log("Sample emoji from array:", emojiArray[0])
-        }
       } else if (data.emoji && typeof data.emoji === "object") {
         // Handle object format (name -> url mapping)
         emojiArray = Object.entries(data.emoji).map(([name, url]) => ({
@@ -275,11 +221,9 @@ export async function POST(request: NextRequest) {
           user_display_name: "",
           can_delete: false,
         }))
-        console.log("Converted emoji object to array with", emojiArray.length, "items")
       } else if (data.emoji_list && Array.isArray(data.emoji_list)) {
         // Handle emoji_list array format (seen in some API responses)
         emojiArray = data.emoji_list
-        console.log("Found emoji_list array with", emojiArray.length, "items")
       } else if (data.emoji_list && typeof data.emoji_list === "object" && !Array.isArray(data.emoji_list)) {
         // Handle emoji_list object format
         emojiArray = Object.entries(data.emoji_list).map(([name, info]: [string, any]) => ({
@@ -294,15 +238,12 @@ export async function POST(request: NextRequest) {
           user_display_name: info.user_display_name || "",
           can_delete: info.can_delete || false,
         }))
-        console.log("Converted emoji_list object to array with", emojiArray.length, "items")
       } else if (data.custom_emoji_total_count !== undefined) {
         // Handle adminList response format
         if (data.emoji_list && Array.isArray(data.emoji_list)) {
           emojiArray = data.emoji_list
-          console.log("Found adminList emoji_list array with", emojiArray.length, "items")
         } else if (data.custom_emoji_list && Array.isArray(data.custom_emoji_list)) {
           emojiArray = data.custom_emoji_list
-          console.log("Found adminList custom_emoji_list array with", emojiArray.length, "items")
         } else if (data.custom_emoji_list && typeof data.custom_emoji_list === "object") {
           // Handle custom_emoji_list as an object (name -> info mapping)
           emojiArray = Object.entries(data.custom_emoji_list).map(([name, info]: [string, any]) => ({
@@ -317,7 +258,6 @@ export async function POST(request: NextRequest) {
             user_display_name: info.user_display_name || "",
             can_delete: info.can_delete || false,
           }))
-          console.log("Converted adminList custom_emoji_list object to array with", emojiArray.length, "items")
         }
       } else if (data.ok === false) {
         // Handle error response
@@ -340,11 +280,9 @@ export async function POST(request: NextRequest) {
         // Check if this is a successful operation that doesn't return emoji data
         if (data.ok === true) {
           // This is a successful operation (like emoji.remove) that doesn't return emoji data
-          console.log("Successful operation without emoji data. Returning success response.")
           return NextResponse.json(data)
         } else {
           // If we couldn't find or process emoji data, return the raw response for debugging
-          console.log("No emoji data found in response. Returning full response for debugging.")
           return NextResponse.json(
             {
               error: "No emoji data found in Slack response",

@@ -45,7 +45,6 @@ export async function detectVideoEncoder(): Promise<EncoderInfo> {
     }
   }
 
-  console.log(`[VideoEncoder] Detected: ${cachedEncoderInfo.type}`, cachedEncoderInfo.reason || "")
   return cachedEncoderInfo
 }
 
@@ -66,8 +65,6 @@ export async function encodeFramesToMp4(
 
   if (encoderInfo.type === "webcodecs") {
     try {
-      console.log("[VideoEncoder] Using WebCodecs (hardware-accelerated)")
-
       // Convert blobs to canvases (first 10% of progress)
       const canvases = await blobsToCanvases(frames, (p) => {
         onProgress?.(p * 0.1)
@@ -93,7 +90,6 @@ export async function encodeFramesToMp4(
         }
       )
 
-      console.log(`[VideoEncoder] WebCodecs encode complete: ${(blob.size / 1024).toFixed(1)} KB`)
       return blob
     } catch (error) {
       console.warn("[VideoEncoder] WebCodecs failed, falling back to FFmpeg:", error)
@@ -102,7 +98,6 @@ export async function encodeFramesToMp4(
   }
 
   // Fallback to FFmpeg WASM
-  console.log("[VideoEncoder] Using FFmpeg WASM (software encoding)")
   return VideoProcessor.framesToMp4(frames, fps, onProgress)
 }
 

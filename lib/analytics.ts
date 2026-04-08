@@ -181,7 +181,6 @@ export function useAnalytics() {
       if (typeof window !== "undefined") {
         localStorage.setItem("mobileUserId", userId)
         localStorage.setItem("userDisplayName", username)
-        console.log("[Analytics] Identified and cached user:", username, userId)
       }
 
       op.identify({

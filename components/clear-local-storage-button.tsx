@@ -19,7 +19,6 @@ export function ClearLocalStorageButton() {
         await emojiStorage.clearEmojis()
         await idb.clear('settings')
         await idb.clear('cache')
-        console.log('[ClearData] IndexedDB stores cleared')
       } catch (e) {
         console.warn('[ClearData] Failed to clear IndexedDB stores:', e)
       }
@@ -54,7 +53,6 @@ export function ClearLocalStorageButton() {
             }
           }
           deleteRequest.onsuccess = () => {
-            console.log('[ClearData] IndexedDB database deleted')
             done()
           }
           deleteRequest.onerror = () => {

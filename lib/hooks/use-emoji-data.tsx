@@ -60,7 +60,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const newValue = typeof value === 'function' ? value(prev) : value
       // If workspace actually changed, clear the custom display name
       if (previousWorkspaceRef.current && previousWorkspaceRef.current !== newValue) {
-        console.log('[EmojiDataContext] Workspace changed, clearing custom display name')
         setWorkspaceDisplayNameInternal("")
         localStorage.removeItem("workspaceDisplayName")
       }
@@ -82,9 +81,7 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     })
   }, [])
   
-  // Wrapper for setEmojiData to add logging
   const setEmojiData = useCallback((data: Emoji[] | ((prev: Emoji[]) => Emoji[])) => {
-    console.log('[EmojiDataContext] setEmojiData called with:', Array.isArray(data) ? `${data.length} emojis` : 'function');
     setEmojiDataInternal(data);
   }, [])
 
@@ -99,10 +96,8 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const loadDemoData = async () => {
       setDemoLoading(true)
       try {
-        console.log("Loading demo data from API...")
         const data = await generateDemoData()
         if (isMounted) {
-          console.log(`Loaded ${data.length} emojis for demo data`)
           setDemoData(data)
           setDemoLoading(false)
         }
@@ -185,13 +180,11 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Function to load emoji data from storage (IndexedDB with localStorage fallback)
   const loadEmojiData = useCallback(async () => {
-    console.log('[EmojiDataContext] loadEmojiData called');
     try {
       // Load workspace from settings
       const storedWorkspace = await settingsStorage.loadSetting("workspace") || localStorage.getItem("workspace")
 
       if (storedWorkspace) {
-        console.log('[EmojiDataContext] Setting workspace:', storedWorkspace);
         // Set internal state directly to avoid triggering display name clear on initial load
         setWorkspaceInternal(storedWorkspace)
         previousWorkspaceRef.current = storedWorkspace
@@ -200,7 +193,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Load custom workspace display name
       const storedDisplayName = localStorage.getItem("workspaceDisplayName")
       if (storedDisplayName) {
-        console.log('[EmojiDataContext] Setting workspace display name:', storedDisplayName);
         setWorkspaceDisplayNameInternal(storedDisplayName)
       }
 
@@ -208,8 +200,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const emojiData = await emojiStorage.loadEmojis()
       
       if (emojiData && Array.isArray(emojiData) && emojiData.length > 0) {
-        console.log(`[EmojiDataContext] Loaded ${emojiData.length} emojis from storage`)
-        console.log('[EmojiDataContext] First few emojis:', emojiData.slice(0, 3));
         setEmojiData(emojiData)
         
         // Check if this is demo data by checking the workspace
@@ -221,7 +211,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setUseDemoData(false)
         }
       } else {
-        console.log("No emoji data found in storage")
         setHasRealData(false)
         setUseDemoData(false)
       }
@@ -241,7 +230,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Listen for storage cleared event
     const handleStorageCleared = () => {
-      console.log("Local storage cleared event detected")
       setEmojiData([])
       setHasRealData(false)
       setUseDemoData(false)
@@ -253,13 +241,11 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     // Listen for emoji data updated event
     const handleEmojiDataUpdated = (event: Event) => {
-      console.log("[EmojiDataContext] Emoji data updated event detected")
       const customEvent = event as CustomEvent;
 
       // Events MUST contain data to prevent race conditions
       if (customEvent.detail && customEvent.detail.emojiData) {
-        const { emojiData, workspace, timestamp } = customEvent.detail;
-        console.log(`[EmojiDataContext] Using data from event: ${emojiData.length} emojis, timestamp: ${timestamp}`);
+        const { emojiData, workspace } = customEvent.detail;
 
         setEmojiData(emojiData);
         if (workspace) {
@@ -328,14 +314,11 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Calculate stats with stable timestamp to prevent unnecessary recalculations
   const currentTimestamp = useMemo(() => Math.floor(Date.now() / 1000), [])
   const stats = useMemo(() => {
-    console.log(`Recalculating stats: useDemoData=${useDemoData}, emojiData.length=${emojiData.length}`)
     if (useDemoData) {
       return demoStats
     }
     if (emojiData.length === 0) return null
-    const calculatedStats = calculateEmojiStats(emojiData, currentTimestamp)
-    console.log('Calculated stats:', calculatedStats)
-    return calculatedStats
+    return calculateEmojiStats(emojiData, currentTimestamp)
   }, [emojiData, useDemoData, demoStats, currentTimestamp])
 
   // Calculate user leaderboard

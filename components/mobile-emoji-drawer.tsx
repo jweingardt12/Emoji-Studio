@@ -304,7 +304,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           scaleMode: fileWithAdjustments.videoAdjustments.scaleMode
         };
         
-        console.log('[MobileEmojiDrawer] Processing with video adjustments:', options.processingOptions);
       }
 
       // Update progress during actual processing

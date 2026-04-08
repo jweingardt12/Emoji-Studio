@@ -22,7 +22,6 @@ export function useEmojiNotifications() {
 
     // Check for notification permission
     if (!('Notification' in window) || Notification.permission !== 'granted') {
-      console.log('[Notifications] Not available or not granted');
       return;
     }
 
@@ -77,7 +76,6 @@ export function useEmojiNotifications() {
 
       // Check if this is first run
       if (Object.keys(lastCheck).length === 0) {
-        console.log('[Notifications] First run, storing initial state');
         safeLocalStorageSet('lastEmojiCheck', JSON.stringify(currentEmojis));
         lastCheckRef.current = currentEmojis;
         return;
@@ -100,8 +98,6 @@ export function useEmojiNotifications() {
 
       // Show notification if new emojis found
       if (newEmojis.length > 0) {
-        console.log(`[Notifications] Found ${newEmojis.length} new emojis:`, newEmojis);
-        
         const title = newEmojis.length === 1 
           ? `New emoji: :${newEmojis[0]}:`
           : `${newEmojis.length} new emojis added`;
@@ -162,7 +158,6 @@ export function useEmojiNotifications() {
             intervalRef.current = setInterval(checkForNewEmojis, 24 * 60 * 60 * 1000);
           }, msUntilTarget);
           
-          console.log(`[Notifications] Will check daily at ${notificationSettings.time}`);
           return; // Exit early since we set up custom timing
         } else {
           intervalMs = 24 * 60 * 60 * 1000; // Default to 24 hours if no time specified
@@ -179,7 +174,6 @@ export function useEmojiNotifications() {
     }
 
     intervalRef.current = setInterval(checkForNewEmojis, intervalMs);
-    console.log(`[Notifications] Checking for new emojis every ${intervalMs}ms`);
 
     // Cleanup
     return () => {

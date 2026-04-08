@@ -28,8 +28,6 @@ function getWorkspaceUrl(teamId: string): string {
 async function clearStaleCaches(): Promise<void> {
   if (typeof window === "undefined") return
 
-  console.log("[MobileFetch] Clearing stale emoji caches...")
-
   // Clear localStorage emoji caches
   const keysToRemove = [
     "emoji-data-cache",
@@ -41,7 +39,6 @@ async function clearStaleCaches(): Promise<void> {
   keysToRemove.forEach(key => {
     if (localStorage.getItem(key)) {
       localStorage.removeItem(key)
-      console.log(`[MobileFetch] Cleared localStorage: ${key}`)
     }
   })
 
@@ -57,15 +54,12 @@ async function clearStaleCaches(): Promise<void> {
           db.name.includes("slack")
         )) {
           window.indexedDB.deleteDatabase(db.name)
-          console.log(`[MobileFetch] Deleted IndexedDB: ${db.name}`)
         }
       }
     }
   } catch (e) {
     console.warn("[MobileFetch] Could not enumerate IndexedDB databases:", e)
   }
-
-  console.log("[MobileFetch] Cache clearing complete")
 }
 
 /**
@@ -76,12 +70,6 @@ export async function fetchEmojiDataWithMobileAuth(
   params: MobileAuthParams
 ): Promise<Emoji[]> {
   const { token, userId, teamId, cookie } = params
-
-  console.log("[MobileFetch] Starting emoji fetch with mobile auth")
-  console.log("[MobileFetch] TeamId:", teamId)
-  console.log("[MobileFetch] UserId:", userId)
-  console.log("[MobileFetch] Token prefix:", token.substring(0, 15) + "...")
-  console.log("[MobileFetch] Cookie present:", !!cookie)
 
   // Clear stale caches before fetching fresh data to ensure consistency
   await clearStaleCaches()
@@ -115,8 +103,6 @@ export async function fetchEmojiDataWithMobileAuth(
       },
     }
 
-    console.log("[MobileFetch] Sending request to API proxy")
-
     const response = await fetch("/api/slack-emojis", {
       method: "POST",
       headers: {
@@ -132,7 +118,6 @@ export async function fetchEmojiDataWithMobileAuth(
     }
 
     const data = await response.json()
-    console.log("[MobileFetch] Received response:", Object.keys(data))
 
     // Handle different response formats
     let emojis: Emoji[] = []
@@ -144,8 +129,6 @@ export async function fetchEmojiDataWithMobileAuth(
     } else if (data.emoji_list && Array.isArray(data.emoji_list)) {
       emojis = data.emoji_list
     }
-
-    console.log("[MobileFetch] Processed", emojis.length, "emojis")
 
     // Dispatch event to notify EmojiDataProvider
     if (emojis.length > 0) {
@@ -164,8 +147,6 @@ export async function fetchEmojiDataWithMobileAuth(
           },
         })
       )
-
-      console.log("[MobileFetch] Dispatched emojiDataUpdated event")
     }
 
     return emojis

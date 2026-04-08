@@ -23,7 +23,6 @@ export class VideoProcessor {
       })
       
       this.isLoaded = true
-      console.log('FFmpeg loaded successfully')
     } catch (error) {
       console.error('Failed to load FFmpeg:', error)
       this.isLoaded = false
@@ -98,7 +97,6 @@ export class VideoProcessor {
         const data = await this.ffmpeg.readFile(outputName)
         const blob = new Blob([data], { type: 'image/gif' })
 
-        console.log(`GIF created with settings: fps=${settings.fps}, colors=${settings.colors}, size=${blob.size} bytes`)
 
         // If it's under the size limit, we're done!
         if (blob.size <= maxFileSize) {
@@ -228,7 +226,6 @@ export class VideoProcessor {
       const uint8Data = new Uint8Array(data as Uint8Array)
       const blob = new Blob([uint8Data], { type: 'video/mp4' })
 
-      console.log(`MP4 created: ${frames.length} frames at ${fps}fps, size=${blob.size} bytes`)
 
       // Clean up frames
       for (let i = 0; i < frames.length; i++) {

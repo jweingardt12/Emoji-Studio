@@ -237,7 +237,6 @@ export function logApiRequest(
   }
   
   // In production, send to logging service
-  console.log("API Request:", JSON.stringify(logData))
 }
 
 /**

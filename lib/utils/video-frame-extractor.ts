@@ -33,7 +33,6 @@ export class VideoFrameExtractor {
           const frameInterval = 1 / targetFps // Extract at target FPS
           const totalFrames = Math.ceil(duration * targetFps)
 
-          console.log(`Video duration: ${duration}s, extracting ${totalFrames} frames at ${targetFps}fps`)
           onProgress?.(10, `Processing ${duration.toFixed(1)}s video...`)
 
           canvas.width = video.videoWidth

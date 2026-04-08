@@ -380,14 +380,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       if (typeof window !== "undefined") {
         const storedCurl = localStorage.getItem("slackCurlCommand")
         const storedData = localStorage.getItem("emojiData")
-        const hadCurl = hasCurl
         setHasCurl(!!storedCurl)
         setSlackLoaded(!!storedData && storedData !== "[]" && JSON.parse(storedData).length > 0)
 
-        // Log when the curl command status changes
-        if (!!storedCurl !== hadCurl) {
-          console.log("Curl command status changed:", !!storedCurl ? "Available" : "Not available")
-        }
       }
     }
     updateCurlState()
@@ -406,7 +401,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleRefresh = async () => {
     // If we're in demo mode (no real data), don't show the modal - just return early
     if (!hasRealData) {
-      console.log("In demo mode, refresh not available")
       return
     }
 
@@ -417,7 +411,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     if (extensionToken && extensionCookie && workspace) {
       // We have extension auth data, construct a curl command from it
-      console.log("Using extension auth data for refresh")
       const timestamp = Math.floor(Date.now() / 1000)
       const curlCommand = `curl 'https://${workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
         -H 'accept: */*' \
@@ -437,11 +430,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     // Fall back to checking for a stored curl command
     const lastCurl = typeof window !== "undefined" ? localStorage.getItem("slackCurlCommand") : null
-    console.log("Refresh clicked, curl command found:", !!lastCurl)
 
     // Only proceed if the curl command exists and is not just whitespace
     if (!lastCurl || !lastCurl.trim()) {
-      console.log("No valid curl command found, opening modal")
       setModalOpen(true)
       return
     }
@@ -476,8 +467,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         formData["count"] = "20000"
       }
 
-      console.log("Making direct request to API proxy with curl data")
-
       // Make the request to our API endpoint - EXACT SAME CODE AS SlackCurlInput
       const response = await fetch("/api/slack-emojis", {
         method: "POST",
@@ -505,17 +494,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
 
       const data = await response.json()
-      console.log("API response:", data)
 
       // Process the emoji data - similar to SlackCurlInput
       let emojiArray = []
       if (data.emojis && Array.isArray(data.emojis)) {
         // Handle the response from our API which returns { emojis: [...] }
         emojiArray = data.emojis
-        console.log(`Found ${emojiArray.length} emojis in data.emojis`);
       } else if (data.emoji && Array.isArray(data.emoji)) {
         emojiArray = data.emoji
-        console.log(`Found ${emojiArray.length} emojis in data.emoji`);
       } else if (data.slackResponse && data.slackResponse.emoji) {
         // Convert emoji object to array if needed
         const emojiObj = data.slackResponse.emoji
@@ -528,19 +514,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             created: Math.floor(Date.now() / 1000),
             user_display_name: "",
           }))
-          console.log(`Converted ${emojiArray.length} emojis from data.slackResponse.emoji object`);
         } else if (Array.isArray(emojiObj)) {
           emojiArray = emojiObj;
-          console.log(`Found ${emojiArray.length} emojis in data.slackResponse.emoji array`);
         }
       }
-      console.log(`Total emojis to process: ${emojiArray.length}`);
-
-      // Log the first emoji to see its structure
-      if (emojiArray.length > 0) {
-        console.log('First emoji in array:', emojiArray[0]);
-      }
-
       // Process the emoji array with consistent fields
       const recentData = emojiArray.map((emoji: any) => ({
         name: emoji.name,
@@ -557,35 +534,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         aliases: emoji.aliases || [],
       }))
 
-      // Log the first processed emoji to see its structure
-      if (recentData.length > 0) {
-        console.log('First processed emoji:', recentData[0]);
-        console.log('Newest emoji (by created timestamp):', recentData.reduce((newest: any, emoji: any) =>
-          emoji.created > newest.created ? emoji : newest
-        ));
-      }
-
       if (recentData && Array.isArray(recentData) && recentData.length > 0) {
         // Sort by created timestamp descending (newest first)
         const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0));
-        console.log(`About to update context with ${sortedData.length} emojis`);
-        console.log('Newest 5 emojis after sorting:', sortedData.slice(0, 5).map(e => ({
-          name: e.name,
-          created: e.created,
-          date: new Date(e.created * 1000).toISOString()
-        })));
         setEmojiData(sortedData)
         const workspaceName = parsed.workspace || "slack-workspace"
         setWorkspace(workspaceName)
         setHasRealData(true)
         setSlackLoaded(true)
-        console.log('Saving to localStorage...');
         safePersistEmojiDataToLocalStorage(sortedData, { source: "app-sidebar" })
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-        console.log(`Successfully loaded ${sortedData.length} emojis from ${workspaceName}`)
-        console.log('Dispatching emojiDataUpdated event...');
         window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
           detail: {
             emojiData: sortedData,
@@ -593,7 +553,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             timestamp: Date.now()
           }
         }))
-        console.log('Event dispatched!');
       } else {
         toast.error("Failed to load emojis", {
           description: "No emoji data returned from Slack. Please check your curl command in Settings or try again later.",
@@ -704,37 +663,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
-  // Handler for navigation (close sidebar on mobile)
-  // Use Sidebar context to close the sidebar on mobile
-  // Remove direct access to window.__SIDEBAR_CTX__ as it's not properly typed
-  const sidebarCtx = typeof window !== "undefined" ? ((window as any).__SIDEBAR_CTX__ || null) : null;
   const { trackEmojiFilter, trackNavigation, trackFeedbackClicked } = useAnalytics();
-
-  // Use the sidebar hook safely
-  let isMobile = false;
-  let setOpenMobile = (open: boolean) => { };
-
-  try {
-    // This will only work in components rendered inside the SidebarProvider
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const sidebarContext = useSidebar();
-    isMobile = sidebarContext.isMobile;
-    setOpenMobile = sidebarContext.setOpenMobile;
-  } catch { }
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleNavigate = (navItem?: { title: string; url: string; action?: string }) => {
-    console.log('Navigation handler called with:', navItem);
-
     // Close mobile sidebar if on mobile
     if (isMobile) setOpenMobile(false);
 
     // Track the navigation event if we have a nav item
     if (navItem && navItem.url && !navItem.url.startsWith('#')) {
       try {
-        console.log('About to track navigation event for:', navItem.title);
-
-        // Use our analytics utility to track navigation
-        console.log('Using trackNavigation to track page view');
         // Use the dedicated navigation tracking function
         trackNavigation(navItem.title, navItem.url);
 
@@ -742,8 +680,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         if (navItem.action === 'feedback') {
           trackFeedbackClicked();
         }
-
-        console.log('Navigation tracking complete for:', navItem.title);
 
         // NavMain handles the actual navigation, we just track and close sidebar
       } catch (error) {

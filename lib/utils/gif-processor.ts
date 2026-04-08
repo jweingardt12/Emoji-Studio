@@ -5,23 +5,17 @@ import { AnimatedGifProcessor } from './animated-gif-processor'
 export class GifProcessor {
   static async processGif(file: File, targetSize: number, maxFileSize: number): Promise<Blob> {
     // First, verify this is actually a GIF file
-    console.log(`Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`)
-    
     // Check if it's actually a GIF by examining the file content
     const isAnimatedGif = await this.isAnimatedGif(file)
-    console.log(`File is animated GIF: ${isAnimatedGif}`)
     
     // Check if the original is already within limits
     const img = await this.loadImage(file)
     if (file.size <= maxFileSize && img.width <= targetSize && img.height <= targetSize) {
-      console.log('GIF is already within size limits, returning original')
       return file
     }
 
     // Try to process with proper frame extraction first
     try {
-      console.log('Processing animated GIF with frame extraction...')
-      console.log(`Original GIF dimensions: ${img.width}x${img.height}`)
       URL.revokeObjectURL(img.src)
       
       return await GifFrameExtractor.processAnimatedGif(file, targetSize, maxFileSize)
@@ -273,16 +267,12 @@ export class GifProcessor {
       
       // Check for GIF signature (GIF87a or GIF89a)
       if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
-        console.log('File has GIF signature')
-        
         // Try to parse and check frame count
         try {
           const info = await this.getGifInfo(file)
-          console.log(`GIF has ${info.frameCount} frames`)
-          
+
           // If we couldn't extract frames but file is large, assume it's animated
           if (info.frameCount === 0 && file.size > 100 * 1024) {
-            console.log('No frames extracted but file is large, assuming animated GIF')
             return true
           }
           

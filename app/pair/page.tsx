@@ -40,11 +40,8 @@ export default function PairPage() {
           let curl: string
           try {
             curl = await decryptCurlCode(compressedData)
-            console.log("Decrypted curl command successfully")
           } catch (decryptError) {
-            console.warn("Failed to decrypt pairing code, attempting legacy decode:", decryptError)
             curl = decompressCurl(compressedData)
-            console.log("Decompressed legacy curl command successfully")
           }
           await handleCurlImport(curl)
         } catch (error) {

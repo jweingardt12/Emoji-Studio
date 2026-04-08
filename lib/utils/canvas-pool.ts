@@ -48,7 +48,6 @@ export class CanvasPool {
    */
   release(canvas: HTMLCanvasElement): void {
     if (!this.canvasesInUse.has(canvas)) {
-      console.warn('Canvas was not acquired from this pool')
       return
     }
     

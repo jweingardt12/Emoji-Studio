@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
+import { useIsClient } from "@/hooks/use-is-client"
 import Leaderboard from "@/components/leaderboard"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -21,15 +22,12 @@ import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
   const track = useTrack();
-  // Add client-side only rendering
-  const [isClient, setIsClient] = useState(false)
+  const isClient = useIsClient()
   const isMobile = useIsMobile()
   const [pageVisible, setPageVisible] = useState(false)
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
   
   useEffect(() => {
-    setIsClient(true)
-    
     // Trigger fade in animation after a short delay
     const timer = setTimeout(() => {
       setPageVisible(true)

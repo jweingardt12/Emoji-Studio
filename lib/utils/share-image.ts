@@ -528,8 +528,6 @@ export async function prefetchImagesToDataUrls(
     }
   })
 
-  console.log(`[prefetchImagesToDataUrls] Fetching ${uniqueSrcs.size} unique images...`)
-
   // Fetch each unique image with cache-busting
   await Promise.all(
     Array.from(uniqueSrcs).map(async (src) => {
@@ -556,7 +554,6 @@ export async function prefetchImagesToDataUrls(
     })
   )
 
-  console.log(`[prefetchImagesToDataUrls] Successfully cached ${cache.size} images as data URLs`)
   return cache
 }
 

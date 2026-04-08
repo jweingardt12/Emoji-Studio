@@ -87,10 +87,6 @@ export class ImprovedGIFEncoder {
         if (blob.type !== 'image/gif') {
           blob = new Blob([blob], { type: 'image/gif' })
         }
-        console.log('[ImprovedGIFEncoder] Rendered GIF:', {
-          size: blob.size,
-          type: blob.type
-        })
         resolve(blob)
       })
       

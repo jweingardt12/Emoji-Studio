@@ -18,10 +18,8 @@ export function compressCurl(curlCommand: string): string {
     const dMatch = parsed.cookie.match(/\bd=([^;]+)/)
     if (dMatch) {
       dValue = dMatch[1]
-      console.log('Extracted d cookie value, length:', dValue.length)
     } else {
       // Fallback to full cookie if d= not found
-      console.warn('Could not extract d cookie, using full cookie')
       dValue = parsed.cookie
     }
   }
@@ -35,15 +33,13 @@ export function compressCurl(curlCommand: string): string {
   
   // Convert to JSON and compress using base64
   const json = JSON.stringify(essentials)
-  console.log('Compressed JSON length:', json.length, 'vs original curl:', curlCommand.length)
-  
+
   // Use URL-safe base64 encoding
   const encoded = btoa(json)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '')
   
-  console.log('Final compressed length:', encoded.length)
   return encoded
 }
 
@@ -72,11 +68,9 @@ export function decompressCurl(compressed: string): string {
     if (essentials.d) {
       // New optimized format - just the d cookie value
       cookie = `d=${essentials.d}`
-      console.log('Decompressing optimized format with d cookie')
     } else if (essentials.c) {
       // Old format - full cookie string
       cookie = essentials.c
-      console.log('Decompressing legacy format with full cookie')
     }
     
     if (!token || !cookie || !workspace) {

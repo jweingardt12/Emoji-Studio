@@ -57,12 +57,9 @@ function generateXId() {
  */
 export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
   try {
-    console.log("fetchSlackEmojis: incoming curlCommand:\n", curlCommand)
-
     // Extract _x_id directly from the curl command to ensure it's included
     const xIdMatch = curlCommand.match(/[?&]_x_id=([^&\s'"]+)/)
     const xId = xIdMatch ? xIdMatch[1] : generateXId()
-    console.log("fetchSlackEmojis: extracted/generated _x_id =", xId)
 
     // Convert curl command to request object
     const request = parseCurlToRequest(curlCommand)
@@ -78,17 +75,13 @@ export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
         const separator = request.url.includes("?") ? "&" : "?"
         request.url = `${request.url}${separator}_x_id=${xId}`
       }
-      console.log("fetchSlackEmojis: updated URL with _x_id =", request.url)
     }
 
-    console.log("fetchSlackEmojis: parsed request.url =", request.url)
-    console.log("fetchSlackEmojis: full parsed request =", request)
     if (!request.url) {
       throw new Error(`Invalid request object: missing URL. Parsed URL="${request.url}"`)
     }
 
     // Make the request to our backend proxy
-    console.log("fetchSlackEmojis: making request to backend proxy with request:", JSON.stringify(request, null, 2))
     const response = await fetch("/api/slack-emojis", {
       method: "POST",
       headers: {
@@ -96,8 +89,6 @@ export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
       },
       body: JSON.stringify({ curlRequest: request }),
     })
-    console.log("fetchSlackEmojis: received response with status:", response.status)
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
       console.error("fetchSlackEmojis: Error from API:", errorData)
@@ -105,24 +96,17 @@ export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
     }
 
     const data = await response.json()
-    console.log("fetchSlackEmojis: response data:", data)
 
     if (data.error) {
       console.error("fetchSlackEmojis: Error in response data:", data.error)
-      console.log("fetchSlackEmojis: Full Slack response:", data.slackResponse || "No Slack response data")
     }
 
     if (!data.emoji || (Array.isArray(data.emoji) && data.emoji.length === 0)) {
-      console.warn("fetchSlackEmojis: No emoji data returned")
       if (data.slackResponse) {
-        console.log("fetchSlackEmojis: Examining Slack response for emoji data...")
         const slackData = data.slackResponse
-        console.log("fetchSlackEmojis: Slack response keys:", Object.keys(slackData))
 
         if (slackData.emoji) {
-          console.log("fetchSlackEmojis: Slack response contains emoji data of type:", typeof slackData.emoji)
           if (typeof slackData.emoji === "object" && !Array.isArray(slackData.emoji)) {
-            console.log("fetchSlackEmojis: Converting emoji object to array...")
             const emojiArray = Object.entries(slackData.emoji).map(([name, url]) => ({
               name,
               url,
@@ -166,8 +150,6 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
   try {
     // Collapse escaped newlines so URL is contiguous
     const cmd = curlCommand.replace(/\s*\n/g, " ");
-    console.log("parseCurlToRequest: Processing curl command (length):", curlCommand.length);
-
     // Extract the URL
     const urlMatch = cmd.match(/curl\s+['"](https?:[^'"]+)['"]/i) || 
                    cmd.match(/--url\s+['"](https?:[^'"]+)['"]/i);
@@ -187,8 +169,6 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
         }
       }
     }
-    console.log("parseCurlToRequest: extracted url =", url);
-
     // Extract method (default to POST for form data)
     const methodMatch = cmd.match(/--request\s+([A-Z]+)/i) || cmd.match(/-X\s+([A-Z]+)/i);
     const hasFormData = cmd.includes("--form") || cmd.includes("-F");
@@ -198,7 +178,6 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
     const isEmojiEndpoint = url.includes("/emoji.") || url.includes("/api/emoji") || Boolean(url.match(/emoji\.[a-zA-Z]+/));
     if (isEmojiEndpoint && !methodMatch) {
       method = "POST";
-      console.log("parseCurlToRequest: Using POST method for emoji endpoint");
     }
 
     // Extract headers
@@ -269,13 +248,10 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
 
       if (tokenInUrlMatch) {
         formData["token"] = tokenInUrlMatch[1];
-        console.log("parseCurlToRequest: Found token in URL");
       } else if (tokenInDataMatch) {
         formData["token"] = tokenInDataMatch[1];
-        console.log("parseCurlToRequest: Found token in data");
       } else if (xoxcMatch) {
         formData["token"] = xoxcMatch[0];
-        console.log("parseCurlToRequest: Found xoxc token in command");
       }
     }
 
@@ -283,11 +259,6 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
     if (url.includes("emoji") && !formData["count"]) {
       formData["count"] = "20000";
     }
-
-    console.log("Parsed URL:", url);
-    console.log("Parsed method:", method);
-    console.log("Parsed headers count:", Object.keys(headers).length);
-    console.log("Parsed form data count:", Object.keys(formData).length);
 
     // PATCH: If method is GET, do not include body/formData/data (GET must not have a body)
     if (method === "GET") {

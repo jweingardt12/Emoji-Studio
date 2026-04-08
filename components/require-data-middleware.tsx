@@ -41,7 +41,6 @@ export function RequireDataMiddleware({ children }: { children: React.ReactNode 
         setRedirecting(true)
         // Use a small delay to avoid race conditions with chunk loading
         setTimeout(() => {
-          console.log(`Redirecting from ${pathname} to /settings (no data available)`)
           router.push("/settings")
         }, 50)
       }

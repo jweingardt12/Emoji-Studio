@@ -98,11 +98,6 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   React.useEffect(() => {
     const handleEmojiDataUpdated = (event: Event) => {
-      console.log('ChartAreaInteractive: emojiDataUpdated event received, forcing re-render');
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.emojiData) {
-        console.log(`ChartAreaInteractive: Event contains ${customEvent.detail.emojiData.length} emojis`);
-      }
       setNow(new Date()); // Update the timestamp to force recalculation
     };
 
@@ -204,14 +199,11 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   // Handle chart clicks - full functionality on desktop, dots only on mobile
   const handleDataPointClick = (d: any) => {
-    console.log('Chart clicked:', d);
-
     // Handle the new event structure (chart area clicks)
     if (d && d.activeLabel && typeof d.activeIndex !== 'undefined') {
       const index = parseInt(d.activeIndex);
       if (chartData && chartData[index]) {
         const payload = chartData[index];
-        console.log('Processing data point:', payload);
         processDataPoint(payload);
         return;
       }
@@ -220,7 +212,6 @@ export function ChartAreaInteractive() {
     // Handle direct dot click (when d is the data point itself)
     if (d && d.payload && d.payload.date) {
       const payload = d.payload;
-      console.log('Direct dot click detected, payload:', payload);
       processDataPoint(payload);
       return;
     }
@@ -229,7 +220,6 @@ export function ChartAreaInteractive() {
     if (d?.activePayload?.length && emojiData.length) {
       const payload = d.activePayload[0].payload;
       if (payload?.date) {
-        console.log('Chart area click detected, payload:', payload);
         processDataPoint(payload);
       }
     }
@@ -237,7 +227,6 @@ export function ChartAreaInteractive() {
 
   const processDataPoint = (payload: any) => {
     if (!payload?.date || !emojiData.length) return;
-    console.log('Processing payload:', payload);
 
     try {
       const monthly =

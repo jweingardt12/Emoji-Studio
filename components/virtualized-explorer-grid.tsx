@@ -5,7 +5,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { Emoji } from '@/lib/services/emoji-service'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Copy, ExternalLink, Image as ImageIcon, CheckSquare } from 'lucide-react'
 import { OptimizedEmojiImage } from '@/components/optimized-emoji-image'
 import { cn } from '@/lib/utils'
@@ -112,6 +112,8 @@ export function VirtualizedExplorerGrid({
     <div
       ref={parentRef}
       className="h-[calc(100vh-300px)] overflow-auto"
+      role="grid"
+      aria-label={`Emoji grid, ${emojis.length} items`}
       style={{ contain: 'strict' }}
     >
       <div
@@ -134,7 +136,7 @@ export function VirtualizedExplorerGrid({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 px-1 py-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 px-1 py-2" role="row">
                 {row.map((emoji) => {
                   const isNew = showNewBadge && sinceFilter && emoji.created && emoji.created >= sinceFilter
                   const isSelected = selectedEmojis.has(emoji.name) && bulkSelectionMode
@@ -142,13 +144,22 @@ export function VirtualizedExplorerGrid({
                   return (
                     <div
                       key={`${emoji.name}-${emoji.url}`}
+                      role="gridcell"
+                      tabIndex={0}
+                      aria-label={`:${emoji.name}: emoji${emoji.user_display_name ? ` by ${emoji.user_display_name}` : ''}${isSelected ? ', selected' : ''}`}
                       className={cn(
-                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer w-full overflow-hidden",
+                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         isNew && "ring-2 ring-primary/50 bg-primary/5",
                         isSelected && "ring-2 ring-primary bg-primary/5 border-primary",
                         !bulkSelectionMode && "hover:border-foreground/20"
                       )}
                       onClick={(e) => handleEmojiClick(emoji, e)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleEmojiClick(emoji, e as unknown as React.MouseEvent)
+                        }
+                      }}
                     >
                       {/* Bulk Selection Checkbox */}
                       {bulkSelectionMode && (
@@ -206,53 +217,47 @@ export function VirtualizedExplorerGrid({
                       {/* Quick Actions - Desktop Only */}
                       {!isMobile && !bulkSelectionMode && (
                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={(e) => copyEmojiName(emoji, e)}
-                                >
-                                  <Copy className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy name</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => copyEmojiName(emoji, e)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy name</TooltipContent>
+                          </Tooltip>
 
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={(e) => copyEmojiUrl(emoji, e)}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy URL</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => copyEmojiUrl(emoji, e)}
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy URL</TooltipContent>
+                          </Tooltip>
 
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={(e) => copyImageToClipboard(emoji, e)}
-                                >
-                                  <ImageIcon className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy image</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => copyImageToClipboard(emoji, e)}
+                              >
+                                <ImageIcon className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Copy image</TooltipContent>
+                          </Tooltip>
                         </div>
                       )}
                     </div>

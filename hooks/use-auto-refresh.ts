@@ -119,8 +119,6 @@ export function useAutoRefresh() {
         const workspaceName = parsed.workspace || "slack-workspace"
         const syncTimestamp = Date.now();
 
-        console.log(`[AutoRefresh] Updating ${sortedData.length} emojis with timestamp ${syncTimestamp}`)
-
         // Update context immediately (optimistic update)
         setEmojiData(sortedData)
         setWorkspace(workspaceName)
@@ -134,8 +132,6 @@ export function useAutoRefresh() {
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
 
-        console.log(`[AutoRefresh] Successfully saved ${sortedData.length} emojis`)
-
         // Dispatch event AFTER storage is complete with all data included
         window.dispatchEvent(new CustomEvent("emojiDataUpdated", {
           detail: { emojiData: sortedData, workspace: workspaceName, timestamp: syncTimestamp }
@@ -143,7 +139,6 @@ export function useAutoRefresh() {
       }
     } catch (error) {
       // Silent failure for auto-refresh
-      console.log("Auto-refresh failed:", error)
     } finally {
       isRefreshing.current = false
     }

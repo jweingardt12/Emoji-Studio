@@ -50,7 +50,7 @@ class PerformanceTracker {
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true })
       this.observers.push(lcpObserver)
     } catch (e) {
-      console.debug('LCP observer not supported')
+      // LCP observer not supported
     }
 
     // CLS Observer
@@ -67,7 +67,7 @@ class PerformanceTracker {
       clsObserver.observe({ type: 'layout-shift', buffered: true })
       this.observers.push(clsObserver)
     } catch (e) {
-      console.debug('CLS observer not supported')
+      // CLS observer not supported
     }
 
     // FID Observer
@@ -80,7 +80,7 @@ class PerformanceTracker {
       fidObserver.observe({ type: 'first-input', buffered: true })
       this.observers.push(fidObserver)
     } catch (e) {
-      console.debug('FID observer not supported')
+      // FID observer not supported
     }
 
     // Navigation timing for TTFB and FCP
@@ -98,7 +98,7 @@ class PerformanceTracker {
       navigationObserver.observe({ type: 'paint', buffered: true })
       this.observers.push(navigationObserver)
     } catch (e) {
-      console.debug('Navigation observer not supported')
+      // Navigation observer not supported
     }
   }
 
@@ -224,8 +224,7 @@ export function useRenderTimeTracker(componentName: string) {
     tracker.trackComponentRender(renderStartTime.current, renderEndTime)
 
     if (process.env.NODE_ENV === 'development') {
-      const renderTime = renderEndTime - renderStartTime.current
-      console.log(`${componentName} render time: ${renderTime.toFixed(2)}ms`)
+      // render time tracked internally
     }
   })
 

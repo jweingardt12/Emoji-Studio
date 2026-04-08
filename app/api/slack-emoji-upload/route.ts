@@ -27,14 +27,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log("[Slack Upload] Request received:", {
-      url: url.substring(0, 50) + '...',
-      fileName,
-      mimeType,
-      blobType: blob.startsWith('data:') ? 'data URL' : blob.startsWith('blob:') ? 'blob URL' : 'unknown',
-      blobLength: blob.length
-    })
-
     // Convert the data/blob URL back to binary
     let blobData: Blob
     if (blob.startsWith('data:')) {
@@ -50,12 +42,10 @@ export async function POST(request: Request) {
       const base64Data = parts[1]
       const binaryData = Buffer.from(base64Data, 'base64')
       blobData = new Blob([binaryData], { type: mimeType || 'image/png' })
-      console.log("[Slack Upload] Converted data URL to blob, size:", binaryData.length)
     } else if (blob.startsWith('blob:') || blob.startsWith('http')) {
       // Handle blob URL or HTTP URL
       try {
         blobData = await fetch(blob).then(res => res.blob())
-        console.log("[Slack Upload] Fetched blob from URL, size:", blobData.size)
       } catch (fetchError) {
         console.error("[Slack Upload] Failed to fetch blob:", fetchError)
         return NextResponse.json(
@@ -103,12 +93,6 @@ export async function POST(request: Request) {
       responseData = { error: "Invalid response from Slack", responseText }
     }
 
-    console.log("[Slack Upload] Slack API response:", {
-      ok: responseData.ok,
-      error: responseData.error,
-      status: response.status
-    })
-
     // Check if Slack returned an error
     if (!response.ok || responseData.error || responseData.ok === false) {
       const slackError = responseData.error || "Unknown error"
@@ -130,7 +114,6 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log("[Slack Upload] Upload successful for:", fileName)
     return NextResponse.json({
       success: true,
       data: responseData,

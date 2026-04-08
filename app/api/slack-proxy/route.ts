@@ -34,10 +34,6 @@ export async function POST(req: NextRequest) {
       body: req.body,
       redirect: "manual", 
     })
-    // Debug: log Slack's response status and a snippet of the body
-    const clone = slackRes.clone()
-    const text = await clone.text()
-    console.log("Slack response status:", slackRes.status, "body snippet:", text.slice(0, 500))
     // Stream Slack's response back
     const resHeaders = new Headers()
     slackRes.headers.forEach((v, k) => {

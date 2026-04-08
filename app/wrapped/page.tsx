@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
+import { useIsClient } from "@/hooks/use-is-client"
 import { useSearchParams } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useWrappedStats } from "@/lib/hooks/use-wrapped-stats"
@@ -17,7 +18,7 @@ import { fetchEmojiDataWithMobileAuth, getMobileUserId } from "@/lib/services/mo
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 
 function WrappedPageContent() {
-  const [isClient, setIsClient] = useState(false)
+  const isClient = useIsClient()
   const [showShareModal, setShowShareModal] = useState(false)
   const [storyComplete, setStoryComplete] = useState(false)
   const [showStory, setShowStory] = useState(false)
@@ -54,7 +55,6 @@ function WrappedPageContent() {
     if (!hasMobileParams) return
 
     const handleMobileAuth = async () => {
-      console.log("[Wrapped] Mobile auth params detected, fetching emoji data...")
       setMobileAuthLoading(true)
       setCameFromMobile(true)
 
@@ -85,7 +85,6 @@ function WrappedPageContent() {
           cookie: mobileCookie || undefined,
         })
 
-        console.log("[Wrapped] Mobile auth fetch completed")
       } catch (error) {
         console.error("[Wrapped] Mobile auth fetch failed:", error)
       } finally {
@@ -97,7 +96,6 @@ function WrappedPageContent() {
   }, [hasMobileParams, mobileToken, mobileUserId, mobileTeamId, mobileCookie, mobileWorkspace])
 
   useEffect(() => {
-    setIsClient(true)
     // Track page view
     track("wrapped_page_viewed", {
       has_data: hasData,
@@ -137,7 +135,6 @@ function WrappedPageContent() {
   // Auto-start wrapped experience when coming from mobile app
   useEffect(() => {
     if (cameFromMobile && hasMinimumData && stats && !showStory && !mobileAuthLoading) {
-      console.log("[Wrapped] Auto-starting wrapped experience for mobile user")
       setShowStory(true)
     }
   }, [cameFromMobile, hasMinimumData, stats, showStory, mobileAuthLoading])

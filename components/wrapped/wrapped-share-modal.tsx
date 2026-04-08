@@ -180,7 +180,6 @@ export function WrappedShareModal({
     if (open) {
       detectVideoEncoder().then((info) => {
         setVideoEncoderType(info.type)
-        console.log(`[ShareModal] Video encoder: ${info.type}${info.reason ? ` (${info.reason})` : ""}`)
       })
       preloadVideoEncoder().catch((error) => {
         console.warn("Video encoder preload failed:", error)
@@ -378,7 +377,6 @@ export function WrappedShareModal({
 
         // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
         const imageCache = await prefetchImagesToDataUrls(fullElement)
-        console.log(`[Video] Pre-fetched ${imageCache.size} images as data URLs`)
 
         blob = await generateVideo(
           async (frameIndex: number) => {
@@ -417,7 +415,6 @@ export function WrappedShareModal({
 
         // Pre-fetch all emoji images as base64 data URLs BEFORE frame capture
         const imageCache = await prefetchImagesToDataUrls(fullElement)
-        console.log(`[GIF] Pre-fetched ${imageCache.size} images as data URLs`)
 
         blob = await generateGif(
           async (frameIndex: number) => {

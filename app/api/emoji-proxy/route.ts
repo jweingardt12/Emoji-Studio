@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(`Proxying image: ${url}`)
-
     // Fetch the image from the external URL
     const response = await fetch(url, {
       headers: {
@@ -43,8 +41,6 @@ export async function GET(request: NextRequest) {
 
     // Get the content type from the response
     const contentType = response.headers.get("content-type") || "image/png"
-
-    console.log(`Successfully proxied image: ${url} (${contentType}, ${imageData.byteLength} bytes)`)
 
     // Return the image with appropriate headers
     return new NextResponse(imageData, {

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, Suspense, lazy, useRef } from "react"
+import { useIsClient } from "@/hooks/use-is-client"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useTrack } from "@/lib/hooks/use-track"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -25,17 +26,7 @@ const TabLoading = () => (
   </div>
 )
 
-// Helper to format date for display
-const format = (date: Date | number, formatStr: string) => {
-  const d = typeof date === 'number' ? new Date(date * 1000) : date
-  if (formatStr === 'MMM d, yyyy') {
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-  if (formatStr === 'h:mm a') {
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  }
-  return d.toISOString()
-}
+import { formatDate as format } from "@/lib/utils/format-date"
 
 // Component to display emoji names with tooltip for long names
 const EmojiName = ({ name }: { name: string }) => {
@@ -69,8 +60,7 @@ const timeRangeOptions: { value: TimeRange; label: string }[] = [
 ]
 
 export default function VisualizationsPage() {
-  // Add client-side only rendering to avoid hydration mismatches
-  const [isClient, setIsClient] = useState(false)
+  const isClient = useIsClient()
   const [activeEmojiType, setActiveEmojiType] = useState<"image" | "gif">("image")
   const [selectedNameLength, setSelectedNameLength] = useState<number | null>(null)
   const [emojisWithLength, setEmojisWithLength] = useState<any[]>([])
@@ -86,10 +76,6 @@ export default function VisualizationsPage() {
   const [activeTab, setActiveTab] = useState<string>("overview")
   const track = useTrack()
   const hasTrackedPage = useRef(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
 
   // Track page view
   useEffect(() => {

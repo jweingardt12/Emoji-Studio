@@ -75,22 +75,6 @@ export default function AdaptiveEmojiGrid({
     performanceMetrics.estimatedMemoryMB
   ])
 
-  // Performance debugging info (only in development)
-  React.useEffect(() => {
-    if (showPerformanceInfo && process.env.NODE_ENV === 'development') {
-      console.log('🎯 Adaptive Grid Performance Metrics:', {
-        totalItems,
-        useVirtualized,
-        animationTier,
-        deviceMemory,
-        hardwareConcurrency,
-        estimatedMemoryMB: performanceMetrics.estimatedMemoryMB,
-        performanceScore: performanceMetrics.performanceScore,
-        recommendations: performanceMetrics.recommendations
-      })
-    }
-  }, [showPerformanceInfo, totalItems, useVirtualized, animationTier, deviceMemory, hardwareConcurrency, performanceMetrics])
-
   // Render the appropriate grid component
   if (useVirtualized) {
     return (

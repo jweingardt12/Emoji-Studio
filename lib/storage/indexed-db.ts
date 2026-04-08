@@ -51,7 +51,6 @@ class IndexedDBStorage {
         return;
       } catch (e) {
         // Database connection is stale, reset and reconnect
-        console.log('[IndexedDB] Connection stale, reconnecting...');
         this.db = null;
         this.initPromise = null;
       }
@@ -81,13 +80,11 @@ class IndexedDBStorage {
 
         // Handle database being deleted while we have it open
         this.db.onversionchange = () => {
-          console.log('[IndexedDB] Database version change detected, closing connection');
           this.db?.close();
           this.db = null;
           this.initPromise = null;
         };
 
-        console.log('IndexedDB initialized successfully');
         resolve();
       };
 
@@ -310,7 +307,6 @@ export const emojiStorage = {
     try {
       await idb.setItem('emojis', 'emoji_data', dataWithMeta);
       savedToIndexedDB = true;
-      console.log(`[EmojiStorage] Saved ${emojis.length} emojis to IndexedDB with timestamp ${saveTimestamp}`);
     } catch (error) {
       console.warn('[EmojiStorage] IndexedDB save failed, will fall back to localStorage:', error);
     }
@@ -342,7 +338,6 @@ export const emojiStorage = {
             storedIn: 'localStorage'
           }));
           savedToLocalStorage = true;
-          console.log(`[EmojiStorage] Saved ${emojis.length} emojis to localStorage (IndexedDB fallback)`);
         }
       } catch (error) {
         console.error('[EmojiStorage] Failed to save to localStorage:', error);
@@ -356,7 +351,6 @@ export const emojiStorage = {
             storedIn: 'localStorage'
           }));
           savedToLocalStorage = true;
-          console.log(`[EmojiStorage] Saved via safePersist fallback`);
         }
       }
     }
@@ -383,12 +377,10 @@ export const emojiStorage = {
       const data = await idb.getItem('emojis', 'emoji_data');
       if (data) {
         if (data.emojis && data.timestamp) {
-          console.log(`[EmojiStorage] Loaded ${data.emojis.length} emojis from IndexedDB (timestamp: ${data.timestamp})`);
           return data;
         } else if (Array.isArray(data)) {
           // Old format - migrate it
           const migrated = { emojis: data, timestamp: Date.now(), version: 1 };
-          console.log(`[EmojiStorage] Migrating ${data.length} emojis from old format`);
           return migrated;
         }
       }
@@ -403,7 +395,6 @@ export const emojiStorage = {
         const emojis = JSON.parse(stored);
         const timestamp = meta?.timestamp || 0;
         const version = meta?.version || 1;
-        console.log(`[EmojiStorage] Loaded ${emojis.length} emojis from localStorage (timestamp: ${timestamp})`);
         return { emojis, timestamp, version };
       }
     } catch (error) {
@@ -446,7 +437,6 @@ export const emojiStorage = {
   },
 
   async clearEmojis(): Promise<void> {
-    console.log('[EmojiStorage] Clearing all emoji data');
     try {
       await idb.removeItem('emojis', 'emoji_data');
     } catch (error) {

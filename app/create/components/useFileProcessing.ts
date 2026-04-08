@@ -92,13 +92,6 @@ export function useFileProcessing({
     const files = filesToProcess || selectedFiles
     if (files.length === 0) return
 
-    // Check if any files are from URLs that might need special handling
-    for (const file of files) {
-      if (file.name.includes('tenor') || file.name.includes('giphy')) {
-        console.log('[processFiles] Detected URL-based GIF that may need special handling:', file.name)
-      }
-    }
-
     track("Emoji Creator: Processing Started", {
       fileCount: files.length,
       fileTypes: files.map(f => f.type),
@@ -131,11 +124,9 @@ export function useFileProcessing({
         if (isVideo) {
           try {
             const videoInfo = await VideoFrameExtractor.getVideoInfo(file)
-            console.log(`Video info: ${videoInfo.duration}ms, ${videoInfo.frameCount} frames at 10fps`)
 
             // If video would produce more than 50 frames, show frame editor
             if (videoInfo.frameCount > 50) {
-              console.log('Video has more than 50 frames, showing frame editor')
               setGifToEdit(file)
               setShowGifEditor(true)
               setIsProcessing(false)
@@ -176,17 +167,13 @@ export function useFileProcessing({
 
             // Only show editor for GIFs that don't meet requirements and are reasonable size
             if (!frameEditorDisabled && !meetsRequirements && file.size > 50 * 1024 && file.size < 100 * 1024 * 1024) {
-              console.log(`${isGif ? 'GIF' : 'Animated WebP'} needs optimization: ${img.width}x${img.height}, ${file.size} bytes`)
-
               // Additional check for extremely large dimensions
               if (img.width > 10000 || img.height > 10000) {
-                console.warn(`GIF dimensions too large for frame editor: ${img.width}x${img.height}`)
                 // Process normally without frame editor
               } else {
                 // Check if we've already failed to extract frames for this file
                 const fileKey = `${file.name}-${file.size}-${file.lastModified}`
                 if (failedFrameExtraction.has(fileKey)) {
-                  console.log('Skipping frame editor for file that already failed frame extraction:', file.name)
                   // Process normally without frame editor
                 } else {
                   // Show GIF frame editor
@@ -198,10 +185,6 @@ export function useFileProcessing({
                   return
                 }
               }
-            } else if (file.size >= 100 * 1024 * 1024) {
-              console.log(`${isGif ? 'GIF' : 'Animated WebP'} too large for frame editor (${(file.size / 1024 / 1024).toFixed(2)}MB), processing normally`)
-            } else {
-              console.log(`${isGif ? 'GIF' : 'Animated WebP'} already optimized or too small for frame editor: ${img.width}x${img.height}, ${file.size} bytes`)
             }
           } catch (error) {
             console.error('Error checking GIF dimensions:', error)

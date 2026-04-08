@@ -61,16 +61,17 @@ body {
   }
 }
 
-/* Native app-like scrolling */
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* Prevent double-tap zoom */
-  touch-action: manipulation;
-}
+/* Hide scrollbars on mobile for native app feel, show styled scrollbars on desktop */
+@media (max-width: 768px) {
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    touch-action: manipulation;
+  }
 
-*::-webkit-scrollbar {
-  display: none;
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Lock app frame for native feel */

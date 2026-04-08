@@ -9,7 +9,6 @@ export function ThemeTracker() {
 
   useEffect(() => {
     if (resolvedTheme) {
-      // console.log("Current theme resolved:", resolvedTheme);
       // The openpanel.identify() calls have been removed due to type issues.
       // We are now investigating if trackAttributes={true} in OpenPanelComponent
       // automatically captures the theme class from the <html> tag.

@@ -17,7 +17,6 @@ export function RefreshButton() {
   const handleRefresh = async () => {
     // If we're in demo mode (no real data), don't show the modal - just return early
     if (!hasRealData) {
-      console.log("In demo mode, refresh not available")
       return
     }
     
@@ -27,8 +26,6 @@ export function RefreshButton() {
     const workspace = typeof window !== "undefined" ? localStorage.getItem("workspace") : null
     
     if (extensionToken && extensionCookie && workspace) {
-      // We have extension auth data, construct a curl command from it
-      console.log("Using extension auth data for refresh")
       const timestamp = Math.floor(Date.now() / 1000)
       const curlCommand = `curl 'https://${workspace}.slack.com/api/emoji.adminList?_x_id=generated-${timestamp}&_x_version_ts=noversion&fp=98' \
         -H 'accept: */*' \
@@ -48,11 +45,9 @@ export function RefreshButton() {
     
     // Fall back to checking for a stored curl command
     const lastCurl = typeof window !== "undefined" ? localStorage.getItem("slackCurlCommand") : null
-    console.log("Refresh clicked, curl command found:", !!lastCurl)
-    
+
     // Only proceed if the curl command exists and is not just whitespace
     if (!lastCurl || !lastCurl.trim()) {
-      console.log("No valid curl command found")
       toast.error("No Slack connection found. Please connect your workspace first.")
       return
     }
@@ -84,8 +79,6 @@ export function RefreshButton() {
         formData["count"] = "20000"
       }
       
-      console.log("Making direct request to API proxy with curl data")
-      
       // Make the request to our API endpoint
       const response = await fetch("/api/slack-emojis", {
         method: "POST",
@@ -113,16 +106,13 @@ export function RefreshButton() {
       }
       
       const data = await response.json()
-      console.log("API response:", data)
       
       // Process the emoji data
       let emojiArray = []
       if (data.emojis && Array.isArray(data.emojis)) {
         emojiArray = data.emojis
-        console.log(`Found ${emojiArray.length} emojis in data.emojis`);
       } else if (data.emoji && Array.isArray(data.emoji)) {
         emojiArray = data.emoji
-        console.log(`Found ${emojiArray.length} emojis in data.emoji`);
       } else if (data.slackResponse && data.slackResponse.emoji) {
         const emojiObj = data.slackResponse.emoji
         if (typeof emojiObj === "object" && !Array.isArray(emojiObj)) {
@@ -134,14 +124,11 @@ export function RefreshButton() {
             created: Math.floor(Date.now() / 1000),
             user_display_name: "",
           }))
-          console.log(`Converted ${emojiArray.length} emojis from data.slackResponse.emoji object`);
         } else if (Array.isArray(emojiObj)) {
           emojiArray = emojiObj;
-          console.log(`Found ${emojiArray.length} emojis in data.slackResponse.emoji array`);
         }
       }
-      console.log(`Total emojis to process: ${emojiArray.length}`);
-      
+
       // Process the emoji array with consistent fields
       const recentData = emojiArray.map((emoji: any) => ({
         name: emoji.name,
@@ -160,7 +147,6 @@ export function RefreshButton() {
       if (recentData && Array.isArray(recentData) && recentData.length > 0) {
         // Sort by created timestamp descending (newest first)
         const sortedData = [...recentData].sort((a, b) => (b.created || 0) - (a.created || 0));
-        console.log(`[RefreshButton] About to update context with ${sortedData.length} emojis`);
 
         const workspaceName = parsed.workspace || "slack-workspace"
         const syncTimestamp = Date.now();
@@ -171,15 +157,12 @@ export function RefreshButton() {
         setHasRealData(true)
 
         // Save to storage with timestamp (this ensures atomicity and prevents race conditions)
-        console.log(`[RefreshButton] Saving to storage with timestamp ${syncTimestamp}`);
         await emojiStorage.saveEmojis(sortedData, syncTimestamp);
 
         // Update metadata in localStorage for tracking
         localStorage.setItem("workspace", workspaceName)
         localStorage.setItem("emojiCount", sortedData.length.toString())
         localStorage.setItem("lastFetchTime", new Date().toISOString())
-
-        console.log(`[RefreshButton] Successfully saved ${sortedData.length} emojis from ${workspaceName}`)
 
         // Dispatch event AFTER storage is complete with all data included
         window.dispatchEvent(new CustomEvent("emojiDataUpdated", {

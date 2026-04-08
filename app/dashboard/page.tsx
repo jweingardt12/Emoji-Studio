@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useIsClient } from "@/hooks/use-is-client"
 import Image from "next/image"
 import Link from "next/link"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
@@ -29,19 +30,13 @@ import {
 // Metadata moved to page.metadata.ts
 
 function DashboardPage() {
-  // Add client-side only rendering
-  const [isClient, setIsClient] = useState(false)
+  const isClient = useIsClient()
   const [pageVisible, setPageVisible] = useState(false)
   // Sync loading is now handled by ChromeExtensionHandler
   const router = useRouter()
   const track = useTrack()
 
   useEffect(() => {
-    setIsClient(true)
-
-    // The ChromeExtensionHandler now handles sync progress in real-time
-    // Remove old URL parameter handling as it's been replaced by real sync progress messages
-
     // Trigger fade in animation after a short delay
     const timer = setTimeout(() => {
       setPageVisible(true)

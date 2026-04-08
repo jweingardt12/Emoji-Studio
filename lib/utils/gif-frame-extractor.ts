@@ -18,8 +18,6 @@ export class GifFrameExtractor {
    * Extract frames from GIF with maximum fidelity
    */
   static async extractFrames(file: File, onProgress?: ProgressCallback): Promise<ExtractedFrame[]> {
-    console.log(`[GifFrameExtractor] Processing: ${file.name}, size: ${(file.size / 1024).toFixed(1)}KB`)
-    
     onProgress?.(0, 'Starting extraction...')
     
     // Check if we should skip extraction
@@ -29,10 +27,8 @@ export class GifFrameExtractor {
     
     // For speed, try gifuct-js first as it's fastest and usually works well
     try {
-      console.log('[GifFrameExtractor] Using gifuct-js library (fastest)')
       const frames = await this.extractFramesGifuct(file, onProgress)
       if (frames.length > 0) {
-        console.log(`[GifFrameExtractor] Gifuct extraction successful: ${frames.length} frames`)
         onProgress?.(100, 'Extraction complete!')
         return frames
       }
@@ -42,10 +38,8 @@ export class GifFrameExtractor {
     
     // Method 2: omggif as second option (faster than ImageDecoder)
     try {
-      console.log('[GifFrameExtractor] Using omggif library')
       const frames = await this.extractFramesOmggif(file, onProgress)
       if (frames.length > 0) {
-        console.log(`[GifFrameExtractor] Omggif extraction successful: ${frames.length} frames`)
         onProgress?.(100, 'Extraction complete!')
         return frames
       }
@@ -56,10 +50,8 @@ export class GifFrameExtractor {
     // Method 3: Browser-native ImageDecoder as last resort (can be slow)
     if ('ImageDecoder' in window) {
       try {
-        console.log('[GifFrameExtractor] Using native ImageDecoder API')
         const frames = await this.extractFramesNative(file, onProgress)
         if (frames.length > 0) {
-          console.log(`[GifFrameExtractor] Native extraction successful: ${frames.length} frames`)
           onProgress?.(100, 'Extraction complete!')
           return frames
         }
@@ -88,9 +80,7 @@ export class GifFrameExtractor {
     
     const frames: ExtractedFrame[] = []
     const frameCount = decoder.frameCount || 0
-    
-    console.log(`[Native] Found ${frameCount} frames`)
-    
+
     if (frameCount === 0) {
       throw new Error('ImageDecoder found no frames')
     }
@@ -144,9 +134,7 @@ export class GifFrameExtractor {
     
     const frameCount = gifFrames.length
     const delays = gifFrames.map(f => f.delay * 10 || 100)
-    
-    console.log(`[Browser] GIF has ${frameCount} frames`)
-    
+
     // Load GIF as image
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -241,8 +229,6 @@ export class GifFrameExtractor {
       throw new Error('No frames found in GIF')
     }
     
-    console.log(`[Gifuct] Found ${frames.length} frames`)
-    
     const canvas = document.createElement('canvas')
     canvas.width = gif.lsd.width
     canvas.height = gif.lsd.height
@@ -336,8 +322,7 @@ export class GifFrameExtractor {
     const reader = new GifReader(uint8Array)
     
     const frameCount = reader.numFrames()
-    console.log(`[Omggif] Found ${frameCount} frames, ${reader.width}x${reader.height}`)
-    
+
     const canvas = document.createElement('canvas')
     canvas.width = reader.width
     canvas.height = reader.height

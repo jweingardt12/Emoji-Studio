@@ -95,12 +95,6 @@ export function MobileEmojiCreator({
     setProcessingStatus('Analyzing file...')
     
     try {
-      console.log('[MobileEmojiCreator] Starting to process file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      })
-
       // Check if it's a video file
       const isVideo = file.type.startsWith('video/')
       
@@ -126,9 +120,7 @@ export function MobileEmojiCreator({
       }
 
       // Process the actual file
-      console.log('[MobileEmojiCreator] Calling EmojiProcessor.processFile...')
       const processed = await EmojiProcessor.processFile(file)
-      console.log('[MobileEmojiCreator] File processed successfully:', processed)
       
       // Generate default name from filename
       const defaultName = file.name
@@ -263,8 +255,6 @@ export function MobileEmojiCreator({
         speed: videoAdjustments.speed,
         scaleMode: videoAdjustments.scaleMode
       }
-      
-      console.log('[MobileEmojiCreator] Applying video edits with options:', options)
       
       // Store options in the file metadata for processing
       const fileWithOptions = new File([selectedFile], selectedFile.name, {
@@ -639,15 +629,6 @@ export function MobileEmojiCreator({
     const isVideo = fileType.startsWith('video/') || processedEmoji.wasVideo
     const isImage = !isGif && !isVideo
     
-    console.log('[MobileEmojiCreator] Edit mode:', {
-      fileType,
-      processedFormat: processedEmoji.format,
-      wasVideo: processedEmoji.wasVideo,
-      isImage,
-      isGif,
-      isVideo
-    })
-
     // For videos and GIFs, show video editing options
     if (!isImage) {
       return (

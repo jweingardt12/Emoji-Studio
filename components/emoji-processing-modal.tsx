@@ -202,7 +202,6 @@ export function EmojiProcessingModal({
   }
 
   const handleSlackUpload = async (emoji: ProcessedEmoji, index: number, customName?: string) => {
-    console.log("[handleSlackUpload] Starting upload for emoji at index:", index, "name:", customName || emoji.name)
     setUploadingIndex(index)
 
     track("Slack Upload: Started", {
@@ -214,10 +213,8 @@ export function EmojiProcessingModal({
     })
 
     try {
-      console.log("[handleSlackUpload] Calling uploadEmojiToSlack...")
       const result = await uploadEmojiToSlack(emoji, customName)
-      console.log("[handleSlackUpload] Upload result:", result)
-      
+
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
         setUploadStatuses(prev => ({ ...prev, [index]: 'success' }))

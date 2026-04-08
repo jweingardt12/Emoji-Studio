@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateProxyUrl, sanitizeErrorResponse, shouldLogSensitive } from "@/lib/utils/url-validation"
+import { sanitizeErrorResponse } from "@/lib/utils/url-validation"
 import { applyRateLimit } from "@/lib/utils/api-security"
 
 export async function POST(request: NextRequest) {
-  console.log('API emoji-manage endpoint hit')
-
   try {
     // Apply rate limiting
     const rateLimitResponse = await applyRateLimit(request)
@@ -13,13 +11,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { action, emojiName, newName, newAlias, imageData, workspace, slackCurl } = body
     
-    console.log('API emoji-manage received:', { action, emojiName, newName, newAlias, workspace })
-
     // Get Slack credentials from body or fallback to headers
     const curlCommand = slackCurl || request.headers.get('x-slack-curl') || ''
-    
-    console.log('Curl command length:', curlCommand.length)
-    console.log('Curl command preview:', curlCommand.substring(0, 200) + '...')
     
     if (!curlCommand) {
       return NextResponse.json({ 
@@ -36,12 +29,6 @@ export async function POST(request: NextRequest) {
                         curl.match(/token=([^&\s'"]+)/)
       const cookieMatch = curl.match(/-H\s+["']Cookie:\s*([^"']+)["']/) || curl.match(/--cookie\s+["']([^"']+)["']/)
       const workspaceMatch = curl.match(/https:\/\/([^\.]+)\.slack\.com/)
-      
-      console.log('Parsing curl command, found:', {
-        hasToken: !!tokenMatch,
-        hasCookie: !!cookieMatch,
-        workspace: workspaceMatch?.[1]
-      })
       
       return {
         token: tokenMatch?.[1] || '',
@@ -157,13 +144,6 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        console.log('Processing delete for emoji:', emojiName)
-        if (shouldLogSensitive()) {
-          console.log('Using direct token (dev):', directToken.substring(0, 10) + '...')
-        } else {
-          console.log('Using direct token: [REDACTED]')
-        }
-
         // Make the request exactly as the browser would
         const response = await fetch(`https://${workspace}.slack.com/api/emoji.remove`, {
           method: 'POST',
@@ -181,7 +161,6 @@ export async function POST(request: NextRequest) {
         })
 
         const result = await response.json()
-        console.log('Slack API response:', result)
         return NextResponse.json(result)
       }
 

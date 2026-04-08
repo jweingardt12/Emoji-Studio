@@ -41,7 +41,6 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
     if (!hasBarcodeDetector) {
       import("jsqr").then(module => {
         jsQRRef.current = module.default
-        console.log("jsQR loaded for fallback scanner")
       })
     }
   }, [])
@@ -94,13 +93,11 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       let stream: MediaStream
       try {
         // Try environment camera first
-        console.log("Requesting camera access with environment facing mode...")
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" }
         })
       } catch (e) {
         // Fallback to any camera
-        console.log("Fallback to any available camera...")
         stream = await navigator.mediaDevices.getUserMedia({ video: true })
       }
       
@@ -118,8 +115,7 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       })
       
       setCameraStatus('active')
-      console.log("Camera started successfully")
-      
+
       // Track camera access granted
       track("Mobile QR Scanner: Camera Access Granted", {
         usingFallback: !supported,
@@ -127,7 +123,6 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
       })
 
       if ((window as any).BarcodeDetector) {
-        console.log("Using native BarcodeDetector")
         const detector = new (window as any).BarcodeDetector({ formats: ["qr_code"] })
         const tick = async () => {
           try {
@@ -136,7 +131,6 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
             if (codes && codes.length > 0) {
               const text = codes[0].rawValue || codes[0].raw || codes[0].value || ""
               if (text) {
-                console.log("QR code detected:", text)
                 track("Mobile QR Scanner: Code Detected", {
                   method: "native",
                   contentType: text.includes("sid=") ? "pairing" : "other"
@@ -154,7 +148,6 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
         rafRef.current = requestAnimationFrame(tick)
       } else {
         // Fallback for iOS Safari and other browsers
-        console.log("Using jsQR fallback scanner")
         setUsingFallback(true)
         
         // Ensure jsQR is loaded
@@ -196,7 +189,6 @@ export function QrScanDrawer({ open, onOpenChange, onDetected }: {
             })
             
             if (code && code.data) {
-              console.log("QR code detected via jsQR:", code.data)
               track("Mobile QR Scanner: Code Detected", {
                 method: "jsQR",
                 contentType: code.data.includes("sid=") ? "pairing" : "other"

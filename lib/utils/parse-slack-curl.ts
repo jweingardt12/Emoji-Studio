@@ -80,7 +80,6 @@ export function parseSlackCurl(curlCommand: string) {
     const genericUrlMatch = cmd.match(/https:\/\/[^'"\s]+/i)
     if (genericUrlMatch) {
       url = genericUrlMatch[0]
-      console.log("Found URL via generic match:", url)
     }
   }
 
@@ -118,19 +117,14 @@ export function parseSlackCurl(curlCommand: string) {
 
   if (formTokenMatch) {
     token = formTokenMatch[1]
-    console.log("Found token in form data:", token.substring(0, 10) + "...")
   } else if (tokenInUrlMatch) {
     token = tokenInUrlMatch[1]
-    console.log("Found token in URL:", token.substring(0, 10) + "...")
   } else if (tokenInDataMatch) {
     token = tokenInDataMatch[1]
-    console.log("Found token in data:", token.substring(0, 10) + "...")
   } else if (tokenInHeaderMatch) {
     token = tokenInHeaderMatch[1]
-    console.log("Found token in Authorization header:", token.substring(0, 10) + "...")
   } else if (xoxcMatch) {
     token = xoxcMatch[0]
-    console.log("Found xoxc token in command:", token.substring(0, 10) + "...")
   }
 
   // Extract all cookies from -b, --cookie, and all Cookie: headers
@@ -153,7 +147,6 @@ export function parseSlackCurl(curlCommand: string) {
   }
   if (cookieStrings.length > 0) {
     cookie = cookieStrings.join("; ")
-    console.log("Found cookies:", cookie)
   }
 
   // Extract workspace URL - more flexible pattern
@@ -163,7 +156,6 @@ export function parseSlackCurl(curlCommand: string) {
   if (urlMatch && urlMatch[1] !== 'app' && urlMatch[1] !== 'api' && urlMatch[1] !== 'files') {
     // Found a real workspace subdomain (not app.slack.com, api.slack.com, etc.)
     workspace = urlMatch[1]
-    console.log("Found workspace from subdomain:", workspace)
   }
 
   // If subdomain is "app" or not found, try to extract from slack_route cookie or URL path
@@ -173,7 +165,6 @@ export function parseSlackCurl(curlCommand: string) {
     if (slackRouteMatch) {
       // This is a team ID, we'll use it as workspace identifier
       workspace = slackRouteMatch[1]
-      console.log("Found workspace from slack_route:", workspace)
     }
   }
 
@@ -182,7 +173,6 @@ export function parseSlackCurl(curlCommand: string) {
     const clientPathMatch = curlCommand.match(/\/client\/([A-Z][A-Z0-9]+)/i)
     if (clientPathMatch) {
       workspace = clientPathMatch[1]
-      console.log("Found workspace from client path:", workspace)
     }
   }
 
@@ -194,7 +184,6 @@ export function parseSlackCurl(curlCommand: string) {
                       curlCommand.match(/'team':'([^']+)'/)
     if (teamMatch) {
       workspace = teamMatch[1]
-      console.log("Found workspace from team parameter:", workspace)
     }
   }
 
@@ -203,23 +192,17 @@ export function parseSlackCurl(curlCommand: string) {
     const apiWorkspaceMatch = curlCommand.match(/https:\/\/([a-zA-Z0-9-]+)\.enterprise\.slack\.com/)
     if (apiWorkspaceMatch) {
       workspace = apiWorkspaceMatch[1]
-      console.log("Found enterprise workspace:", workspace)
     }
   }
 
   // Fallback
   if (!workspace || workspace === 'app') {
     workspace = "workspace"
-    console.log("Using default workspace name")
   }
 
   // Extract team ID (if present)
   const teamIdExtractMatch = curlCommand.match(/team_id=([^&\s'"]+)/) || curlCommand.match(/slack_route=([^&\s'"]+)/)
   const teamId = teamIdExtractMatch ? teamIdExtractMatch[1] : null
-
-  if (teamId) {
-    console.log("Found team ID:", teamId)
-  }
 
   // Check if this is an emoji-related request - more flexible
   const isEmojiListRequest =
@@ -227,10 +210,6 @@ export function parseSlackCurl(curlCommand: string) {
     curlCommand.includes("emoji.adminList") ||
     curlCommand.includes("/api/emoji") ||
     curlCommand.match(/emoji\.[a-zA-Z]+/)
-
-  if (isEmojiListRequest) {
-    console.log("Detected emoji-related request")
-  }
 
   // For demo purposes, we'll be more lenient with validation
   // In a real app, you might want stricter validation
@@ -251,7 +230,6 @@ export function parseSlackCurl(curlCommand: string) {
     const xIdMatch = url.match(/[?&]_x_id=([^&\s'"]+)/)
     if (xIdMatch) {
       extractedXId = xIdMatch[1]
-      console.log("Found _x_id in URL:", extractedXId)
     }
   }
 
@@ -260,7 +238,6 @@ export function parseSlackCurl(curlCommand: string) {
     const xIdMatch = curlCommand.match(/[?&]_x_id=([^&\s'"]+)/)
     if (xIdMatch) {
       extractedXId = xIdMatch[1]
-      console.log("Found _x_id in curl command:", extractedXId)
     }
   }
 
@@ -269,7 +246,6 @@ export function parseSlackCurl(curlCommand: string) {
     const dCookieMatch = cookie.match(/\bd=([^;\s]+)/)
     if (dCookieMatch) {
       extractedXId = dCookieMatch[1]
-      console.log("Using d cookie as _x_id:", extractedXId)
     }
   }
 
@@ -281,7 +257,6 @@ export function parseSlackCurl(curlCommand: string) {
       .toString(16)
       .padStart(6, "0")
     extractedXId = `${randomHex}-${timestamp}.${Math.floor(Math.random() * 1000)}`
-    console.log("Generated fallback _x_id:", extractedXId)
   }
 
   return {

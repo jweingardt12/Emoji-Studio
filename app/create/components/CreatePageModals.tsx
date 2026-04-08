@@ -175,14 +175,6 @@ export const CreatePageModals = memo(function CreatePageModals({
   const handleGifExport = useCallback(async (blob: Blob, selectedFrames: number[], speedMultiplier: number) => {
     if (!gifToEdit) return
 
-    console.log('[handleGifExport] Exporting GIF:', {
-      originalSize: gifToEdit.size,
-      exportedSize: blob.size,
-      selectedFrames: selectedFrames.length,
-      speedMultiplier,
-      blobType: blob.type
-    })
-
     // Mark this file as having been through frame editor to prevent loops
     const fileKey = `${gifToEdit.name}-${gifToEdit.size}-${gifToEdit.lastModified}`
     setFailedFrameExtraction(prev => new Set(prev).add(fileKey))
@@ -280,7 +272,6 @@ export const CreatePageModals = memo(function CreatePageModals({
       setIsReEditingFromModal(false)
     } else if (fileToProcess) {
       // User canceled frame selection - continue processing the original file
-      console.log('Frame editor canceled - processing original file without frame selection')
       setIsReEditingFromModal(false)
 
       // Mark this file as having failed frame extraction to avoid infinite loop

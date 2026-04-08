@@ -86,8 +86,7 @@ export function DashboardOverlay() {
         if (Array.isArray(parsedData) && parsedData.length > 0) {
           hasData = true;
         } else {
-          console.log("DashboardOverlay: emojiData in localStorage is invalid or empty, removing.");
-          localStorage.removeItem("emojiData"); 
+          localStorage.removeItem("emojiData");
         }
       }
     } catch (error) {
@@ -95,10 +94,8 @@ export function DashboardOverlay() {
       localStorage.removeItem("emojiData");
       hasData = false;
     }
-    console.log(`DashboardOverlay: checkLocalStorage - hasData: ${hasData}`);
     setHasLocalStorageData(hasData);
     if (!hasData && !useDemoData) {
-      console.log("DashboardOverlay: No real data and demo not active, setting useDemoData to true.");
       setUseDemoData(true); // Default to demo if no real data and demo not already active
     }
     return hasData;
@@ -106,46 +103,36 @@ export function DashboardOverlay() {
 
   // Check localStorage on mount and manage demo data
   useEffect(() => {
-    console.log("DashboardOverlay: Initial mount useEffect running.");
     checkLocalStorage();
     setIsInitialCheckDone(true);
-    console.log("DashboardOverlay: Initial check done.");
 
     // Add event listener for emojiDataUpdated
     const handleEmojiDataUpdated = () => {
-      console.log("DashboardOverlay: emojiDataUpdated event received. Re-checking localStorage.");
       checkLocalStorage();
     };
 
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
 
-    // Cleanup
     return () => {
-      console.log("DashboardOverlay: Cleaning up emojiDataUpdated event listener.");
       window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     };
   }, [useDemoData, setUseDemoData]); // Dependencies for initial demo data logic
 
   // Effect for entry animation, depends on initial check and data presence
   useEffect(() => {
-    console.log(`DashboardOverlay: Animation useEffect. isInitialCheckDone: ${isInitialCheckDone}, hasLocalStorageData: ${hasLocalStorageData}`);
     if (isInitialCheckDone && !hasLocalStorageData) {
-      console.log("DashboardOverlay: Conditions met to show overlay. Setting isMounted and isAnimatedIn.");
       setIsMounted(true);
       const animationTimer = setTimeout(() => {
         setIsAnimatedIn(true);
-        console.log("DashboardOverlay: Overlay animation complete (isAnimatedIn: true).");
       }, 50);
-      
+
       document.body.style.overflow = 'hidden';
-      
+
       return () => {
-        console.log("DashboardOverlay: Cleaning up animation effect (hiding overlay).");
         clearTimeout(animationTimer);
         document.body.style.overflow = '';
       };
     } else {
-      console.log("DashboardOverlay: Conditions NOT met to show overlay. Setting isMounted and isAnimatedIn to false.");
       setIsMounted(false);
       setIsAnimatedIn(false);
       document.body.style.overflow = '';
@@ -157,11 +144,9 @@ export function DashboardOverlay() {
     if (isAnimatedIn) {
       const bubbleTimer = setTimeout(() => {
         setShowChatBubble(true)
-        console.log("DashboardOverlay: Chat bubble animation complete (showChatBubble: true).");
       }, 1500) // 1.5 second delay
 
       return () => {
-        console.log("DashboardOverlay: Cleaning up chat bubble effect.");
         clearTimeout(bubbleTimer)
       }
     }
@@ -175,8 +160,6 @@ export function DashboardOverlay() {
     setIsImporting(true);
     setImportError(null);
     try {
-      console.log("Starting demo data import...")
-      
       // Track demo data import event
       track('demo_data_import_start', {
         source: 'dashboard_overlay'
@@ -188,8 +171,6 @@ export function DashboardOverlay() {
       if (!demoData || demoData.length === 0) {
         throw new Error("Failed to generate demo data")
       }
-      
-      console.log(`Successfully generated ${demoData.length} demo emojis`)
       
       // Show loading animation for 3 seconds
       await new Promise(resolve => setTimeout(resolve, 3000))

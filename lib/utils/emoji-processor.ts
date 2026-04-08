@@ -71,12 +71,11 @@ export class EmojiProcessor {
         const header = decoder.decode(uint8Array)
         
         // Common HDR indicators in PNG metadata
-        if (header.includes('iCCP') || 
-            header.includes('Display P3') || 
+        if (header.includes('iCCP') ||
+            header.includes('Display P3') ||
             header.includes('Rec2020') ||
             header.includes('HDR') ||
             header.includes('sRGB') === false) { // Non-sRGB often means HDR
-          console.log('Detected potential HDR PNG based on metadata')
           return true
         }
       } catch (error) {
@@ -91,8 +90,6 @@ export class EmojiProcessor {
     // For HDR images, resize to 128x128 for Slack
     // Slack will auto-compress images, so we don't need to enforce 128KB limit
 
-    console.log(`Processing HDR image: ${file.name} (size: ${file.size} bytes)`)
-
     // Convert HEIC/HEIF to PNG if needed (not natively supported in Chrome/Firefox)
     let imageBlob: Blob = file
     const extension = file.name.toLowerCase().split('.').pop()
@@ -101,10 +98,8 @@ export class EmojiProcessor {
         const heic2any = (await import('heic2any')).default
         const converted = await heic2any({ blob: file, toType: 'image/png' })
         imageBlob = Array.isArray(converted) ? converted[0] : converted
-        console.log(`Converted HEIC/HEIF to PNG: ${imageBlob.size} bytes`)
       } catch (conversionError) {
         // Safari supports HEIC natively, so fall through to try loading directly
-        console.log('HEIC conversion not needed or failed, trying direct load')
       }
     }
 
@@ -112,7 +107,6 @@ export class EmojiProcessor {
     const dimensions = await this.getImageDimensions(imageBlob)
     if (dimensions.width <= this.TARGET_SIZE &&
         dimensions.height <= this.TARGET_SIZE) {
-      console.log(`Image ${file.name} already at correct dimensions`)
       const blobUrl = await this.blobToDataURL(imageBlob)
 
       return {
@@ -130,8 +124,6 @@ export class EmojiProcessor {
     }
 
     // Resize to 128x128
-    console.log(`Resizing ${file.name} to 128x128`)
-
     return new Promise((resolve, reject) => {
       const img = new Image()
       const canvas = document.createElement('canvas')
@@ -158,8 +150,6 @@ export class EmojiProcessor {
           let quality = 1.0
           let format = 'image/png'
           let blob: Blob | null = await this.canvasToBlob(canvas, format, quality)
-
-          console.log(`Created PNG at full quality, size: ${blob?.size} bytes (Slack will auto-compress)`)
 
           if (!blob) {
             reject(new Error('Failed to process image'))
@@ -239,12 +229,10 @@ export class EmojiProcessor {
     const isAnimWebP = await this.isAnimatedWebP(file)
     
     if (isGif || isAnimWebP) {
-      console.log(`Processing ${file.name} as animated image (GIF: ${isGif}, Animated WebP: ${isAnimWebP})`)
       return this.processGif(file, fileName)
     } else if (fileType.startsWith('image/')) {
       // Use different processing for HDR images or when quality preservation is requested
       if (isHDR || shouldPreserveQuality) {
-        console.log(`Processing ${file.name} with quality preservation (HDR: ${isHDR})`)
         return this.processHDRImage(file, fileName)
       }
       return this.processImage(file, fileName)
@@ -256,8 +244,6 @@ export class EmojiProcessor {
   }
 
   private static async processImage(file: File, name: string): Promise<ProcessedEmoji> {
-    console.log(`[EmojiProcessor] Processing image: ${file.name}, type: ${file.type}, size: ${file.size}`)
-    
     return new Promise((resolve, reject) => {
       const img = new Image()
       const canvas = document.createElement('canvas')
@@ -267,8 +253,6 @@ export class EmojiProcessor {
 
       img.onload = async () => {
         try {
-          console.log(`[EmojiProcessor] Image loaded: ${img.width}x${img.height}`)
-
           canvas.width = this.TARGET_SIZE
           canvas.height = this.TARGET_SIZE
 
@@ -290,7 +274,6 @@ export class EmojiProcessor {
           let format = 'image/png'
 
           let blob = await this.canvasToBlob(canvas, format, quality)
-          console.log(`[EmojiProcessor] PNG blob size: ${blob?.size} (Slack will auto-compress)`)
 
           if (!blob) {
             console.error('[EmojiProcessor] Failed to create blob from canvas')
@@ -298,12 +281,8 @@ export class EmojiProcessor {
             return
           }
 
-          console.log(`[EmojiProcessor] Final blob - format: ${format}, size: ${blob.size}, quality: ${quality}`)
-
           const preview = canvas.toDataURL(format, quality)
           const blobUrl = await this.blobToDataURL(blob)
-
-          console.log(`[EmojiProcessor] Image processing complete for ${name}`)
 
           URL.revokeObjectURL(objectUrl)
           resolve({
@@ -337,7 +316,6 @@ export class EmojiProcessor {
   private static async processGif(file: File, name: string): Promise<ProcessedEmoji> {
     try {
       let processedBlob = await GifProcessor.processGif(file, this.TARGET_SIZE, this.MAX_FILE_SIZE)
-      console.log(`Processed GIF blob type: ${processedBlob.type}, size: ${processedBlob.size}`)
       const preview = URL.createObjectURL(processedBlob)
       const blobUrl = await this.blobToDataURL(processedBlob)
       
@@ -380,13 +358,6 @@ export class EmojiProcessor {
   }
 
   private static async processVideo(file: File, name: string, options?: any): Promise<ProcessedEmoji> {
-    console.log('[EmojiProcessor] Converting video to animated GIF...', {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      options
-    })
-    
     // Check if file has processing options attached
     const processingOptions = (file as any).processingOptions || options
     
@@ -398,11 +369,6 @@ export class EmojiProcessor {
         this.MAX_FILE_SIZE,
         processingOptions
       )
-      
-      console.log('[EmojiProcessor] Video converted successfully to GIF:', {
-        originalSize: file.size,
-        gifSize: gifBlob.size
-      })
       
       const preview = URL.createObjectURL(gifBlob)
       

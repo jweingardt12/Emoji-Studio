@@ -65,13 +65,6 @@ export async function POST(request: NextRequest) {
       console.warn(`[Sync API] Found ${invalidEmojis.length} invalid emoji objects (missing name field)`)
     }
 
-    // Log the sync request with more details
-    console.log(`[Sync API] Received sync request for workspace: ${workspace}`)
-    console.log(`[Sync API] Emoji count: ${emojiData.length}`)
-    console.log(`[Sync API] Request included emojiCount: ${emojiCount || 'not provided'}`)
-    console.log(`[Sync API] Request included lastFetchTime: ${lastFetchTime || 'not provided'}`)
-    console.log(`[Sync API] Data provided via: ${body.emojiData ? 'emojiData' : 'emoji'} property`)
-
     // Note: This endpoint currently validates the data and returns success.
     // The Chrome extension opens the Emoji Studio app in a tab to store the data
     // in localStorage where the app retrieves it. This approach avoids the need

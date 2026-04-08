@@ -26,7 +26,6 @@ export class AnimatedGifProcessor {
         try {
           const result = await this.createOptimizedGif(file, targetSize, settings)
           if (result.size <= maxFileSize) {
-            console.log(`Created optimized GIF: ${result.size} bytes with quality ${settings.quality}`)
             return result
           }
         } catch (error) {

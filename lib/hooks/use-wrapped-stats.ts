@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from "react"
+import { useMemo } from "react"
 import { Emoji } from "@/lib/services/emoji-service"
 import {
   WrappedStats,
@@ -72,7 +72,6 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
       userEmojis = emojiData.filter(
         (emoji) => emoji.user_id === options.userId && !emoji.is_alias
       )
-      console.log(`[useWrappedStats] Method 1 (userId ${options.userId}): found ${userEmojis.length} emojis`)
     }
 
     // Method 2: Fallback to localStorage mobileUserId (for page refreshes)
@@ -82,14 +81,12 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
         userEmojis = emojiData.filter(
           (emoji) => emoji.user_id === storedMobileUserId && !emoji.is_alias
         )
-        console.log(`[useWrappedStats] Method 2 (stored mobileUserId ${storedMobileUserId}): found ${userEmojis.length} emojis`)
       }
     }
 
     // Method 3: Use can_delete flag (desktop browser context)
     if (userEmojis.length === 0) {
       userEmojis = emojiData.filter((emoji) => emoji.can_delete === true && !emoji.is_alias)
-      console.log(`[useWrappedStats] Method 3 (can_delete): found ${userEmojis.length} emojis`)
     }
 
     if (userEmojis.length === 0) {
@@ -97,26 +94,6 @@ export function useWrappedStats(emojiData: Emoji[], options?: UseWrappedStatsOpt
     }
     return calculatePersonalStats(emojiData, userEmojis, year)
   }, [emojiData, year, hasMinimumData, options?.userId])
-
-  // Debug logging for data quality (development only)
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development" && emojiData && emojiData.length > 0) {
-      const totalEmojis = emojiData.length
-      const withTimestamp = emojiData.filter(e => e.created && e.created > 0).length
-      const withUserId = emojiData.filter(e => e.user_id).length
-      const yearFiltered = yearEmojis.length
-
-      console.log("[Wrapped Debug] Emoji data quality:", {
-        total: totalEmojis,
-        withTimestamp,
-        withUserId,
-        missingTimestamp: totalEmojis - withTimestamp,
-        missingUserId: totalEmojis - withUserId,
-        yearFiltered,
-        year,
-      })
-    }
-  }, [emojiData, yearEmojis, year])
 
   return {
     stats,

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, startTransition } from "react"
+import { useIsClient } from "@/hooks/use-is-client"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Emoji } from "@/lib/services/emoji-service"
@@ -15,11 +16,7 @@ import { getUserLeaderboard, type UserWithEmojiCount } from "@/lib/services/emoj
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
-// Lightweight date formatter to replace date-fns
-const format = (date: Date | number, formatStr: string) => {
-  const d = typeof date === 'number' ? new Date(date * 1000) : date
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
+import { formatDate as format } from "@/lib/utils/format-date"
 import { useAnalytics } from "@/lib/analytics"
 import { useTrack } from "@/lib/hooks/use-track"
 import DownloadProgressOverlay from '@/components/download-progress-overlay';
@@ -32,8 +29,7 @@ import { downloadEmojisInParallel, saveZipFile } from "@/lib/utils/download-util
 function ExplorerPage() {
   // Ref for overlay scroll lock and positioning
   const contentRef = useRef<HTMLDivElement>(null);
-  // Add client-side only rendering to avoid hydration mismatches
-  const [isClient, setIsClient] = useState(false);
+  const isClient = useIsClient();
   const isMobile = useIsMobile();
 
   const { emojiData, loading } = useEmojiData();
@@ -65,7 +61,6 @@ function ExplorerPage() {
   
   // Initialize client-side state
   useEffect(() => {
-    setIsClient(true);
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const searchParam = urlParams.get('search');

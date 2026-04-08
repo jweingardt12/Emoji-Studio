@@ -56,10 +56,8 @@ export function SlackCurlInput() {
   useEffect(() => {
     // Initialize Chrome extension listener
     initializeExtensionListener((data: SlackAuthData) => {
-      console.log('Received data from Chrome extension:', data);
       // Convert extension data to curl command format
       const curlFromExtension = generateCurlFromExtensionData(data);
-      console.log('Generated curl command:', curlFromExtension);
       setCurlCommand(curlFromExtension);
       validateCurl(curlFromExtension);
       // Store the curl command
@@ -349,7 +347,6 @@ export function SlackCurlInput() {
       })
 
       const responseText = await response.text()
-      console.log("API response text:", responseText)
 
       if (!response.ok) {
         let errorMessage = "Failed to fetch emoji data"
@@ -428,7 +425,6 @@ export function SlackCurlInput() {
       if (myEmoji?.user_id && myEmoji?.user_display_name) {
         localStorage.setItem("mobileUserId", myEmoji.user_id)
         localStorage.setItem("userDisplayName", myEmoji.user_display_name)
-        console.log("[SlackCurlInput] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
       }
 
       // Show success state for a moment before redirecting

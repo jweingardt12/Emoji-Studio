@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import type { ReactNode } from "react"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { MotionConfig } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 export default function ClientBody({ children, className }: { children: ReactNode; className?: string }) {
@@ -34,8 +35,10 @@ export default function ClientBody({ children, className }: { children: ReactNod
 
   // Only render the actual content after client-side hydration is complete
   return (
-    <div className={cn(className, isMobile && "app-frame-locked")}>
-      <TooltipProvider>{children}</TooltipProvider>
-    </div>
+    <MotionConfig reducedMotion="user">
+      <div className={cn(className, isMobile && "app-frame-locked")}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </div>
+    </MotionConfig>
   )
 }

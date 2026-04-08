@@ -39,7 +39,6 @@ function WorkspaceSync() {
     const syncWorkspace = () => {
       const workspace = localStorage.getItem("workspace")
       if (workspace && workspace !== lastSyncedWorkspace.current) {
-        console.log("[OpenPanel] Setting global workspace property:", workspace)
         op.setGlobalProperties({ workspace })
         lastSyncedWorkspace.current = workspace
       }
@@ -52,7 +51,6 @@ function WorkspaceSync() {
     const mobileUserId = localStorage.getItem("mobileUserId")
     const cachedUsername = localStorage.getItem("userDisplayName")
     if (mobileUserId && cachedUsername) {
-      console.log("[OpenPanel] Restoring user identification:", cachedUsername)
       op.identify({
         profileId: mobileUserId,
         firstName: cachedUsername,
@@ -110,7 +108,6 @@ function PageViewTracker() {
       // Only track if this is a new page/workspace combination
       if (key !== lastTracked.current) {
         const pageName = pathname.split("/").pop() || "home"
-        console.log("[OpenPanel] Tracking screen view:", pageName, "workspace:", workspace)
         op.track("screen_view", {
           name: pageName,
           path: pathname,

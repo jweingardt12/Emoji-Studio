@@ -26,20 +26,9 @@ export function ChromeExtensionHandler() {
 
   // Function to process synced data from extension storage
   const processSyncedData = useCallback(async (data: SyncedEmojiData, meta: SyncedEmojiMeta, forceShowToast = false) => {
-    console.log('[ChromeExtensionHandler] Processing synced data:', {
-      workspace: data.workspace,
-      emojiCount: data.emojiCount,
-      hasToken: !!data.token,
-      hasCookie: !!data.cookie,
-      version: data.version,
-      lastSyncTime: data.lastSyncTime
-    })
-    console.log('[ChromeExtensionHandler] Sync meta:', meta)
-
     // Prevent duplicate processing of the same sync
     const syncTime = data.lastSyncTime || Date.now();
     if (syncTime === lastSyncTimeProcessed.current) {
-      console.log('[ChromeExtensionHandler] Already processed this sync data, skipping');
       return;
     }
     lastSyncTimeProcessed.current = syncTime;
@@ -55,15 +44,12 @@ export function ChromeExtensionHandler() {
         throw new Error('Invalid emoji data format');
       }
 
-      console.log(`[ChromeExtensionHandler] Processing ${data.emojiData.length} emojis for workspace ${data.workspace}`);
-
       // Update emoji data in the app (optimistic update)
       setEmojiData(data.emojiData as Emoji[])
       setWorkspace(data.workspace)
       setHasRealData(true)
 
       // Save to storage with timestamp (this ensures atomicity and prevents race conditions)
-      console.log(`[ChromeExtensionHandler] Saving to storage with timestamp ${syncTime}`);
       await emojiStorage.saveEmojis(data.emojiData, syncTime);
 
       // Update metadata in localStorage for tracking
@@ -75,11 +61,9 @@ export function ChromeExtensionHandler() {
       // Store auth data if provided (for future API calls)
       if (data.token) {
         localStorage.setItem('extensionToken', data.token)
-        console.log('[ChromeExtensionHandler] Stored extension token');
       }
       if (data.cookie) {
         localStorage.setItem('extensionCookie', data.cookie)
-        console.log('[ChromeExtensionHandler] Stored extension cookie');
       }
 
       // Generate and store a curl command for compatibility with the refresh button
@@ -101,16 +85,7 @@ export function ChromeExtensionHandler() {
           --data-raw $'------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="token"\\r\\n\\r\\n${token}\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW\\r\\nContent-Disposition: form-data; name="count"\\r\\n\\r\\n20000\\r\\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\\r\\n'`
 
         localStorage.setItem('slackCurlCommand', curlCommand)
-        console.log('[ChromeExtensionHandler] Generated and stored curl command for refresh')
-      } else {
-        console.log('[ChromeExtensionHandler] Skipping curl command generation - missing workspace or auth data', {
-          hasWorkspace: !!data.workspace,
-          hasToken: !!data.token,
-          hasCookie: !!data.cookie
-        })
       }
-
-      console.log(`[ChromeExtensionHandler] Successfully saved synced data`);
 
       // Dispatch event AFTER storage is complete with all data included
       window.dispatchEvent(new CustomEvent('emojiDataUpdated', {
@@ -136,8 +111,6 @@ export function ChromeExtensionHandler() {
           description: `Last updated: ${new Date(data.lastFetchTime).toLocaleString()}`,
           duration: 4000,
         })
-      } else {
-        console.log('[ChromeExtensionHandler] Loaded cached data, not showing toast');
       }
 
       // Track event
@@ -155,7 +128,6 @@ export function ChromeExtensionHandler() {
         // Cache user info for session restore
         localStorage.setItem("mobileUserId", myEmoji.user_id)
         localStorage.setItem("userDisplayName", myEmoji.user_display_name)
-        console.log("[ChromeExtensionHandler] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
       }
 
       // Hide loading overlay after data is successfully processed
@@ -180,10 +152,7 @@ export function ChromeExtensionHandler() {
   
   // Function to process extension data
   const processExtensionData = async (data: SlackAuthData) => {
-    console.log('[ChromeExtensionHandler] Processing extension data:', data)
-    
     if (hasProcessed.current) {
-      console.log('[ChromeExtensionHandler] Already processed, ignoring duplicate')
       return
     }
     
@@ -229,8 +198,7 @@ export function ChromeExtensionHandler() {
       await new Promise((resolve) => setTimeout(resolve, 500))
       
       const curlCommand = generateCurlFromExtensionData(data)
-      console.log('[ChromeExtensionHandler] Generated curl command:', curlCommand)
-      
+
       // Parse the curl command to extract the request details
       const parsedData = parseSlackCurl(curlCommand)
       
@@ -280,7 +248,6 @@ export function ChromeExtensionHandler() {
       })
 
       const responseText = await response.text()
-      console.log("[ChromeExtensionHandler] API response text:", responseText)
 
       if (!response.ok) {
         let errorMessage = "Failed to fetch emoji data"
@@ -326,15 +293,12 @@ export function ChromeExtensionHandler() {
       setHasRealData(true)
 
       // Save to storage with timestamp
-      console.log(`[ChromeExtensionHandler] Saving fetched data with timestamp ${syncTimestamp}`);
       await emojiStorage.saveEmojis(typedEmojis, syncTimestamp);
 
       // Update metadata in localStorage for tracking
       localStorage.setItem("emojiCount", typedEmojis.length.toString())
       localStorage.setItem("lastFetchTime", new Date().toISOString())
       localStorage.setItem("lastSyncTime", syncTimestamp.toString())
-
-      console.log(`[ChromeExtensionHandler] Successfully saved ${typedEmojis.length} emojis`);
 
       // Dispatch event AFTER storage is complete
       window.dispatchEvent(new CustomEvent('emojiDataUpdated', {
@@ -367,7 +331,6 @@ export function ChromeExtensionHandler() {
       if (myEmoji?.user_id && myEmoji?.user_display_name) {
         localStorage.setItem("mobileUserId", myEmoji.user_id)
         localStorage.setItem("userDisplayName", myEmoji.user_display_name)
-        console.log("[ChromeExtensionHandler] Identified user:", myEmoji.user_display_name, myEmoji.user_id)
       }
 
       // Remove the extension parameter from the URL
@@ -391,12 +354,9 @@ export function ChromeExtensionHandler() {
   }
 
   useEffect(() => {
-    console.log('[ChromeExtensionHandler] Component mounted')
     // Check if we're coming from the extension
     const fromExtension = searchParams.get('extension') === 'true'
     const syncStarting = searchParams.get('syncStarting') === 'true'
-    console.log('[ChromeExtensionHandler] Extension parameter:', fromExtension)
-    console.log('[ChromeExtensionHandler] SyncStarting parameter:', syncStarting)
     
     // If sync is starting, show loading overlay immediately
     if (syncStarting) {
@@ -407,7 +367,6 @@ export function ChromeExtensionHandler() {
       
       // Set a timeout to hide loading if sync doesn't start within 10 seconds
       const timeoutId = setTimeout(() => {
-        console.log('[ChromeExtensionHandler] Sync timeout - no progress messages received');
         setIsLoading(false)
         setError("Sync timeout. Please ensure you've visited a Slack emoji page first.")
       }, 10000)
@@ -427,8 +386,6 @@ export function ChromeExtensionHandler() {
     
     // Always initialize the extension listener to handle synced data
     if (fromExtension && !hasProcessed.current) {
-      console.log('[ChromeExtensionHandler] Setting up extension listener with sync handler')
-      
       // Show loading overlay immediately
       setIsLoading(true)
       setLoadingStage("Waiting for Chrome extension data...")
@@ -437,7 +394,6 @@ export function ChromeExtensionHandler() {
       // Set a timeout in case extension doesn't respond
       const timeoutId = setTimeout(() => {
         if (!hasProcessed.current) {
-          console.log('[ChromeExtensionHandler] Timeout waiting for extension data')
           setError("Connection timeout. Please make sure the Chrome extension is installed and try again.")
           setIsLoading(false)
           setLoadingStage("")
@@ -448,8 +404,6 @@ export function ChromeExtensionHandler() {
       // Initialize Chrome extension listener with synced data handler
       initializeExtensionListener(
         (data: SlackAuthData) => {
-          console.log('[ChromeExtensionHandler] Received data from extension:', data)
-          // Clear the timeout
           clearTimeout(timeoutId)
           // Process immediately if we haven't already
           if (!hasProcessed.current) {
@@ -457,7 +411,6 @@ export function ChromeExtensionHandler() {
           }
         },
         () => {
-          console.log('[ChromeExtensionHandler] Clear data request from extension')
           // Clear all data when requested by extension
           localStorage.clear()
           sessionStorage.clear()
@@ -475,13 +428,9 @@ export function ChromeExtensionHandler() {
       )
     } else {
       // Even if not from extension, listen for synced data
-      console.log('[ChromeExtensionHandler] Setting up listener for background synced data')
       initializeExtensionListener(
-        (data: SlackAuthData) => {
-          console.log('[ChromeExtensionHandler] Received auth data (not expected)')
-        },
+        () => {},
         () => {
-          console.log('[ChromeExtensionHandler] Clear data request from extension')
           // Clear all data when requested by extension
           localStorage.clear()
           sessionStorage.clear()
@@ -507,7 +456,6 @@ export function ChromeExtensionHandler() {
         const { status, workspace, emojiCount, error } = event.data;
         
         if (status === 'started') {
-          console.log('[ChromeExtensionHandler] Sync started for:', workspace);
           setIsLoading(true);
           setProgress(20);
           setLoadingStage(`Syncing emojis from ${workspace}...`);
@@ -515,14 +463,12 @@ export function ChromeExtensionHandler() {
         } else if (status === 'completed') {
           const { nonAliasCount } = event.data;
           const displayCount = nonAliasCount !== undefined ? nonAliasCount : emojiCount;
-          console.log('[ChromeExtensionHandler] Sync completed for:', workspace, 'with', emojiCount, 'total emojis,', nonAliasCount, 'non-alias');
           setProgress(90);
           setLoadingStage(`Synced ${displayCount} emojis successfully!`);
           
           // DON'T hide the loading overlay yet - wait for data to be processed
           // The processSyncedData function will handle hiding it after data is stored
         } else if (status === 'error') {
-          console.log('[ChromeExtensionHandler] Sync error for:', workspace, error);
           setProgress(0);
           setLoadingStage("");
           setError(`Sync failed: ${error}`);

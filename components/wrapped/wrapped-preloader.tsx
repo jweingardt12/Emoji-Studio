@@ -140,7 +140,6 @@ export function WrappedPreloader({
     // Timeout fallback - don't wait forever
     const timeoutDuration = Math.min(30000, Math.max(15000, urls.length * 100))
     const timeout = setTimeout(() => {
-      console.log("[WrappedPreloader] Timeout reached, proceeding anyway")
       setIsComplete(true)
     }, timeoutDuration)
 

@@ -12,12 +12,9 @@ export async function uploadEmojiToSlack(
   emoji: ProcessedEmoji,
   customName?: string
 ): Promise<SlackUploadResult> {
-  console.log("[uploadEmojiToSlack] Starting upload for emoji:", customName || emoji.name)
-
   try {
     // Get the stored curl command from localStorage
     const storedCurl = localStorage.getItem("slackCurlCommand")
-    console.log("[uploadEmojiToSlack] Slack curl found:", !!storedCurl)
 
     if (!storedCurl) {
       console.error("[uploadEmojiToSlack] No Slack connection found")
@@ -29,7 +26,6 @@ export async function uploadEmojiToSlack(
 
     // Parse the curl command to extract necessary information
     const parsed = parseSlackCurl(storedCurl)
-    console.log("[uploadEmojiToSlack] Parsed curl:", { isValid: parsed.isValid, hasUrl: !!parsed.url, hasToken: !!parsed.token })
 
     if (!parsed.isValid || !parsed.url) {
       console.error("[uploadEmojiToSlack] Invalid Slack connection:", parsed)
@@ -49,7 +45,6 @@ export async function uploadEmojiToSlack(
       }
     }
     const workspace = workspaceMatch[1]
-    console.log("[uploadEmojiToSlack] Workspace:", workspace)
 
     // Convert the emoji data URL to a blob
     const response = await fetch(emoji.blob)
@@ -110,10 +105,6 @@ export async function uploadEmojiToSlack(
     }
 
     // Make the request through our API proxy to avoid CORS issues
-    console.log("[uploadEmojiToSlack] Making API request to /api/slack-emoji-upload")
-    console.log("[uploadEmojiToSlack] Upload URL:", uploadUrl)
-    console.log("[uploadEmojiToSlack] Form data:", formDataObj)
-
     const apiResponse = await fetch("/api/slack-emoji-upload", {
       method: "POST",
       headers: {
@@ -129,9 +120,7 @@ export async function uploadEmojiToSlack(
       })
     })
 
-    console.log("[uploadEmojiToSlack] API response status:", apiResponse.status)
     const result = await apiResponse.json()
-    console.log("[uploadEmojiToSlack] API response result:", result)
 
     if (!apiResponse.ok || result.error || result.details?.error) {
       let errorMessage = "Failed to upload emoji to Slack"
@@ -151,7 +140,6 @@ export async function uploadEmojiToSlack(
       }
     }
 
-    console.log("[uploadEmojiToSlack] Upload successful for:", emojiName)
     return {
       success: true,
       emojiName: emojiName
@@ -175,8 +163,6 @@ export async function uploadPackEmojiToSlack(
   emojiName: string,
   isAnimated: boolean = false
 ): Promise<SlackUploadResult> {
-  console.log("[uploadPackEmojiToSlack] Starting upload for:", emojiName)
-
   try {
     // Get the stored curl command from localStorage
     const storedCurl = localStorage.getItem("slackCurlCommand")
