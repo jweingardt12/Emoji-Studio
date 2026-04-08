@@ -1,13 +1,15 @@
 "use client"
 
 import { useMemo, useEffect, useRef, useState } from "react"
-import { Activity, Hash, Settings } from "lucide-react"
+import { Activity, Hash, Settings, Info, Shield, Globe, HardDrive, Zap } from "lucide-react"
 import Link from "next/link"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useAnalytics } from "@/lib/analytics"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { InfoDrawerResponsive } from "@/components/info-drawer-responsive"
 import { useReactionsState } from "./hooks/use-reactions-state"
 import { ChannelPicker } from "./components/channel-picker"
 import { ScanProgress } from "./components/scan-progress"
@@ -102,7 +104,82 @@ export default function ReactionsPage() {
       <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-6 transition-all duration-500 ease-out ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Usage</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">Usage</h1>
+              <InfoDrawerResponsive
+                trigger={
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                    <Info className="h-4 w-4" />
+                    <span className="sr-only">How this works</span>
+                  </Button>
+                }
+                title="How Usage Scanning Works"
+                description="Understand how Emoji Studio scans your Slack workspace and keeps your data secure."
+              >
+                <div className="space-y-6 text-sm">
+                  <div className="flex gap-3">
+                    <div className="rounded-lg bg-primary/10 p-2 h-fit shrink-0">
+                      <Zap className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">How it works</p>
+                      <p className="text-muted-foreground mt-1">
+                        Usage scanning reads message history from the Slack channels you select using the
+                        Slack <code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.history</code> API.
+                        It looks at emoji reactions on messages and aggregates them into charts
+                        and leaderboards &mdash; it does not read or store message content.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="rounded-lg bg-green-500/10 p-2 h-fit shrink-0">
+                      <Shield className="h-4 w-4 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Your credentials</p>
+                      <p className="text-muted-foreground mt-1">
+                        Authentication uses the same Slack session you set up in Settings.
+                        Your token is stored only in your browser&apos;s local storage and is never
+                        sent to any third-party server. API calls are proxied through a
+                        server-side route that <strong>only</strong> allows
+                        {" "}<code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.list</code> and
+                        {" "}<code className="text-xs bg-muted px-1 py-0.5 rounded">conversations.history</code> &mdash;
+                        no other Slack endpoints are reachable.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="rounded-lg bg-blue-500/10 p-2 h-fit shrink-0">
+                      <HardDrive className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Data storage</p>
+                      <p className="text-muted-foreground mt-1">
+                        All reaction data is processed entirely in your browser. Scan results are
+                        cached locally so you don&apos;t have to re-scan every time. Nothing is uploaded
+                        to any external server or database &mdash; your data stays on your device.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="rounded-lg bg-orange-500/10 p-2 h-fit shrink-0">
+                      <Globe className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Rate limiting</p>
+                      <p className="text-muted-foreground mt-1">
+                        Scans are rate-limited to avoid hitting Slack&apos;s API limits. Each channel
+                        is scanned sequentially with a delay between requests. Larger channels or
+                        longer date ranges will take more time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </InfoDrawerResponsive>
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               See how your workspace&apos;s emojis are being used across Slack.
             </p>
