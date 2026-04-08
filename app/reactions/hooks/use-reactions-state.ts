@@ -123,7 +123,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     }
   }, [parsedCurl, workspace, token, buildCurlRequest])
 
-  // Load cached data on mount
+  // Load cached data on mount and fetch channel names
   useEffect(() => {
     async function loadCache() {
       const cached = await reactionStorage.loadReactions()
@@ -136,6 +136,13 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     }
     loadCache()
   }, [])
+
+  // Fetch channel names whenever we have auth but no channel list loaded yet
+  useEffect(() => {
+    if (token && workspace && channels.length === 0) {
+      fetchChannels()
+    }
+  }, [token, workspace, channels.length, fetchChannels])
 
   // Scan a single channel for reactions
   const scanChannel = useCallback(
