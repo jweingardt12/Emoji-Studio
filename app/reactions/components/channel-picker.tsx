@@ -149,11 +149,17 @@ export function ChannelPicker({
           onValueChange={(v) => v && setDateRange(v as DateRange)}
           className="border rounded-md"
         >
-          <ToggleGroupItem value="7d" className="text-sm px-3 h-9">
+          <ToggleGroupItem value="24h" className="text-sm px-2.5 h-9">
+            24h
+          </ToggleGroupItem>
+          <ToggleGroupItem value="7d" className="text-sm px-2.5 h-9">
             7d
           </ToggleGroupItem>
-          <ToggleGroupItem value="30d" className="text-sm px-3 h-9">
+          <ToggleGroupItem value="30d" className="text-sm px-2.5 h-9">
             30d
+          </ToggleGroupItem>
+          <ToggleGroupItem value="90d" className="text-sm px-2.5 h-9">
+            90d
           </ToggleGroupItem>
         </ToggleGroup>
 

@@ -20,8 +20,10 @@ export interface SlackChannel {
   num_members: number
 }
 
-export type DateRange = "7d" | "30d"
+export type DateRange = "24h" | "7d" | "30d" | "90d"
 export type EmojiFilter = "all" | "custom"
+
+const DATE_RANGE_DAYS: Record<DateRange, number> = { "24h": 1, "7d": 7, "30d": 30, "90d": 90 }
 
 interface ScanProgress {
   status: "idle" | "scanning" | "complete" | "error"
@@ -39,7 +41,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
 
   // Scan state
   const [dateRange, setDateRange] = useState<DateRange>("7d")
-  const [emojiFilter, setEmojiFilter] = useState<EmojiFilter>("all")
+  const [emojiFilter, setEmojiFilter] = useState<EmojiFilter>("custom")
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
     status: "idle",
     current_channel: "",
@@ -146,7 +148,7 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       const events: ReactionEvent[] = []
       if (!workspace || !token) return events
 
-      const daysBack = dateRange === "7d" ? 7 : 30
+      const daysBack = DATE_RANGE_DAYS[dateRange]
       const oldest = Math.floor(Date.now() / 1000) - daysBack * 86400
       let cursor: string | undefined
 
@@ -287,28 +289,29 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   const userStats = useMemo(() => getUserReactionStats(filteredEvents), [filteredEvents])
   const channelBreakdown = useMemo(() => getChannelBreakdown(filteredEvents, 10), [filteredEvents])
 
-  // Timeline data — single pass bucketing instead of per-day filter
   const timelineData = useMemo(() => {
     if (filteredEvents.length === 0) return []
-    const days = dateRange === "7d" ? 7 : 30
     const now = Math.floor(Date.now() / 1000)
+    const isHourly = dateRange === "24h"
+    const bucketCount = isHourly ? 24 : DATE_RANGE_DAYS[dateRange]
+    const bucketSize = isHourly ? 3600 : 86400
 
-    // Single pass: bucket events by day offset
-    const countByDay = new Map<number, number>()
+    const countByBucket = new Map<number, number>()
     for (const e of filteredEvents) {
-      const dayOffset = Math.floor((now - e.timestamp) / 86400)
-      if (dayOffset >= 0 && dayOffset < days) {
-        countByDay.set(dayOffset, (countByDay.get(dayOffset) || 0) + e.count)
+      const offset = Math.floor((now - e.timestamp) / bucketSize)
+      if (offset >= 0 && offset < bucketCount) {
+        countByBucket.set(offset, (countByBucket.get(offset) || 0) + e.count)
       }
     }
 
     const buckets: { date: string; count: number }[] = []
-    for (let d = days - 1; d >= 0; d--) {
-      const dayStart = now - (d + 1) * 86400
-      buckets.push({
-        date: new Date(dayStart * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        count: countByDay.get(d) || 0,
-      })
+    for (let i = bucketCount - 1; i >= 0; i--) {
+      const ts = now - (i + 1) * bucketSize
+      const d = new Date(ts * 1000)
+      const label = isHourly
+        ? d.toLocaleTimeString("en-US", { hour: "numeric" })
+        : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      buckets.push({ date: label, count: countByBucket.get(i) || 0 })
     }
     return buckets
   }, [filteredEvents, dateRange])
