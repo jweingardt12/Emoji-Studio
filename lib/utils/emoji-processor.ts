@@ -137,6 +137,7 @@ export class EmojiProcessor {
       const img = new Image()
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
+      const objectUrl = URL.createObjectURL(imageBlob)
 
       img.onload = async () => {
         try {
@@ -169,6 +170,7 @@ export class EmojiProcessor {
           const preview = canvas.toDataURL(format, quality)
           const blobUrl = await this.blobToDataURL(blob)
 
+          URL.revokeObjectURL(objectUrl)
           resolve({
             name,
             originalFile: file,
@@ -182,30 +184,35 @@ export class EmojiProcessor {
             processingNote: blob.size > 128 * 1024 ? `Resized to 128x128 (${(blob.size / 1024).toFixed(0)}KB)` : 'Resized to 128x128'
           })
         } catch (error) {
+          URL.revokeObjectURL(objectUrl)
           reject(error)
         }
       }
 
       img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
         reject(new Error('Failed to load image'))
       }
 
-      img.src = URL.createObjectURL(imageBlob)
+      img.src = objectUrl
     })
   }
 
   private static async getImageDimensions(file: Blob): Promise<{ width: number; height: number }> {
     return new Promise((resolve) => {
       const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
         resolve({ width: img.width, height: img.height })
       }
       img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
         // If we can't load the image (e.g., HEIC not supported in browser),
         // return target dimensions as fallback
         resolve({ width: this.TARGET_SIZE, height: this.TARGET_SIZE })
       }
-      img.src = URL.createObjectURL(file)
+      img.src = objectUrl
     })
   }
 
@@ -257,10 +264,12 @@ export class EmojiProcessor {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
 
+      const objectUrl = URL.createObjectURL(file)
+
       img.onload = async () => {
         try {
           console.log(`[EmojiProcessor] Image loaded: ${img.width}x${img.height}`)
-          
+
           canvas.width = this.TARGET_SIZE
           canvas.height = this.TARGET_SIZE
 
@@ -280,7 +289,7 @@ export class EmojiProcessor {
           // Convert to blob - use PNG for best quality since Slack will handle compression
           let quality = 1.0  // Maximum quality since Slack will compress
           let format = 'image/png'
-          
+
           let blob = await this.canvasToBlob(canvas, format, quality)
           console.log(`[EmojiProcessor] PNG blob size: ${blob?.size} (Slack will auto-compress)`)
 
@@ -297,6 +306,7 @@ export class EmojiProcessor {
 
           console.log(`[EmojiProcessor] Image processing complete for ${name}`)
 
+          URL.revokeObjectURL(objectUrl)
           resolve({
             name,
             originalFile: file,
@@ -309,18 +319,18 @@ export class EmojiProcessor {
             blob: blobUrl
           })
         } catch (error) {
+          URL.revokeObjectURL(objectUrl)
           console.error('[EmojiProcessor] Error processing image:', error)
           reject(error)
         }
       }
 
       img.onerror = (error) => {
+        URL.revokeObjectURL(objectUrl)
         console.error('[EmojiProcessor] Failed to load image:', error)
         reject(new Error('Failed to load image'))
       }
-      
-      const objectUrl = URL.createObjectURL(file)
-      console.log(`[EmojiProcessor] Created object URL for image: ${objectUrl}`)
+
       img.src = objectUrl
     })
   }

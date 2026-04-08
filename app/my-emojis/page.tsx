@@ -1390,6 +1390,7 @@ function MyEmojisPage() {
   }
 
   return (
+    <TooltipProvider>
     <>
       <div className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6'}`}>
         <div className={isMobile ? '' : 'px-2 sm:px-4 lg:px-6'}>
@@ -1649,8 +1650,7 @@ function MyEmojisPage() {
                         className="w-full sm:w-[300px] pl-9"
                       />
                     </div>
-                    <TooltipProvider>
-                      <Tooltip>
+                    <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
                             variant="outline"
@@ -1663,7 +1663,6 @@ function MyEmojisPage() {
                         </TooltipTrigger>
                         <TooltipContent>Keyboard shortcuts</TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
                   </div>
                 </div>
               </CardHeader>
@@ -2041,21 +2040,19 @@ function MyEmojisPage() {
                           <TableCell>
                             {/* Desktop Actions */}
                             <div className="hidden sm:flex items-center justify-end gap-1">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => copyEmojiName(emoji)}
-                                    >
-                                      <Copy className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Copy name</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => copyEmojiName(emoji)}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy name</TooltipContent>
+                              </Tooltip>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -2285,8 +2282,7 @@ function MyEmojisPage() {
                         ) : (
                           /* Desktop Quick Actions - Floating Toolbar positioned at top to avoid covering text */
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
-                            <TooltipProvider>
-                              <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -2302,10 +2298,8 @@ function MyEmojisPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>Copy name</TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>
 
-                            <TooltipProvider>
-                              <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -2321,10 +2315,8 @@ function MyEmojisPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>Copy URL</TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>
 
-                            <TooltipProvider>
-                              <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -2340,10 +2332,8 @@ function MyEmojisPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>Copy image</TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>
 
-                            <TooltipProvider>
-                              <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -2362,10 +2352,8 @@ function MyEmojisPage() {
                                   {emoji.is_alias === 1 ? "Cannot rename aliases" : "Rename"}
                                 </TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>
 
-                            <TooltipProvider>
-                              <Tooltip>
+                            <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -2381,7 +2369,6 @@ function MyEmojisPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>Delete</TooltipContent>
                               </Tooltip>
-                            </TooltipProvider>
                           </div>
                         )}
                       </div>
@@ -2885,6 +2872,7 @@ function MyEmojisPage() {
         </DialogContent>
       </Dialog>
     </>
+    </TooltipProvider>
   )
 }
 
