@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Smile } from "lucide-react"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
 import type { EmojiFilter } from "@/app/reactions/hooks/use-reactions-state"
@@ -42,7 +43,7 @@ export function TopReactionsChart({
   const data = filtered.slice(0, 20)
   const maxCount = data[0]?.total_count || 1
 
-  // Build creator lookup
+  // Build creator lookup from emoji data
   const creatorMap = new Map<string, string>()
   for (const emoji of emojiData) {
     if (!emoji.is_alias && emoji.user_display_name) {
@@ -76,54 +77,57 @@ export function TopReactionsChart({
               : "No data yet — run a scan first."}
           </p>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-0.5">
             {data.map((reaction, i) => {
               const url = customEmojiUrls.get(reaction.emoji_name)
+              const isCustom = !!url
               const creator = creatorMap.get(reaction.emoji_name)
-              const barPct = Math.max(2, (reaction.total_count / maxCount) * 100)
+              const barPct = Math.max(3, (reaction.total_count / maxCount) * 100)
 
               return (
                 <div
                   key={reaction.emoji_name}
-                  className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-muted/50 transition-colors group"
+                  className="flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors"
                 >
                   {/* Rank */}
-                  <span className="text-sm font-bold text-muted-foreground w-5 text-right shrink-0">
+                  <span className="text-xs font-semibold text-muted-foreground w-5 text-right tabular-nums shrink-0">
                     {i + 1}
                   </span>
 
-                  {/* Emoji image */}
-                  <div className="h-8 w-8 shrink-0 flex items-center justify-center">
-                    {url ? (
+                  {/* Emoji image or placeholder */}
+                  <div className="h-7 w-7 shrink-0 flex items-center justify-center rounded bg-muted/50">
+                    {isCustom ? (
                       <img
                         src={url}
                         alt={reaction.emoji_name}
-                        className="h-7 w-7 object-contain rounded"
+                        className="h-6 w-6 object-contain"
                       />
                     ) : (
-                      <span className="text-lg" title={`:${reaction.emoji_name}:`}>
-                        :{reaction.emoji_name}:
-                      </span>
+                      <Smile className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
 
                   {/* Name + creator */}
-                  <div className="min-w-0 w-36 shrink-0">
-                    <p className="text-sm font-medium truncate" title={`:${reaction.emoji_name}:`}>
+                  <div className="w-32 sm:w-40 shrink-0 min-w-0">
+                    <p className="text-sm font-medium truncate leading-tight">
                       :{reaction.emoji_name}:
                     </p>
-                    {creator && (
-                      <p className="text-[11px] text-muted-foreground truncate">
+                    {creator ? (
+                      <p className="text-[10px] text-muted-foreground truncate leading-tight">
                         by {creator.split(" ")[0]}
                       </p>
-                    )}
+                    ) : !isCustom ? (
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        built-in
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Bar */}
-                  <div className="flex-1 min-w-0">
-                    <div className="w-full bg-muted rounded-full h-3">
+                  <div className="flex-1 min-w-0 hidden sm:block">
+                    <div className="w-full bg-muted/60 rounded-full h-2.5">
                       <div
-                        className="h-3 rounded-full transition-all"
+                        className="h-2.5 rounded-full"
                         style={{
                           width: `${barPct}%`,
                           backgroundColor: BAR_COLORS[i % BAR_COLORS.length],
@@ -133,7 +137,7 @@ export function TopReactionsChart({
                   </div>
 
                   {/* Count */}
-                  <span className="text-sm font-semibold tabular-nums w-14 text-right shrink-0">
+                  <span className="text-xs font-semibold tabular-nums shrink-0 ml-auto sm:ml-0 sm:w-12 text-right">
                     {reaction.total_count.toLocaleString()}
                   </span>
                 </div>
