@@ -517,12 +517,17 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           
           canvas.width = 128;
           canvas.height = 128;
-          ctx!.drawImage(img, 0, 0, 128, 128);
-          
+          const scale = Math.min(128 / img.width, 128 / img.height);
+          const scaledWidth = img.width * scale;
+          const scaledHeight = img.height * scale;
+          const offsetX = (128 - scaledWidth) / 2;
+          const offsetY = (128 - scaledHeight) / 2;
+          ctx!.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
           const resizedBlob = await new Promise<Blob>((resolve) => {
             canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);
           });
-          
+
           const { removeBackgroundEnhanced } = await import('@/lib/utils/background-removal');
           processedBlob = await removeBackgroundEnhanced(resizedBlob);
         } catch (bgError) {
@@ -1082,7 +1087,12 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                                         
                                         canvas.width = 128;
                                         canvas.height = 128;
-                                        ctx!.drawImage(img, 0, 0, 128, 128);
+                                        const scale = Math.min(128 / img.width, 128 / img.height);
+                                        const scaledWidth = img.width * scale;
+                                        const scaledHeight = img.height * scale;
+                                        const offsetX = (128 - scaledWidth) / 2;
+                                        const offsetY = (128 - scaledHeight) / 2;
+                                        ctx!.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
                                         
                                         const resizedBlob = await new Promise<Blob>((resolve) => {
                                           canvas.toBlob((b) => resolve(b!), 'image/png', 1.0);

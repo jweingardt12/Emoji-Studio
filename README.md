@@ -26,33 +26,61 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 - Time-series analysis of emoji creation patterns
 - Activity heatmaps showing peak creation periods
 - Individual user profiles with detailed contribution metrics
+- Quick action buttons for creating, browsing, and exploring emojis
 
 ### Emoji Explorer
-- Full-text search across emoji names and creators
-- Advanced filtering by date ranges and user IDs
-- Bulk export functionality with ZIP download
-- Grid view with lazy loading for large collections
-- Direct integration with Slack for seamless updates
+- Full-text search across emoji names, creators, and user IDs
+- Advanced filtering by date ranges with sort options (newest, oldest, A-Z)
+- Bulk selection with Shift+Click support and bulk ZIP download
+- Virtualized grid for smooth performance with large collections
+- Copy emoji code (`:name:`), URL, or image directly to clipboard
+- Individual emoji download and inline bulk action bar
 
 ### Emoji Creator
-- Image optimization for Slack's technical requirements
-- Video to GIF conversion with frame rate control
-- Automatic resizing and compression
-- Direct upload to Slack workspaces
-- Batch processing for multiple files
+- Drag-and-drop upload for images, GIFs, and videos (PNG, JPG, GIF, WebP, MP4, MOV)
+- Video-to-GIF conversion with configurable frame rate (FFmpeg, runs in browser)
+- ML-based background removal (WebAssembly, no server required)
+- HDR image support (HEIC, HEIF, AVIF, JXL) with automatic conversion
+- Automatic resizing (128x128px) and compression (≤128KB) for Slack
+- Direct upload to Slack workspaces with batch processing
+- **Browse Packs**: Search and import from slackmojis.com with category filtering, multi-select (up to 20), bulk download as ZIP, and bulk upload to Slack
+
+### My Emojis
+- Personal emoji management dashboard with table and grid views
+- Rename, replace, add aliases, or delete emojis from your workspace
+- Bulk operations: select all, download, delete
+- Keyboard shortcuts (Cmd/Ctrl+K for search) and context menus
+- Filter by type (images/GIFs) and alias status
+
+### Leaderboard
+- Contributor rankings with multiple date ranges (7d, 30d, quarter, year, all time)
+- L4WEPW metric (Last 4 Weeks Emojis Per Week) with trend indicators
+- Generate and share leaderboard images with date range context
+- Search users and filter inactive contributors with configurable threshold
+
+### Emoji Wrapped
+- Spotify Wrapped-style annual review of your workspace's emoji activity
+- 10+ animated story slides: personal stats, milestones, naming patterns, vibe analysis, quiz, and more
+- Shareable story cards and downloadable images
+- Works with demo data for onboarding
+
+### Emoji Detail Pages
+- Individual pages for each emoji with large preview
+- Creator information, creation date, and alias status
+- Copy emoji code, download, and browse the creator's other emojis
+
+### Data Visualizations
+- Four-tab dashboard: Overview, Activity, Creators, and Content
+- Time range filtering (7d, 30d, 90d, 6 months, 1 year, all time)
+- Word frequency analysis, creation timelines, and naming pattern charts
+- Distribution charts for static vs animated emojis
+- Contributor participation metrics and trend analysis
 
 ### Notifications
 - Background monitoring for new emoji additions
 - Configurable check intervals (15 minutes to daily)
 - Browser notifications with direct links to new content
 - Requires Chrome extension for background operation
-
-### Data Visualizations
-- Word frequency analysis for emoji naming patterns
-- Creation timeline with monthly and weekly aggregations
-- Distribution charts for static vs animated emojis
-- Contributor pie charts and participation metrics
-- Trend analysis for workspace emoji growth
 
 ### Chrome Extension
 - One-click authentication without developer tools
@@ -69,6 +97,12 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 3. Visit [app.emojistudio.xyz](https://app.emojistudio.xyz)
 4. Data loads automatically
 
+### Via Mobile Pairing
+1. Open [app.emojistudio.xyz](https://app.emojistudio.xyz) on desktop
+2. Go to Settings → Connection → Pair to Mobile
+3. Scan the QR code with the iOS app or another device
+4. Data transfers automatically via encrypted session
+
 ### Manual Setup
 1. Navigate to [app.emojistudio.xyz](https://app.emojistudio.xyz)
 2. Open Settings → Connection
@@ -77,7 +111,7 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 
 ## Privacy & Security
 
-- **Browser-only storage**: All data remains in localStorage
+- **Browser-only storage**: All data stays in localStorage and IndexedDB
 - **No server persistence**: Zero backend data retention
 - **Direct API access**: Connects directly to Slack
 - **Data portability**: Export or delete at any time
@@ -107,12 +141,14 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript
-- **UI**: shadcn/ui components
+- **Runtime**: React 19 with React Compiler
+- **UI**: shadcn/ui (Radix UI primitives), Framer Motion
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts, Chart.js
-- **Image Processing**: Canvas API, GIF.js
+- **Media Processing**: Canvas API, GIF.js, FFmpeg (WASM), @imgly/background-removal
+- **Storage**: IndexedDB, localStorage
 - **Analytics**: OpenPanel
 - **Hosting**: Vercel
 

@@ -4,10 +4,11 @@ import { useState, useEffect, useCallback, Suspense, lazy } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { Button } from "@/components/ui/button"
-import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X } from "lucide-react"
+import { Search, Grid3x3, List, Upload, Sparkles, Download, Send, X, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import { useTrack } from "@/lib/hooks/use-track"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
@@ -27,6 +28,24 @@ import {
 
 // Dynamic import for mobile component
 const MobileEmojiCreator = lazy(() => import("@/components/mobile-emoji-creator").then(module => ({ default: module.MobileEmojiCreator })))
+
+function ProgressBar({ completed, total, label }: { completed: number; total: number; label: string }) {
+  const pct = total > 0 ? (completed / total) * 100 : 0
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-3">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <Progress value={pct} className="h-2" />
+        </div>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {completed}/{total}
+        </span>
+      </div>
+      <p className="text-xs text-muted-foreground text-center">{label}</p>
+    </div>
+  )
+}
 
 // Main page content component
 function EmojiCreatorContent() {
@@ -517,13 +536,27 @@ function EmojiCreatorContent() {
                 <div className="flex-none px-4 pt-4 pb-3 space-y-3">
                   <div className="flex gap-2 items-center">
                     <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      {packBrowser.loading && packBrowser.searchQuery.trim() ? (
+                        <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                      ) : (
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      )}
                       <Input
                         placeholder="Search emoji packs..."
                         value={packBrowser.searchQuery}
                         onChange={(e) => packBrowser.setSearchQuery(e.target.value)}
-                        className="pl-9"
+                        className={cn("pl-9", packBrowser.searchQuery && "pr-8")}
                       />
+                      {packBrowser.searchQuery && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                          onClick={() => packBrowser.setSearchQuery("")}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                     <Button
                       variant="outline"
@@ -554,6 +587,11 @@ function EmojiCreatorContent() {
                     }}
                     searchQuery={packBrowser.searchQuery}
                   />
+                  {packBrowser.searchQuery.trim() && !packBrowser.loading && packBrowser.currentEmojis.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {packBrowser.currentEmojis.length} result{packBrowser.currentEmojis.length !== 1 ? "s" : ""} for &quot;{packBrowser.searchQuery.trim()}&quot;
+                    </p>
+                  )}
                 </div>
                 <div className="flex-1 overflow-hidden min-h-0 px-4 pb-20">
                     <PackEmojiGrid
@@ -574,6 +612,13 @@ function EmojiCreatorContent() {
                     className="absolute bottom-4 left-4 right-4"
                   >
                     <div className="bg-card rounded-xl p-3 shadow-lg border border-border">
+                      {downloadProgress || uploadProgress ? (
+                        <ProgressBar
+                          completed={downloadProgress ? downloadProgress.completed : (uploadProgress!.completed + uploadProgress!.failed)}
+                          total={(downloadProgress || uploadProgress!).total}
+                          label={downloadProgress ? (downloadProgress.stage === "downloading" ? "Downloading emojis..." : "Finalizing...") : "Uploading to Slack..."}
+                        />
+                      ) : (
                       <div className="flex items-center gap-3">
                         {/* Selection info - tap to open sheet */}
                         <button
@@ -625,7 +670,6 @@ function EmojiCreatorContent() {
                             size="icon"
                             className="h-9 w-9"
                             onClick={handlePackDownload}
-                            disabled={!!downloadProgress}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -634,7 +678,6 @@ function EmojiCreatorContent() {
                               size="sm"
                               className="h-9 gap-2"
                               onClick={handleSendToSlack}
-                              disabled={!!uploadProgress}
                             >
                               <Send className="h-4 w-4" />
                               <span className="hidden sm:inline">Send</span>
@@ -642,6 +685,7 @@ function EmojiCreatorContent() {
                           )}
                         </div>
                       </div>
+                      )}
                     </div>
                   </motion.div>
                 )}

@@ -266,49 +266,46 @@ export function DashboardHeroMetrics() {
     setIsClient(true);
   }, []);
 
-  // Filter out aliases from emojiData
-  const nonAliasEmojis = emojiData.filter(e => !e.is_alias);
+  // Memoize all metric calculations to avoid re-running on every render
+  const { nonAliasEmojis, weeklyEmojis, todayEmojis, activeUsers, weeklyGrowth, epw, emojisLastYear, yearlyGrowth } = useMemo(() => {
+    const filtered = emojiData.filter(e => !e.is_alias);
+    const now = Math.floor(Date.now() / 1000);
+    const weekAgo = now - (7 * 24 * 60 * 60);
+    const monthAgo = now - (30 * 24 * 60 * 60);
+    const yearAgo = now - (365 * 24 * 60 * 60);
 
-  // Calculate metrics
-  const now = Math.floor(Date.now() / 1000);
-  const weekAgo = now - (7 * 24 * 60 * 60);
-  const monthAgo = now - (30 * 24 * 60 * 60);
-  const yearAgo = now - (365 * 24 * 60 * 60);
-  
-  const weeklyEmojis = nonAliasEmojis.filter(e => e.created && e.created > weekAgo).length;
-  const todayStart = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
-  const todayEmojis = nonAliasEmojis.filter(e => e.created && e.created >= todayStart).length;
-  
-  // Active users
-  const activeUsers = new Set(
-    nonAliasEmojis
-      .filter(e => e.created && e.created > monthAgo)
-      .map(e => e.user_id)
-  ).size;
-  
-  // Calculate trends
-  const twoWeeksAgo = now - (14 * 24 * 60 * 60);
-  const previousWeekEmojis = nonAliasEmojis.filter(e => 
-    e.created && e.created > twoWeeksAgo && e.created <= weekAgo
-  ).length;
-  
-  const weeklyGrowth = previousWeekEmojis > 0 
-    ? Math.round(((weeklyEmojis - previousWeekEmojis) / previousWeekEmojis) * 100)
-    : 0;
+    const weekly = filtered.filter(e => e.created && e.created > weekAgo).length;
+    const todayStart = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
+    const today = filtered.filter(e => e.created && e.created >= todayStart).length;
 
-  // EPW
-  const fourWeeksAgo = now - (28 * 24 * 60 * 60);
-  const emojisLast4Weeks = nonAliasEmojis.filter(e => e.created && e.created > fourWeeksAgo).length;
-  const epw = (emojisLast4Weeks / 4).toFixed(1);
+    const active = new Set(
+      filtered
+        .filter(e => e.created && e.created > monthAgo)
+        .map(e => e.user_id)
+    ).size;
 
-  // Year over year
-  const emojisLastYear = nonAliasEmojis.filter(e => e.created && e.created > yearAgo).length;
-  const emojisYearBefore = nonAliasEmojis.filter(e => 
-    e.created && e.created > (yearAgo - (365 * 24 * 60 * 60)) && e.created <= yearAgo
-  ).length;
-  const yearlyGrowth = emojisYearBefore > 0 
-    ? Math.round(((emojisLastYear - emojisYearBefore) / emojisYearBefore) * 100)
-    : 0;
+    const twoWeeksAgo = now - (14 * 24 * 60 * 60);
+    const previousWeekEmojis = filtered.filter(e =>
+      e.created && e.created > twoWeeksAgo && e.created <= weekAgo
+    ).length;
+    const wGrowth = previousWeekEmojis > 0
+      ? Math.round(((weekly - previousWeekEmojis) / previousWeekEmojis) * 100)
+      : 0;
+
+    const fourWeeksAgo = now - (28 * 24 * 60 * 60);
+    const emojisLast4Weeks = filtered.filter(e => e.created && e.created > fourWeeksAgo).length;
+    const epwVal = (emojisLast4Weeks / 4).toFixed(1);
+
+    const emojisLastYear = filtered.filter(e => e.created && e.created > yearAgo).length;
+    const emojisYearBefore = filtered.filter(e =>
+      e.created && e.created > (yearAgo - (365 * 24 * 60 * 60)) && e.created <= yearAgo
+    ).length;
+    const yGrowth = emojisYearBefore > 0
+      ? Math.round(((emojisLastYear - emojisYearBefore) / emojisYearBefore) * 100)
+      : 0;
+
+    return { nonAliasEmojis: filtered, weeklyEmojis: weekly, todayEmojis: today, activeUsers: active, weeklyGrowth: wGrowth, epw: epwVal, emojisLastYear, yearlyGrowth: yGrowth };
+  }, [emojiData]);
 
   // Prepare chart data for Total Emojis (cumulative)
   const totalEmojisData = useMemo(() => {

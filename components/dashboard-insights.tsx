@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, Sparkles, Users, X, ChevronRight } from "lucide-react";
 import { useEmojiData } from "@/lib/hooks/use-emoji-data";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,79 +30,83 @@ export function DashboardInsights() {
 
   if (!isClient || !isVisible) return null;
 
-  // Calculate insights
-  const now = Math.floor(Date.now() / 1000);
-  const weekAgo = now - (7 * 24 * 60 * 60);
-  const twoWeeksAgo = now - (14 * 24 * 60 * 60);
-  const monthAgo = now - (30 * 24 * 60 * 60);
-  
-  const thisWeekEmojis = emojiData.filter(e => e.created && e.created > weekAgo).length;
-  const lastWeekEmojis = emojiData.filter(e => 
-    e.created && e.created > twoWeeksAgo && e.created <= weekAgo
-  ).length;
-  
-  const weeklyChange = lastWeekEmojis > 0 
-    ? Math.round(((thisWeekEmojis - lastWeekEmojis) / lastWeekEmojis) * 100)
-    : thisWeekEmojis > 0 ? 100 : 0;
-  
-  // Find new creators this week
-  const thisWeekCreators = new Set(
-    emojiData
+  // Memoize insight calculations
+  const { primaryInsight, secondaryInsight, sentiment, iconType } = useMemo(() => {
+    const now = Math.floor(Date.now() / 1000);
+    const weekAgo = now - (7 * 24 * 60 * 60);
+    const twoWeeksAgo = now - (14 * 24 * 60 * 60);
+    const monthAgo = now - (30 * 24 * 60 * 60);
+
+    const thisWeekEmojis = emojiData.filter(e => e.created && e.created > weekAgo).length;
+    const lastWeekEmojis = emojiData.filter(e =>
+      e.created && e.created > twoWeeksAgo && e.created <= weekAgo
+    ).length;
+
+    const weeklyChange = lastWeekEmojis > 0
+      ? Math.round(((thisWeekEmojis - lastWeekEmojis) / lastWeekEmojis) * 100)
+      : thisWeekEmojis > 0 ? 100 : 0;
+
+    const thisWeekCreators = new Set(
+      emojiData
+        .filter(e => e.created && e.created > weekAgo)
+        .map(e => e.user_id)
+    );
+
+    const lastMonthCreators = new Set(
+      emojiData
+        .filter(e => e.created && e.created > monthAgo && e.created <= weekAgo)
+        .map(e => e.user_id)
+    );
+
+    const newCreators = Array.from(thisWeekCreators).filter(id => !lastMonthCreators.has(id));
+
+    const recentEmojis = emojiData
       .filter(e => e.created && e.created > weekAgo)
-      .map(e => e.user_id)
-  );
-  
-  const lastMonthCreators = new Set(
-    emojiData
-      .filter(e => e.created && e.created > monthAgo && e.created <= weekAgo)
-      .map(e => e.user_id)
-  );
-  
-  const newCreators = Array.from(thisWeekCreators).filter(id => !lastMonthCreators.has(id));
-  
-  // Find trending emoji (most recently created)
-  const recentEmojis = emojiData
-    .filter(e => e.created && e.created > weekAgo)
-    .sort((a, b) => (b.created || 0) - (a.created || 0));
-  const trendingEmoji = recentEmojis[0];
-  
-  // Generate insight message
-  let primaryInsight = "";
-  let secondaryInsight = "";
-  let sentiment: 'positive' | 'neutral' = 'neutral';
-  let icon = <Sparkles className="h-4 w-4" />;
-  
-  if (weeklyChange > 20) {
-    primaryInsight = `Your workspace is ${weeklyChange}% more active this week`;
-    sentiment = 'positive';
-    icon = <TrendingUp className="h-4 w-4" />;
-  } else if (newCreators.length > 0) {
-    primaryInsight = `${newCreators.length} new ${newCreators.length === 1 ? 'creator' : 'creators'} joined this week`;
-    sentiment = 'positive';
-    icon = <Users className="h-4 w-4" />;
-  } else if (thisWeekEmojis > 0) {
-    primaryInsight = `${thisWeekEmojis} ${thisWeekEmojis === 1 ? 'emoji' : 'emojis'} added this week`;
-    sentiment = thisWeekEmojis > 10 ? 'positive' : 'neutral';
-  } else {
-    primaryInsight = "Ready to create something amazing?";
-    secondaryInsight = "Start building your emoji collection today!";
-    sentiment = 'neutral';
-  }
-  
-  // Build secondary insights
-  if (!secondaryInsight) {
-    const insights = [];
-    if (thisWeekEmojis > 0) {
-      insights.push(`${thisWeekEmojis} ${thisWeekEmojis === 1 ? 'emoji' : 'emojis'} added`);
+      .sort((a, b) => (b.created || 0) - (a.created || 0));
+    const trendingEmoji = recentEmojis[0];
+
+    let primary = "";
+    let secondary = "";
+    let sent: 'positive' | 'neutral' = 'neutral';
+    let iconType: 'sparkles' | 'trending-up' | 'users' = 'sparkles';
+
+    if (weeklyChange > 20) {
+      primary = `Your workspace is ${weeklyChange}% more active this week`;
+      sent = 'positive';
+      iconType = 'trending-up';
+    } else if (newCreators.length > 0) {
+      primary = `${newCreators.length} new ${newCreators.length === 1 ? 'creator' : 'creators'} joined this week`;
+      sent = 'positive';
+      iconType = 'users';
+    } else if (thisWeekEmojis > 0) {
+      primary = `${thisWeekEmojis} ${thisWeekEmojis === 1 ? 'emoji' : 'emojis'} added this week`;
+      sent = thisWeekEmojis > 10 ? 'positive' : 'neutral';
+    } else {
+      primary = "Ready to create something amazing?";
+      secondary = "Start building your emoji collection today!";
+      sent = 'neutral';
     }
-    if (newCreators.length > 0 && !primaryInsight.includes('creator')) {
-      insights.push(`${newCreators.length} new ${newCreators.length === 1 ? 'creator' : 'creators'}`);
+
+    if (!secondary) {
+      const insights = [];
+      if (thisWeekEmojis > 0) {
+        insights.push(`${thisWeekEmojis} ${thisWeekEmojis === 1 ? 'emoji' : 'emojis'} added`);
+      }
+      if (newCreators.length > 0 && !primary.includes('creator')) {
+        insights.push(`${newCreators.length} new ${newCreators.length === 1 ? 'creator' : 'creators'}`);
+      }
+      if (trendingEmoji) {
+        insights.push(`":${trendingEmoji.name}:" is trending`);
+      }
+      secondary = insights.slice(0, 2).join(' \u2022 ');
     }
-    if (trendingEmoji) {
-      insights.push(`":${trendingEmoji.name}:" is trending`);
-    }
-    secondaryInsight = insights.slice(0, 2).join(' • ');
-  }
+
+    return { primaryInsight: primary, secondaryInsight: secondary, sentiment: sent, iconType };
+  }, [emojiData]);
+
+  const icon = iconType === 'trending-up' ? <TrendingUp className="h-4 w-4" />
+    : iconType === 'users' ? <Users className="h-4 w-4" />
+    : <Sparkles className="h-4 w-4" />;
 
   const handleDismiss = () => {
     setIsVisible(false);
