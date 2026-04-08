@@ -99,8 +99,8 @@ function ChannelRow({
                   <Tooltip key={reaction.emoji_name}>
                     <TooltipTrigger asChild>
                       <div
-                        className={`flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 ${onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? "cursor-pointer hover:bg-muted/60" : "cursor-default"}`}
-                        onClick={onEmojiClick && customEmojiUrls.has(reaction.emoji_name) ? () => onEmojiClick(reaction.emoji_name) : undefined}
+                        className={`flex items-center gap-2 rounded-md bg-muted/40 px-2.5 py-1.5 ${onEmojiClick ? "cursor-pointer hover:bg-muted/60" : "cursor-default"}`}
+                        onClick={onEmojiClick ? () => onEmojiClick(reaction.emoji_name) : undefined}
                       >
                         <EmojiDisplay
                           name={reaction.emoji_name}

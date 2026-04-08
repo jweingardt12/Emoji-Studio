@@ -81,8 +81,8 @@ export function ReactionStatsCards({
         <CardContent>
           {topEmoji ? (
             <div
-              className={`flex items-center gap-2 ${topUrl && onEmojiClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
-              onClick={topUrl && onEmojiClick ? () => onEmojiClick(topEmoji.emoji_name) : undefined}
+              className={`flex items-center gap-2 ${onEmojiClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}
+              onClick={onEmojiClick ? () => onEmojiClick(topEmoji.emoji_name) : undefined}
             >
               {topUrl && (
                 <img src={topUrl} alt={topEmoji.emoji_name} className="h-7 w-7 object-contain shrink-0" />

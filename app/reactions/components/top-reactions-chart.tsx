@@ -101,8 +101,8 @@ export function TopReactionsChart({
                   <Tooltip key={reaction.emoji_name}>
                     <TooltipTrigger asChild>
                       <div
-                        className={`flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors ${isCustom && onEmojiClick ? "cursor-pointer" : "cursor-default"}`}
-                        onClick={isCustom && onEmojiClick ? () => onEmojiClick(reaction.emoji_name) : undefined}
+                        className={`flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors ${onEmojiClick ? "cursor-pointer" : "cursor-default"}`}
+                        onClick={onEmojiClick ? () => onEmojiClick(reaction.emoji_name) : undefined}
                       >
                         {/* Rank */}
                         <span className="text-xs font-semibold text-muted-foreground w-5 text-right tabular-nums shrink-0">
