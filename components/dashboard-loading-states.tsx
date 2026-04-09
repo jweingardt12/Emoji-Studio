@@ -19,7 +19,7 @@ export function DashboardHeroSkeleton() {
             <Skeleton className="h-8 w-32 mb-1" />
             <Skeleton className="h-3 w-20" />
           </CardContent>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+          <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
         </Card>
       ))}
     </div>
@@ -43,7 +43,7 @@ export function DashboardInsightsSkeleton() {
           <Skeleton className="h-8 w-24" />
         </div>
       </CardContent>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
     </Card>
   );
 }
@@ -59,7 +59,7 @@ export function DashboardQuickActionsSkeleton() {
           <Skeleton className="h-9 w-24" />
         </div>
       </CardContent>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
     </Card>
   );
 }
@@ -79,7 +79,7 @@ export function DashboardChartSkeleton() {
       <CardContent>
         <Skeleton className="h-[300px] w-full rounded-lg" />
       </CardContent>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
     </Card>
   );
 }
@@ -89,7 +89,7 @@ export function DashboardTabbedContentSkeleton() {
     <Card className="relative overflow-hidden">
       <CardHeader className="pb-3">
         <Tabs defaultValue="leaderboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="w-full">
             <TabsTrigger value="leaderboard" disabled>
               <Skeleton className="h-4 w-20" />
             </TabsTrigger>
@@ -116,7 +116,7 @@ export function DashboardTabbedContentSkeleton() {
           </TabsContent>
         </Tabs>
       </CardHeader>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
     </Card>
   );
 }
@@ -133,21 +133,21 @@ export function EmptyStateEmojis() {
       {/* Onboarding steps */}
       <div className="w-full space-y-4 mb-8 text-left">
         <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--brand))] text-white text-xs font-bold flex-shrink-0">1</div>
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)] text-white text-xs font-bold shrink-0">1</div>
           <div>
             <p className="text-sm font-medium">Connect your Slack workspace</p>
             <p className="text-xs text-muted-foreground mt-0.5">Use the Chrome extension or paste a curl command from Slack admin</p>
           </div>
         </div>
         <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold flex-shrink-0">2</div>
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold shrink-0">2</div>
           <div>
             <p className="text-sm font-medium">Sync your emoji data</p>
             <p className="text-xs text-muted-foreground mt-0.5">We'll pull in all your custom emojis and creator info</p>
           </div>
         </div>
         <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold flex-shrink-0">3</div>
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold shrink-0">3</div>
           <div>
             <p className="text-sm font-medium">Explore analytics & create emojis</p>
             <p className="text-xs text-muted-foreground mt-0.5">View leaderboards, visualizations, and upload new emojis</p>

@@ -26,7 +26,7 @@ const VirtualizedEmojiItem = memo<{
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow hover:border-primary/30 transition-colors cursor-pointer w-full h-28"
+      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow-sm hover:border-primary/30 transition-colors cursor-pointer w-full h-28"
       title={emoji.name}
       onClick={onClick}
     >

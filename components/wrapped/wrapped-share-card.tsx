@@ -298,7 +298,7 @@ export function WrappedShareCard({
                 <div
                   key={creator.userId}
                   className={cn(
-                    "flex flex-col items-center rounded-lg bg-white/20 backdrop-blur-sm border border-white/10",
+                    "flex flex-col items-center rounded-lg bg-white/20 backdrop-blur-xs border border-white/10",
                     isStory ? "px-3 py-2" : "px-2 py-1.5"
                   )}
                 >
@@ -570,7 +570,7 @@ export function WrappedShareCardFull({
               return (
                 <div
                   key={creator.userId}
-                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10"
+                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-xs border border-white/10"
                   style={{
                     padding: isStory ? "20px 30px" : "15px 25px",
                   }}
@@ -859,7 +859,7 @@ export function WrappedShareCardAnimated({
               return (
                 <div
                   key={creator.userId}
-                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10"
+                  className="flex flex-col items-center rounded-2xl bg-white/15 backdrop-blur-xs border border-white/10"
                   style={{ padding: isStory ? "20px 30px" : "15px 25px" }}
                 >
                   <div className="flex items-center" style={{ gap: isStory ? 8 : 6, marginBottom: isStory ? 4 : 2 }}>

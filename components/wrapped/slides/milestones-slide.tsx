@@ -97,11 +97,11 @@ function MilestoneCard({
       whileHover={shouldReduceAnimations ? undefined : { scale: 1.05, y: -4 }}
       whileTap={shouldReduceAnimations ? undefined : { scale: 0.98 }}
       className={`
-        relative flex-shrink-0 wrapped-glass rounded-2xl p-3 sm:p-4
+        relative shrink-0 wrapped-glass rounded-2xl p-3 sm:p-4
         border transition-all duration-300 cursor-default
-        ${tier === "legendary" ? "border-[var(--wrapped-accent-orange)]/40" :
-          tier === "epic" ? "border-[var(--wrapped-accent-purple)]/30" :
-          tier === "rare" ? "border-[var(--wrapped-accent-cyan)]/25" :
+        ${tier === "legendary" ? "border-(--wrapped-accent-orange)/40" :
+          tier === "epic" ? "border-(--wrapped-accent-purple)/30" :
+          tier === "rare" ? "border-(--wrapped-accent-cyan)/25" :
           "border-white/10"}
         hover:border-white/30
         w-[140px] sm:w-[160px] md:w-[180px]
@@ -174,7 +174,7 @@ function MilestoneCard({
               animate={{ rotate: 360 }}
               transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
             >
-              <Sparkles className="w-4 h-4 text-[var(--wrapped-accent-orange)]" />
+              <Sparkles className="w-4 h-4 text-(--wrapped-accent-orange)" />
             </motion.div>
           )}
         </motion.div>
@@ -186,12 +186,12 @@ function MilestoneCard({
       </p>
 
       {/* Creator info */}
-      <p className="text-[var(--wrapped-text-muted)] text-[10px] sm:text-xs truncate text-center">
+      <p className="text-(--wrapped-text-muted) text-[10px] sm:text-xs truncate text-center">
         by {milestone.creatorFirstNameLastInitial}
       </p>
 
       {/* Date */}
-      <p className="text-[var(--wrapped-text-muted)] text-[10px] sm:text-xs opacity-60 mt-0.5 text-center">
+      <p className="text-(--wrapped-text-muted) text-[10px] sm:text-xs opacity-60 mt-0.5 text-center">
         {milestone.date}
       </p>
     </motion.div>
@@ -301,7 +301,7 @@ export function MilestonesSlide({
           <SlideHeader year={year} />
 
           {/* Title */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {captureMode ? (
               <div className="mb-4">
                 <h2 className="wrapped-headline text-white mb-2 text-3xl sm:text-4xl md:text-5xl">Milestone Moments</h2>
@@ -336,7 +336,7 @@ export function MilestonesSlide({
                 animate={{ opacity: canScrollLeft ? 1 : 0 }}
                 className={`
                   absolute left-0 z-20 p-2 sm:p-3 rounded-full
-                  bg-black/60 backdrop-blur-sm border border-white/20
+                  bg-black/60 backdrop-blur-xs border border-white/20
                   text-white/80 hover:text-white hover:bg-black/80
                   transition-all duration-200 shadow-lg
                   ${canScrollLeft ? "pointer-events-auto" : "pointer-events-none"}
@@ -388,7 +388,7 @@ export function MilestonesSlide({
                 animate={{ opacity: canScrollRight ? 1 : 0 }}
                 className={`
                   absolute right-0 z-20 p-2 sm:p-3 rounded-full
-                  bg-black/60 backdrop-blur-sm border border-white/20
+                  bg-black/60 backdrop-blur-xs border border-white/20
                   text-white/80 hover:text-white hover:bg-black/80
                   transition-all duration-200 shadow-lg
                   ${canScrollRight ? "pointer-events-auto" : "pointer-events-none"}
@@ -402,10 +402,10 @@ export function MilestonesSlide({
 
             {/* Scroll hint gradient overlays */}
             <div
-              className={`absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-r from-black/40 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${canScrollLeft ? "opacity-100" : "opacity-0"}`}
+              className={`absolute left-0 top-0 bottom-0 w-8 sm:w-12 bg-linear-to-r from-black/40 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${canScrollLeft ? "opacity-100" : "opacity-0"}`}
             />
             <div
-              className={`absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-gradient-to-l from-black/40 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${canScrollRight ? "opacity-100" : "opacity-0"}`}
+              className={`absolute right-0 top-0 bottom-0 w-8 sm:w-12 bg-linear-to-l from-black/40 to-transparent pointer-events-none z-10 transition-opacity duration-300 ${canScrollRight ? "opacity-100" : "opacity-0"}`}
             />
           </div>
 
@@ -414,7 +414,7 @@ export function MilestonesSlide({
             initial={captureMode ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: captureMode ? 0 : 0.8 }}
-            className="flex-shrink-0 mt-2 sm:mt-4 text-center space-y-1"
+            className="shrink-0 mt-2 sm:mt-4 text-center space-y-1"
           >
             <p
               className="wrapped-body text-sm sm:text-base md:text-lg font-medium"
@@ -423,14 +423,14 @@ export function MilestonesSlide({
               {celebrationMessage}
             </p>
             {validMilestones.length > 6 && (
-              <p className="text-[var(--wrapped-text-muted)] text-xs sm:text-sm">
+              <p className="text-(--wrapped-text-muted) text-xs sm:text-sm">
                 Swipe to see all {validMilestones.length} milestones
               </p>
             )}
           </motion.div>
 
           {/* Branding */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <SlideBranding />
           </div>
         </div>

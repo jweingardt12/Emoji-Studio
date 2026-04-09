@@ -168,7 +168,7 @@ export function PatternsSlide({
                   </ResponsiveContainer>
                 )}
               </div>
-              <p className="text-sm sm:text-base text-[var(--wrapped-text-muted)] mt-2 font-medium">
+              <p className="text-sm sm:text-base text-(--wrapped-text-muted) mt-2 font-medium">
                 {peakHourLabel} is your peak
               </p>
             </motion.div>
@@ -192,7 +192,7 @@ export function PatternsSlide({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: captureMode ? 0 : 0.7 + i * 0.1 }}
                   >
-                    <span className="text-xs sm:text-sm md:text-base text-[var(--wrapped-text-secondary)] w-16 sm:w-20 md:w-24 text-right truncate font-medium">
+                    <span className="text-xs sm:text-sm md:text-base text-(--wrapped-text-secondary) w-16 sm:w-20 md:w-24 text-right truncate font-medium">
                       {word.word}
                     </span>
                     <div className="flex-1 h-4 sm:h-5 bg-white/10 rounded-full overflow-hidden">
@@ -209,7 +209,7 @@ export function PatternsSlide({
                 ))}
               </div>
               {topWords.length === 0 && (
-                <p className="text-sm text-[var(--wrapped-text-muted)]">
+                <p className="text-sm text-(--wrapped-text-muted)">
                   No common words found
                 </p>
               )}
@@ -224,19 +224,19 @@ export function PatternsSlide({
             className="w-full max-w-3xl rounded-3xl wrapped-glass-premium p-6 sm:p-8 mt-2 relative overflow-hidden"
           >
             {/* Subtle ambient glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-orange-500/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-orange-500/5 pointer-events-none" />
             <h3 className="wrapped-label text-base sm:text-lg mb-6">Work Patterns</h3>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-16">
               {/* Late Night Stat */}
               <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-linear-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.2)]">
                   <Moon className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-400" />
                 </div>
                 <div className="text-left">
                   <p className="font-mono text-4xl sm:text-5xl font-bold text-white">
                     {lateNightPercentage}%
                   </p>
-                  <p className="text-sm sm:text-base text-[var(--wrapped-text-muted)]">
+                  <p className="text-sm sm:text-base text-(--wrapped-text-muted)">
                     after midnight
                   </p>
                 </div>
@@ -246,14 +246,14 @@ export function PatternsSlide({
 
               {/* Weekend Stat */}
               <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.2)]">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-linear-to-br from-orange-500/20 to-amber-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(249,115,22,0.2)]">
                   <CalendarDays className="w-8 h-8 sm:w-10 sm:h-10 text-orange-400" />
                 </div>
                 <div className="text-left">
                   <p className="font-mono text-4xl sm:text-5xl font-bold text-white">
                     {weekendPercentage}%
                   </p>
-                  <p className="text-sm sm:text-base text-[var(--wrapped-text-muted)]">
+                  <p className="text-sm sm:text-base text-(--wrapped-text-muted)">
                     on weekends
                   </p>
                 </div>
@@ -265,7 +265,7 @@ export function PatternsSlide({
               initial={captureMode ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: captureMode ? 0 : 1.2 }}
-              className="text-center text-base sm:text-lg md:text-xl text-[var(--wrapped-accent-cyan)] mt-6 font-medium"
+              className="text-center text-base sm:text-lg md:text-xl text-(--wrapped-accent-cyan) mt-6 font-medium"
             >
               {lateNightPercentage > 20
                 ? `${lateNightPercentage}% after midnight? We're concerned but impressed.`

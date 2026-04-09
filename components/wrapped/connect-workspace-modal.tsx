@@ -123,8 +123,8 @@ export function ConnectWorkspaceModal({ open, onOpenChange }: ConnectWorkspaceMo
     <div className="flex flex-col items-center text-center space-y-6 py-4">
       {/* Icon */}
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full blur-xl opacity-50" />
-        <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600">
+        <div className="absolute inset-0 bg-linear-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full blur-xl opacity-50" />
+        <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-purple-600 to-pink-600">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
       </div>
@@ -166,8 +166,8 @@ export function ConnectWorkspaceModal({ open, onOpenChange }: ConnectWorkspaceMo
     <div className="flex flex-col items-center text-center space-y-6 py-4">
       {/* Icon */}
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full blur-xl opacity-50" />
-        <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-pink-600">
+        <div className="absolute inset-0 bg-linear-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full blur-xl opacity-50" />
+        <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-purple-600 to-pink-600">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
       </div>

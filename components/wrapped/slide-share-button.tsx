@@ -284,7 +284,7 @@ export function SlideShareButton({
           size="sm"
           onClick={handleSaveForWebView}
           disabled={isGenerating}
-          className="bg-white/30 hover:bg-white/40 backdrop-blur-sm text-white border-0 gap-2"
+          className="bg-white/30 hover:bg-white/40 backdrop-blur-xs text-white border-0 gap-2"
         >
           {isGenerating && activeAction === "save" ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -301,7 +301,7 @@ export function SlideShareButton({
             size="sm"
             onClick={handleCopy}
             disabled={isGenerating}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-xs text-white border-0 gap-2"
           >
             {isGenerating && activeAction === "copy" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -317,7 +317,7 @@ export function SlideShareButton({
             size="sm"
             onClick={handleDownload}
             disabled={isGenerating}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 gap-2"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-xs text-white border-0 gap-2"
           >
             {isGenerating && activeAction === "download" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -333,7 +333,7 @@ export function SlideShareButton({
             size="sm"
             onClick={handleShare}
             disabled={isGenerating}
-            className="bg-white/30 hover:bg-white/40 backdrop-blur-sm text-white border-0 gap-2"
+            className="bg-white/30 hover:bg-white/40 backdrop-blur-xs text-white border-0 gap-2"
           >
             {isGenerating && activeAction === "share" ? (
               <Loader2 className="w-4 h-4 animate-spin" />

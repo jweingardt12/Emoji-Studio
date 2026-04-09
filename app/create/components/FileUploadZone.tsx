@@ -72,7 +72,7 @@ const FilePreviewItem = memo(function FilePreviewItem({
   return (
     <motion.div
       variants={itemVariants}
-      className="relative group rounded-xl border border-border bg-card overflow-hidden aspect-square shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+      className="relative group rounded-xl border border-border bg-card overflow-hidden aspect-square shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     >
       {previewUrl ? (
         <div className="h-full w-full">
@@ -97,18 +97,18 @@ const FilePreviewItem = memo(function FilePreviewItem({
       )}
 
       {/* Format badge */}
-      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[10px] font-semibold text-white shadow-sm">
+      <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] font-semibold text-white shadow-xs">
         {getFormatBadge(file)}
       </div>
 
       {/* Hover overlay with file info */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
         <p className="text-xs text-white font-medium truncate">{file.name}</p>
         <p className="text-[10px] text-white/70">{formatFileSize(file.size)}</p>
       </div>
 
       {/* Bottom gradient (always visible) */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 group-hover:opacity-0 transition-opacity">
+      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-2 group-hover:opacity-0 transition-opacity">
         <p className="text-xs text-white truncate">{file.name}</p>
       </div>
 

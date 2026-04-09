@@ -12,7 +12,7 @@ export default function GlobalLoading() {
       {/* Content skeleton */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="rounded-xl border bg-card p-4 shadow-sm">
+          <div key={i} className="rounded-xl border bg-card p-4 shadow-xs">
             <div className="flex items-center gap-4 mb-4">
               <Skeleton className="h-12 w-12 rounded-lg" />
               <div className="space-y-2 flex-1">

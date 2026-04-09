@@ -128,8 +128,8 @@ export function MobileChart({
   }, [data, zoomLevel, panOffset]);
 
   const chartConfig = {
-    created: { label: "Created", color: "hsl(var(--chart-1))" },
-    uniqueContributors: { label: "Contributors", color: "hsl(var(--chart-2))" },
+    created: { label: "Created", color: "var(--chart-1)" },
+    uniqueContributors: { label: "Contributors", color: "var(--chart-2)" },
   };
 
   return (

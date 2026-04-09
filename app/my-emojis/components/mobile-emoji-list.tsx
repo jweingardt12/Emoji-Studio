@@ -79,7 +79,7 @@ export function MobileEmojiList({
       <div className="space-y-2">
         {sortedEmojis.map((emoji) => (
           <div key={emoji.name} className="flex items-center gap-3 p-3 border-b bg-card">
-            <div className="relative h-12 w-12 flex-shrink-0">
+            <div className="relative h-12 w-12 shrink-0">
               <Image
                 src={emoji.url}
                 alt={emoji.name}
@@ -119,7 +119,7 @@ export function MobileEmojiList({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 flex-shrink-0"
+              className="h-8 w-8 shrink-0"
               onClick={() => {
                 setSelectedEmoji(emoji)
                 setIsActionsDrawerOpen(true)
@@ -196,7 +196,7 @@ export function MobileEmojiList({
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
+            className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-xs"
             onClick={() => {
               setSelectedEmoji(emoji)
               setIsActionsDrawerOpen(true)

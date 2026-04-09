@@ -148,7 +148,7 @@ export function VirtualizedExplorerGrid({
                       tabIndex={0}
                       aria-label={`:${emoji.name}: emoji${emoji.user_display_name ? ` by ${emoji.user_display_name}` : ''}${isSelected ? ', selected' : ''}`}
                       className={cn(
-                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer w-full overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                        "group relative flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer w-full overflow-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                         isNew && "ring-2 ring-primary/50 bg-primary/5",
                         isSelected && "ring-2 ring-primary bg-primary/5 border-primary",
                         !bulkSelectionMode && "hover:border-foreground/20"
@@ -183,7 +183,7 @@ export function VirtualizedExplorerGrid({
                       )}
 
                       {/* Emoji Image */}
-                      <div className="flex-shrink-0 my-2">
+                      <div className="shrink-0 my-2">
                         <OptimizedEmojiImage
                           src={emoji.url || getPlaceholderImage(emoji.name)}
                           alt={`:${emoji.name}:`}
@@ -216,7 +216,7 @@ export function VirtualizedExplorerGrid({
 
                       {/* Quick Actions - Desktop Only */}
                       {!isMobile && !bulkSelectionMode && (
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 bg-background/95 backdrop-blur-xs rounded-lg shadow-lg border p-1 z-20">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button

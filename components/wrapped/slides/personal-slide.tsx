@@ -116,7 +116,7 @@ function BentoActivityChart({
                 {month.month}: {month.count}
               </div>
               <motion.div
-                className="w-full rounded-t-sm bg-gradient-to-t from-[var(--wrapped-accent-cyan)] to-[var(--wrapped-accent-purple)] opacity-80 group-hover:opacity-100 transition-opacity"
+                className="w-full rounded-t-sm bg-linear-to-t from-(--wrapped-accent-cyan) to-(--wrapped-accent-purple) opacity-80 group-hover:opacity-100 transition-opacity"
                 style={{ height: `${heightPercent}%` }}
               />
             </motion.div>
@@ -159,7 +159,7 @@ function RankCard({ rank, totalCreators, captureMode, isSoloLegend }: { rank: nu
     }
     return {
       icon: <span className="text-xl sm:text-2xl font-bold">#{rank}</span>,
-      color: "from-[var(--wrapped-accent-purple)]/20 to-[var(--wrapped-accent-cyan)]/10",
+      color: "from-(--wrapped-accent-purple)/20 to-(--wrapped-accent-cyan)/10",
       border: "border-white/10",
       label: `Ranked in top ${Math.max(1, Math.round((rank / totalCreators) * 100))}%`
     }
@@ -171,10 +171,10 @@ function RankCard({ rank, totalCreators, captureMode, isSoloLegend }: { rank: nu
       initial={captureMode ? false : { opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: captureMode ? 0 : 0.4 }}
-      className={`relative overflow-hidden rounded-2xl wrapped-glass border ${style.border} p-4 sm:p-5 flex flex-col items-center justify-center h-full bg-gradient-to-br ${style.color}`}
+      className={`relative overflow-hidden rounded-2xl wrapped-glass border ${style.border} p-4 sm:p-5 flex flex-col items-center justify-center h-full bg-linear-to-br ${style.color}`}
     >
       <div className="mb-1 sm:mb-2">{style.icon}</div>
-      <div className="text-sm text-[var(--wrapped-text-muted)] text-center leading-tight">
+      <div className="text-sm text-(--wrapped-text-muted) text-center leading-tight">
         {style.label}
       </div>
     </motion.div>
@@ -322,8 +322,8 @@ export function PersonalSlide({
               transition={{ delay: captureMode ? 0 : 0.1, duration: 0.5 }}
             >
               {/* Background glow based on top emoji */}
-              <div className="absolute -right-4 -top-4 w-32 h-32 bg-[var(--wrapped-accent-purple)]/40 blur-3xl rounded-full pointer-events-none" />
-              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-[var(--wrapped-accent-cyan)]/20 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute -right-4 -top-4 w-32 h-32 bg-(--wrapped-accent-purple)/40 blur-3xl rounded-full pointer-events-none" />
+              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-(--wrapped-accent-cyan)/20 blur-3xl rounded-full pointer-events-none" />
 
               <div className="relative z-10 text-left">
                 <BlurFade delay={0.2} shouldAnimate={shouldAnimate}>
@@ -376,12 +376,12 @@ export function PersonalSlide({
               <div className="font-mono text-2xl sm:text-3xl md:text-4xl font-black text-white">
                 {captureMode ? <span>{totalEmojis}</span> : <NumberTicker value={totalEmojis} delay={0.6} />}
               </div>
-              <p className="text-sm text-[var(--wrapped-accent-cyan)]">+{percentageOfTotal}% of workspace</p>
+              <p className="text-sm text-(--wrapped-accent-cyan)">+{percentageOfTotal}% of workspace</p>
             </motion.div>
 
             {/* Streak Tile */}
             <motion.div
-              className={`col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-gradient-to-br ${streakTile.gradient}`}
+              className={`col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-linear-to-br ${streakTile.gradient}`}
               initial={captureMode ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.6 }}
@@ -393,7 +393,7 @@ export function PersonalSlide({
 
             {/* GIF % Tile */}
             <motion.div
-              className={`col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-gradient-to-br ${gifTile.gradient}`}
+              className={`col-span-1 sm:col-span-1 row-span-1 rounded-2xl wrapped-glass p-4 sm:p-5 flex flex-col justify-center items-center bg-linear-to-br ${gifTile.gradient}`}
               initial={captureMode ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.7 }}
@@ -410,7 +410,7 @@ export function PersonalSlide({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: captureMode ? 0 : 0.8 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-[var(--wrapped-accent-purple)]/5 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-t from-(--wrapped-accent-purple)/5 to-transparent pointer-events-none" />
               <BentoActivityChart monthlyBreakdown={monthlyBreakdown} captureMode={captureMode} />
             </motion.div>
 

@@ -180,7 +180,7 @@ function EmojiDetailContent({
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
             {/* Large emoji preview */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="w-48 h-48 bg-muted rounded-xl flex items-center justify-center p-4">
                 <img
                   src={emoji.url}
@@ -314,7 +314,7 @@ function EmojiDetailSkeleton() {
       <Card>
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
-            <Skeleton className="w-48 h-48 rounded-xl flex-shrink-0" />
+            <Skeleton className="w-48 h-48 rounded-xl shrink-0" />
             <div className="flex-1 space-y-4">
               <Skeleton className="h-10 w-48" />
               <Skeleton className="h-6 w-64" />

@@ -220,7 +220,7 @@ export function DashboardOverlay() {
   
   const overlayContent = (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm transition-opacity duration-300 ease-out \
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs transition-opacity duration-300 ease-out \
         ${isAnimatedIn ? "opacity-100" : "opacity-0"}`}
       onClick={handleOverlayClick} // Close overlay when clicking outside the content
     >
@@ -236,7 +236,7 @@ export function DashboardOverlay() {
           {/* Logo section */}
           <div className={`relative mx-auto ${isMobile ? 'mb-3' : 'mb-4'} w-20 h-20 sm:w-24 sm:h-24`}>
             {/* Blurred colorful background - positioned to be directly behind the image */}
-            <div className="absolute inset-0 opacity-100 rounded-full bg-gradient-to-br from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500" 
+            <div className="absolute inset-0 opacity-100 rounded-full bg-linear-to-br from-red-500 via-yellow-400 via-green-400 via-blue-500 to-purple-500" 
                  style={{
                    animation: 'rainbow-shift 8s linear infinite'
                  }} />
@@ -261,7 +261,7 @@ export function DashboardOverlay() {
           {/* Feature list */}
           <ul className="space-y-3 text-left max-w-sm sm:max-w-lg mx-auto mb-6 sm:mb-8">
             <li className="flex items-center space-x-3">
-              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+              <div className="shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <BarChartBig className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -269,7 +269,7 @@ export function DashboardOverlay() {
               </div>
             </li>
             <li className="flex items-center space-x-3">
-              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+              <div className="shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -277,7 +277,7 @@ export function DashboardOverlay() {
               </div>
             </li>
             <li className="flex items-center space-x-3">
-              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+              <div className="shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -285,7 +285,7 @@ export function DashboardOverlay() {
               </div>
             </li>
             <li className="flex items-center space-x-3">
-              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+              <div className="shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -293,7 +293,7 @@ export function DashboardOverlay() {
               </div>
             </li>
             <li className="flex items-center space-x-3">
-              <div className="flex-shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
+              <div className="shrink-0 bg-primary/10 text-primary rounded-full p-1.5 sm:p-2">
                 <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="text-xs sm:text-sm">
@@ -369,11 +369,11 @@ export function DashboardOverlay() {
                     });
                   }}
                 >
-                  <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                  <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 shrink-0" />
                   Hang on - how is this secure?
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="z-[60]">
+              <AlertDialogContent className="z-60">
                 <AlertDialogHeader>
                   <AlertDialogTitle>How is this secure?</AlertDialogTitle>
                   <AlertDialogDescription className="text-xs text-muted-foreground pt-2">

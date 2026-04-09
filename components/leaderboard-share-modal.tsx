@@ -765,7 +765,7 @@ export function LeaderboardShareModal({
                 onClick={() => setBackgroundStyle(key)}
                 className={cn(
                   "relative w-8 h-8 rounded-md transition-all shrink-0",
-                  "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   backgroundStyle === key && "ring-2 ring-primary ring-offset-1"
                 )}
                 style={{ background: `linear-gradient(to bottom, ${value.from}, ${value.to})` }}

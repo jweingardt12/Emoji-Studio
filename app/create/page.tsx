@@ -34,7 +34,7 @@ function ProgressBar({ completed, total, label }: { completed: number; total: nu
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           <Progress value={pct} className="h-2" />
         </div>
@@ -493,9 +493,9 @@ function EmojiCreatorContent() {
                           track('Emoji Creator: Tab Changed', { tab: tab.id })
                         }}
                         className={cn(
-                          "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors duration-200 outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
                           isSelected
-                            ? "bg-background text-foreground shadow-sm border border-border"
+                            ? "bg-background text-foreground shadow-xs border border-border"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -511,7 +511,7 @@ function EmojiCreatorContent() {
               {activeTab === "browse" && packBrowser.selectedEmojis.length > 0 && (
                 <Button
                   onClick={() => updateCartOpen(true, 'toolbar')}
-                  className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm"
+                  className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-xs"
                   size="icon"
                   variant="ghost"
                 >
@@ -522,7 +522,7 @@ function EmojiCreatorContent() {
           </div>
 
           {/* Main content card */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow-sm">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow-xs">
             <Tabs value={activeTab} className="flex flex-col flex-1 min-h-0">
               {/* Upload Tab Content */}
               <TabsContent value="upload" className="flex-1 min-h-0 m-0 data-[state=active]:flex data-[state=active]:flex-col">

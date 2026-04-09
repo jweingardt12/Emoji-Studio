@@ -463,7 +463,7 @@ export function PackBrowserTabs({ selectedTab, onSelectTab, searchQuery }: PackB
               onClick={() => onSelectTab(tab.id)}
               className={cn(
                 "gap-1.5 text-xs h-8",
-                isSelected && "shadow-sm"
+                isSelected && "shadow-xs"
               )}
             >
               <span className="text-sm leading-none">{tab.emoji}</span>
@@ -514,12 +514,12 @@ const EmojiGridItem = memo(function EmojiGridItem({ emoji, isSelected, index, on
         <OptimizedEmojiImage
           src={emoji.imageURL}
           alt={emoji.name}
-          className="max-w-full max-h-full object-contain drop-shadow-sm"
+          className="max-w-full max-h-full object-contain drop-shadow-xs"
         />
       </div>
 
       <div className={cn(
-        "absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-200 shadow-sm z-10",
+        "absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-200 shadow-xs z-10",
         isSelected
           ? "bg-primary text-primary-foreground scale-100 opacity-100"
           : "bg-muted text-muted-foreground scale-90 opacity-0 group-hover:opacity-100 group-hover:scale-100"
@@ -550,7 +550,7 @@ const EmojiListItem = memo(function EmojiListItem({ emoji, isSelected, index, on
         "w-full flex items-center gap-4 p-3 rounded-xl border transition-all duration-200",
         isSelected
           ? "border-primary bg-primary/5"
-          : "border-transparent bg-card hover:border-border hover:shadow-sm"
+          : "border-transparent bg-card hover:border-border hover:shadow-xs"
       )}
     >
       <div className="w-10 h-10 flex items-center justify-center bg-muted/30 rounded-lg">
@@ -870,7 +870,7 @@ export function PackSelectionSidebar({
   const canSendToSlack = selectedEmojis.length > 0 && hasSlackConnection && (!hasNameChecking || (takenCount === 0 && checkingCount === 0))
 
   return (
-    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:border-border xl:shadow-sm bg-card">
+    <div className="w-full h-full flex flex-col min-h-0 xl:rounded-xl xl:border xl:border-border xl:shadow-xs bg-card">
       <div className="p-5 sm:p-6 border-b border-border">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-bold text-sm">Selected Emojis</h3>
@@ -920,7 +920,7 @@ export function PackSelectionSidebar({
                     exit="exit"
                     transition={{ delay: Math.min(index * 0.03, 0.2) }}
                     className={cn(
-                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group min-w-0 overflow-hidden bg-card shadow-sm hover:shadow-md hover:border-primary/20",
+                      "flex w-full items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group min-w-0 overflow-hidden bg-card shadow-xs hover:shadow-md hover:border-primary/20",
                       hasNameChecking && status === "taken" && "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20",
                       hasNameChecking && status === "available" && "border-green-500/30 bg-green-50/10"
                     )}
@@ -928,7 +928,7 @@ export function PackSelectionSidebar({
                     <OptimizedEmojiImage
                       src={emoji.imageURL}
                       alt={emoji.name}
-                      className="w-12 h-12 object-contain flex-shrink-0"
+                      className="w-12 h-12 object-contain shrink-0"
                       priority={true}
                     />
 
@@ -976,7 +976,7 @@ export function PackSelectionSidebar({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 flex-shrink-0 opacity-0 group-hover:opacity-50 transition-opacity"
+                            className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-50 transition-opacity"
                             onClick={() => {
                               const displayName = customNames?.get(key) || emoji.name
                               onSetEditingName(key)
@@ -989,7 +989,7 @@ export function PackSelectionSidebar({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {hasNameChecking && status === "checking" && (
                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                       )}

@@ -21,25 +21,25 @@ const features = [
     icon: Activity,
     title: "Usage Analytics",
     description: "Scan channels to see how your emojis are used as reactions\u2009\u2014\u2009top emojis, top reactors, channel breakdowns.",
-    color: "text-[hsl(var(--chart-1))]",
-    bg: "bg-[hsl(var(--chart-1)/0.1)]",
-    ring: "ring-[hsl(var(--chart-1)/0.15)]",
+    color: "text-[var(--chart-1)]",
+    bg: "bg-chart-1/10",
+    ring: "ring-chart-1/15",
   },
   {
     icon: Paintbrush,
     title: "Refreshed UI",
     description: "Every page redesigned for a cleaner, more polished experience with better dark mode and accessibility.",
-    color: "text-[hsl(var(--chart-4))]",
-    bg: "bg-[hsl(var(--chart-4)/0.1)]",
-    ring: "ring-[hsl(var(--chart-4)/0.15)]",
+    color: "text-[var(--chart-4)]",
+    bg: "bg-chart-4/10",
+    ring: "ring-chart-4/15",
   },
   {
     icon: Zap,
     title: "2\u00d7 Faster",
     description: "Visualizations load in half the time with lower memory usage and optimized rendering.",
-    color: "text-[hsl(var(--chart-3))]",
-    bg: "bg-[hsl(var(--chart-3)/0.1)]",
-    ring: "ring-[hsl(var(--chart-3)/0.15)]",
+    color: "text-[var(--chart-3)]",
+    bg: "bg-chart-3/10",
+    ring: "ring-chart-3/15",
   },
 ]
 
@@ -68,10 +68,10 @@ export function WhatsNewModal() {
       <DialogContent className="sm:max-w-[420px] gap-0 p-0 overflow-hidden rounded-xl">
         {/* Header with accent gradient */}
         <div className="relative px-6 pt-6 pb-4">
-          <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-1)/0.06)] via-transparent to-[hsl(var(--chart-4)/0.06)] pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-br from-chart-1/5 via-transparent to-chart-4/5 pointer-events-none" />
           <DialogHeader className="relative">
             <div className="flex items-center gap-2.5 mb-1.5">
-              <Sparkles className="h-5 w-5 text-[hsl(var(--chart-3))]" aria-hidden="true" />
+              <Sparkles className="h-5 w-5 text-[var(--chart-3)]" aria-hidden="true" />
               <DialogTitle className="text-xl font-bold tracking-tight text-balance">
                 What's New in 2.0
               </DialogTitle>
@@ -86,7 +86,7 @@ export function WhatsNewModal() {
         <div className="px-6 py-5 space-y-4" role="list" aria-label="New features">
           {features.map(({ icon: Icon, title, description, color, bg, ring }) => (
             <div key={title} className="flex gap-3.5 items-start" role="listitem">
-              <div className={`flex-shrink-0 rounded-lg p-2 ring-1 ${bg} ${ring}`}>
+              <div className={`shrink-0 rounded-lg p-2 ring-1 ${bg} ${ring}`}>
                 <Icon className={`h-4 w-4 ${color}`} aria-hidden="true" />
               </div>
               <div className="space-y-1 min-w-0">

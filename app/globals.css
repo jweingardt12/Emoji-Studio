@@ -1,157 +1,797 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* Responsive Sonner toast positioning */
-[data-sonner-toaster] {
-  bottom: 20px !important;
-  /* Desktop: close to bottom */
-}
+@plugin 'tailwindcss-animate';
+@plugin '@tailwindcss/container-queries';
 
-@media (max-width: 768px) {
-  [data-sonner-toaster] {
-    bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
-    /* Mobile: above bottom nav */
+@source '../*.{js,ts,jsx,tsx,mdx}';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --font-sans:
+    var(--font-sans), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono:
+    var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  --font-wrapped-display:
+    'Clash Display', var(--font-sans), ui-sans-serif, system-ui, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-wrapped-body:
+    'General Sans', var(--font-sans), ui-sans-serif, system-ui, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Custom color tokens not covered by Luma's @theme inline */
+  --color-success: var(--\1);
+  --color-success-foreground: var(--\1);
+  --color-warning: var(--\1);
+  --color-warning-foreground: var(--\1);
+  --color-info: var(--\1);
+  --color-info-foreground: var(--\1);
+  --color-brand: var(--\1);
+  --color-brand-foreground: var(--\1);
+  --color-color-1: var(--\1);
+  --color-color-2: var(--\1);
+  --color-color-3: var(--\1);
+  --color-color-4: var(--\1);
+  --color-color-5: var(--\1);
+
+  /* Animations */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+  --animate-marquee: marquee var(--duration) linear infinite;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-shine: shine var(--duration) linear infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-meteor-effect: meteor-effect 5s linear infinite;
+  --animate-gradient: gradient 8s linear infinite;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes gradient-border {
+    0%,
+    100% {
+      border-radius: 37% 29% 27% 27% / 28% 25% 41% 37%;
+    }
+    25% {
+      border-radius: 47% 29% 39% 49% / 61% 19% 66% 26%;
+    }
+    50% {
+      border-radius: 57% 23% 47% 72% / 63% 17% 66% 33%;
+    }
+    75% {
+      border-radius: 28% 49% 29% 100% / 93% 20% 64% 25%;
+    }
+  }
+  @keyframes gradient-1 {
+    0%,
+    100% {
+      top: 0;
+      right: 0;
+    }
+    50% {
+      top: 50%;
+      right: 25%;
+    }
+    75% {
+      top: 25%;
+      right: 50%;
+    }
+  }
+  @keyframes gradient-2 {
+    0%,
+    100% {
+      top: 0;
+      left: 0;
+    }
+    60% {
+      top: 75%;
+      left: 25%;
+    }
+    85% {
+      top: 50%;
+      left: 50%;
+    }
+  }
+  @keyframes gradient-3 {
+    0%,
+    100% {
+      bottom: 0;
+      left: 0;
+    }
+    40% {
+      bottom: 50%;
+      left: 25%;
+    }
+    65% {
+      bottom: 25%;
+      left: 50%;
+    }
+  }
+  @keyframes gradient-4 {
+    0%,
+    100% {
+      bottom: 0;
+      right: 0;
+    }
+    50% {
+      bottom: 25%;
+      right: 40%;
+    }
+    90% {
+      bottom: 50%;
+      right: 25%;
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes shine {
+    0% {
+      background-position: 200% 0%;
+    }
+    100% {
+      background-position: -200% 0%;
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      transform: scale(0);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes meteor-effect {
+    0% {
+      transform: rotate(215deg) translateX(0);
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(215deg) translateX(-500px);
+      opacity: 0;
+    }
+  }
+  @keyframes gradient {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
   }
 }
 
-:root {
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
-    monospace;
+@theme inline {
+  @keyframes shine {
+    0% {
+      background-position: 0% 0%;
+    }
+
+    50% {
+      background-position: 100% 100%;
+    }
+
+    to {
+      background-position: 0% 0%;
+    }
+  }
+
+  @keyframes gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  @keyframes shine-border {
+    0% {
+      background-position: -100% 50%;
+    }
+
+    100% {
+      background-position: 200% 50%;
+    }
+  }
+
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+
+  @keyframes rainbow {
+    0% {
+      background-position: 0%;
+    }
+
+    100% {
+      background-position: 200%;
+    }
+  }
+
+  @keyframes ripple {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+
+  @keyframes aurora {
+    0% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
+    }
+
+    25% {
+      background-position: 50% 100%;
+      transform: rotate(5deg) scale(1.1);
+    }
+
+    50% {
+      background-position: 100% 50%;
+      transform: rotate(-3deg) scale(0.95);
+    }
+
+    75% {
+      background-position: 50% 0%;
+      transform: rotate(3deg) scale(1.05);
+    }
+
+    100% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
+    }
+  }
+
+  --font-heading: var(--font-sans);
+
+  --font-sans: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+  --color-sidebar-primary: var(--sidebar-primary);
+
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+
+  --color-chart-4: var(--chart-4);
+
+  --color-chart-3: var(--chart-3);
+
+  --color-chart-2: var(--chart-2);
+
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+
+  --color-input: var(--input);
+
+  --color-border: var(--border);
+
+  --color-destructive: var(--destructive);
+
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-accent: var(--accent);
+
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-muted: var(--muted);
+
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-secondary: var(--secondary);
+
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-primary: var(--primary);
+
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-popover: var(--popover);
+
+  --color-card-foreground: var(--card-foreground);
+
+  --color-card: var(--card);
+
+  --color-foreground: var(--foreground);
+
+  --color-background: var(--background);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+
+  --radius-md: calc(var(--radius) * 0.8);
+
+  --radius-lg: var(--radius);
+
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --radius-3xl: calc(var(--radius) * 2.2);
+
+  --radius-4xl: calc(var(--radius) * 2.6)
 }
 
-/* Prevent pull-to-refresh and elastic scrolling on mobile */
-html {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  /* Prevent zooming */
-  touch-action: manipulation;
-}
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
 
-body {
-  font-family: var(--font-sans);
-  overscroll-behavior: none;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  touch-action: manipulation;
-  width: 100%;
-  height: 100%;
-}
-
-/* Lock the viewport only on mobile and when drawer is not open */
-@media (max-width: 768px) {
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
   body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@utility animate-fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility sidebar-hidden-mobile {
+  @media (max-width: 768px) {
+    /* Hide desktop sidebar on mobile */
+    display: none;
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility touch-target {
+  @media (max-width: 768px) {
+    /* Larger tap targets for interactive elements */
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      bottom: -8px;
+      left: -8px;
+    }
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility snap-x {
+  @media (max-width: 768px) {
+    /* Snap scrolling for horizontal lists */
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 1rem;
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility snap-center {
+  @media (max-width: 768px) {
+    scroll-snap-align: center;
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility snap-start {
+  @media (max-width: 768px) {
+    scroll-snap-align: start;
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility no-horizontal-scroll {
+  @media (max-width: 768px) {
+    /* Prevent accidental horizontal scrolling */
+    overflow-x: hidden;
+    touch-action: pan-y pinch-zoom;
+
+    /* Disable hover effects on touch devices */
+  }
+}
+
+@utility safe-area-bottom {
+  /* Mobile PWA adjustments */
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+
+  /* PWA safe area adjustments for iOS */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pb-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+
+  /* Safe area utilities */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pl-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  padding-left: env(safe-area-inset-left);
+}
+
+@utility pr-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility px-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility py-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility mb-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+@utility mr-safe {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  margin-right: env(safe-area-inset-right);
+}
+
+@utility ios-viewport-fix {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    height: -webkit-fill-available;
+  }
+}
+
+@utility mobile-bottom-nav {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  @media screen and (max-width: 768px) {
+    /* Ensure bottom nav is always visible above Safari UI */
+    bottom: 0;
+    /* Padding is handled inline in the component */
+  }
+}
+
+@utility floating-create-btn {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  @media screen and (max-width: 768px) {
+    /* Adjust floating button position */
+    bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
+}
+
+@utility toast-responsive-position {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  @media screen and (max-width: 768px) {
+    /* Toast position on mobile */
+    bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@utility animation-delay-2000 {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+
+  /* Animation delays for loading overlay */
+  animation-delay: 2s;
+}
+
+@utility animation-delay-4000 {
+  @media (max-width: 768px) {
+    /* Disable hover effects on touch devices */
+  }
+  animation-delay: 4s;
+}
+
+@layer utilities {
+  /* Responsive Sonner toast positioning */
+  [data-sonner-toaster] {
+    bottom: 20px !important;
+    /* Desktop: close to bottom */
+  }
+
+  @media (max-width: 768px) {
+    [data-sonner-toaster] {
+      bottom: calc(env(safe-area-inset-bottom) + 80px) !important;
+      /* Mobile: above bottom nav */
+    }
+  }
+
+  :root {
+    --font-sans:
+      var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI',
+      Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:
+      var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+      Consolas, 'Liberation Mono', 'Courier New', monospace;
+  }
+
+  /* Prevent pull-to-refresh and elastic scrolling on mobile */
+  html {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    /* Prevent zooming */
+    touch-action: manipulation;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Lock the viewport only on mobile and when drawer is not open */
+  @media (max-width: 768px) {
+    body {
+      position: fixed;
+      overflow: hidden;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    /* Allow normal positioning when drawer is open */
+    body[data-vaul-drawer-wrapper] {
+      position: static !important;
+      overflow: auto !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+    }
+  }
+
+  /* Hide scrollbars on mobile for native app feel, show styled scrollbars on desktop */
+  @media (max-width: 768px) {
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      touch-action: manipulation;
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Lock app frame for native feel */
+  .app-frame-locked {
     position: fixed;
-    overflow: hidden;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-  }
-
-  /* Allow normal positioning when drawer is open */
-  body[data-vaul-drawer-wrapper] {
-    position: static !important;
-    overflow: auto !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-  }
-}
-
-/* Hide scrollbars on mobile for native app feel, show styled scrollbars on desktop */
-@media (max-width: 768px) {
-  * {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     touch-action: manipulation;
   }
 
-  *::-webkit-scrollbar {
+  /* Hide scrollbar for specific class */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-}
 
-/* Lock app frame for native feel */
-.app-frame-locked {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action: manipulation;
-}
-
-/* Hide scrollbar for specific class */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Enable long-press to save for share images on iOS */
-/* This overrides the global -webkit-touch-callout: none on body */
-.share-image-saveable {
-  -webkit-touch-callout: default !important;
-  -webkit-user-select: auto !important;
-  touch-action: auto !important;
-  user-select: auto !important;
-}
-
-/* Also apply to img/video children */
-.share-image-saveable img,
-.share-image-saveable video {
-  -webkit-touch-callout: default !important;
-  -webkit-user-select: auto !important;
-  touch-action: auto !important;
-  user-select: auto !important;
-  pointer-events: auto !important;
-}
-
-/* Smooth momentum scrolling for all scrollable containers */
-.native-scroll {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-}
-
-/* Prevent text selection on mobile for app-like feel */
-@media (max-width: 768px) {
-  body {
-    -webkit-user-select: none;
-    user-select: none;
+  /* Enable long-press to save for share images on iOS */
+  /* This overrides the global -webkit-touch-callout: none on body */
+  .share-image-saveable {
+    -webkit-touch-callout: default !important;
+    -webkit-user-select: auto !important;
+    touch-action: auto !important;
+    user-select: auto !important;
   }
 
-  /* Allow text selection only for specific elements */
-  input,
-  textarea,
-  [contenteditable],
-  .selectable {
-    -webkit-user-select: text;
-    user-select: text;
+  /* Also apply to img/video children */
+  .share-image-saveable img,
+  .share-image-saveable video {
+    -webkit-touch-callout: default !important;
+    -webkit-user-select: auto !important;
+    touch-action: auto !important;
+    user-select: auto !important;
+    pointer-events: auto !important;
+  }
+
+  /* Smooth momentum scrolling for all scrollable containers */
+  .native-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent text selection on mobile for app-like feel */
+  @media (max-width: 768px) {
+    body {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* Allow text selection only for specific elements */
+    input,
+    textarea,
+    [contenteditable],
+    .selectable {
+      -webkit-user-select: text;
+      user-select: text;
+    }
   }
 }
 
 @layer utilities {
-  .animate-fade-up {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-  }
-
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* Mobile PWA adjustments */
   @media (max-width: 768px) {
 
     /* Prevent zooming on inputs - iOS requires 16px minimum */
@@ -168,51 +808,12 @@ body {
       touch-action: manipulation;
     }
 
-    /* Hide desktop sidebar on mobile */
-    .sidebar-hidden-mobile {
-      display: none;
-    }
-
     /* Native app-like touch targets (minimum 44px) */
     button,
     a,
     [role="button"] {
       min-height: 44px;
       min-width: 44px;
-    }
-
-    /* Larger tap targets for interactive elements */
-    .touch-target {
-      position: relative;
-    }
-
-    .touch-target::before {
-      content: "";
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      bottom: -8px;
-      left: -8px;
-    }
-
-    /* Snap scrolling for horizontal lists */
-    .snap-x {
-      scroll-snap-type: x mandatory;
-      scroll-padding: 0 1rem;
-    }
-
-    .snap-center {
-      scroll-snap-align: center;
-    }
-
-    .snap-start {
-      scroll-snap-align: start;
-    }
-
-    /* Prevent accidental horizontal scrolling */
-    .no-horizontal-scroll {
-      overflow-x: hidden;
-      touch-action: pan-y pinch-zoom;
     }
 
     /* Native-style active states */
@@ -222,8 +823,6 @@ body {
       transform: scale(0.97);
       transition: transform 0.1s ease;
     }
-
-    /* Disable hover effects on touch devices */
     @media (hover: none) {
 
       button:hover,
@@ -233,53 +832,8 @@ body {
     }
   }
 
-  /* PWA safe area adjustments for iOS */
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Safe area utilities */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .pt-safe {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  .pl-safe {
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .pr-safe {
-    padding-right: env(safe-area-inset-right);
-  }
-
-  .px-safe {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  .py-safe {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .mb-safe {
-    margin-bottom: env(safe-area-inset-bottom);
-  }
-
-  .mr-safe {
-    margin-right: env(safe-area-inset-right);
-  }
-
   /* iOS Safari viewport fixes */
   @supports (-webkit-touch-callout: none) {
-
-    /* iOS Safari specific styles */
-    .ios-viewport-fix {
-      height: -webkit-fill-available;
-    }
 
     /* Use custom viewport height when available */
     html {
@@ -292,45 +846,20 @@ body {
   }
 
   /* Additional iOS Safari bottom nav fixes */
-  @media screen and (max-width: 768px) {
-
-    /* Ensure bottom nav is always visible above Safari UI */
-    .mobile-bottom-nav {
-      bottom: 0;
-      /* Padding is handled inline in the component */
-    }
-
-    /* Adjust floating button position */
-    .floating-create-btn {
-      bottom: calc(9rem + env(safe-area-inset-bottom));
-    }
-
-    /* Toast position on mobile */
-    .toast-responsive-position {
-      bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
-    }
-  }
 
   /* Ensure main element has rounded corners */
   main {
     @apply rounded-xl;
   }
 
-  /* Animation delays for loading overlay */
-  .animation-delay-2000 {
-    animation-delay: 2s;
-  }
-
-  .animation-delay-4000 {
-    animation-delay: 4s;
-  }
-
 }
 
-@keyframes fadeUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@layer utilities {
+  @keyframes fadeUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -468,61 +997,62 @@ body {
   }
 }
 
-/* Accessibility: reduce motion for users who prefer it (WCAG 2.1 Level A) */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Glowing border animation */
-@keyframes rotate {
-  0% {
-    transform: rotate(0deg);
+@layer utilities {
+  /* Accessibility: reduce motion for users who prefer it (WCAG 2.1 Level A) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
-  100% {
-    transform: rotate(360deg);
+  /* Glowing border animation */
+  @keyframes rotate {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
-}
 
-@keyframes pulse {
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
 
-  0%,
-  100% {
-    opacity: 1;
+    50% {
+      opacity: 0.6;
+    }
   }
 
-  50% {
-    opacity: 0.6;
-  }
-}
+  .glow-border {
+    --border-size: 3px;
+    --border-radius: 50%;
+    /* This was 50%, if it's for a general glow, maybe it should be more flexible or removed if not used for circular items */
+    --glow-color: rgba(255, 255, 255, 0.4);
+    --glow-spread: 10px;
 
-.glow-border {
-  --border-size: 3px;
-  --border-radius: 50%;
-  /* This was 50%, if it's for a general glow, maybe it should be more flexible or removed if not used for circular items */
-  --glow-color: rgba(255, 255, 255, 0.4);
-  --glow-spread: 10px;
+    /* These width/height calculations might be problematic if the parent isn't positioned correctly or if box-sizing is different */
+    /* width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
+    /* height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
+    /* border-radius: var(--border-radius); */
+    /* Duplicates the one above, or is intended to be different? */
+    position: absolute;
+    /* Ensure this is intended for all uses of .glow-border */
+    /* top: calc(-1 * var(--border-size) - var(--glow-spread)); */
+    /* left: calc(-1 * var(--border-size) - var(--glow-spread)); */
+    z-index: 0;
+    /* Ensure this doesn't conflict with other z-indexed elements */
 
-  /* These width/height calculations might be problematic if the parent isn't positioned correctly or if box-sizing is different */
-  /* width: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
-  /* height: calc(100% + var(--border-size) * 2 + var(--glow-spread) * 2); */
-  /* border-radius: var(--border-radius); */
-  /* Duplicates the one above, or is intended to be different? */
-  position: absolute;
-  /* Ensure this is intended for all uses of .glow-border */
-  /* top: calc(-1 * var(--border-size) - var(--glow-spread)); */
-  /* left: calc(-1 * var(--border-size) - var(--glow-spread)); */
-  z-index: 0;
-  /* Ensure this doesn't conflict with other z-indexed elements */
-
-  background: conic-gradient(from 0deg,
+    background: conic-gradient(
+      from 0deg,
       rgba(255, 0, 0, 0.8),
       rgba(255, 154, 0, 0.8),
       rgba(208, 222, 33, 0.8),
@@ -533,78 +1063,81 @@ body {
       rgba(95, 21, 242, 0.8),
       rgba(186, 12, 248, 0.8),
       rgba(251, 7, 217, 0.8),
-      rgba(255, 0, 0, 0.8));
+      rgba(255, 0, 0, 0.8)
+    );
 
-  filter: blur(var(--glow-spread));
-  animation: rotate 5s linear infinite, pulse 2s ease-in-out infinite;
-}
-
-/* Add this to the end of your globals.css file */
-.emoji-grid-item img {
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
-/* Performance optimization: content-visibility for large emoji grids */
-/* Allows browser to skip rendering off-screen items */
-.emoji-grid-item {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 80px;
-}
-
-/* For virtualized grids with fixed row heights */
-.virtualized-grid-item {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 120px;
-}
-
-/* Emoji waterfall animation */
-@keyframes fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 0;
+    filter: blur(var(--glow-spread));
+    animation:
+      rotate 5s linear infinite,
+      pulse 2s ease-in-out infinite;
   }
 
-  5% {
-    opacity: 1;
+  /* Add this to the end of your globals.css file */
+  .emoji-grid-item img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
   }
 
-  95% {
-    opacity: 1;
+  /* Performance optimization: content-visibility for large emoji grids */
+  /* Allows browser to skip rendering off-screen items */
+  .emoji-grid-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 80px;
   }
 
-  100% {
-    transform: translateY(100vh) rotate(360deg);
-    opacity: 0;
+  /* For virtualized grids with fixed row heights */
+  .virtualized-grid-item {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 120px;
   }
-}
 
-.animate-fall {
-  animation: fall linear forwards;
-}
+  /* Emoji waterfall animation */
+  @keyframes fall {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 0;
+    }
 
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+    5% {
+      opacity: 1;
+    }
 
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 10px;
-}
+    95% {
+      opacity: 1;
+    }
 
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 10px;
-}
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.8);
-}
+  .animate-fall {
+    animation: fall linear forwards;
+  }
 
-/*
+  /* Custom scrollbar for webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--\1);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--\1);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--primary) 80%, transparent);
+  }
+
+  /*
  * Z-index layer system:
  *   50  - Floating buttons, mobile nav
  *  100  - Dialog/Drawer overlays
@@ -612,142 +1145,39 @@ body {
  *  200  - Tooltips (always topmost)
  * 9999  - Fullscreen overlays (user-overlay, emoji-overlay portals)
  */
-.radix-tooltip-content-wrapper {
-  z-index: 200 !important;
-}
-
-.radix-dialog-overlay,
-.radix-drawer-overlay {
-  z-index: 100 !important;
-}
-
-.radix-dialog-content,
-.radix-drawer-content {
-  z-index: 101 !important;
-}
-
-/* Gradient text animation */
-@keyframes gradient-x {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
+  .radix-tooltip-content-wrapper {
+    z-index: 200 !important;
   }
 
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.animate-gradient-x {
-  animation: gradient-x 3s ease infinite;
-}
-
-.animate-ripple {
-  animation: ripple 3s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * 0.3s);
-}
-
-@theme inline {
-  @keyframes shine {
-    0% {
-      background-position: 0% 0%;
-    }
-
-    50% {
-      background-position: 100% 100%;
-    }
-
-    to {
-      background-position: 0% 0%;
-    }
+  .radix-dialog-overlay,
+  .radix-drawer-overlay {
+    z-index: 100 !important;
   }
 
-  @keyframes gradient-shift {
-    0% {
+  .radix-dialog-content,
+  .radix-drawer-content {
+    z-index: 101 !important;
+  }
+
+  /* Gradient text animation */
+  @keyframes gradient-x {
+    0%,
+    100% {
       background-position: 0% 50%;
     }
 
     50% {
       background-position: 100% 50%;
     }
-
-    100% {
-      background-position: 0% 50%;
-    }
   }
 
-  @keyframes shine-border {
-    0% {
-      background-position: -100% 50%;
-    }
-
-    100% {
-      background-position: 200% 50%;
-    }
+  .animate-gradient-x {
+    animation: gradient-x 3s ease infinite;
   }
 
-  @keyframes shiny-text {
-
-    0%,
-    90%,
-    100% {
-      background-position: calc(-100% - var(--shiny-width)) 0;
-    }
-
-    30%,
-    60% {
-      background-position: calc(100% + var(--shiny-width)) 0;
-    }
-  }
-
-  @keyframes rainbow {
-    0% {
-      background-position: 0%;
-    }
-
-    100% {
-      background-position: 200%;
-    }
-  }
-
-  @keyframes ripple {
-
-    0%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-    }
-
-    50% {
-      transform: translate(-50%, -50%) scale(0.9);
-    }
-  }
-
-  @keyframes aurora {
-    0% {
-      background-position: 0% 50%;
-      transform: rotate(-5deg) scale(0.9);
-    }
-
-    25% {
-      background-position: 50% 100%;
-      transform: rotate(5deg) scale(1.1);
-    }
-
-    50% {
-      background-position: 100% 50%;
-      transform: rotate(-3deg) scale(0.95);
-    }
-
-    75% {
-      background-position: 50% 0%;
-      transform: rotate(3deg) scale(1.05);
-    }
-
-    100% {
-      background-position: 0% 50%;
-      transform: rotate(-5deg) scale(0.9);
-    }
+  .animate-ripple {
+    animation: ripple 3s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * 0.3s);
   }
 }
 
@@ -1297,4 +1727,77 @@ body.wrapped-embedded .h-screen {
 body.wrapped-embedded .overflow-y-auto {
   height: 100vh !important;
   height: 100dvh !important;
+}
+/*
+  ---break---
+*/
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.845 0.143 164.978);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.596 0.145 163.225);
+  --chart-4: oklch(0.508 0.118 165.612);
+  --chart-5: oklch(0.432 0.095 166.913);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+/*
+  ---break---
+*/
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.424 0.199 265.638);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.845 0.143 164.978);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.596 0.145 163.225);
+  --chart-4: oklch(0.508 0.118 165.612);
+  --chart-5: oklch(0.432 0.095 166.913);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }

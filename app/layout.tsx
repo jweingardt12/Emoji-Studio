@@ -16,6 +16,11 @@ import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
 import { ErrorBoundary } from "@/components/error-boundary"
 import { WhatsNewModal } from "@/components/whats-new-modal";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 export default function RootLayout({
   children,
@@ -23,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`dark ${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={cn("dark", GeistSans.variable, GeistMono.variable, "font-sans", geist.variable)} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -57,7 +62,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-9999 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
           Skip to main content
         </a>
         <OpenPanelProvider />
@@ -80,7 +85,7 @@ export default function RootLayout({
               >
                 <AppSidebar variant="inset" />
                 <SidebarInset className="h-screen overflow-hidden flex flex-col md:ml-0 w-full">
-                  <SiteHeader className="flex-shrink-0" />
+                  <SiteHeader className="shrink-0" />
                   <div className="flex flex-1 flex-col overflow-hidden">
                     <div id="main-content" className="@container/main flex flex-1 flex-col gap-2 overflow-y-auto native-scroll no-horizontal-scroll">
                       <PullToRefreshWrapper>

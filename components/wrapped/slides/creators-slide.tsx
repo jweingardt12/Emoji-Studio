@@ -47,21 +47,21 @@ function PodiumSpot({ creator, rank, captureMode, shouldReduceAnimations }: Podi
   const rankStyles = {
     1: {
       height: "h-20 xs:h-24 sm:h-40 md:h-52",
-      bg: "bg-gradient-to-b from-yellow-500/30 to-yellow-600/10",
+      bg: "bg-linear-to-b from-yellow-500/30 to-yellow-600/10",
       border: "border-yellow-500/50",
       icon: <Crown className="w-4 h-4 xs:w-5 xs:h-5 sm:w-8 sm:h-8 md:w-10 md:h-10 text-yellow-400" />,
       glow: "shadow-[0_0_60px_rgba(234,179,8,0.4)]",
     },
     2: {
       height: "h-14 xs:h-16 sm:h-32 md:h-40",
-      bg: "bg-gradient-to-b from-gray-400/20 to-gray-500/10",
+      bg: "bg-linear-to-b from-gray-400/20 to-gray-500/10",
       border: "border-gray-400/40",
       icon: <Medal className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 text-gray-300" />,
       glow: "",
     },
     3: {
       height: "h-10 xs:h-12 sm:h-24 md:h-32",
-      bg: "bg-gradient-to-b from-amber-600/20 to-amber-700/10",
+      bg: "bg-linear-to-b from-amber-600/20 to-amber-700/10",
       border: "border-amber-600/40",
       icon: <Award className="w-3 h-3 xs:w-4 xs:h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 text-amber-500" />,
       glow: "",
@@ -213,7 +213,7 @@ export function CreatorsSlide({
         <div className={`flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full ${captureMode ? "h-full justify-between" : "min-h-full justify-between"}`}>
 
           {/* Top Section: Header & Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             {/* Consistent header */}
             <div className="mb-2">
               <SlideHeader year={year} />
@@ -264,7 +264,7 @@ export function CreatorsSlide({
           </div>
 
           {/* Bottom Section: Callout & Branding */}
-          <div className="flex flex-col items-center flex-shrink-0 gap-4 mb-safe">
+          <div className="flex flex-col items-center shrink-0 gap-4 mb-safe">
             {/* Champion callout for #1 */}
             {top3[0] && (
               <motion.div
@@ -274,11 +274,11 @@ export function CreatorsSlide({
                 className="wrapped-pill px-5 py-2 rounded-full"
               >
                 <span className="text-white font-medium text-sm text-center block">
-                  <span className="font-bold text-[var(--wrapped-accent-orange)]">
+                  <span className="font-bold text-(--wrapped-accent-orange)">
                     {formatName(top3[0].displayName)}
                   </span>{" "}
                   created{" "}
-                  <span className="font-bold text-[var(--wrapped-accent-orange)]">
+                  <span className="font-bold text-(--wrapped-accent-orange)">
                     {top3[0].percentageOfTotal}%
                   </span>{" "}
                   of all emojis

@@ -512,7 +512,7 @@ export function VibeSlide({
           }`}
         >
           {/* Top Section: Header */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             {/* Arcade header */}
             <motion.div
               className="mb-4 sm:mb-6"
@@ -609,7 +609,7 @@ export function VibeSlide({
           </div>
 
           {/* Bottom Section: Branding */}
-          <div className="flex-shrink-0 mb-safe">
+          <div className="shrink-0 mb-safe">
             <SlideBranding />
           </div>
         </div>

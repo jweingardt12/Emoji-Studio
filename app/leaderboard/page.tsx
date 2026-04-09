@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useCallback, useEffect, useMemo } from "react"
+import { motion } from "framer-motion"
 import { useIsClient } from "@/hooks/use-is-client"
 import Leaderboard from "@/components/leaderboard"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -18,36 +19,22 @@ import { Button } from "@/components/ui/button"
 import { Share2 } from "lucide-react"
 import { LeaderboardShareModal } from "@/components/leaderboard-share-modal"
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
+import { staggerContainer, fadeUp } from "@/lib/motion"
 
 // Use a client-side only component to avoid hydration mismatches
 function LeaderboardPage() {
   const track = useTrack();
   const isClient = useIsClient()
   const isMobile = useIsMobile()
-  const [pageVisible, setPageVisible] = useState(false)
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
-  
+
   useEffect(() => {
-    // Trigger fade in animation after a short delay
-    const timer = setTimeout(() => {
-      setPageVisible(true)
-    }, 100)
-    
-    // Listen for emoji data updates to force re-render
     const handleEmojiDataUpdated = () => {
       setDataRefreshKey(prev => prev + 1);
-      
-      // Also refresh the page visible state to trigger animations
-      setPageVisible(false);
-      setTimeout(() => setPageVisible(true), 100);
     };
-    
+
     window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
-    };
+    return () => window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
   }, [])
   const { emojiData, filterByDateRange, loading, workspace, workspaceDisplayName } = useEmojiData()
   const [dateRange, setDateRange] = useState<import("@/components/leaderboard").DateRange>("all")
@@ -127,7 +114,7 @@ function LeaderboardPage() {
     return (
       <div className="flex flex-col gap-4 py-3 sm:gap-5 sm:py-4 md:gap-6 md:py-6">
         <div className="px-3 sm:px-4 lg:px-6">
-          <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4">
+          <div className="rounded-xl bg-card border border-border shadow-sm p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-4">
               <Skeleton className="h-5 w-5" />
               <Skeleton className="h-7 w-32" />
@@ -153,9 +140,13 @@ function LeaderboardPage() {
   }
   
   return (
-    <div className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-4'} transition-[opacity,transform] duration-700 motion-reduce:transition-none ${
-      pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-    }`} key={dataRefreshKey}>
+    <motion.div
+      className={`flex flex-col ${isMobile ? 'pt-4' : 'gap-4'}`}
+      key={dataRefreshKey}
+      variants={staggerContainer()}
+      initial="hidden"
+      animate="show"
+    >
       <ChromeExtensionHandler />
       
       {/* Mobile Header - Only show on mobile */}
@@ -166,7 +157,7 @@ function LeaderboardPage() {
             alt="Emoji Studio"
             width={32}
             height={32}
-            className="h-8 w-8 rounded-lg shadow-sm"
+            className="h-8 w-8 rounded-lg shadow-xs"
           />
           <h1 className="text-lg font-semibold">Leaderboard</h1>
         </div>
@@ -183,7 +174,7 @@ function LeaderboardPage() {
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => setShowShareModal(true)}
-                  className="h-10 px-6 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-sm"
+                  className="h-10 px-6 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-xs"
                   disabled={filteredLeaderboard.length === 0}
                 >
                   <Share2 className="h-4 w-4" aria-hidden="true" />
@@ -209,14 +200,14 @@ function LeaderboardPage() {
           </>
         ) : (
           // Desktop: With card wrapper
-          <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4">
+          <div className="rounded-xl bg-card border border-border shadow-sm p-3 sm:p-4">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 Leaderboard
               </h2>
               <Button
                 onClick={() => setShowShareModal(true)}
-                className="h-10 px-12 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-sm"
+                className="h-10 px-12 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-xs"
                 disabled={filteredLeaderboard.length === 0}
               >
                 <Share2 className="h-4 w-4" />
@@ -256,7 +247,7 @@ function LeaderboardPage() {
         onDateRangeChange={setDateRange}
         workspaceName={workspaceName}
       />
-    </div>
+    </motion.div>
   )
 }
 

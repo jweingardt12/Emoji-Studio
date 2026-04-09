@@ -42,7 +42,7 @@ export const OverviewTab = memo(({
                                 color: "#4169E1"
                             },
                             label: {
-                                color: "hsl(var(--background))"
+                                color: "var(--background)"
                             }
                         }}
                     >
@@ -90,7 +90,7 @@ export const OverviewTab = memo(({
                                     dataKey="date"
                                     position="insideLeft"
                                     offset={8}
-                                    className="fill-[--color-label] text-xs sm:text-sm"
+                                    className="fill-(--color-label) text-xs sm:text-sm"
                                     fontSize={12}
                                     formatter={(value: any) => {
                                         const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -130,7 +130,7 @@ export const OverviewTab = memo(({
                 </CardHeader>
                 <CardContent className="p-2 sm:p-4">
                     <ChartContainer
-                        className="aspect-[4/3] w-full max-w-full"
+                        className="aspect-4/3 w-full max-w-full"
                         config={{
                             count: {
                                 label: "",

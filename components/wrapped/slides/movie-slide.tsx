@@ -225,7 +225,7 @@ function VHSMoviePosterCard({
       initial={captureMode ? false : { opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: captureMode ? 0 : 0.3, duration: 0.5 }}
-      className="relative w-full max-w-xs sm:max-w-sm rounded-none overflow-hidden aspect-[3/4] sm:aspect-[2/3]"
+      className="relative w-full max-w-xs sm:max-w-sm rounded-none overflow-hidden aspect-3/4 sm:aspect-2/3"
       style={{
         background: `linear-gradient(180deg, ${VHS_COLORS.black} 0%, #1a1a2e 50%, ${VHS_COLORS.black} 100%)`,
         boxShadow: "0 0 40px rgba(0,0,0,0.8)",
@@ -536,7 +536,7 @@ export function MovieSlide({
           }`}
         >
           {/* Top Section: Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             <motion.div
               className="mb-4"
               initial={captureMode ? false : { opacity: 0, y: -20 }}
@@ -572,7 +572,7 @@ export function MovieSlide({
           </div>
 
           {/* Bottom Section: Branding */}
-          <div className="flex-shrink-0 mb-safe">
+          <div className="shrink-0 mb-safe">
             <SlideBranding />
           </div>
         </div>

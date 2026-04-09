@@ -19,7 +19,7 @@ export default function InstallCertPage() {
         <div className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
             <div className="flex items-center gap-3 mb-2">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                 1
               </span>
               <strong>Download Root CA Certificate</strong>
@@ -40,7 +40,7 @@ export default function InstallCertPage() {
 
           <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
             <div className="flex items-center gap-3 mb-2">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                 2
               </span>
               <strong>Install Profile</strong>
@@ -56,7 +56,7 @@ export default function InstallCertPage() {
 
           <div className="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
             <div className="flex items-center gap-3 mb-2">
-              <span className="flex-shrink-0 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                 3
               </span>
               <strong>Trust Certificate (CRITICAL STEP)</strong>
@@ -75,7 +75,7 @@ export default function InstallCertPage() {
 
           <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
             <div className="flex items-center gap-3 mb-2">
-              <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                 4
               </span>
               <strong>Access via HTTPS</strong>

@@ -1,33 +1,40 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useRef } from "react"
+import { motion, useInView } from "framer-motion"
 import Link from "next/link"
 import { Activity, ArrowRight, BarChart3, Users, Hash } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useReactionCache } from "@/lib/hooks/use-reaction-cache"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
+import { springGentle } from "@/lib/motion"
 
 const BAR_COLORS = [
-  "bg-[hsl(var(--chart-1))]",
-  "bg-[hsl(var(--chart-2))]",
-  "bg-[hsl(var(--chart-4))]",
-  "bg-[hsl(var(--chart-3))]",
-  "bg-[hsl(var(--chart-5))]",
+  "bg-[var(--chart-1)]",
+  "bg-[var(--chart-2)]",
+  "bg-[var(--chart-4)]",
+  "bg-[var(--chart-3)]",
+  "bg-[var(--chart-5)]",
 ]
 
-function TopReactionBar({ name, count, maxCount, imageUrl, rank }: {
+function TopReactionBar({ name, count, maxCount, imageUrl, rank, animateIn }: {
   name: string
   count: number
   maxCount: number
   imageUrl?: string
   rank: number
+  animateIn: boolean
 }) {
   const width = Math.max(8, Math.round((count / maxCount) * 100))
 
   return (
-    <div className="group flex items-center gap-3 rounded-lg px-1 -mx-1 transition-colors hover:bg-muted/50">
-      <div className="flex-shrink-0 w-7 h-7 flex items-center justify-center">
+    <motion.div
+      className="group flex items-center gap-3 rounded-lg px-1 -mx-1 transition-colors hover:bg-muted/50"
+      whileHover={{ x: 2 }}
+      transition={springGentle}
+    >
+      <div className="shrink-0 w-7 h-7 flex items-center justify-center">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -49,9 +56,11 @@ function TopReactionBar({ name, count, maxCount, imageUrl, rank }: {
           </span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-[width] duration-700 ease-out ${BAR_COLORS[rank % BAR_COLORS.length]}`}
-            style={{ width: `${width}%` }}
+          <motion.div
+            className={`h-full rounded-full ${BAR_COLORS[rank % BAR_COLORS.length]}`}
+            initial={{ width: 0 }}
+            animate={animateIn ? { width: `${width}%` } : { width: 0 }}
+            transition={{ ...springGentle, delay: rank * 0.08 }}
             role="meter"
             aria-label={`${name}: ${count} reactions`}
             aria-valuenow={count}
@@ -60,7 +69,7 @@ function TopReactionBar({ name, count, maxCount, imageUrl, rank }: {
           />
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -83,6 +92,8 @@ function StatItem({ icon: Icon, label, value }: {
 export function DashboardUsageSummary() {
   const { reactionStats, hasData, loading } = useReactionCache()
   const { emojiData } = useEmojiData()
+  const barsRef = useRef<HTMLDivElement>(null)
+  const barsInView = useInView(barsRef, { once: true, margin: "-40px" })
 
   const emojiUrls = useMemo(() => {
     const map = new Map<string, string>()
@@ -94,7 +105,6 @@ export function DashboardUsageSummary() {
 
   if (loading) return null
 
-  // No scan data — show CTA
   if (!hasData) {
     return (
       <Card className="border-dashed border-muted-foreground/20 hover:border-muted-foreground/30 transition-colors">
@@ -147,7 +157,7 @@ export function DashboardUsageSummary() {
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Top Reactions
             </p>
-            <div className="space-y-2" role="list" aria-label="Top emoji reactions">
+            <div ref={barsRef} className="space-y-2" role="list" aria-label="Top emoji reactions">
               {topReactions.map((reaction, i) => (
                 <TopReactionBar
                   key={reaction.emoji_name}
@@ -156,6 +166,7 @@ export function DashboardUsageSummary() {
                   maxCount={maxCount}
                   imageUrl={emojiUrls.get(reaction.emoji_name)}
                   rank={i}
+                  animateIn={barsInView}
                 />
               ))}
             </div>

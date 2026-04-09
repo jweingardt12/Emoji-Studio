@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, Suspense, lazy, useRef } from "react"
+import { motion } from "framer-motion"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useTrack } from "@/lib/hooks/use-track"
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Activity, Calendar, ChartPieIcon, FileText, Users, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { useVisualizationData, TimeRange } from "./use-visualization-data"
+import { staggerContainer, fadeUp } from "@/lib/motion"
 
 // Dynamic imports for heavy visualization components
 const OverviewTab = lazy(() => import("./tabs/overview-tab").then(module => ({ default: module.OverviewTab })))
@@ -158,7 +160,12 @@ export default function VisualizationsPage() {
   if (!isClient) return null
 
   return (
-    <div className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6">
+    <motion.div
+      className="flex flex-col gap-2 py-2 sm:gap-4 sm:py-4 md:gap-6 md:py-6"
+      variants={staggerContainer()}
+      initial="hidden"
+      animate="show"
+    >
       {/* Dialog to show emojis with selected name length */}
       <Dialog open={showEmojiDialog} onOpenChange={setShowEmojiDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
@@ -257,7 +264,7 @@ export default function VisualizationsPage() {
       />
 
       <div className="px-2 sm:px-4 lg:px-6">
-        <div className="rounded-xl bg-card border border-border shadow p-2 sm:p-4">
+        <div className="rounded-xl bg-card border border-border shadow-sm p-2 sm:p-4">
           <div className="mb-4 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -297,22 +304,22 @@ export default function VisualizationsPage() {
               }
             }}
           >
-            <TabsList className="grid w-full grid-cols-4 mb-6 h-auto p-1">
-              <TabsTrigger value="overview" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
-                <ChartPieIcon className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Overview</span>
+            <TabsList className="w-full mb-6">
+              <TabsTrigger value="overview">
+                <ChartPieIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="activity" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
-                <Activity className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Activity Patterns</span>
+              <TabsTrigger value="activity">
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Activity</span>
               </TabsTrigger>
-              <TabsTrigger value="creators" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
-                <Users className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Creators</span>
+              <TabsTrigger value="creators">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Creators</span>
               </TabsTrigger>
-              <TabsTrigger value="content" className="flex items-center justify-center gap-2 px-4 py-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-[color,background-color,box-shadow]">
-                <FileText className="h-5 w-5" />
-                <span className="hidden sm:inline font-medium">Content</span>
+              <TabsTrigger value="content">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Content</span>
               </TabsTrigger>
             </TabsList>
 
@@ -354,6 +361,6 @@ export default function VisualizationsPage() {
           </Tabs>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

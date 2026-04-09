@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { motion } from "framer-motion"
 import { useIsClient } from "@/hooks/use-is-client"
 import Image from "next/image"
 import Link from "next/link"
 import dynamic from "next/dynamic"
+import { staggerContainer, fadeUp, pillHover } from "@/lib/motion"
 const ChartAreaInteractive = dynamic(
   () => import("@/components/chart-area-interactive").then(mod => mod.ChartAreaInteractive),
   { ssr: false, loading: () => <div className="h-[300px] rounded-xl border border-muted/40 bg-card/50 animate-pulse" /> }
@@ -34,28 +36,14 @@ import { DashboardUsageSummary } from "@/components/dashboard-usage-summary"
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
 
+const MotionLink = motion.create(Link)
+
 function DashboardPage() {
   const isClient = useIsClient()
-  const [pageVisible, setPageVisible] = useState(false)
-  // Sync loading is now handled by ChromeExtensionHandler
   const router = useRouter()
   const track = useTrack()
 
   useEffect(() => {
-    // Trigger fade in animation after a short delay
-    const timer = setTimeout(() => {
-      setPageVisible(true)
-    }, 100)
-
-    // Listen for emoji data updates to force re-render
-    const handleEmojiDataUpdated = () => {
-      // Sync loading is now handled by ChromeExtensionHandler
-
-      // Refresh the page visible state to trigger animations
-      setPageVisible(false);
-      setTimeout(() => setPageVisible(true), 100);
-    };
-
     // Listen for Chrome extension messages to add emojis from Slackmojis
     const handleExtensionMessage = async (event: MessageEvent) => {
       if (event.data.type === 'EMOJI_STUDIO_ADD_EMOJI') {
@@ -65,34 +53,23 @@ function DashboardPage() {
         }
 
         try {
-          // Navigate to create page with the emoji data
           const createUrl = new URL('/create', window.location.origin);
           createUrl.searchParams.set('from', 'extension');
-
-          // Store the emoji data temporarily so the create page can pick it up
           window.sessionStorage.setItem('pendingEmojiFromSlackmojis', JSON.stringify({
             imageUrl: emojiData.url,
             originalUrl: emojiData.url,
             name: emojiData.name,
             source: 'slackmojis'
           }));
-
-          // Navigate to create page
           window.location.href = createUrl.toString();
         } catch (error) {
-
+          console.error("Failed to handle extension emoji:", error)
         }
       }
     };
 
-    window.addEventListener('emojiDataUpdated', handleEmojiDataUpdated);
     window.addEventListener('message', handleExtensionMessage);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('emojiDataUpdated', handleEmojiDataUpdated);
-      window.removeEventListener('message', handleExtensionMessage);
-    };
+    return () => window.removeEventListener('message', handleExtensionMessage);
   }, [])
   const {
     emojiData,
@@ -225,10 +202,15 @@ function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 w-full pb-8">
+    <motion.div
+      className="flex flex-col gap-6 md:gap-8 w-full pb-8"
+      variants={staggerContainer()}
+      initial="hidden"
+      animate="show"
+    >
       <ChromeExtensionHandler />
 
-      {/* Mobile Header - Only show on mobile */}
+      {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between px-3 py-3 border-b border-border">
         <div className="flex items-center gap-3">
           <Image
@@ -236,7 +218,7 @@ function DashboardPage() {
             alt="Emoji Studio"
             width={32}
             height={32}
-            className="rounded-lg shadow-sm"
+            className="rounded-lg shadow-xs"
             priority
           />
           <h1 className="text-lg font-semibold">Emoji Studio</h1>
@@ -244,21 +226,18 @@ function DashboardPage() {
         <RefreshButton />
       </div>
 
-      {/* Hero Metrics Section - Staggered animation delay: 0ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-8 transition-all duration-500 ease-out ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
-        }`}>
+      {/* Hero Metrics */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
         {loading && !showDemoData ? (
           <div className="grid grid-cols-1 gap-4">
-            {/* Primary metric skeleton */}
-            <div className="rounded-xl bg-card border border-border shadow p-6">
+            <div className="rounded-xl bg-card border border-border shadow-sm p-6">
               <Skeleton className="h-4 w-24 mb-2" />
               <Skeleton className="h-10 w-32 mb-2" />
               <Skeleton className="h-3 w-40" />
             </div>
-            {/* Secondary metrics skeleton */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl bg-card border border-border shadow p-4">
+                <div key={i} className="rounded-xl bg-card border border-border shadow-sm p-4">
                   <Skeleton className="h-3 w-20 mb-2" />
                   <Skeleton className="h-6 w-16" />
                 </div>
@@ -268,53 +247,50 @@ function DashboardPage() {
         ) : (
           <SectionCards />
         )}
-      </div>
+      </motion.div>
 
       {/* Quick Actions */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 flex-wrap">
           {[
             { href: "/create", icon: CirclePlus, label: "Create Emoji" },
             { href: "/create?tab=browse", icon: Package, label: "Browse Packs" },
             { href: "/explorer", icon: LayoutGrid, label: "View All Emojis" },
           ].map(({ href, icon: Icon, label }) => (
-            <Link
+            <MotionLink
               key={href}
               href={href}
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
+              {...pillHover}
             >
               <Icon className="h-3.5 w-3.5" />
               {label}
-            </Link>
+            </MotionLink>
           ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* ChartAreaInteractive with skeleton - Staggered animation delay: 150ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-150 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
-        }`}>
-        {loading && !showDemoData ? (
-          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
-              <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
-              <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
+      {/* Chart + Usage Summary -- Bento grid on desktop */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+          {loading && !showDemoData ? (
+            <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs p-4 sm:p-6 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
+                <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
+                <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
+              </div>
+              <Skeleton className="h-7 sm:h-8 w-32 sm:w-40 mb-2" />
+              <div className="h-[200px] sm:h-[250px] w-full"><Skeleton className="h-full w-full" /></div>
             </div>
-            <Skeleton className="h-7 sm:h-8 w-32 sm:w-40 mb-2" />
-            <div className="h-[200px] sm:h-[250px] w-full"><Skeleton className="h-full w-full" /></div>
-          </div>
-        ) : (
-          <ChartAreaInteractive />
-        )}
-      </div>
-      {/* Usage Summary - Staggered animation delay: 200ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-200 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
-        }`}>
-        <DashboardUsageSummary />
-      </div>
+          ) : (
+            <ChartAreaInteractive />
+          )}
+          <DashboardUsageSummary />
+        </div>
+      </motion.div>
 
-      {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
-      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-300 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
-        }`}>
+      {/* Tabbed Content */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}
           dateRange={dateRange}
@@ -326,21 +302,19 @@ function DashboardPage() {
           setSearchQuery={setSearchQuery}
           setShowInactiveUsers={setShowInactiveUsers}
         />
-      </div>
-      {/* User Overlay */}
+      </motion.div>
+
+      {/* Overlays */}
       <UserOverlay
         user={selectedUser}
         onClose={() => setSelectedUser(null)}
         onEmojiClick={handleEmojiClickFromUserOverlay}
       />
-      {/* Emoji Overlay */}
       <EmojiOverlay
         emoji={selectedEmojiForOverlay}
         onClose={() => setSelectedEmojiForOverlay(null)}
       />
-
-      {/* ChromeExtensionHandler now handles sync loading overlay */}
-    </div>
+    </motion.div>
   )
 }
 

@@ -704,9 +704,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             onClick={() => {
               handleNavigate({ title: "Dashboard", url: "/dashboard" });
             }}
-            className="flex items-center gap-2 focus:outline-none"
+            className="flex items-center gap-2 focus:outline-hidden"
           >
-            <div className="relative w-10 h-10 flex-shrink-0">
+            <div className="relative w-10 h-10 shrink-0">
               <Image src="/logo.png" alt="Emoji Studio Logo" fill className="object-contain" priority />
             </div>
             <span className="text-xl font-bold">Emoji Studio</span>
@@ -717,7 +717,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1.5 mt-2 pl-1 cursor-default">
                   <span className={cn(
-                    "h-2 w-2 rounded-full flex-shrink-0",
+                    "h-2 w-2 rounded-full shrink-0",
                     hasRealData ? "bg-green-500" : "bg-red-400"
                   )} />
                   <span className="text-[10px] text-muted-foreground truncate">
@@ -738,7 +738,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
       <SidebarContent className="flex flex-col h-full">
-        <div className="flex-grow min-h-0 overflow-y-auto overscroll-contain">
+        <div className="grow min-h-0 overflow-y-auto overscroll-contain">
           <div className="px-2 pb-2">
             <TooltipProvider>
               <Tooltip>
@@ -749,7 +749,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     onClick={() => {
                       handleNavigate({ title: "Create", url: "/create" });
                     }}
-                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="flex items-center justify-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-medium hover:bg-primary/90 active:scale-95 transition-all duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
                     <CirclePlus className="h-4 w-4" />
                     <span>Create Emoji</span>

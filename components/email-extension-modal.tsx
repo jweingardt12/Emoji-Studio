@@ -130,7 +130,7 @@ export function EmailExtensionModal({ open, onClose }: EmailExtensionModalProps)
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-xs"
         onClick={() => {
           track("email_extension_modal_closed", { method: "backdrop_click" })
           handleClose()

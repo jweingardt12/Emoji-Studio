@@ -619,7 +619,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
           {/* Controls Section */}
           <div className="space-y-4">
               <Tabs defaultValue="adjustments" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="w-full">
                 <TabsTrigger value="adjustments">
                   <Sliders className="h-4 w-4 mr-1" />
                   Adjust

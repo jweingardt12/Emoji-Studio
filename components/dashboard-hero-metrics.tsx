@@ -154,7 +154,7 @@ function TotalEmojisCard({
   const chartConfig = {
     total: {
       label: "Total Emojis",
-      color: "hsl(var(--chart-1))",
+      color: "var(--chart-1)",
     },
   } satisfies ChartConfig;
 
@@ -411,7 +411,7 @@ export function DashboardHeroMetrics() {
       chartConfig: {
         value: {
           label: "Users",
-          color: "hsl(var(--chart-2))",
+          color: "var(--chart-2)",
         },
       } satisfies ChartConfig,
     },
@@ -428,7 +428,7 @@ export function DashboardHeroMetrics() {
       chartConfig: {
         value: {
           label: "Emojis",
-          color: "hsl(var(--chart-3))",
+          color: "var(--chart-3)",
         },
       } satisfies ChartConfig,
     },
@@ -443,7 +443,7 @@ export function DashboardHeroMetrics() {
       chartConfig: {
         value: {
           label: "Emojis",
-          color: "hsl(var(--chart-4))",
+          color: "var(--chart-4)",
         },
       } satisfies ChartConfig,
     },
@@ -458,7 +458,7 @@ export function DashboardHeroMetrics() {
       chartConfig: {
         value: {
           label: "EPW",
-          color: "hsl(var(--chart-5))",
+          color: "var(--chart-5)",
         },
       } satisfies ChartConfig,
     },
@@ -473,7 +473,7 @@ export function DashboardHeroMetrics() {
       chartConfig: {
         value: {
           label: "Daily",
-          color: "hsl(var(--chart-1))",
+          color: "var(--chart-1)",
         },
       } satisfies ChartConfig,
     }
@@ -485,10 +485,10 @@ export function DashboardHeroMetrics() {
     <div className="relative">
       {/* Gradient fade indicators */}
       {showLeftGradient && (
-        <div className="absolute left-0 top-0 bottom-0 w-8 md:w-12 bg-gradient-to-r from-background via-background/50 to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-8 md:w-12 bg-linear-to-r from-background via-background/50 to-transparent z-10 pointer-events-none" />
       )}
       {showRightGradient && (
-        <div className="absolute right-0 top-0 bottom-0 w-8 md:w-12 bg-gradient-to-l from-background via-background/50 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-8 md:w-12 bg-linear-to-l from-background via-background/50 to-transparent z-10 pointer-events-none" />
       )}
       
       {/* Scrollable container */}
@@ -516,7 +516,7 @@ export function DashboardHeroMetrics() {
         <div className="flex gap-3 pb-2">
           {/* Total Emojis Card - First */}
           <div 
-            className="flex-shrink-0 w-[280px] sm:w-[320px] md:w-[340px]"
+            className="shrink-0 w-[280px] sm:w-[320px] md:w-[340px]"
             style={{ scrollSnapAlign: 'start' }}
           >
             <TotalEmojisCard
@@ -533,7 +533,7 @@ export function DashboardHeroMetrics() {
           {metrics.map((metric, index) => (
             <div 
               key={index} 
-              className="flex-shrink-0 w-[260px] sm:w-[280px] md:w-[300px]"
+              className="shrink-0 w-[260px] sm:w-[280px] md:w-[300px]"
               style={{ scrollSnapAlign: 'start' }}
             >
               <MetricCard {...metric} />
@@ -559,7 +559,7 @@ export function DashboardHeroMetrics() {
             }}
             onClick={() => {
               if (scrollContainerRef.current) {
-                const cards = scrollContainerRef.current.querySelectorAll('.flex-shrink-0');
+                const cards = scrollContainerRef.current.querySelectorAll('.shrink-0');
                 const gap = 12;
                 
                 let targetPosition = 0;

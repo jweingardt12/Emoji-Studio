@@ -186,7 +186,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                 ...chartData.commonWords.reduce((acc: Record<string, any>, item: any, index: number) => {
                                     acc[item.word] = {
                                         label: item.word,
-                                        color: `hsl(var(--chart-${(index % 8) + 1}))`
+                                        color: `var(--chart-${(index % 8) + 1})`
                                     }
                                     return acc
                                 }, {})
@@ -219,7 +219,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                     radius={4}
                                 >
                                     {chartData.commonWords.slice(0, 10).map((entry: any, index: number) => (
-                                        <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 8) + 1}))`} />
+                                        <Cell key={`cell-${index}`} fill={`var(--chart-${(index % 8) + 1})`} />
                                     ))}
                                     <LabelList
                                         dataKey="count"

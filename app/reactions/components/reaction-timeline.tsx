@@ -27,7 +27,7 @@ interface ReactionTimelineProps {
 }
 
 const chartConfig = {
-  reactions: { label: "Reactions", color: "hsl(var(--chart-1))" },
+  reactions: { label: "Reactions", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
 export function ReactionTimeline({ data }: ReactionTimelineProps) {
@@ -85,7 +85,7 @@ export function ReactionTimeline({ data }: ReactionTimelineProps) {
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              stroke="hsl(var(--border))"
+              stroke="var(--border)"
             />
             <XAxis
               dataKey="date"

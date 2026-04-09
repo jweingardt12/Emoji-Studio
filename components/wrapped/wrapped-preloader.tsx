@@ -267,7 +267,7 @@ export function WrappedPreloader({
                 size={140}
                 strokeWidth={6}
                 trackClassName="text-white/10"
-                indicatorClassName="text-[var(--wrapped-accent-purple)]"
+                indicatorClassName="text-(--wrapped-accent-purple)"
                 className="drop-shadow-lg"
               >
                 <motion.span

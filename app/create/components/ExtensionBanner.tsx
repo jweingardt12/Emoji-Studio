@@ -31,10 +31,10 @@ export const ExtensionBanner = memo(function ExtensionBanner({
       transition={{ duration: 0.3, ease: "easeOut" }}
       className="flex-none mb-4"
     >
-      <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
+      <div className="rounded-xl bg-card border border-border p-4 shadow-xs">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
+            <div className="shrink-0 h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
               <ChromeIcon className="h-5 w-5 text-muted-foreground" />
             </div>
             <div>

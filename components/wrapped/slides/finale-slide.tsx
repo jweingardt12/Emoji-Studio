@@ -110,7 +110,7 @@ export function FinaleSlide({
         className={`relative z-10 w-full max-w-4xl flex flex-col items-center ${captureMode ? "h-[600px] justify-center" : "h-full max-h-full md:overflow-hidden overflow-y-auto scrollbar-hide py-4"}`}
       >
         {/* Consistent header within scroll flow */}
-        <div className="flex-shrink-0 mb-4">
+        <div className="shrink-0 mb-4">
           <SlideHeader year={stats.year} />
         </div>
 
@@ -119,7 +119,7 @@ export function FinaleSlide({
           initial={captureMode ? false : { scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 20 }}
-          className="relative z-10 flex-shrink-0 mt-4"
+          className="relative z-10 shrink-0 mt-4"
         >
           {/* Wrap message */}
           {captureMode ? (
@@ -170,11 +170,11 @@ export function FinaleSlide({
             className="relative z-10 mt-4 sm:mt-6 rounded-3xl wrapped-glass-premium border border-white/20 p-5 sm:p-6 w-full max-w-2xl overflow-hidden"
           >
             {/* Subtle gradient glow behind stats */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--wrapped-accent-purple)]/10 via-transparent to-[var(--wrapped-accent-cyan)]/10 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-(--wrapped-accent-purple)/10 via-transparent to-(--wrapped-accent-cyan)/10 pointer-events-none" />
             <div className="flex flex-col sm:flex-row items-center justify-around gap-6 sm:gap-8">
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
-                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-cyan)]" />
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-(--wrapped-accent-cyan)" />
                 </div>
                 <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-bold text-white">
                   {captureMode ? (
@@ -187,12 +187,12 @@ export function FinaleSlide({
                     />
                   )}
                 </div>
-                <p className="text-[var(--wrapped-text-muted)] text-sm sm:text-base uppercase tracking-wider mt-1">emojis</p>
+                <p className="text-(--wrapped-text-muted) text-sm sm:text-base uppercase tracking-wider mt-1">emojis</p>
               </div>
               <div className="hidden sm:block w-px h-16 bg-white/10" />
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
-                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-purple)]" />
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 text-(--wrapped-accent-purple)" />
                 </div>
                 <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-bold text-white">
                   {captureMode ? (
@@ -205,12 +205,12 @@ export function FinaleSlide({
                     />
                   )}
                 </div>
-                <p className="text-[var(--wrapped-text-muted)] text-sm sm:text-base uppercase tracking-wider mt-1">creators</p>
+                <p className="text-(--wrapped-text-muted) text-sm sm:text-base uppercase tracking-wider mt-1">creators</p>
               </div>
               <div className="hidden sm:block w-px h-16 bg-white/10" />
               <div className="text-center group">
                 <div className="flex items-center justify-center gap-2 mb-2 group-hover:scale-110 transition-transform">
-                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--wrapped-accent-orange)]" />
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-(--wrapped-accent-orange)" />
                 </div>
                 <div className="font-mono text-3xl sm:text-4xl md:text-5xl font-bold text-white">
                   {captureMode ? (
@@ -223,7 +223,7 @@ export function FinaleSlide({
                     />
                   )}
                 </div>
-                <p className="text-[var(--wrapped-text-muted)] text-sm sm:text-base uppercase tracking-wider mt-1">best day</p>
+                <p className="text-(--wrapped-text-muted) text-sm sm:text-base uppercase tracking-wider mt-1">best day</p>
               </div>
             </div>
 
@@ -236,7 +236,7 @@ export function FinaleSlide({
                 className="mt-4 pt-4 border-t border-white/10 flex items-center justify-center gap-3"
               >
                 <span className="text-xl">🏆</span>
-                <span className="text-[var(--wrapped-text-secondary)]">
+                <span className="text-(--wrapped-text-secondary)">
                   MVP:{" "}
                   <span className="font-bold text-white">
                     {stats.topCreators[0].displayName.split(" ")[0]}
@@ -264,13 +264,13 @@ export function FinaleSlide({
           >
             <Button
               size="lg"
-              className="bg-gradient-to-r from-[var(--wrapped-accent-purple)] to-[var(--wrapped-accent-orange)] hover:from-[var(--wrapped-accent-purple)]/90 hover:to-[var(--wrapped-accent-orange)]/90 text-white font-bold px-8 shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
+              className="bg-linear-to-r from-(--wrapped-accent-purple) to-(--wrapped-accent-orange) hover:from-(--wrapped-accent-purple)/90 hover:to-(--wrapped-accent-orange)/90 text-white font-bold px-8 shadow-lg shadow-purple-500/30 transition-all hover:scale-105"
               onClick={onShare}
             >
               <Share2 className="w-4 h-4 mr-2" />
               Share Your Wrapped
             </Button>
-            <p className="text-[var(--wrapped-text-muted)] text-xs">
+            <p className="text-(--wrapped-text-muted) text-xs">
               Create a shareable image or video
             </p>
           </motion.div>

@@ -622,7 +622,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
     const canGoBack = currentStep !== 'select' && currentStep !== 'complete';
     
     return (
-      <DrawerHeader className="relative py-2 px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+      <DrawerHeader className="relative py-2 px-4 border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           {canGoBack ? (
             <Button
@@ -1197,7 +1197,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                 }}
                 className="relative"
               >
-                <div className="w-24 h-24 bg-gradient-to-br from-green-400/20 to-green-600/20 rounded-full flex items-center justify-center">
+                <div className="w-24 h-24 bg-linear-to-br from-green-400/20 to-green-600/20 rounded-full flex items-center justify-center">
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
                     animate={{ scale: 1, rotate: 0 }}
@@ -1262,7 +1262,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                       className="flex justify-center"
                     >
                       <div className="relative">
-                        <div className="w-32 h-32 rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center overflow-hidden shadow-lg">
+                        <div className="w-32 h-32 rounded-2xl border-2 border-primary/20 bg-linear-to-br from-primary/5 to-primary/10 flex items-center justify-center overflow-hidden shadow-lg">
                           <img
                             src={processedEmoji.preview}
                             alt="Emoji preview"
@@ -1270,7 +1270,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                           />
                         </div>
                         {/* Size badge */}
-                        <div className="absolute -bottom-2 -right-2 bg-background border rounded-full px-2 py-1 text-xs font-medium shadow-sm">
+                        <div className="absolute -bottom-2 -right-2 bg-background border rounded-full px-2 py-1 text-xs font-medium shadow-xs">
                           {(processedEmoji.processedSize / 1024).toFixed(0)}KB
                         </div>
                       </div>
@@ -1361,7 +1361,7 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       </DrawerTrigger>
       <DrawerContent 
         className={cn(
-          "z-[100] flex flex-col",
+          "z-100 flex flex-col",
           // Dynamic height based on step
           currentStep === 'select' && "h-auto max-h-[65vh]",
           currentStep === 'processing' && "h-auto max-h-[50vh]",

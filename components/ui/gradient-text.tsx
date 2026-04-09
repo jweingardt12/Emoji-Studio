@@ -31,7 +31,7 @@ function GradientText({
   return (
     <MotionComponent
       className={cn(
-        "relative inline-flex bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient",
+        "relative inline-flex bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient",
         className
       )}
       style={{

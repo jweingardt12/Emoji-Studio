@@ -529,7 +529,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           <Button
             variant="ghost"
             size="icon"
-            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
+            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-hidden"
             aria-label="Close wrapped experience"
             onClick={() => handleExit("close_button")}
           >
@@ -539,7 +539,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
           <Button
             variant="ghost"
             size="sm"
-            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-none"
+            className="text-white/70 hover:text-white hover:bg-white/10 focus:ring-2 focus:ring-white focus:outline-hidden"
             onClick={() => {
               handleExit("skip_to_share")
               onSkipToShare()
@@ -554,14 +554,14 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         <div className="md:hidden absolute inset-0 flex z-20 pointer-events-none">
           {/* Left edge - previous slide */}
           <div
-            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-gradient-to-r from-white/[0.02] to-transparent"
+            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-linear-to-r from-white/2 to-transparent"
             onClick={(e) => { e.stopPropagation(); goToPrev(); }}
           />
           {/* Center zone - 60% width, passes clicks through for interactables */}
           <div className="w-3/5 h-full" />
           {/* Right edge - next slide */}
           <div
-            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-gradient-to-l from-white/[0.02] to-transparent"
+            className="w-1/5 h-full pointer-events-auto active:bg-white/20 transition-colors bg-linear-to-l from-white/2 to-transparent"
             onClick={(e) => { e.stopPropagation(); goToNext(); }}
           />
         </div>
@@ -575,7 +575,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
               size="icon"
               aria-label="Previous slide"
               className={cn(
-                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm focus:ring-2 focus:ring-white focus:outline-none",
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-xs focus:ring-2 focus:ring-white focus:outline-hidden",
                 currentSlide === 0 && "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
@@ -592,7 +592,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
               size="icon"
               aria-label="Next slide"
               className={cn(
-                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-sm focus:ring-2 focus:ring-white focus:outline-none",
+                "w-12 h-12 rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all backdrop-blur-xs focus:ring-2 focus:ring-white focus:outline-hidden",
                 currentSlide === totalSlides - 1 && "opacity-0 pointer-events-none"
               )}
               onClick={(e) => {
@@ -652,11 +652,11 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
                     goToSlide(index)
                   }}
                   aria-label={`Go to slide ${index + 1} of ${SLIDES.length}`}
-                  className="p-1.5 sm:p-2 md:p-3 -m-0.5 sm:-m-1 md:-m-2 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-full flex-shrink-0"
+                  className="p-1.5 sm:p-2 md:p-3 -m-0.5 sm:-m-1 md:-m-2 focus:outline-hidden focus:ring-2 focus:ring-white/50 rounded-full shrink-0"
                 >
                   <div
                     className={cn(
-                      "rounded-full transition-all duration-300 shadow-sm",
+                      "rounded-full transition-all duration-300 shadow-xs",
                       index === currentSlide
                         ? "bg-white w-3 h-1 sm:w-5 sm:h-1.5 md:w-6 md:h-1.5 box-shadow-glow"
                         : index < currentSlide
@@ -673,7 +673,7 @@ export function WrappedStory({ stats, personalStats, workspaceName, onComplete, 
         {/* Tap hint on intro */}
         {currentSlide === 0 && (
           <motion.div
-            className="text-center text-[var(--wrapped-text-muted)] text-sm pb-4"
+            className="text-center text-(--wrapped-text-muted) text-sm pb-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2, duration: 0.5 }}

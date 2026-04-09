@@ -33,10 +33,10 @@ interface FunFactProps {
 function FunFact({ icon, text }: FunFactProps) {
   return (
     <div className="w-full px-4 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5 rounded-2xl wrapped-glass border-white/10 flex items-center gap-3 sm:gap-4 group cursor-default transition-transform hover:scale-[1.02]">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-[var(--wrapped-accent-purple)]/20 to-[var(--wrapped-accent-cyan)]/20 flex items-center justify-center flex-shrink-0 border border-white/10 shadow-[0_0_15px_-5px_var(--wrapped-accent-purple)]">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-linear-to-br from-(--wrapped-accent-purple)/20 to-(--wrapped-accent-cyan)/20 flex items-center justify-center shrink-0 border border-white/10 shadow-[0_0_15px_-5px_var(--wrapped-accent-purple)]">
         <div className="scale-110 sm:scale-125">{icon}</div>
       </div>
-      <div className="flex-1 text-left text-[var(--wrapped-text-secondary)] text-sm sm:text-base md:text-lg leading-snug">
+      <div className="flex-1 text-left text-(--wrapped-text-secondary) text-sm sm:text-base md:text-lg leading-snug">
         {text}
       </div>
     </div>
@@ -95,18 +95,18 @@ function DonutChart({ percentage, captureMode }: { percentage: number; captureMo
         {/* Center text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-white font-bold text-2xl md:text-3xl">{percentage}%</span>
-          <span className="text-[var(--wrapped-text-muted)] text-xs md:text-sm uppercase tracking-wider">GIFs</span>
+          <span className="text-(--wrapped-text-muted) text-xs md:text-sm uppercase tracking-wider">GIFs</span>
         </div>
       </div>
       {/* Legend */}
       <div className="flex gap-6 mt-4 text-sm md:text-base">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[var(--wrapped-accent-cyan)]" />
-          <span className="text-[var(--wrapped-text-secondary)] font-medium">GIFs</span>
+          <div className="w-3 h-3 rounded-full bg-(--wrapped-accent-cyan)" />
+          <span className="text-(--wrapped-text-secondary) font-medium">GIFs</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[var(--wrapped-accent-purple)]" />
-          <span className="text-[var(--wrapped-text-secondary)] font-medium">Static</span>
+          <div className="w-3 h-3 rounded-full bg-(--wrapped-accent-purple)" />
+          <span className="text-(--wrapped-text-secondary) font-medium">Static</span>
         </div>
       </div>
     </div>
@@ -212,7 +212,7 @@ export function StatsSlide({
         <div className={`flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full ${captureMode ? "h-full justify-between" : "min-h-full justify-between"}`}>
 
           {/* Top Section: Header & Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             <div className="mb-4">
               <SlideHeader year={year} />
             </div>
@@ -252,7 +252,7 @@ export function StatsSlide({
                 initial={captureMode ? false : { opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
-                className="flex-shrink-0 w-full md:w-auto flex justify-center"
+                className="shrink-0 w-full md:w-auto flex justify-center"
               >
                 <div className="rounded-3xl wrapped-glass p-6 md:p-8 flex flex-col items-center justify-center h-full">
                   <DonutChart percentage={overview.gifPercentage} captureMode={captureMode} />
@@ -283,17 +283,17 @@ export function StatsSlide({
                 initial={captureMode ? false : { opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: captureMode ? 0 : 2.5 }}
-                className="px-4 py-2 sm:px-5 sm:py-3 rounded-2xl wrapped-glass border border-[var(--wrapped-accent-purple)]/30 flex items-center gap-2 sm:gap-3 mb-4"
+                className="px-4 py-2 sm:px-5 sm:py-3 rounded-2xl wrapped-glass border border-(--wrapped-accent-purple)/30 flex items-center gap-2 sm:gap-3 mb-4"
               >
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--wrapped-accent-purple)]" />
-                <span className="text-[var(--wrapped-text-secondary)] text-sm sm:text-base">Favorite word: </span>
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-(--wrapped-accent-purple)" />
+                <span className="text-(--wrapped-text-secondary) text-sm sm:text-base">Favorite word: </span>
                 <span className="text-white font-bold text-base sm:text-lg">"{funStats.mostCommonWord.word}"</span>
-                <span className="text-[var(--wrapped-text-muted)]">
+                <span className="text-(--wrapped-text-muted)">
                   ({captureMode ? funStats.mostCommonWord.count : (
                     <NumberTicker
                       value={funStats.mostCommonWord.count}
                       delay={2.7}
-                      className="text-[var(--wrapped-text-muted)]"
+                      className="text-(--wrapped-text-muted)"
                     />
                   )}x)
                 </span>
@@ -354,7 +354,7 @@ export function StatsSlide({
           </div>
 
           {/* Bottom Section: Branding */}
-          <div className="flex-shrink-0 mb-safe">
+          <div className="shrink-0 mb-safe">
             <SlideBranding />
           </div>
         </div>

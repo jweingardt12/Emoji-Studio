@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { cn, trendBadgeColors } from "@/lib/utils";
@@ -9,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InfoDrawerResponsive } from "@/components/info-drawer-responsive";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { cardHover } from "@/lib/motion";
 import {
   ChartContainer,
   ChartTooltip,
@@ -139,7 +142,7 @@ export function SectionCards() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="border-muted/40 shadow-sm bg-card/50">
+          <Card key={i} className="border-muted/40 shadow-xs bg-card/50">
             <CardHeader className="p-4">
               <Skeleton className="h-4 w-24 mb-2" />
               <Skeleton className="h-8 w-32" />
@@ -155,7 +158,7 @@ export function SectionCards() {
 
   if (!stats && !useDemoData) {
     return (
-      <div className="*:data-[slot=card]:shadow-xs *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card">
+      <div className="data-[slot=card]:*:shadow-2xs data-[slot=card]:*:bg-linear-to-t data-[slot=card]:*:from-primary/5 data-[slot=card]:*:to-card dark:data-[slot=card]:*:bg-card">
         <Card className="@container/card">
           <CardHeader className="text-center py-4 xs:py-6">
             <CardTitle className="text-base xs:text-lg sm:text-xl">No Emoji Data Yet</CardTitle>
@@ -171,11 +174,11 @@ export function SectionCards() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Emojis */}
-      <div className="min-w-0">
+      <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-1)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Emojis</CardTitle>
@@ -201,9 +204,7 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight tabular-nums">
-                    {totalNonAliasEmojis.toLocaleString()}
-                  </span>
+                  <NumberTicker value={totalNonAliasEmojis} className="text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
               <CardFooter className="p-4 pt-0">
@@ -216,13 +217,13 @@ export function SectionCards() {
           title="Total Emojis"
           description={`Total number of unique emojis in the workspace. Last year: ${emojisLastYear.length.toLocaleString()}`}
         >
-          <div className="w-full aspect-[2/1] mb-2">
-            <ChartContainer config={{ emojis: { label: "Emojis", color: "hsl(var(--chart-1))" } }} className="w-full h-full">
+          <div className="w-full aspect-2/1 mb-2">
+            <ChartContainer config={{ emojis: { label: "Emojis", color: "var(--chart-1)" } }} className="w-full h-full">
               <LineChart data={totalEmojisChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="emojis" type="natural" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={{ fill: "hsl(var(--chart-1))", r: 3 }} activeDot={{ r: 4 }} />
+                <Line dataKey="emojis" type="natural" stroke="var(--chart-1)" strokeWidth={1.5} dot={{ fill: "var(--chart-1)", r: 3 }} activeDot={{ r: 4 }} />
               </LineChart>
             </ChartContainer>
           </div>
@@ -231,13 +232,13 @@ export function SectionCards() {
             <p><strong>Why:</strong> Reflects team creativity and engagement.</p>
           </div>
         </InfoDrawerResponsive>
-      </div>
+      </motion.div>
       {/* AEU */}
-      <div className="min-w-0">
+      <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-2)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Active Uploaders</CardTitle>
@@ -253,9 +254,7 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight tabular-nums">
-                    {aeu.toLocaleString()}
-                  </span>
+                  <NumberTicker value={aeu} className="text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
               <CardFooter className="p-4 pt-0">
@@ -272,13 +271,13 @@ export function SectionCards() {
           title="AEU"
           description="Number of unique users who have added emojis in the last 7 days"
         >
-          <div className="w-full aspect-[2/1] mb-2">
-            <ChartContainer config={{ aeu: { label: "Active Users", color: "hsl(var(--chart-2))" } }} className="w-full h-full">
+          <div className="w-full aspect-2/1 mb-2">
+            <ChartContainer config={{ aeu: { label: "Active Users", color: "var(--chart-2)" } }} className="w-full h-full">
               <LineChart data={aeuChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="aeu" type="natural" stroke="hsl(var(--chart-2))" strokeWidth={1.5} dot={{ fill: "hsl(var(--chart-2))", r: 3 }} activeDot={{ r: 4 }}>
+                <Line dataKey="aeu" type="natural" stroke="var(--chart-2)" strokeWidth={1.5} dot={{ fill: "var(--chart-2)", r: 3 }} activeDot={{ r: 4 }}>
                   <LabelList position="top" offset={8} className="fill-foreground" fontSize={10} />
                 </Line>
               </LineChart>
@@ -289,13 +288,13 @@ export function SectionCards() {
             <p><strong>Why:</strong> Shows team's engagement and participation.</p>
           </div>
         </InfoDrawerResponsive>
-      </div>
+      </motion.div>
       {/* EPU */}
-      <div className="min-w-0">
+      <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-3)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per User</CardTitle>
@@ -319,9 +318,7 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight tabular-nums">
-                    {emojisPerUser.toFixed(1)}
-                  </span>
+                  <NumberTicker value={emojisPerUser} decimalPlaces={1} className="text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
               <CardFooter className="p-4 pt-0">
@@ -338,13 +335,13 @@ export function SectionCards() {
           title="EPU"
           description="Average number of emojis added per active user in the last 7 days"
         >
-          <div className="w-full aspect-[2/1] mb-2">
-            <ChartContainer config={{ epu: { label: "EPU", color: "hsl(var(--chart-3))" } }} className="w-full h-full">
+          <div className="w-full aspect-2/1 mb-2">
+            <ChartContainer config={{ epu: { label: "EPU", color: "var(--chart-3)" } }} className="w-full h-full">
               <LineChart data={epuChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="epu" type="natural" stroke="hsl(var(--chart-3))" strokeWidth={1.5} dot={{ fill: "hsl(var(--chart-3))", r: 3 }} activeDot={{ r: 4 }} />
+                <Line dataKey="epu" type="natural" stroke="var(--chart-3)" strokeWidth={1.5} dot={{ fill: "var(--chart-3)", r: 3 }} activeDot={{ r: 4 }} />
               </LineChart>
             </ChartContainer>
           </div>
@@ -353,13 +350,13 @@ export function SectionCards() {
             <p><strong>Why:</strong> Shows how prolific your emoji creators are.</p>
           </div>
         </InfoDrawerResponsive>
-      </div>
+      </motion.div>
       {/* EPW */}
-      <div className="min-w-0">
+      <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-4)/0.05)] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
+              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per Week</CardTitle>
@@ -375,9 +372,7 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold tracking-tight tabular-nums">
-                    {epw.toLocaleString()}
-                  </span>
+                  <NumberTicker value={epw} className="text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
               <CardFooter className="p-4 pt-0">
@@ -394,13 +389,13 @@ export function SectionCards() {
           title="EPW"
           description="Average number of emojis added per week in the last 4 weeks"
         >
-          <div className="w-full aspect-[2/1] mb-2">
-            <ChartContainer config={{ epw: { label: "EPW", color: "hsl(var(--chart-4))" } }} className="w-full h-full">
+          <div className="w-full aspect-2/1 mb-2">
+            <ChartContainer config={{ epw: { label: "EPW", color: "var(--chart-4)" } }} className="w-full h-full">
               <LineChart data={epwChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="epw" type="natural" stroke="hsl(var(--chart-4))" strokeWidth={1.5} dot={{ fill: "hsl(var(--chart-4))", r: 3 }} activeDot={{ r: 4 }} />
+                <Line dataKey="epw" type="natural" stroke="var(--chart-4)" strokeWidth={1.5} dot={{ fill: "var(--chart-4)", r: 3 }} activeDot={{ r: 4 }} />
               </LineChart>
             </ChartContainer>
           </div>
@@ -409,7 +404,7 @@ export function SectionCards() {
             <p><strong>Why:</strong> Shows team's emoji creation pace.</p>
           </div>
         </InfoDrawerResponsive>
-      </div>
+      </motion.div>
     </div>
 
   );

@@ -30,7 +30,7 @@ const CustomizedDot = (
         cx={cx} 
         cy={cy} 
         r={12} 
-        fill="hsl(var(--primary))" 
+        fill="var(--primary)" 
         opacity={0.2}
       />
       {/* Main dot */}
@@ -38,7 +38,7 @@ const CustomizedDot = (
         cx={cx} 
         cy={cy} 
         r={8} 
-        fill="hsl(var(--primary))"
+        fill="var(--primary)"
       />
       {/* Value text */}
       <text
@@ -48,7 +48,7 @@ const CustomizedDot = (
         dy={3}
         fontSize={9}
         fontWeight={700}
-        fill="hsl(var(--primary-foreground))"
+        fill="var(--primary-foreground)"
       >
         {payload?.value || 0}
       </text>
@@ -72,7 +72,7 @@ export function NumberDotChart({
       onClick={onClick}
       className={cn(
         "relative overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
-        "bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20",
+        "bg-linear-to-br from-primary/5 to-primary/10 border-primary/20",
         className
       )}
     >
@@ -132,7 +132,7 @@ export function NumberDotChart({
             <CartesianGrid 
               vertical={false} 
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="var(--border)"
               strokeOpacity={0.2}
             />
             <XAxis
@@ -140,13 +140,13 @@ export function NumberDotChart({
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
               tickFormatter={(value: string) => value.slice(0, 3)}
             />
             <Line
               dataKey="value"
               type="linear"
-              stroke="hsl(var(--primary))"
+              stroke="var(--primary)"
               strokeDasharray="3 3"
               strokeOpacity={0.5}
               dot={<CustomizedDot />}

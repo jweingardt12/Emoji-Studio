@@ -308,7 +308,7 @@ export function EmojiProcessingModal({
   const modalContent = (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-out ${
-        isOpen ? 'bg-black/80 backdrop-blur-sm' : 'bg-black/0 backdrop-blur-none'
+        isOpen ? 'bg-black/80 backdrop-blur-xs' : 'bg-black/0 backdrop-blur-none'
       }`}
       onClick={isProcessingComplete ? onClose : undefined}
     >
@@ -345,9 +345,9 @@ export function EmojiProcessingModal({
             <span className="sr-only">Close</span>
           </Button>
         )}
-        <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur">
+        <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 sm:p-2 rounded-full flex-shrink-0 bg-gradient-to-br from-sky-500/15 to-emerald-500/15">
+            <div className="p-1.5 sm:p-2 rounded-full shrink-0 bg-linear-to-br from-sky-500/15 to-emerald-500/15">
               <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-sky-400" />
             </div>
             <div className="min-w-0 pr-6">
@@ -374,8 +374,8 @@ export function EmojiProcessingModal({
                   <span className="font-medium">{Math.round(progress)}%</span>
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] bg-[length:200%_100%]" />
-                  <div className="relative h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all" style={{ width: `${progress}%` }} />
+                  <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] bg-size-[200%_100%]" />
+                  <div className="relative h-full rounded-full bg-linear-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all" style={{ width: `${progress}%` }} />
                 </div>
               </div>
 
@@ -457,7 +457,7 @@ export function EmojiProcessingModal({
                         {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                       </button>
                     )}
-                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden flex-shrink-0">
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 bg-checkered rounded overflow-hidden shrink-0">
                       <img 
                         src={emoji.blob || emoji.preview} 
                         alt={emoji.name}
@@ -522,7 +522,7 @@ export function EmojiProcessingModal({
                             onClick={() => handleStartEdit(index, emoji.name)}
                           >
                             <p className="text-xs sm:text-sm font-medium truncate font-mono hover:text-primary cursor-pointer">{formatSlackEmojiDisplay(emoji.name)}</p>
-                            <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                           </button>
                           <div className="flex items-center gap-1 flex-wrap">
                             <p className="text-[10px] sm:text-xs text-muted-foreground">
@@ -550,7 +550,7 @@ export function EmojiProcessingModal({
                         </>
                       )}
                     </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <div className="flex items-center gap-0.5 shrink-0">
                       {onEdit && emoji.format !== 'GIF' && (
                         <Button
                           size="icon"

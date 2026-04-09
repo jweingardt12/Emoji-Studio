@@ -489,10 +489,10 @@ export function ChromeExtensionHandler() {
         stage={loadingStage}
         description={isLoading ? "Syncing emojis via the Chrome extension." : undefined}
         isSuccess={Boolean(success) && progress >= 100}
-        className="fixed bottom-6 right-6 z-[9999] w-80"
+        className="fixed bottom-6 right-6 z-9999 w-80"
       />
       {error && !isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xs">
           <div className="mx-auto max-w-md rounded-lg border bg-card p-6 shadow-lg">
             <h3 className="mb-2 text-lg font-semibold text-destructive">Error</h3>
             <p className="mb-4 text-sm text-muted-foreground">{error}</p>

@@ -83,9 +83,9 @@ export function EmojiHero({
           className={cn(
             "absolute inset-0 rounded-full blur-3xl opacity-30",
             shouldAnimate && "wrapped-glow-pulse",
-            glow === "purple" && "bg-[var(--wrapped-accent-purple)]",
-            glow === "orange" && "bg-[var(--wrapped-accent-orange)]",
-            glow === "cyan" && "bg-[var(--wrapped-accent-cyan)]"
+            glow === "purple" && "bg-(--wrapped-accent-purple)",
+            glow === "orange" && "bg-(--wrapped-accent-orange)",
+            glow === "cyan" && "bg-(--wrapped-accent-cyan)"
           )}
         />
       )}

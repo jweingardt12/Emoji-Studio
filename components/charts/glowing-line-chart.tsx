@@ -44,7 +44,7 @@ export function GlowingLineChart({
       onClick={onClick}
       className={cn(
         "relative overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
-        "bg-gradient-to-br from-background/95 to-background/90 border-primary/20",
+        "bg-linear-to-br from-background/95 to-background/90 border-primary/20",
         className
       )}
     >
@@ -81,7 +81,7 @@ export function GlowingLineChart({
             <CartesianGrid 
               vertical={false} 
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="var(--border)"
               strokeOpacity={0.1}
             />
             <XAxis

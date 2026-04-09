@@ -36,7 +36,7 @@ export function EmojiImportStatus({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card/95 p-4 shadow-sm backdrop-blur-sm",
+        "rounded-lg border bg-card/95 p-4 shadow-xs backdrop-blur-xs",
         className,
       )}
       aria-live="polite"

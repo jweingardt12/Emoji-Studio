@@ -451,7 +451,7 @@ function ExplorerPage() {
                 <Input
                   type="search"
                   placeholder="Search by name, creator, or user ID..."
-                  className="w-full rounded-xl bg-muted/50 border-muted pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 text-sm shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-background transition-colors"
+                  className="w-full rounded-xl bg-muted/50 border-muted pl-10 sm:pl-11 pr-4 py-3 sm:py-3.5 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:bg-background transition-colors"
                   value={searchQuery}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchQuery(e.target.value);
@@ -516,9 +516,9 @@ function ExplorerPage() {
               <div className={`mt-4 ${isMobile ? 'px-3' : ''}`}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
                   {Array.from({ length: 24 }).map((_, i) => (
-                    <div key={i} className="flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-sm overflow-hidden">
+                    <div key={i} className="flex flex-col items-center rounded-xl border bg-card text-card-foreground p-3 sm:p-4 shadow-xs overflow-hidden">
                       {/* Emoji Image Skeleton */}
-                      <div className="flex-shrink-0 my-2">
+                      <div className="shrink-0 my-2">
                         <Skeleton className="h-14 w-14 sm:h-16 sm:w-16 rounded-lg" />
                       </div>
                       <div className="w-full mt-auto space-y-1">
@@ -588,7 +588,7 @@ function ExplorerPage() {
           content
         ) : (
           // Desktop: With card wrapper
-          <div className="rounded-xl bg-card border border-border shadow p-3 sm:p-4 md:p-6">
+          <div className="rounded-xl bg-card border border-border shadow-sm p-3 sm:p-4 md:p-6">
             {content}
           </div>
         )}
@@ -596,7 +596,7 @@ function ExplorerPage() {
 
       {/* Emoji Overlay */}
       {selectedEmoji && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs" />}>
           <EmojiOverlay
             emoji={selectedEmoji}
             onClose={() => setSelectedEmoji(null)}
@@ -627,7 +627,7 @@ function ExplorerPage() {
       )}
       {/* User Overlay */}
       {selectedUser && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" />}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs" />}>
           <UserOverlay 
             user={selectedUser} 
             onClose={() => setSelectedUser(null)} 

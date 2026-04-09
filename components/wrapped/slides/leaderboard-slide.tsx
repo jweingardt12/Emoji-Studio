@@ -68,7 +68,7 @@ function LeaderboardRow({ creator, index, isCurrentUser, captureMode, shouldAnim
     <motion.div
       className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-colors ${
         isCurrentUser
-          ? "bg-gradient-to-r from-[var(--wrapped-accent-purple)]/20 to-[var(--wrapped-accent-cyan)]/20 border border-[var(--wrapped-accent-purple)]/30"
+          ? "bg-linear-to-r from-(--wrapped-accent-purple)/20 to-(--wrapped-accent-cyan)/20 border border-(--wrapped-accent-purple)/30"
           : "bg-white/5 hover:bg-white/10"
       }`}
       initial={shouldAnimate ? { x: initialX, opacity: 0, scale: 0.95 } : false}
@@ -81,7 +81,7 @@ function LeaderboardRow({ creator, index, isCurrentUser, captureMode, shouldAnim
       } : { duration: 0 }}
     >
       {/* Rank */}
-      <div className="flex-shrink-0 w-8 sm:w-10 text-center">
+      <div className="shrink-0 w-8 sm:w-10 text-center">
         {creator.rank <= 3 ? (
           <span className="text-xl sm:text-2xl">{RANK_ICONS[creator.rank]}</span>
         ) : (
@@ -92,7 +92,7 @@ function LeaderboardRow({ creator, index, isCurrentUser, captureMode, shouldAnim
       </div>
 
       {/* Avatar/Emoji */}
-      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
+      <div className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
         {hasEmoji && !imgError ? (
           <img
             src={proxyImageUrl(topEmoji.url)}
@@ -112,16 +112,16 @@ function LeaderboardRow({ creator, index, isCurrentUser, captureMode, shouldAnim
         } ${creator.rank <= 3 ? "text-base sm:text-lg" : "text-sm sm:text-base"}`}>
           {formatName(creator.displayName)}
           {isCurrentUser && (
-            <span className="ml-2 text-xs text-[var(--wrapped-accent-cyan)]">(You)</span>
+            <span className="ml-2 text-xs text-(--wrapped-accent-cyan)">(You)</span>
           )}
         </p>
       </div>
 
       {/* Emoji count */}
-      <div className="flex-shrink-0 text-right">
+      <div className="shrink-0 text-right">
         <span className={`font-mono font-bold ${
           creator.rank === 1
-            ? "text-xl sm:text-2xl text-[var(--wrapped-accent-orange)]"
+            ? "text-xl sm:text-2xl text-(--wrapped-accent-orange)"
             : creator.rank <= 3
               ? "text-lg sm:text-xl text-white"
               : "text-base sm:text-lg text-white/80"
@@ -196,7 +196,7 @@ export function LeaderboardSlide({
         }`}>
 
           {/* Top Section: Header & Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             <div className="mb-2">
               <SlideHeader year={year} />
             </div>
@@ -205,16 +205,16 @@ export function LeaderboardSlide({
               {captureMode ? (
                 <div>
                   <h2 className="wrapped-headline text-white mb-2 text-3xl sm:text-4xl flex items-center justify-center gap-3">
-                    <Trophy className="w-8 h-8 text-[var(--wrapped-accent-orange)]" />
+                    <Trophy className="w-8 h-8 text-(--wrapped-accent-orange)" />
                     The Leaderboard
-                    <Trophy className="w-8 h-8 text-[var(--wrapped-accent-orange)]" />
+                    <Trophy className="w-8 h-8 text-(--wrapped-accent-orange)" />
                   </h2>
                   <p className="wrapped-body text-base sm:text-lg">Who runs this emoji town?</p>
                 </div>
               ) : (
                 <BlurFade delay={0.1} shouldAnimate={shouldAnimate}>
                   <h2 className="wrapped-headline mb-2 text-3xl sm:text-4xl md:text-5xl flex items-center justify-center gap-3">
-                    <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-[var(--wrapped-accent-orange)]" />
+                    <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-(--wrapped-accent-orange)" />
                     <GradientText
                       colors={[
                         "var(--wrapped-accent-orange)",
@@ -226,7 +226,7 @@ export function LeaderboardSlide({
                     >
                       The Leaderboard
                     </GradientText>
-                    <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-[var(--wrapped-accent-orange)]" />
+                    <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-(--wrapped-accent-orange)" />
                   </h2>
                   <p className="wrapped-body text-base sm:text-lg md:text-xl">Who runs this emoji town?</p>
                 </BlurFade>
@@ -258,9 +258,9 @@ export function LeaderboardSlide({
                 transition={{ delay: captureMode ? 0 : 1.2 }}
               >
                 <p className="text-white font-medium">
-                  You're <span className="text-[var(--wrapped-accent-orange)] font-bold">#{currentUserRank}</span> of {personalStats.totalCreators}
+                  You're <span className="text-(--wrapped-accent-orange) font-bold">#{currentUserRank}</span> of {personalStats.totalCreators}
                 </p>
-                <p className="text-sm text-[var(--wrapped-text-muted)] mt-1">
+                <p className="text-sm text-(--wrapped-text-muted) mt-1">
                   {getRankCallout(currentUserRank, personalStats.totalCreators)}
                 </p>
               </motion.div>
@@ -274,7 +274,7 @@ export function LeaderboardSlide({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: captureMode ? 0 : 1.2 }}
               >
-                <p className="text-[var(--wrapped-accent-cyan)] font-medium text-sm sm:text-base">
+                <p className="text-(--wrapped-accent-cyan) font-medium text-sm sm:text-base">
                   {getRankCallout(currentUserRank, personalStats.totalCreators)}
                 </p>
               </motion.div>
@@ -282,7 +282,7 @@ export function LeaderboardSlide({
           </div>
 
           {/* Bottom Section: Branding */}
-          <div className="flex-shrink-0 mt-4 mb-safe">
+          <div className="shrink-0 mt-4 mb-safe">
             <SlideBranding />
           </div>
         </div>

@@ -7,7 +7,7 @@ export default function DashboardLoading() {
       <div className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
         <div className="grid grid-cols-1 gap-4">
           {/* Primary metric skeleton */}
-          <div className="rounded-xl bg-card border border-border shadow p-6">
+          <div className="rounded-xl bg-card border border-border shadow-sm p-6">
             <Skeleton className="h-4 w-24 mb-2" />
             <Skeleton className="h-10 w-32 mb-2" />
             <Skeleton className="h-3 w-40" />
@@ -15,7 +15,7 @@ export default function DashboardLoading() {
           {/* Secondary metrics skeleton */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl bg-card border border-border shadow p-4">
+              <div key={i} className="rounded-xl bg-card border border-border shadow-sm p-4">
                 <Skeleton className="h-3 w-20 mb-2" />
                 <Skeleton className="h-6 w-16" />
               </div>
@@ -26,7 +26,7 @@ export default function DashboardLoading() {
 
       {/* Chart Skeleton */}
       <div className="px-3 sm:px-4 lg:px-6">
-        <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm p-4 sm:p-6 flex flex-col gap-4">
+        <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs p-4 sm:p-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
             <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
             <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
@@ -38,7 +38,7 @@ export default function DashboardLoading() {
 
       {/* Tabbed Content Skeleton */}
       <div className="px-3 sm:px-4 lg:px-6">
-        <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
+        <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-border/50">
             <Skeleton className="h-6 w-32" />
           </div>

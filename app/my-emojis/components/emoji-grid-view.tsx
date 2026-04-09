@@ -83,7 +83,7 @@ export function EmojiGridView({
         <ContextMenu key={emoji.name}>
           <ContextMenuTrigger asChild>
             <div
-              className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-sm hover:shadow-lg transition-[border-color,background-color,box-shadow] duration-200 cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
+              className={`group relative flex flex-col items-center justify-between rounded-xl border-2 p-4 shadow-xs hover:shadow-lg transition-[border-color,background-color,box-shadow] duration-200 cursor-pointer ${selectedEmojiNames.has(emoji.name) ? 'bg-primary/10 border-primary shadow-md' : 'bg-card hover:border-primary/40'}`}
               onClick={() => toggleEmojiSelection(emoji.name)}
               onContextMenu={(e) => {
                 e.stopPropagation()
@@ -93,7 +93,7 @@ export function EmojiGridView({
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 left-2 h-6 w-6 bg-background/80 backdrop-blur-sm z-10"
+                className="absolute top-2 left-2 h-6 w-6 bg-background/80 backdrop-blur-xs z-10"
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleEmojiSelection(emoji.name)
@@ -162,7 +162,7 @@ export function EmojiGridView({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-sm"
+                  className="absolute top-2 right-2 h-6 w-6 bg-background/80 backdrop-blur-xs"
                   onClick={(e) => {
                     e.stopPropagation()
                     setSelectedEmoji(emoji)
@@ -173,7 +173,7 @@ export function EmojiGridView({
                 </Button>
               ) : (
                 /* Desktop Quick Actions - Floating Toolbar positioned at top to avoid covering text */
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-1 z-20">
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 bg-background/95 backdrop-blur-xs rounded-lg shadow-lg border p-1 z-20">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

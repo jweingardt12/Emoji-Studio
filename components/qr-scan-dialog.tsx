@@ -324,7 +324,7 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
         )}
 
         {/* Video feed - Always render but conditionally show */}
-        <div className={`relative w-full aspect-[4/3] overflow-hidden rounded-lg border bg-black ${
+        <div className={`relative w-full aspect-4/3 overflow-hidden rounded-lg border bg-black ${
           cameraStatus === 'idle' || cameraStatus === 'error' ? 'hidden' : ''
         }`}>
           <video 

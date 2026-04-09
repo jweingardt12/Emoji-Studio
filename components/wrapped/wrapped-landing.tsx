@@ -232,7 +232,7 @@ function CreatorsPreviewContent({ isMobile }: { isMobile: boolean }) {
             alt="creator 2"
             className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-full object-contain mb-1`}
           />
-          <div className={`${isMobile ? 'w-8 h-6' : 'w-10 h-8'} rounded-t bg-gradient-to-b from-gray-400/30 to-gray-500/10 border-t border-x border-gray-400/40 flex items-center justify-center`}>
+          <div className={`${isMobile ? 'w-8 h-6' : 'w-10 h-8'} rounded-t bg-linear-to-b from-gray-400/30 to-gray-500/10 border-t border-x border-gray-400/40 flex items-center justify-center`}>
             <Medal className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-gray-300`} />
           </div>
         </div>
@@ -244,7 +244,7 @@ function CreatorsPreviewContent({ isMobile }: { isMobile: boolean }) {
             className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7'} rounded-full object-contain mb-1 ring-2 ring-yellow-400/50`}
           />
           <div
-            className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-t bg-gradient-to-b from-yellow-500/30 to-yellow-600/10 border-t border-x border-yellow-500/50 flex items-center justify-center`}
+            className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-t bg-linear-to-b from-yellow-500/30 to-yellow-600/10 border-t border-x border-yellow-500/50 flex items-center justify-center`}
             style={{ boxShadow: "0 0 20px rgba(234, 179, 8, 0.3)" }}
           >
             <Crown className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-yellow-400`} />
@@ -257,7 +257,7 @@ function CreatorsPreviewContent({ isMobile }: { isMobile: boolean }) {
             alt="creator 3"
             className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} rounded-full object-contain mb-1`}
           />
-          <div className={`${isMobile ? 'w-8 h-5' : 'w-10 h-6'} rounded-t bg-gradient-to-b from-amber-600/30 to-amber-700/10 border-t border-x border-amber-600/40 flex items-center justify-center`}>
+          <div className={`${isMobile ? 'w-8 h-5' : 'w-10 h-6'} rounded-t bg-linear-to-b from-amber-600/30 to-amber-700/10 border-t border-x border-amber-600/40 flex items-center justify-center`}>
             <Award className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-amber-500`} />
           </div>
         </div>
@@ -443,9 +443,9 @@ export function WrappedLanding({
           </div>
 
           {/* Decorative gradient accents - enhanced for mobile */}
-          <div className="absolute -top-24 -right-24 w-56 md:w-64 h-56 md:h-64 bg-gradient-to-br from-primary/25 via-primary/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="absolute -bottom-24 -left-24 w-48 md:w-64 h-48 md:h-64 bg-gradient-to-tr from-violet-500/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 md:w-96 h-72 md:h-96 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="absolute -top-24 -right-24 w-56 md:w-64 h-56 md:h-64 bg-linear-to-br from-primary/25 via-primary/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="absolute -bottom-24 -left-24 w-48 md:w-64 h-48 md:h-64 bg-linear-to-tr from-violet-500/15 to-transparent rounded-full blur-3xl pointer-events-none z-10" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 md:w-96 h-72 md:h-96 bg-linear-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none z-10" />
 
           {/* Floating emojis from Slackmojis - fewer on mobile */}
           <FloatingEmojiImage index={0} delay={0} duration={4} className="top-4 right-4 sm:top-8 sm:right-16" />
@@ -589,7 +589,7 @@ export function WrappedLanding({
                         zIndex: 40 - position * 10,
                       }}
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      className={`absolute top-0 left-0 w-[300px] h-[300px] rounded-2xl overflow-hidden bg-gradient-to-br ${slide.gradient} shadow-2xl`}
+                      className={`absolute top-0 left-0 w-[300px] h-[300px] rounded-2xl overflow-hidden bg-linear-to-br ${slide.gradient} shadow-2xl`}
                     >
                       {/* Grid background - only on front card */}
                       {position === 0 && (
@@ -662,7 +662,7 @@ export function WrappedLanding({
                       zIndex: 40 - position * 10,
                     }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className={`absolute top-0 left-0 w-[240px] h-[240px] rounded-2xl overflow-hidden bg-gradient-to-br ${slide.gradient} shadow-2xl`}
+                    className={`absolute top-0 left-0 w-[240px] h-[240px] rounded-2xl overflow-hidden bg-linear-to-br ${slide.gradient} shadow-2xl`}
                   >
                     {/* Grid background - only on front card */}
                     {position === 0 && (
@@ -716,7 +716,7 @@ export function WrappedLanding({
             {/* Interactive Story */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
               <CardContent className="p-4 sm:p-5">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-linear-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
                   <Play className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
                 </div>
                 <h3 className="font-semibold text-xs sm:text-sm mb-1">Interactive Story</h3>
@@ -729,7 +729,7 @@ export function WrappedLanding({
             {/* Privacy */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
               <CardContent className="p-4 sm:p-5">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-linear-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
                   <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
                 </div>
                 <h3 className="font-semibold text-xs sm:text-sm mb-1">100% Private + Local</h3>
@@ -742,7 +742,7 @@ export function WrappedLanding({
             {/* Personal Stats */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
               <CardContent className="p-4 sm:p-5">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-linear-to-br from-green-500/20 to-green-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
                   <User className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                 </div>
                 <h3 className="font-semibold text-xs sm:text-sm mb-1">Personal Stats</h3>
@@ -755,7 +755,7 @@ export function WrappedLanding({
             {/* Fun Facts */}
             <Card className="border-muted/40 group hover:border-primary/30 transition-colors">
               <CardContent className="p-4 sm:p-5">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-linear-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
                 </div>
                 <h3 className="font-semibold text-xs sm:text-sm mb-1">Fun Facts</h3>
@@ -866,7 +866,7 @@ export function WrappedLanding({
                       priority
                     />
                     {/* Glow effect */}
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 blur-3xl scale-110" />
+                    <div className="absolute inset-0 -z-10 bg-linear-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 blur-3xl scale-110" />
                   </motion.div>
                 </div>
               </div>
@@ -888,15 +888,15 @@ export function WrappedLanding({
               <p className="text-sm font-medium mb-4">How to get your Wrapped</p>
               <ol className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">1</span>
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">1</span>
                   <span>Install the Chrome extension from the button above</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">2</span>
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">2</span>
                   <span>Open your Slack workspace in Chrome</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">3</span>
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs font-medium">3</span>
                   <span>Click "Sync" to import your emoji data</span>
                 </li>
               </ol>

@@ -30,7 +30,7 @@ export const TabNavigation = memo(function TabNavigation({
             <Sparkles className="h-5 w-5" />
             <span>Create Emojis</span>
           </h1>
-          <TabsList className="grid grid-cols-2 w-[240px]">
+          <TabsList>
             <TabsTrigger
               value="upload"
               className="gap-2"
@@ -59,7 +59,7 @@ export const TabNavigation = memo(function TabNavigation({
         {activeTab === "browse" && selectedEmojiCount > 0 && (
           <Button
             onClick={onOpenCart}
-            className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-sm lg:hidden"
+            className="relative h-9 w-9 rounded-xl border border-border/60 bg-card/95 shadow-xs lg:hidden"
             size="icon"
           >
             <div className="relative h-full w-full overflow-hidden rounded-lg bg-background/80 flex items-center justify-center">

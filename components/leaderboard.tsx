@@ -480,7 +480,7 @@ const Leaderboard = ({
                             variant === "compact" ? "h-5 w-5" : "h-4 w-4 sm:h-5 sm:w-5"
                           } text-yellow-400 drop-shadow-md`} />
                           <div
-                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 text-white font-bold shadow-lg ${
+                            className={`inline-flex items-center justify-center rounded-full bg-linear-to-br from-yellow-400 to-yellow-500 text-white font-bold shadow-lg ${
                               variant === "compact"
                                 ? "h-8 w-8 sm:h-9 sm:w-9 text-sm"
                                 : "h-7 w-7 sm:h-9 sm:w-9 text-xs sm:text-sm"
@@ -496,7 +496,7 @@ const Leaderboard = ({
                             variant === "compact" ? "h-4 w-4" : "h-3 w-3 sm:h-4 sm:w-4"
                           } text-gray-400 drop-shadow-md`} />
                           <div
-                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-400 text-white font-bold shadow-lg ${
+                            className={`inline-flex items-center justify-center rounded-full bg-linear-to-br from-gray-300 to-gray-400 text-white font-bold shadow-lg ${
                               variant === "compact"
                                 ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
                                 : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"
@@ -512,7 +512,7 @@ const Leaderboard = ({
                             variant === "compact" ? "h-3 w-3" : "h-2 w-2 sm:h-3 sm:w-3"
                           } text-amber-700 drop-shadow-md`} />
                           <div
-                            className={`inline-flex items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-amber-700 text-white font-bold shadow-lg ${
+                            className={`inline-flex items-center justify-center rounded-full bg-linear-to-br from-amber-600 to-amber-700 text-white font-bold shadow-lg ${
                               variant === "compact"
                                 ? "h-7 w-7 sm:h-8 sm:w-8 text-sm"
                                 : "h-6 w-6 sm:h-8 sm:w-8 text-xs sm:text-sm"

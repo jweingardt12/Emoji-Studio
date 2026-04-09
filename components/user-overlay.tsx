@@ -359,13 +359,13 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                     config={{
                       count: {
                         label: viewMode === "weekly" ? "Weekly Count" : "Emojis Created",
-                        color: "hsl(var(--chart-1))",
+                        color: "var(--chart-1)",
                       },
                       ...(viewMode === "weekly"
                         ? {
                             movingAvg: {
                               label: "4-week Moving Avg",
-                              color: "hsl(var(--chart-2))",
+                              color: "var(--chart-2)",
                             },
                           }
                         : {}),
@@ -437,8 +437,8 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                           type="natural"
                           stroke="var(--color-count)"
                           strokeWidth={2}
-                          dot={viewMode === "monthly" ? { fill: "hsl(var(--primary))" } : false}
-                          activeDot={viewMode === "monthly" ? { r: 6 } : { r: 4, fill: "hsl(var(--primary))" }}
+                          dot={viewMode === "monthly" ? { fill: "var(--primary)" } : false}
+                          activeDot={viewMode === "monthly" ? { r: 6 } : { r: 4, fill: "var(--primary)" }}
                           name="Emoji Count"
                           animationDuration={700}
                         >
@@ -496,7 +496,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                     config={{
                       emojiCount: {
                         label: "Emoji Count",
-                        color: "hsl(var(--primary))",
+                        color: "var(--primary)",
                       },
                     }}
                     className="aspect-square h-full max-w-[220px]"
@@ -511,34 +511,34 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                       <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                       <PolarAngleAxis 
                         dataKey="day" 
-                        tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
-                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                        tick={{ fontSize: 12, fill: 'var(--foreground)', fontWeight: 500 }}
+                        axisLine={{ stroke: 'var(--border)' }}
                         tickLine={false}
                         cy={5}
                       />
                       <PolarGrid 
-                        stroke="hsl(var(--border))" 
+                        stroke="var(--border)" 
                         strokeOpacity={0.6} 
                         gridType="polygon"
                       />
                       <Radar
                         dataKey="emojiCount"
-                        fill="hsl(var(--primary))"
+                        fill="var(--primary)"
                         fillOpacity={0.4}
-                        stroke="hsl(var(--primary))"
+                        stroke="var(--primary)"
                         strokeWidth={2}
                         isAnimationActive={true}
                         dot={{
                           r: 4,
-                          fill: 'hsl(var(--primary))',
-                          stroke: 'hsl(var(--background))',
+                          fill: 'var(--primary)',
+                          stroke: 'var(--background)',
                           strokeWidth: 1,
                         }}
                         activeDot={{
                           r: 6,
-                          stroke: 'hsl(var(--primary))',
+                          stroke: 'var(--primary)',
                           strokeWidth: 2,
-                          fill: 'hsl(var(--background))'
+                          fill: 'var(--background)'
                         }}
                         animationDuration={700}
                       />
@@ -618,7 +618,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   // Desktop overlay (existing code)
   const overlayContent = (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 ${isVisible ? "opacity-100" : "opacity-0"}`}
+      className={`fixed inset-0 z-9999 transition-all duration-300 ease-out bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 ${isVisible ? "opacity-100" : "opacity-0"}`}
       onClick={handleClose}
     >
       <div
@@ -798,13 +798,13 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                       config={{
                         count: {
                           label: viewMode === "weekly" ? "Weekly Count" : "Emojis Created",
-                          color: "hsl(var(--chart-1))",
+                          color: "var(--chart-1)",
                         },
                         ...(viewMode === "weekly"
                           ? {
                               movingAvg: {
                                 label: "4-week Moving Avg",
-                                color: "hsl(var(--chart-2))",
+                                color: "var(--chart-2)",
                               },
                             }
                           : {}),
@@ -880,8 +880,8 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                             type="natural"
                             stroke="var(--color-count)"
                             strokeWidth={2}
-                            dot={viewMode === "monthly" ? { fill: "hsl(var(--primary))" } : false}
-                            activeDot={viewMode === "monthly" ? { r: 6 } : { r: 4, fill: "hsl(var(--primary))" }}
+                            dot={viewMode === "monthly" ? { fill: "var(--primary)" } : false}
+                            activeDot={viewMode === "monthly" ? { r: 6 } : { r: 4, fill: "var(--primary)" }}
                             name="Emoji Count"
                             animationDuration={700}
                           >
@@ -941,7 +941,7 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                       config={{
                         emojiCount: {
                           label: "Emoji Count",
-                          color: "hsl(var(--primary))",
+                          color: "var(--primary)",
                         },
                       }}
                       className="aspect-square h-full max-w-[220px]"
@@ -956,32 +956,32 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
                         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                         <PolarAngleAxis 
                           dataKey="day" 
-                          tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }}
-                          axisLine={{ stroke: 'hsl(var(--border))' }}
+                          tick={{ fontSize: 12, fill: 'var(--foreground)', fontWeight: 500 }}
+                          axisLine={{ stroke: 'var(--border)' }}
                           tickLine={false}
                           cy={5}
                         />
                         <PolarGrid 
-                          stroke="hsl(var(--border))" 
+                          stroke="var(--border)" 
                           strokeOpacity={0.6} 
                           gridType="polygon"
                         />
                         <Radar
                           dataKey="emojiCount"
-                          fill="hsl(var(--primary))"
+                          fill="var(--primary)"
                           fillOpacity={0.4}
-                          stroke="hsl(var(--primary))"
+                          stroke="var(--primary)"
                           strokeWidth={2}
                           isAnimationActive={true}
                           dot={{
                             r: 4,
-                            fill: 'hsl(var(--primary))',
+                            fill: 'var(--primary)',
                             stroke: 'white',
                             strokeWidth: 1,
                           }}
                           activeDot={{
                             r: 6,
-                            stroke: 'hsl(var(--primary))',
+                            stroke: 'var(--primary)',
                             strokeWidth: 2,
                             fill: 'white'
                           }}

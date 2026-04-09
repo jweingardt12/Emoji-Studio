@@ -19,7 +19,7 @@ export function AnimatedAreaChart({
   data, 
   height = 60,
   className,
-  color = "hsl(var(--primary))",
+  color = "var(--primary)",
   showGrid = false,
   showXAxis = false,
   gradientId = "animated-gradient"
@@ -79,7 +79,7 @@ export function AnimatedAreaChart({
             <CartesianGrid
               vertical={false}
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="var(--border)"
               strokeOpacity={0.3}
             />
           )}

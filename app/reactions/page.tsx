@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useEffect, useRef, useState, useCallback } from "react"
+import { motion } from "framer-motion"
 import { Activity, Settings } from "lucide-react"
 import Link from "next/link"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -19,6 +20,7 @@ import { ReactionTimeline } from "./components/reaction-timeline"
 import { YourReactions } from "./components/your-reactions"
 import { ChannelBreakdown } from "./components/channel-breakdown"
 import dynamic from "next/dynamic"
+import { staggerContainer, fadeUp } from "@/lib/motion"
 const ShareCardGenerator = dynamic(
   () => import("./components/share-card-generator").then(mod => mod.ShareCardGenerator),
   { ssr: false }
@@ -30,13 +32,6 @@ import { HowItWorksModal } from "./components/how-it-works-modal"
 export default function ReactionsPage() {
   const isClient = useIsClient()
   const { emojiData, hasRealData } = useEmojiData()
-  const [pageVisible, setPageVisible] = useState(false)
-
-  useEffect(() => {
-    const timer = setTimeout(() => setPageVisible(true), 100)
-    return () => clearTimeout(timer)
-  }, [])
-
   const curlCommand = isClient ? localStorage.getItem("slackCurlCommand") : null
   const currentUserId = isClient ? localStorage.getItem("slackUserId") : null
 
@@ -120,9 +115,14 @@ export default function ReactionsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 w-full pb-8">
+    <motion.div
+      className="flex flex-col gap-6 md:gap-8 w-full pb-8"
+      variants={staggerContainer()}
+      initial="hidden"
+      animate="show"
+    >
       {/* Header + Channel Picker */}
-      <div className={`px-3 sm:px-4 lg:px-6 pt-4 md:pt-6 transition-all duration-500 ease-out ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-6">
         <div className="flex flex-col gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -152,10 +152,10 @@ export default function ReactionsPage() {
             scanStatus={state.scanProgress.status}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Scan Progress */}
-      <div className="px-3 sm:px-4 lg:px-6">
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
         <ScanProgress
           status={state.scanProgress.status}
           currentChannel={state.scanProgress.current_channel}
@@ -165,11 +165,11 @@ export default function ReactionsPage() {
           onCancel={state.cancelScan}
           scannedChannels={state.scanProgress.scanned_channels}
         />
-      </div>
+      </motion.div>
 
       {/* Empty State */}
       {!hasData && state.scanProgress.status !== "scanning" && (
-        <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+        <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center gap-4 py-16">
               <div className="rounded-full bg-muted p-4">
@@ -210,19 +210,19 @@ export default function ReactionsPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       )}
 
       {/* Data Sections */}
       {hasData && (
         <>
           {/* Stats Cards */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-100 ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} />
-          </div>
+          </motion.div>
 
           {/* Top Reactions */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-150 ${pageVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <TopReactionsChart
               topReactions={state.topReactions}
               emojiFilter={state.emojiFilter}
@@ -234,10 +234,10 @@ export default function ReactionsPage() {
               emojiData={emojiData}
               onEmojiClick={handleEmojiClick}
             />
-          </div>
+          </motion.div>
 
           {/* Top Reactors + Top Creators (side by side on desktop) */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-200 ${pageVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <TopReactors
                 userStats={state.userStats}
@@ -251,15 +251,15 @@ export default function ReactionsPage() {
                 customEmojiUrls={customEmojiUrls}
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Timeline */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-200 ${pageVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-3 scale-[0.98]"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <ReactionTimeline data={state.timelineData} />
-          </div>
+          </motion.div>
 
           {/* Your Emojis + Share Card (1/2 + 1/2 on desktop) */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-300 ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <YourReactions
                 userStats={state.userStats}
@@ -277,10 +277,10 @@ export default function ReactionsPage() {
                 onCopy={analytics.trackReactionsShareCardCopied}
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Channel Breakdown */}
-          <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-300 ${pageVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
             <ChannelBreakdown
               breakdown={state.channelBreakdown}
               channels={state.channels}
@@ -288,7 +288,7 @@ export default function ReactionsPage() {
               userNameMap={userNameMap}
               onEmojiClick={handleEmojiClick}
             />
-          </div>
+          </motion.div>
         </>
       )}
 
@@ -296,6 +296,6 @@ export default function ReactionsPage() {
         emoji={selectedEmoji}
         onClose={() => setSelectedEmoji(null)}
       />
-    </div>
+    </motion.div>
   )
 }

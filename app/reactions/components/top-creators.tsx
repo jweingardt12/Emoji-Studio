@@ -26,7 +26,7 @@ interface TopCreatorsProps {
 }
 
 const chartConfig = {
-  reactions: { label: "Reactions", color: "hsl(var(--chart-2))" },
+  reactions: { label: "Reactions", color: "var(--chart-2)" },
 } satisfies ChartConfig
 
 export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCreatorsProps) {
@@ -112,7 +112,7 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
             layout="vertical"
             margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
           >
-            <CartesianGrid horizontal={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+            <CartesianGrid horizontal={false} stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis type="number" tickLine={false} axisLine={false} />
             <YAxis
               type="category"
@@ -125,7 +125,7 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  labelFormatter={(_: string, payload: Array<{ payload?: { fullName?: string; emojiCount?: number } }>) => {
+                  labelFormatter={(_: any, payload: any) => {
                     const item = payload?.[0]?.payload
                     return item ? `${item.fullName} (${item.emojiCount} emoji${item.emojiCount === 1 ? "" : "s"})` : ""
                   }}

@@ -147,7 +147,7 @@ export function EmojiProcessorPreview({
               </button>
 
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <div className="relative w-16 h-16 bg-checkered rounded overflow-hidden">
                     <img 
                       src={emoji.blob || emoji.preview} // Use data URL if available, fallback to object URL
@@ -204,7 +204,7 @@ export function EmojiProcessorPreview({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6 flex-shrink-0"
+                        className="h-6 w-6 shrink-0"
                         onClick={() => handleStartEdit(index, emoji.name)}
                         title="Edit name"
                       >

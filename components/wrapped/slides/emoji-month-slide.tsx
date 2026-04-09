@@ -65,7 +65,7 @@ function MonthCard({ data, index, isChampion, championCount, captureMode, should
   return (
     <motion.div
       className={`relative rounded-xl overflow-hidden ${
-        isChampion ? "ring-2 ring-[var(--wrapped-accent-orange)]/50" : ""
+        isChampion ? "ring-2 ring-(--wrapped-accent-orange)/50" : ""
       }`}
       initial={shouldAnimate ? { opacity: 0, scale: 0.9, y: 20 } : false}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -81,13 +81,13 @@ function MonthCard({ data, index, isChampion, championCount, captureMode, should
       }
     >
       {/* Card background with seasonal gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${accent.bg} opacity-60`} />
+      <div className={`absolute inset-0 bg-linear-to-br ${accent.bg} opacity-60`} />
       <div className="absolute inset-0 wrapped-glass" />
 
       {/* Content */}
       <div className="relative p-3 sm:p-4 flex flex-col items-center gap-2">
         {/* Month name */}
-        <p className="text-xs sm:text-sm font-medium text-[var(--wrapped-text-muted)] uppercase tracking-wider">
+        <p className="text-xs sm:text-sm font-medium text-(--wrapped-text-muted) uppercase tracking-wider">
           <span className="sm:hidden">{SHORT_MONTHS[data.monthIndex]}</span>
           <span className="hidden sm:inline">{data.month}</span>
         </p>
@@ -110,7 +110,7 @@ function MonthCard({ data, index, isChampion, championCount, captureMode, should
             {/* Crown for repeat champions */}
             {isChampion && championCount > 1 && (
               <motion.div
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[var(--wrapped-accent-orange)] flex items-center justify-center"
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-(--wrapped-accent-orange) flex items-center justify-center"
                 initial={shouldAnimate ? { scale: 0 } : false}
                 animate={{ scale: 1 }}
                 transition={{ delay: delay + 0.2, type: "spring" }}
@@ -133,8 +133,8 @@ function MonthCard({ data, index, isChampion, championCount, captureMode, should
         {/* Emoji count */}
         {data.topCreator && (
           <div className="flex items-center gap-1.5 text-xs sm:text-sm">
-            <span className="font-mono font-bold text-[var(--wrapped-accent-cyan)]">{data.topCreator.count}</span>
-            <span className="text-[var(--wrapped-text-muted)]">emojis</span>
+            <span className="font-mono font-bold text-(--wrapped-accent-cyan)">{data.topCreator.count}</span>
+            <span className="text-(--wrapped-text-muted)">emojis</span>
           </div>
         )}
       </div>
@@ -231,7 +231,7 @@ export function EmojiMonthSlide({
           }`}
         >
           {/* Top Section: Header & Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             <div className="mb-2">
               <SlideHeader year={year} />
             </div>
@@ -240,16 +240,16 @@ export function EmojiMonthSlide({
               {captureMode ? (
                 <div>
                   <h2 className="wrapped-headline text-white mb-2 text-3xl sm:text-4xl flex items-center justify-center gap-3">
-                    <Calendar className="w-7 h-7 text-[var(--wrapped-accent-cyan)]" />
+                    <Calendar className="w-7 h-7 text-(--wrapped-accent-cyan)" />
                     Monthly Champions
-                    <Calendar className="w-7 h-7 text-[var(--wrapped-accent-cyan)]" />
+                    <Calendar className="w-7 h-7 text-(--wrapped-accent-cyan)" />
                   </h2>
                   <p className="wrapped-body text-base sm:text-lg">Who ruled each month of {year}?</p>
                 </div>
               ) : (
                 <BlurFade delay={0.1} shouldAnimate={shouldAnimate}>
                   <h2 className="wrapped-headline mb-2 text-3xl sm:text-4xl md:text-5xl flex items-center justify-center gap-2 sm:gap-3">
-                    <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wrapped-accent-cyan)]" />
+                    <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-(--wrapped-accent-cyan)" />
                     <GradientText
                       colors={[
                         "var(--wrapped-accent-cyan)",
@@ -261,7 +261,7 @@ export function EmojiMonthSlide({
                     >
                       Monthly Champions
                     </GradientText>
-                    <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-[var(--wrapped-accent-cyan)]" />
+                    <Calendar className="w-6 h-6 sm:w-7 sm:h-7 text-(--wrapped-accent-cyan)" />
                   </h2>
                   <p className="wrapped-body text-base sm:text-lg md:text-xl">Who ruled each month of {year}?</p>
                 </BlurFade>
@@ -287,7 +287,7 @@ export function EmojiMonthSlide({
           </div>
 
           {/* Bottom Section: Champion Callout & Branding */}
-          <div className="flex flex-col items-center flex-shrink-0 gap-3 mt-4 mb-safe">
+          <div className="flex flex-col items-center shrink-0 gap-3 mt-4 mb-safe">
             {/* Overall champion callout */}
             {overallChampionName && maxMonthsWon > 1 && (
               <motion.div
@@ -296,28 +296,28 @@ export function EmojiMonthSlide({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: captureMode ? 0 : 1.2 }}
               >
-                <Trophy className="w-4 h-4 text-[var(--wrapped-accent-orange)]" />
+                <Trophy className="w-4 h-4 text-(--wrapped-accent-orange)" />
                 <span className="text-white font-medium text-sm">
-                  <span className="font-bold text-[var(--wrapped-accent-orange)]">
+                  <span className="font-bold text-(--wrapped-accent-orange)">
                     {formatName(overallChampionName)}
                   </span>{" "}
                   dominated{" "}
-                  <span className="font-bold text-[var(--wrapped-accent-orange)]">{maxMonthsWon} months</span>!
+                  <span className="font-bold text-(--wrapped-accent-orange)">{maxMonthsWon} months</span>!
                 </span>
-                <Trophy className="w-4 h-4 text-[var(--wrapped-accent-orange)]" />
+                <Trophy className="w-4 h-4 text-(--wrapped-accent-orange)" />
               </motion.div>
             )}
 
             {/* Peak month callout */}
             {peakMonth.totalCount > 0 && (
               <motion.p
-                className="text-sm text-[var(--wrapped-text-muted)]"
+                className="text-sm text-(--wrapped-text-muted)"
                 initial={shouldAnimate ? { opacity: 0 } : false}
                 animate={{ opacity: 1 }}
                 transition={{ delay: captureMode ? 0 : 1.4 }}
               >
                 {peakMonth.month} was the busiest with{" "}
-                <span className="text-[var(--wrapped-accent-cyan)] font-semibold">{peakMonth.totalCount}</span> total
+                <span className="text-(--wrapped-accent-cyan) font-semibold">{peakMonth.totalCount}</span> total
                 emojis
               </motion.p>
             )}

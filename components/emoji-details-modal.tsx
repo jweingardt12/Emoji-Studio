@@ -185,13 +185,13 @@ export function EmojiDetailsModal({
 
   const drawerContent = (
     <div
-      className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out ${
+      className={`fixed inset-0 z-9999 transition-all duration-300 ease-out ${
         isVisible ? "opacity-100" : "opacity-0"
       }`}
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        className={`absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-out ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
         onClick={handleClose}
@@ -254,7 +254,7 @@ export function EmojiDetailsModal({
                   <img
                     src={emoji.url}
                     alt={emoji.name}
-                    className="h-10 w-10 object-contain flex-shrink-0"
+                    className="h-10 w-10 object-contain shrink-0"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.src = "/placeholder.svg"

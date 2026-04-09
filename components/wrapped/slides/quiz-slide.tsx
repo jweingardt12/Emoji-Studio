@@ -458,7 +458,7 @@ function AnswerOption({
     }
     if (isSelected && effectiveIsCorrect) {
       return isPersonalityQuestion
-        ? "bg-[var(--wrapped-accent-purple)]/30 border-[var(--wrapped-accent-purple)]"
+        ? "bg-(--wrapped-accent-purple)/30 border-(--wrapped-accent-purple)"
         : "bg-green-500/30 border-green-500"
     }
     if (isSelected && !effectiveIsCorrect) {
@@ -478,7 +478,7 @@ function AnswerOption({
     <motion.button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full min-h-[56px] p-4 sm:p-5 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
+      className={`w-full min-h-[56px] p-4 sm:p-5 rounded-xl border border-white/20 text-left transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${getBackgroundStyle()}`}
       initial={captureMode ? false : { opacity: 0, x: initialX, scale: 0.95 }}
       animate={
         showResult && isSelected && !effectiveIsCorrect
@@ -501,9 +501,9 @@ function AnswerOption({
       <div className="flex items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
           <span
-            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-bold flex-shrink-0 ${showResult && effectiveIsCorrect && isSelected
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-base font-bold shrink-0 ${showResult && effectiveIsCorrect && isSelected
               ? isPersonalityQuestion
-                ? "bg-[var(--wrapped-accent-purple)] text-white"
+                ? "bg-(--wrapped-accent-purple) text-white"
                 : "bg-green-500 text-white"
               : showResult && isSelected && !effectiveIsCorrect
                 ? "bg-red-500 text-white"
@@ -522,7 +522,7 @@ function AnswerOption({
           >
             {effectiveIsCorrect ? (
               <CheckCircle2
-                className={`w-6 h-6 sm:w-7 sm:h-7 ${isPersonalityQuestion ? "text-[var(--wrapped-accent-purple)]" : "text-green-500"}`}
+                className={`w-6 h-6 sm:w-7 sm:h-7 ${isPersonalityQuestion ? "text-(--wrapped-accent-purple)" : "text-green-500"}`}
                 aria-label={isPersonalityQuestion ? "Great choice" : "Correct answer"}
               />
             ) : (
@@ -648,7 +648,7 @@ export function QuizSlide({
         <div className={`flex flex-col items-center pt-4 pb-4 px-4 sm:px-6 w-full ${captureMode ? "h-full justify-between" : "min-h-full justify-between"}`}>
 
           {/* Top Section: Header & Title */}
-          <div className="w-full flex flex-col items-center flex-shrink-0">
+          <div className="w-full flex flex-col items-center shrink-0">
             <div className="mb-4">
               <SlideHeader year={year} />
             </div>
@@ -765,14 +765,14 @@ export function QuizSlide({
                   boxShadow: { duration: 0.8, ease: "easeOut" }
                 }}
                 className={`mt-6 px-6 py-3 rounded-full ${question.isPersonalityQuestion
-                  ? "bg-[var(--wrapped-accent-purple)]/20 border border-[var(--wrapped-accent-purple)]/40"
+                  ? "bg-(--wrapped-accent-purple)/20 border border-(--wrapped-accent-purple)/40"
                   : isCorrect
                     ? "bg-green-500/20 border border-green-500/40"
                     : "bg-red-500/20 border border-red-500/40"
                   }`}
               >
                 <p className={`text-lg font-bold ${question.isPersonalityQuestion
-                  ? "text-[var(--wrapped-accent-purple)]"
+                  ? "text-(--wrapped-accent-purple)"
                   : isCorrect
                     ? "text-green-400"
                     : "text-red-400"
@@ -800,7 +800,7 @@ export function QuizSlide({
           </div>
 
           {/* Bottom Section: Branding */}
-          <div className="flex-shrink-0 mb-safe">
+          <div className="shrink-0 mb-safe">
             <SlideBranding />
           </div>
         </div>

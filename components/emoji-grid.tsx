@@ -25,7 +25,7 @@ const EmojiItem = memo<{
 
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow hover:border-primary/30 transition-colors cursor-pointer w-full min-h-[112px]"
+      className="flex flex-col items-center justify-center rounded-lg border border-border bg-card p-4 shadow-sm hover:border-primary/30 transition-colors cursor-pointer w-full min-h-[112px]"
       title={emoji.name}
       onClick={onClick}
     >

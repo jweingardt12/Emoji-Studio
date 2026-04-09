@@ -80,7 +80,7 @@ export function StatCard({
 
       <div className="flex items-baseline gap-1">
         {prefix && (
-          <span className="text-lg font-bold text-[var(--wrapped-text-secondary)]">
+          <span className="text-lg font-bold text-(--wrapped-text-secondary)">
             {prefix}
           </span>
         )}
@@ -98,7 +98,7 @@ export function StatCard({
         )}
 
         {suffix && (
-          <span className="text-lg font-bold text-[var(--wrapped-text-secondary)]">
+          <span className="text-lg font-bold text-(--wrapped-text-secondary)">
             {suffix}
           </span>
         )}
@@ -169,7 +169,7 @@ export function StatPill({ value, label, icon, className, ...props }: StatPillPr
       <span className="font-mono font-bold text-white">
         {typeof value === "number" ? value.toLocaleString() : value}
       </span>
-      <span className="text-sm text-[var(--wrapped-text-secondary)]">{label}</span>
+      <span className="text-sm text-(--wrapped-text-secondary)">{label}</span>
     </div>
   )
 }

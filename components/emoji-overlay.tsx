@@ -175,7 +175,7 @@ function SimilarEmojisTable({ currentEmoji, allEmojis, onEmojiClick, onUserClick
             <img
               src={emoji.url || "/placeholder.svg"}
               alt={`:${emoji.name}:`}
-              className="h-10 w-10 object-contain flex-shrink-0"
+              className="h-10 w-10 object-contain shrink-0"
               onError={(e) => {
                 const target = e.target as HTMLImageElement
                 target.src = "/placeholder.svg"
@@ -503,7 +503,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                   </div>
 
                   {/* Emoji Info */}
-                  <div className="flex-grow space-y-3">
+                  <div className="grow space-y-3">
                     <div className="bg-primary/10 p-3 rounded-md">
                       <div className="text-xs text-muted-foreground font-semibold tracking-widest">NAME</div>
                       <div className="text-xl font-mono flex items-center gap-2">
@@ -582,17 +582,17 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
   const overlayContent = (
     <TooltipProvider>
       <div
-        className={`fixed inset-0 z-[9999] transition-all duration-300 ease-out ${
+        className={`fixed inset-0 z-9999 transition-all duration-300 ease-out ${
           isMobile
             ? ""
-            : "bg-black/50 backdrop-blur-sm flex items-center justify-center p-2"
+            : "bg-black/50 backdrop-blur-xs flex items-center justify-center p-2"
         } ${isVisible ? "opacity-100" : "opacity-0"}`}
         onClick={isMobile ? undefined : handleClose}
       >
         {/* Backdrop for mobile */}
         {isMobile && (
           <div
-            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+            className={`absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ease-out ${
               isVisible ? "opacity-100" : "opacity-0"
             }`}
             onClick={handleClose}
@@ -708,7 +708,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                   </div>
 
                   {/* Right Column - Emoji Info */}
-                  <div className="flex-grow space-y-3">
+                  <div className="grow space-y-3">
                     <div className={`bg-primary/10 ${isMobile ? "p-3" : "p-2"} rounded-md`}>
                       <div className="text-xs text-muted-foreground font-semibold tracking-widest">NAME</div>
                       <div className={`${isMobile ? "text-2xl" : "text-xl"} font-mono flex items-center gap-2`}>

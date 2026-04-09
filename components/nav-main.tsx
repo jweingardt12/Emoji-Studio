@@ -108,7 +108,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         
         const linkContent = (
           <>
-            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-[hsl(var(--brand))]" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-[var(--brand)]" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
             <span className="truncate">{item.title}</span>
             {item.badge && (
               <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
@@ -135,7 +135,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             aria-current={isActive ? "page" : undefined}
           >
             {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[hsl(var(--brand))]" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--brand)]" />
             )}
             {linkContent}
           </Link>

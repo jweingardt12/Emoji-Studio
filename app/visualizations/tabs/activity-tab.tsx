@@ -30,7 +30,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                     <CardContent>
                         <ChartContainer
                             config={{
-                                count: { label: "Emojis Created", color: "hsl(var(--chart-1))" },
+                                count: { label: "Emojis Created", color: "var(--chart-1)" },
                             }}
                             className="mx-auto aspect-square max-h-[300px]"
                         >
@@ -40,11 +40,11 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                 <PolarGrid />
                                 <Radar
                                     dataKey="count"
-                                    fill="hsl(var(--chart-1))"
+                                    fill="var(--chart-1)"
                                     fillOpacity={0.3}
-                                    stroke="hsl(var(--chart-1))"
+                                    stroke="var(--chart-1)"
                                     strokeWidth={2}
-                                    dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
+                                    dot={{ r: 3, fill: "var(--chart-1)" }}
                                 />
                             </RadarChart>
                         </ChartContainer>
@@ -84,11 +84,11 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     <Radar
                                         name="Emojis Created"
                                         dataKey="count"
-                                        fill="hsl(var(--chart-4))"
-                                        stroke="hsl(var(--chart-4))"
+                                        fill="var(--chart-4)"
+                                        stroke="var(--chart-4)"
                                         fillOpacity={0.3}
                                         strokeWidth={2}
-                                        dot={{ r: 2.5, fill: "hsl(var(--chart-4))" }}
+                                        dot={{ r: 2.5, fill: "var(--chart-4)" }}
                                     />
                                 </RadarChart>
                             </ChartContainer>

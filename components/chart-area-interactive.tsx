@@ -55,10 +55,10 @@ import {
 
 const chartConfig = {
   emojis: { label: "Emojis" },
-  created: { label: "Created Emojis", color: "hsl(var(--chart-1))" },
+  created: { label: "Created Emojis", color: "var(--chart-1)" },
   uniqueContributors: {
     label: "Unique Contributors",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
 
@@ -270,7 +270,7 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   if (!isClient || !now) {
     return (
-      <Card className="border-muted/40 shadow-sm bg-card/50">
+      <Card className="border-muted/40 shadow-xs bg-card/50">
         <CardHeader className="relative">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="mt-2 h-4 w-64" />
@@ -289,11 +289,11 @@ export function ChartAreaInteractive() {
   /*  Render chart                                                         */
   /* -------------------------------------------------------------------- */
   return (
-    <Card className="border-muted/40 shadow-sm bg-card/50 overflow-hidden">
+    <Card className="border-muted/40 shadow-xs bg-card/50 overflow-hidden">
       <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-3 xs:py-4 sm:py-6">
         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <LineChart className="h-5 w-5" />
-          <Link href="/visualizations" className="focus:outline-none cursor-pointer hover:opacity-80">
+          <Link href="/visualizations" className="focus:outline-hidden cursor-pointer hover:opacity-80">
             <span className="border-b border-dotted border-muted-foreground">Emoji Trends</span>
           </Link>
         </h2>
@@ -361,7 +361,7 @@ export function ChartAreaInteractive() {
               tick={{
                 fontSize: isMobile ? 9 : 12,
                 fontWeight: "bold",
-                fill: "hsl(var(--primary))", // Stronger contrast for labels
+                fill: "var(--primary)", // Stronger contrast for labels
               }}
               interval={"equidistantPreserveStart"} // Show labels at regular intervals
               angle={isMobile ? -35 : 0}
@@ -433,7 +433,7 @@ export function ChartAreaInteractive() {
               tickMargin={6}
               width={25}
               domain={[0, 'dataMax + 5']} // Reduce empty space at top
-              tick={{ fontSize: isMobile ? 10 : 12, fill: "hsl(var(--primary))" }}
+              tick={{ fontSize: isMobile ? 10 : 12, fill: "var(--primary)" }}
             />
 
             {/* Tooltip */}

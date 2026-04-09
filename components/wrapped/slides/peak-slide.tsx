@@ -110,10 +110,10 @@ export function PeakSlide({
             initial={captureMode ? false : { scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: captureMode ? 0 : 0.3 }}
-            className="w-full max-w-3xl rounded-3xl wrapped-glass border border-[var(--wrapped-accent-cyan)]/30 p-6 sm:p-8 mb-6 relative overflow-hidden"
+            className="w-full max-w-3xl rounded-3xl wrapped-glass border border-(--wrapped-accent-cyan)/30 p-6 sm:p-8 mb-6 relative overflow-hidden"
           >
             {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[var(--wrapped-accent-cyan)]/10 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-(--wrapped-accent-cyan)/10 to-transparent pointer-events-none" />
 
             <div className="relative">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12">
@@ -124,18 +124,18 @@ export function PeakSlide({
                   </p>
                   <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3">{busiestDay.date || "N/A"}</p>
                   <p className="wrapped-body text-lg sm:text-xl opacity-90 mb-4">{getPlayfulCopy()}</p>
-                  <div className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[var(--wrapped-accent-cyan)] leading-none">
+                  <div className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-(--wrapped-accent-cyan) leading-none">
                     {captureMode ? (
                       <span>{busiestDay.count}</span>
                     ) : (
                       <NumberTicker
                         value={busiestDay.count}
                         delay={0.5}
-                        className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-[var(--wrapped-accent-cyan)] leading-none tracking-tighter"
+                        className="font-mono text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-(--wrapped-accent-cyan) leading-none tracking-tighter"
                       />
                     )}
                   </div>
-                  <span className="text-xl sm:text-2xl font-normal text-[var(--wrapped-text-secondary)]">emojis created</span>
+                  <span className="text-xl sm:text-2xl font-normal text-(--wrapped-text-secondary)">emojis created</span>
                 </div>
 
                 {/* Emoji grid from that day - Larger and more prominent */}
@@ -190,7 +190,7 @@ export function PeakSlide({
                   {/* Bar */}
                   <motion.div
                     className={`w-full rounded-t-md transition-colors ${month.month === peakMonth?.month
-                      ? "bg-gradient-to-t from-[var(--wrapped-accent-cyan)] to-[var(--wrapped-accent-purple)]"
+                      ? "bg-linear-to-t from-(--wrapped-accent-cyan) to-(--wrapped-accent-purple)"
                       : "bg-white/20 group-hover:bg-white/40"
                       }`}
                     initial={captureMode ? { height: `${Math.max(month.height, 8)}%` } : { height: 0 }}
@@ -201,7 +201,7 @@ export function PeakSlide({
               ))}
             </div>
             {/* Month labels */}
-            <div className="flex justify-between text-xs sm:text-sm text-[var(--wrapped-text-muted)] font-medium">
+            <div className="flex justify-between text-xs sm:text-sm text-(--wrapped-text-muted) font-medium">
               {normalizedMonths.map((month) => (
                 <span key={month.month} className="flex-1 text-center">
                   {month.month.slice(0, 3)}
@@ -214,7 +214,7 @@ export function PeakSlide({
                 initial={captureMode ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: captureMode ? 0 : 1.4 }}
-                className="text-center text-sm sm:text-base md:text-lg text-[var(--wrapped-accent-cyan)] mt-4 font-medium"
+                className="text-center text-sm sm:text-base md:text-lg text-(--wrapped-accent-cyan) mt-4 font-medium"
               >
                 {peakMonth.month} was busiest with {peakMonth.count} emojis
               </motion.p>

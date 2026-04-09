@@ -48,27 +48,21 @@ const MobileTabs = memo(function MobileTabs({
   return (
     <div className="md:hidden">
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
-        <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 pb-2 pt-1">
-          <TabsList className="grid w-full grid-cols-2 h-12 p-1 bg-muted/50 rounded-xl">
-            <TabsTrigger
-              value="leaderboard"
-              className="flex items-center justify-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
-            >
+        <div className="sticky top-0 bg-background/95 backdrop-blur-xs z-10 pb-2 pt-1">
+          <TabsList className="w-full">
+            <TabsTrigger value="leaderboard">
               <Trophy className="h-4 w-4" />
-              <span className="font-medium">Leaderboard</span>
+              <span>Leaderboard</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="recent"
-              className="flex items-center justify-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
-            >
+            <TabsTrigger value="recent">
               <Clock className="h-4 w-4" />
-              <span className="font-medium">Recent</span>
+              <span>Recent</span>
             </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="leaderboard" className="mt-2 min-h-[400px] animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
+          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
             <Leaderboard
               leaderboard={filteredLeaderboard}
               dateRange={dateRange}
@@ -83,7 +77,7 @@ const MobileTabs = memo(function MobileTabs({
         </TabsContent>
 
         <TabsContent value="recent" className="mt-2 min-h-[400px] animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden p-4">
+          <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden p-4">
             <EmojiGrid />
           </div>
         </TabsContent>
@@ -112,7 +106,7 @@ const DesktopLayout = memo(function DesktopLayout({
 }) {
   return (
     <div className="hidden md:flex md:flex-col gap-6">
-      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" />
@@ -127,7 +121,7 @@ const DesktopLayout = memo(function DesktopLayout({
         </div>
       </div>
 
-      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" />

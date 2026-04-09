@@ -945,7 +945,7 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                   <h3 className="text-sm font-medium mb-2">
                     {showExportPreview ? 'Export Preview (128x128)' : 'Display Preview (200x200)'}
                   </h3>
-                  <div className={`relative border rounded-lg shadow-sm bg-white overflow-hidden ${
+                  <div className={`relative border rounded-lg shadow-xs bg-white overflow-hidden ${
                     showExportPreview ? 'w-[128px] h-[128px]' : 'w-[200px] h-[200px]'
                   }`}>
                     {(showExportPreview ? exportPreviewUrls[currentPreviewFrame] : frameDataUrls[currentPreviewFrame]) && (
@@ -1137,9 +1137,9 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                   )}
                 >
                   {/* Standalone Message */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border dark:border-gray-700 text-xs">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-xs border dark:border-gray-700 text-xs">
                     <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 rounded bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0">
+                      <div className="w-6 h-6 rounded bg-blue-500 dark:bg-blue-600 flex items-center justify-center text-white font-semibold text-[10px] shrink-0">
                         JD
                       </div>
                       <div className="flex-1">
@@ -1159,9 +1159,9 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
                   </div>
                   
                   {/* Reaction Context */}
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border dark:border-gray-700 text-xs">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-xs border dark:border-gray-700 text-xs">
                     <div className="flex items-start gap-2">
-                      <div className="w-6 h-6 rounded bg-green-500 dark:bg-green-600 flex items-center justify-center text-white font-semibold text-[10px] flex-shrink-0">
+                      <div className="w-6 h-6 rounded bg-green-500 dark:bg-green-600 flex items-center justify-center text-white font-semibold text-[10px] shrink-0">
                         JS
                       </div>
                       <div className="flex-1">

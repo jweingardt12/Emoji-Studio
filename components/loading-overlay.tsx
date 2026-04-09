@@ -45,7 +45,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
 
   return createPortal(
     <div className={cn(
-      "fixed inset-0 z-[9999] transition-all duration-300 ease-out",
+      "fixed inset-0 z-9999 transition-all duration-300 ease-out",
       isVisible ? "opacity-100" : "opacity-0"
     )}>
       {/* Full opaque background */}
@@ -71,7 +71,7 @@ export function LoadingOverlay({ isOpen, progress, loadingStage, isSuccess, onTr
           isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
         )}>
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center rounded-full bg-background/90 backdrop-blur-sm border p-4 shadow-lg">
+            <div className="inline-flex items-center justify-center rounded-full bg-background/90 backdrop-blur-xs border p-4 shadow-lg">
               {isSuccess ? (
                 <CheckCircle2 className="h-8 w-8 text-green-600 animate-in zoom-in duration-300" />
               ) : (
