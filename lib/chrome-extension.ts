@@ -56,6 +56,9 @@ export function initializeExtensionListener(
   isListenerInitialized = true;
   
   window.addEventListener('message', (event) => {
+    // Only accept messages from our own origin or the Chrome extension
+    if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
+
     // Handle synced data from extension (new background sync)
     if (event.data.type === 'EMOJI_STUDIO_SYNCED_DATA') {
       if (event.data.data && event.data.meta) {
@@ -108,7 +111,6 @@ export function initializeExtensionListener(
               document.body.appendChild(notification);
               setTimeout(() => notification.remove(), 3000);
             }).catch((error) => {
-              console.error('[Emoji Studio] Failed to save synced data:', error);
             });
           });
         }
@@ -119,7 +121,6 @@ export function initializeExtensionListener(
         if (validateSlackAuthData(event.data.data)) {
           onDataReceived(event.data.data);
         } else {
-          console.error('[Emoji Studio] Invalid data format received from extension:', event.data.data);
         }
       }
     } else if (event.data.type === 'EMOJI_STUDIO_CLEAR_DATA_FROM_EXTENSION') {

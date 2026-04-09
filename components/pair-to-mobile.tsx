@@ -54,7 +54,6 @@ export function PairToMobile() {
       try {
         await generateQrPayload(false, saved)
       } catch (error) {
-        console.error("Auto QR generation failed:", (error as Error)?.message || error)
       }
     }
 
@@ -98,7 +97,6 @@ export function PairToMobile() {
       setQrDataUrl(dataUrl)
       setQrError(null)
     } catch (e: any) {
-      console.error("Failed generating QR code:", e?.message || e)
       setQrError(e?.message || "QR generation failed. Click 'Regenerate QR' to retry.")
       setQrDataUrl("")
       setCompressedCode("")
@@ -120,7 +118,6 @@ export function PairToMobile() {
       await navigator.clipboard.writeText(code)
       toast.success("Workspace payload copied")
     } catch (error: any) {
-      console.error("Failed to copy workspace info:", error?.message || error)
       toast.error(error?.message || "Failed to copy workspace info")
     } finally {
       setCopying(false)
@@ -176,7 +173,6 @@ export function PairToMobile() {
         }
       }
     } catch (error) {
-      console.error("Error processing QR code:", error)
       toast.error("Failed to process QR code")
     }
   }

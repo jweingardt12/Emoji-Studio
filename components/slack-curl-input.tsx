@@ -207,7 +207,6 @@ export function SlackCurlInput() {
     try {
       await navigator.clipboard.writeText(curlCommand);
     } catch (err) {
-      console.error("Failed to copy cURL command: ", err);
     }
   };
 
@@ -270,7 +269,6 @@ export function SlackCurlInput() {
         router.push('/dashboard')
       }, 600)
     } catch (err) {
-      console.error("Error loading demo data:", err)
       setError(err instanceof Error ? err.message : "Unknown error occurred")
       setIsLoading(false)
       setLoadingStage("")
@@ -352,7 +350,6 @@ export function SlackCurlInput() {
         let errorMessage = "Failed to fetch emoji data"
         try {
           const errorData = JSON.parse(responseText)
-          console.error("API error response:", errorData)
           errorMessage = errorData.error || errorMessage
           
           track('slack_api_error', {
@@ -361,7 +358,6 @@ export function SlackCurlInput() {
             workspace: workspace,
           });
         } catch {
-          console.error("Failed to parse error response:", responseText)
         }
         throw new Error(`API error: ${errorMessage}`)
       }
@@ -373,12 +369,10 @@ export function SlackCurlInput() {
       try {
         data = JSON.parse(responseText)
       } catch (parseError) {
-        console.error("Failed to parse response:", responseText)
         throw new Error("Invalid response format from server")
       }
 
       if (!data.emojis || !Array.isArray(data.emojis)) {
-        console.error("Invalid data format:", data)
         throw new Error("Invalid emoji data format")
       }
 
@@ -435,8 +429,6 @@ export function SlackCurlInput() {
         router.push('/dashboard')
       }, 600)
     } catch (err) {
-      console.error("Error fetching emoji data:", err)
-      console.error("Full error details:", err)
       setError(err instanceof Error ? err.message : "Unknown error occurred")
       setIsLoading(false)
       setLoadingStage("")

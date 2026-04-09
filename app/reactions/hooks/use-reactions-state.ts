@@ -41,7 +41,17 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
   const [channelsLoading, setChannelsLoading] = useState(false)
 
   // Scan state
-  const [dateRange, setDateRange] = useState<DateRange>("7d")
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("reactions-dateRange")
+      if (saved === "24h" || saved === "7d" || saved === "30d" || saved === "90d") return saved
+    }
+    return "7d"
+  })
+  // Persist dateRange changes
+  useEffect(() => {
+    localStorage.setItem("reactions-dateRange", dateRange)
+  }, [dateRange])
   const [emojiFilter, setEmojiFilter] = useState<EmojiFilter>("custom")
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
     status: "idle",
@@ -116,7 +126,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
         toast.error(data.error || "Failed to fetch channels")
       }
     } catch (error) {
-      console.error("Failed to fetch channels:", error)
       toast.error("Failed to fetch channels")
     } finally {
       setChannelsLoading(false)
@@ -184,7 +193,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
 
         const data = await response.json()
         if (!data.ok) {
-          console.error(`Scan error for #${channelName}:`, data.error)
           break
         }
 
@@ -261,7 +269,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
           }))
         } catch (error) {
           if ((error as Error).name === "AbortError") break
-          console.error(`Error scanning #${channelName}:`, error)
           failedChannels++
         }
       }
@@ -286,7 +293,6 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       }
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
-        console.error("Scan failed:", error)
         setScanProgress(prev => ({ ...prev, status: "error" }))
         toast.error("Scan failed", { description: "An unexpected error occurred." })
       }
@@ -325,14 +331,14 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
       }
     }
 
-    const buckets: { date: string; count: number }[] = []
+    const buckets: { date: string; count: number; ts: number }[] = []
     for (let i = bucketCount - 1; i >= 0; i--) {
       const ts = now - (i + 1) * bucketSize
       const d = new Date(ts * 1000)
       const label = isHourly
         ? d.toLocaleTimeString("en-US", { hour: "numeric" })
         : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      buckets.push({ date: label, count: countByBucket.get(i) || 0 })
+      buckets.push({ date: label, count: countByBucket.get(i) || 0, ts })
     }
     return buckets
   }, [filteredEvents, dateRange])

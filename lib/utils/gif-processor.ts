@@ -20,22 +20,18 @@ export class GifProcessor {
       
       return await GifFrameExtractor.processAnimatedGif(file, targetSize, maxFileSize)
     } catch (error) {
-      console.error('Failed to process with frame extraction, trying fallback method:', error)
       
       // If it's a size limit error, provide more information
       if (error instanceof Error && error.message.includes('Could not create GIF under')) {
-        console.warn('GIF is too complex to fit in 128KB while maintaining animation')
       }
       // Try simpler animated GIF processor
       try {
         return await AnimatedGifProcessor.processAnimatedGif(file, targetSize, maxFileSize)
       } catch (fallbackError) {
-        console.error('Fallback animated processor failed, trying original method:', fallbackError)
         // Try our original animated GIF processor
         try {
           return await this.processAnimatedGif(file, targetSize, maxFileSize)
         } catch (lastError) {
-          console.error('All animated GIF processors failed, falling back to static:', lastError)
           // Fall back to static image if animated processing fails
           return this.processStaticImage(file, targetSize, maxFileSize)
         }
@@ -251,7 +247,6 @@ export class GifProcessor {
         duration: duration
       }
     } catch (error) {
-      console.error('Failed to get GIF info:', error)
       return {
         frameCount: 1,
         duration: 0
@@ -278,14 +273,12 @@ export class GifProcessor {
           
           return info.frameCount > 1
         } catch (parseError) {
-          console.warn('Could not parse GIF frames, assuming animated:', parseError)
           return true // Assume it's animated if we can't parse
         }
       }
       
       return false
     } catch (error) {
-      console.error('Error checking if file is animated GIF:', error)
       return false
     }
   }

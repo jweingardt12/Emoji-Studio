@@ -14,7 +14,6 @@ export function useEmojiNotifications() {
       if (!settings) return;
       notificationSettings = JSON.parse(settings);
     } catch (e) {
-      console.error('[Notifications] Failed to parse settings:', e);
       return;
     }
     
@@ -31,7 +30,6 @@ export function useEmojiNotifications() {
         localStorage.setItem(key, value);
       } catch (e) {
         if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-          console.warn('[Notifications] localStorage quota exceeded, cleaning up...');
           // Try to clean up old data
           try {
             // Remove old tracking data
@@ -44,10 +42,8 @@ export function useEmojiNotifications() {
             // Try again
             localStorage.setItem(key, value);
           } catch (retryError) {
-            console.error('[Notifications] Failed to save even after cleanup:', retryError);
           }
         } else {
-          console.error('[Notifications] Failed to save to localStorage:', e);
         }
       }
     };
@@ -64,7 +60,6 @@ export function useEmojiNotifications() {
           lastCheck = JSON.parse(storedLastCheck);
         }
       } catch (e) {
-        console.error('[Notifications] Failed to parse lastEmojiCheck:', e);
         localStorage.removeItem('lastEmojiCheck');
       }
       

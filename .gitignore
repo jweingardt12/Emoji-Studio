@@ -42,6 +42,9 @@ next-env.d.ts
 # Editor/AI configs (keep local)
 /.vscode/
 /.claude/
+/.desloppify/
+/.superpowers/
+/.playwright-mcp/
 *.code-workspace
 
 # Local templates not tracked
@@ -74,10 +77,16 @@ middleware.ts
 
 # Package manager files (only track package-lock.json)
 pnpm-lock.yaml
+pnpm-lock.yaml.backup
 yarn.lock
+*.backup
 
 # Documentation files in root (except README, CHANGELOG, RELEASE_NOTES)
 /*.md
 !README.md
 !CHANGELOG.md
 !RELEASE_NOTES.md
+
+# Chrome Extension build artifacts
+chrome-extension/dist/
+chrome-extension/*.zip

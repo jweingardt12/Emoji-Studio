@@ -20,7 +20,6 @@ export async function removeBackground(blob: Blob): Promise<Blob> {
     }
   } catch (e) {
     // Ignore and fall back to deterministic approach
-    // console.warn('ML background removal failed, falling back:', e)
   }
 
   // Fallback to previous deterministic implementation
@@ -283,7 +282,6 @@ export async function removeBackgroundEnhanced(blob: Blob): Promise<Blob> {
         }
       }, 'image/png')
         } catch (error) {
-          console.error('Error processing image in removeBackgroundEnhanced:', error)
           reject(error)
         }
       }
@@ -294,7 +292,6 @@ export async function removeBackgroundEnhanced(blob: Blob): Promise<Blob> {
       
       img.src = URL.createObjectURL(blob)
     } catch (error) {
-      console.error('Error setting up removeBackgroundEnhanced:', error)
       reject(error)
     }
   })

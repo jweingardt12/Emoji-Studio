@@ -11,6 +11,7 @@ import { useAnalytics } from "@/lib/analytics"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { ShareOverlayButtons } from "@/app/reactions/components/share-overlay-buttons"
 
 // Component to display similar emojis in a table
 interface SimilarEmojisTableProps {
@@ -272,7 +273,7 @@ interface EmojiOverlayProps {
   parentRef?: React.RefObject<HTMLDivElement>
 }
 
-export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick, parentRef }: EmojiOverlayProps) {
+export default function EmojiOverlay({ emoji: emojiProp, onClose, onEmojiClick, onUserClick, parentRef }: EmojiOverlayProps) {
   const { emojiData } = useEmojiData()
   const analytics = useAnalytics()
   const isMobileRaw = useIsMobile()
@@ -281,6 +282,9 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
   const [imageError, setImageError] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [displayedEmoji, setDisplayedEmoji] = useState<Emoji | null>(null)
+  const [isClosing, setIsClosing] = useState(false)
+  const emojiContentRef = useRef<HTMLDivElement>(null)
 
   // Mount effect for portal
   useEffect(() => {
@@ -288,9 +292,26 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
     return () => setMounted(false)
   }, [])
 
+  // Keep displayedEmoji around during exit animation
+  useEffect(() => {
+    if (emojiProp) {
+      setDisplayedEmoji(emojiProp)
+      setIsClosing(false)
+    } else if (displayedEmoji && !isClosing) {
+      // Emoji was removed — start exit animation
+      setIsClosing(true)
+      setIsVisible(false)
+      const timer = setTimeout(() => {
+        setDisplayedEmoji(null)
+        setIsClosing(false)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [emojiProp])
+
   // Animation effect - matching UserOverlay pattern
   useEffect(() => {
-    if (emoji) {
+    if (emojiProp) {
       if (isMobile) {
         // For mobile, use drawer state
         setIsDrawerOpen(true)
@@ -332,8 +353,8 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
       }
 
       // Track emoji view event
-      if (emoji.name && emoji.user_display_name) {
-        analytics.trackEmojiView(emoji.name, emoji.user_display_name)
+      if (emojiProp.name && emojiProp.user_display_name) {
+        analytics.trackEmojiView(emojiProp.name, emojiProp.user_display_name)
       }
     } else {
       setIsVisible(false)
@@ -347,12 +368,12 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
         if (parentRef?.current) parentRef.current.style.overflow = ""
       }
     }
-  }, [emoji, analytics, parentRef, isMobile])
-  
+  }, [emojiProp, analytics, parentRef, isMobile])
+
   // Handle drawer close - only trigger onClose if drawer was previously open
   const wasDrawerOpen = useRef(false)
   useEffect(() => {
-    if (isMobile && emoji) {
+    if (isMobile && emojiProp) {
       if (isDrawerOpen) {
         wasDrawerOpen.current = true
       } else if (wasDrawerOpen.current) {
@@ -361,7 +382,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
         wasDrawerOpen.current = false
       }
     }
-  }, [isDrawerOpen, isMobile, emoji, onClose])
+  }, [isDrawerOpen, isMobile, emojiProp, onClose])
 
   // Handle overlay close with animation
   const handleClose = () => {
@@ -409,8 +430,11 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
     }
   }
 
-  if (!emoji) return null
-  
+  if (!displayedEmoji) return null
+
+  // Shadow the prop so the render tree uses the persisted emoji during exit animation
+  const emoji = displayedEmoji
+
   // For mobile, use Drawer component with drag-to-dismiss
   if (isMobile) {
     return (
@@ -646,15 +670,21 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
                   <span className="text-2xl font-light text-muted-foreground mx-2">|</span>
                   <span className="text-lg font-semibold font-mono">:{emoji.name}:</span>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleClose} className="absolute top-3 right-3 z-10">
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
+                <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+                  <ShareOverlayButtons
+                    contentRef={emojiContentRef}
+                    filename={`${emoji.name}-details.png`}
+                  />
+                  <Button variant="ghost" size="icon" onClick={handleClose}>
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </div>
               </>
             )}
           </div>
 
-          <div className={isMobile ? "p-4 pb-20" : "p-3 md:p-4"}>
+          <div ref={emojiContentRef} className={isMobile ? "p-4 pb-20" : "p-3 md:p-4"}>
             <div className="grid grid-cols-1 gap-4">
               {/* Emoji Preview Card */}
               <div className={`border border-border rounded-lg ${isMobile ? "p-4" : "p-2 md:p-3"}`}>

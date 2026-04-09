@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error(`Failed to fetch image: ${response.statusText} (${response.status})`)
       return new NextResponse(`Failed to fetch image: ${response.statusText}`, { status: response.status })
     }
 
@@ -51,7 +50,6 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: unknown) {
-    console.error("Error proxying image:", error)
     const sanitized = sanitizeErrorResponse(error, "Error proxying image")
     return new NextResponse(sanitized.message, { status: 500 })
   }

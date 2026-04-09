@@ -42,24 +42,53 @@ A massive release with 360+ commits bringing a brand-new Usage Analytics page, a
 - Direct download and "Send to Slack" buttons
 - Real-time emoji name availability checking
 
-#### Chrome Extension Integration
+#### Chrome Extension (v2.0–2.1)
 - One-click Slack data sync without developer tools
 - Cross-tab data synchronization
 - Context menu integration for quick emoji creation
 - Automatic background sync with notification support
 - Cart sync from extension to creator page
+- Bulk emoji reactions: multi-react to any Slack message with a single click
+- Emoji info tooltip: hover over any reaction to see creator, creation date, and link to details
+- Rainbow sync button on Slack's emoji customization page (replaces transient banner)
+- Settings tab for Slack app configuration
+- Emoji reaction hover popover and "My Emojis" tab in picker
+
+#### iOS App
+- Native iOS app available on the App Store
+- QR code pairing for instant data transfer from desktop
+- Full Emoji Wrapped support in iOS WebView
+- Share and download support with platform-specific fallbacks
+
+### Design System Overhaul
+- Tailwind CSS v3 → v4 migration: `@import` syntax, `@theme` directives, oklch color space
+- shadcn/ui Luma preset (radix-luma): updated 46 UI components with rounded geometry and soft surfaces
+- Fixed 105+ `hsl(var())` color references across 21 files for v4 compatibility
+
+### Animations & Motion
+- Framer Motion spring stagger entrance animations across all pages
+- Dashboard: NumberTicker animated counters, card hover lift effects, animated reaction bars
+- Bento grid layout on dashboard (chart + usage side-by-side on desktop)
+- Shared animation foundation (`lib/motion.ts`): spring presets, stagger containers, fadeUp/scaleFade/cardHover variants
+- RainbowButton contrast fix for light mode
 
 ### UI/UX Overhaul
+- Settings page: 2-column sidebar → single-column iOS-style layout with sticky frosted-glass nav, IntersectionObserver active section highlighting (700 → 250 lines)
+- Dashboard: hero metric card layout (Total Emojis prominent, others in 3-col), leaderboard-first content order
+- Scan progress: error + completion states with AnimatePresence, retry button in channel picker
+- Ghost preview empty states showing data shape before first scan
+- Dynamic date labels on stats cards (Today/This Week/This Month/3 Months)
 - Comprehensive UI/UX polish across all pages
 - Web Interface Guidelines compliance audit and fixes
 - Create page redesigned with glass effects and tab-based navigation
-- Settings page redesigned for cleaner UX
 - Tablet layout improved with floating action bar
 - Pack browser sidebar removed in favor of inline navigation
 - Consistent modal animations standardized across the app
 - Dark mode contrast fixes across all components
 - Explorer card overlap and text visibility fixes
 - Upload drop zone now fills available height
+- Replaced hardcoded sky/emerald/cyan colors with semantic tokens
+- Sidebar: single-signal active state, semantic badge colors, extracted FeedbackModal component
 
 ### Performance
 - 50-70% faster initial load on Visualizations
@@ -84,6 +113,8 @@ A massive release with 360+ commits bringing a brand-new Usage Analytics page, a
 - Standardized hover transition durations on interactive elements
 - Badge text contrast fixes for status indicators
 - Glassmorphism component contrast improvements
+- Aria-labels on metric cards, chart containers, and interactive elements
+- 44px minimum touch targets on quick actions and navigation items
 
 ### Other Improvements
 - OpenPanel analytics with user identification, workspace context, and self-hosted API
@@ -99,6 +130,8 @@ A massive release with 360+ commits bringing a brand-new Usage Analytics page, a
 ### Dependencies
 - Next.js upgraded to 16.x
 - React 19 with React Compiler
+- Tailwind CSS v4 with `@tailwindcss/postcss` and `tw-animate-css`
+- Framer Motion for page transitions and micro-interactions
 - Security patches for Next.js (CVE-2025-55182)
 - Updated FFmpeg, gif.js, lodash-es, and other packages
 

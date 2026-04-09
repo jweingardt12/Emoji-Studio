@@ -68,12 +68,13 @@ export function ConnectWorkspaceModal({ open, onOpenChange }: ConnectWorkspaceMo
     track("wrapped_connect_modal_email_submitted", { email, year: new Date().getFullYear() })
 
     try {
-      const response = await fetch("https://cloud.activepieces.com/api/v1/webhooks/npaUNTnqNEkH05cg06hhx", {
+      const response = await fetch("/api/webhook-relay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          type: "email-capture",
           email,
           timestamp: new Date().toISOString(),
           source: "wrapped-connect-modal-mobile",
@@ -97,7 +98,6 @@ export function ConnectWorkspaceModal({ open, onOpenChange }: ConnectWorkspaceMo
         }, 300)
       }, 3000)
     } catch (err) {
-      console.error("Error submitting email:", err)
       track("wrapped_connect_modal_email_error", { error: err instanceof Error ? err.message : "Unknown error" })
       toast.error("Failed to send email. Please try again.")
     } finally {

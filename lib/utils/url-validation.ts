@@ -133,7 +133,6 @@ export function sanitizeErrorResponse(
       }
     }
     // Log the full error server-side
-    console.error('API Error:', error)
     return { message: defaultMessage }
   }
 
@@ -144,7 +143,6 @@ export function sanitizeErrorResponse(
     }
   }
 
-  console.error('API Error:', error)
   return { message: defaultMessage }
 }
 

@@ -28,7 +28,6 @@ async function isAnimatedWebP(file: File): Promise<boolean> {
 
     return false
   } catch (error) {
-    console.error('Error checking if WebP is animated:', error)
     return false
   }
 }
@@ -54,7 +53,6 @@ async function isGifFile(file: File): Promise<boolean> {
     return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
            bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
   } catch (error) {
-    console.error('Error checking if file is GIF:', error)
     return false
   }
 }
@@ -135,7 +133,6 @@ export function useFileProcessing({
               return
             }
           } catch (error) {
-            console.error('Error checking video info:', error)
             // Continue with normal processing if we can't check
           }
         }
@@ -187,7 +184,6 @@ export function useFileProcessing({
               }
             }
           } catch (error) {
-            console.error('Error checking GIF dimensions:', error)
             // Continue with normal processing if we can't check dimensions
           }
         }
@@ -214,7 +210,6 @@ export function useFileProcessing({
           isVideo: file.type.startsWith('video/')
         })
       } catch (error) {
-        console.error(`Failed to process ${file.name}:`, error)
         setProcessingError(error instanceof Error ? error.message : 'Unknown error')
         setCurrentStep('error')
 

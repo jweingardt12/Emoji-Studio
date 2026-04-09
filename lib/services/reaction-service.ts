@@ -54,6 +54,7 @@ export interface ReactionStats {
   total_reactions: number
   unique_emojis: number
   unique_users: number
+  messages_with_reactions: number
   top_reactions: AggregatedReaction[]
   trending: TrendingReaction[]
 }
@@ -218,14 +219,19 @@ export function calculateReactionStats(events: ReactionEvent[]): ReactionStats {
   const aggregated = aggregateReactions(events)
 
   const allUsers = new Set<string>()
+  const uniqueMessages = new Set<string>()
+  let totalReactions = 0
   for (const event of events) {
+    totalReactions += event.count
     for (const uid of event.user_ids) allUsers.add(uid)
+    uniqueMessages.add(`${event.channel_id}:${event.timestamp}`)
   }
 
   return {
-    total_reactions: events.reduce((sum, e) => sum + e.count, 0),
+    total_reactions: totalReactions,
     unique_emojis: aggregated.length,
     unique_users: allUsers.size,
+    messages_with_reactions: uniqueMessages.size,
     top_reactions: getTopReactions(aggregated, 10),
     trending: getTrendingReactions(events, 7 * 86400),
   }

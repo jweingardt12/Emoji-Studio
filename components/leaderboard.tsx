@@ -18,9 +18,6 @@ import type { Emoji } from "@/lib/services/emoji-service";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useIsMobile } from "@/hooks/use-mobile"; 
 
-// Remove this import and define a fallback type below if @shared/schema.js is missing
-// import { UserWithEmojiCount } from "@shared/schema.js";
-// (Removed: @shared/schema.js is not present. Using fallback type below.)
 
 export type DateRange = "7days" | "30days" | "quarter" | "thisyear" | "year" | "all"
 

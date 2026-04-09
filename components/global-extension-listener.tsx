@@ -10,6 +10,8 @@ export function GlobalExtensionListener() {
   
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
+
       if (event.data.type === 'EXTENSION_TRACK_EVENT') {
         // Forward tracking events from extension to openpanel
         if (event.data.eventName) {

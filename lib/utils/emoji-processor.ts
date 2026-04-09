@@ -79,7 +79,6 @@ export class EmojiProcessor {
           return true
         }
       } catch (error) {
-        console.warn('Error checking PNG for HDR metadata:', error)
       }
     }
     
@@ -276,7 +275,6 @@ export class EmojiProcessor {
           let blob = await this.canvasToBlob(canvas, format, quality)
 
           if (!blob) {
-            console.error('[EmojiProcessor] Failed to create blob from canvas')
             reject(new Error('Failed to process image'))
             return
           }
@@ -298,14 +296,12 @@ export class EmojiProcessor {
           })
         } catch (error) {
           URL.revokeObjectURL(objectUrl)
-          console.error('[EmojiProcessor] Error processing image:', error)
           reject(error)
         }
       }
 
       img.onerror = (error) => {
         URL.revokeObjectURL(objectUrl)
-        console.error('[EmojiProcessor] Failed to load image:', error)
         reject(new Error('Failed to load image'))
       }
 
@@ -324,7 +320,6 @@ export class EmojiProcessor {
       
       // Ensure the blob has the correct MIME type
       if (processedBlob.type !== 'image/gif' && file.type === 'image/gif') {
-        console.warn(`Processed blob has type ${processedBlob.type}, expected image/gif`)
         // Try to correct the MIME type
         processedBlob = new Blob([processedBlob], { type: 'image/gif' })
       }
@@ -351,7 +346,6 @@ export class EmojiProcessor {
         processingNote
       }
     } catch (error) {
-      console.error('GIF processing failed:', error)
       // Fall back to treating it as a static image
       return this.processImage(file, name)
     }
@@ -400,7 +394,6 @@ export class EmojiProcessor {
         processingNote
       }
     } catch (error) {
-      console.error('[EmojiProcessor] Video processing failed:', error)
       throw new Error(`Failed to process video: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -470,7 +463,6 @@ export class EmojiProcessor {
       return bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 &&
              bytes[3] === 0x38 && (bytes[4] === 0x37 || bytes[4] === 0x39) && bytes[5] === 0x61
     } catch (error) {
-      console.error('Error checking if file is GIF:', error)
       return false
     }
   }
@@ -505,7 +497,6 @@ export class EmojiProcessor {
       
       return false
     } catch (error) {
-      console.error('Error checking if WebP is animated:', error)
       return false
     }
   }

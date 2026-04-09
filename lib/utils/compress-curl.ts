@@ -93,7 +93,6 @@ export function decompressCurl(compressed: string): string {
     
     return curl
   } catch (e) {
-    console.error('Failed to decompress curl:', e)
     throw new Error('Invalid compressed data')
   }
 }

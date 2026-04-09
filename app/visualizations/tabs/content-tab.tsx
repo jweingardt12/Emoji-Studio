@@ -34,10 +34,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                             config={{
                                 count: {
                                     label: "",
-                                    theme: {
-                                        light: "#82ca9d",
-                                        dark: "#82ca9d"
-                                    }
+                                    color: "var(--chart-1)"
                                 }
                             }}
                         >
@@ -73,7 +70,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                 <ChartLegend />
                                 <Bar
                                     dataKey="count"
-                                    fill="#00E396"
+                                    fill="var(--chart-1)"
                                     radius={[4, 4, 0, 0]}
                                     onClick={handleNameLengthClick}
                                     cursor="pointer"
@@ -94,7 +91,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                     <CardContent>
                         <ChartContainer
                             config={{
-                                avgLength: { label: "Avg Characters", color: "#f59e0b" },
+                                avgLength: { label: "Avg Characters", color: "var(--chart-2)" },
                             }}
                             className="h-[300px] w-full"
                         >
@@ -104,8 +101,8 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                             >
                                 <defs>
                                     <linearGradient id="fillNameLength" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
+                                        <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0.1} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -137,7 +134,7 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                                 <Area
                                     type="monotone"
                                     dataKey="avgLength"
-                                    stroke="#f59e0b"
+                                    stroke="var(--chart-2)"
                                     fill="url(#fillNameLength)"
                                     fillOpacity={1}
                                 />

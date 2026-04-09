@@ -32,21 +32,6 @@ const nextConfig = {
 
   assetPrefix: process.env.NEXT_PUBLIC_ASSET_PREFIX || '',
 
-  // Allow cross-origin requests for Chrome extension communication
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-        ],
-      },
-    ]
-  },
-
   // Turbopack configuration for Next.js 16
   turbopack: {
     root: process.cwd(),

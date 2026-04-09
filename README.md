@@ -32,11 +32,12 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 
 ### Analytics Dashboard
 - Real-time metrics for total emojis, unique creators, weekly growth, and top reactions
+- Animated counters and spring-physics page transitions (Framer Motion)
+- Bento grid layout with hero metric card and leaderboard
 - Contributor leaderboard with historical performance tracking
 - Time-series analysis of emoji creation patterns
 - Activity heatmaps showing peak creation periods
 - Individual user profiles with detailed contribution metrics
-- Quick action buttons for creating, browsing, and exploring emojis
 
 ### Emoji Explorer
 - Full-text search across emoji names, creators, and user IDs
@@ -100,6 +101,17 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 - Context menu integration for quick emoji creation
 - Cross-tab data synchronization
 - Powers notification system for real-time updates
+- Bulk emoji reactions: multi-react to any Slack message with one click
+- Emoji info tooltip: hover over any reaction to see creator and creation date
+- Rainbow sync button on Slack's emoji customization page
+- Cart system for queuing emojis and sending to Creator page
+- Settings tab for Slack app configuration
+
+### iOS App
+- Browse your workspace's emoji collection on the go
+- Full Emoji Wrapped experience with share and download
+- QR code pairing for instant data transfer from desktop
+- Available on the [App Store](https://apps.apple.com/us/app/emoji-studio-for-slack/id6751079971)
 
 ## Installation
 
@@ -156,8 +168,8 @@ Emoji Studio is a comprehensive analytics and management platform for Slack cust
 - **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript
 - **Runtime**: React 19 with React Compiler
-- **UI**: shadcn/ui (Radix UI primitives), Framer Motion
-- **Styling**: Tailwind CSS
+- **UI**: shadcn/ui (Radix UI + Luma preset), Framer Motion
+- **Styling**: Tailwind CSS v4 (oklch colors, `@theme` directives)
 - **Charts**: Recharts, Chart.js
 - **Media Processing**: Canvas API, GIF.js, FFmpeg (WASM), @imgly/background-removal
 - **Storage**: IndexedDB, localStorage

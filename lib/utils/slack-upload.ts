@@ -17,7 +17,6 @@ export async function uploadEmojiToSlack(
     const storedCurl = localStorage.getItem("slackCurlCommand")
 
     if (!storedCurl) {
-      console.error("[uploadEmojiToSlack] No Slack connection found")
       return {
         success: false,
         error: "No Slack connection found. Please connect to Slack in Settings first."
@@ -28,7 +27,6 @@ export async function uploadEmojiToSlack(
     const parsed = parseSlackCurl(storedCurl)
 
     if (!parsed.isValid || !parsed.url) {
-      console.error("[uploadEmojiToSlack] Invalid Slack connection:", parsed)
       return {
         success: false,
         error: "Invalid Slack connection. Please reconnect in Settings."
@@ -38,7 +36,6 @@ export async function uploadEmojiToSlack(
     // Extract workspace URL
     const workspaceMatch = parsed.url.match(/https:\/\/([^.]+)\.slack\.com/)
     if (!workspaceMatch) {
-      console.error("[uploadEmojiToSlack] Could not extract workspace from URL:", parsed.url)
       return {
         success: false,
         error: "Could not extract workspace from Slack connection."
@@ -132,7 +129,6 @@ export async function uploadEmojiToSlack(
         errorMessage = result.error
       }
 
-      console.error("[uploadEmojiToSlack] Upload failed:", errorMessage)
       return {
         success: false,
         error: errorMessage,
@@ -146,7 +142,6 @@ export async function uploadEmojiToSlack(
     }
 
   } catch (error) {
-    console.error("[uploadEmojiToSlack] Exception during upload:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to upload emoji"
@@ -291,7 +286,6 @@ export async function uploadPackEmojiToSlack(
     }
 
   } catch (error) {
-    console.error("[uploadPackEmojiToSlack] Exception during upload:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to upload emoji"

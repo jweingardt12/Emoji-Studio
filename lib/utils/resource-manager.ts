@@ -39,7 +39,6 @@ export class ResourceManager {
       try {
         URL.revokeObjectURL(url)
       } catch (error) {
-        console.error('Failed to revoke URL:', url, error)
       }
     })
     this.objectUrls.clear()
@@ -69,7 +68,6 @@ export class ResourceManager {
           element.height = 0
         }
       } catch (error) {
-        console.error('Failed to clean up element:', element, error)
       }
     })
     this.elements.clear()

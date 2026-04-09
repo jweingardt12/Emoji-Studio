@@ -277,8 +277,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Sticky mini-nav */}
-        <nav className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50 -mx-4 px-4 py-2 mb-6">
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+        <nav className="sticky top-0 z-10 bg-background/95 backdrop-blur-md border-b border-border -mx-4 px-4 py-2.5 mb-6">
+          <div className="flex gap-1 rounded-lg bg-muted/50 p-1">
             {sections.map(({ id, label, icon: Icon }) => (
               <a
                 key={id}
@@ -289,10 +289,10 @@ export default function SettingsPage() {
                   track("Settings: Navigate Section", { section: id })
                 }}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                  "flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-all duration-150",
                   activeSection === id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
@@ -307,7 +307,7 @@ export default function SettingsPage() {
           variants={staggerContainer()}
           initial="hidden"
           animate="show"
-          className="space-y-10"
+          className="space-y-8"
         >
           {/* Connection */}
           <motion.section

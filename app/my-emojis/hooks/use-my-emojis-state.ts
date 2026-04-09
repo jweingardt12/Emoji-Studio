@@ -209,7 +209,6 @@ export function useMyEmojisState() {
         }))
       }
     } catch (error) {
-      console.error("Error refreshing emoji data:", error)
       toast.error("Failed to refresh emoji data", {
         description: error instanceof Error ? error.message : "An error occurred",
       })
@@ -528,7 +527,6 @@ export function useMyEmojisState() {
           try {
             await refreshEmojiData()
           } catch (error) {
-            console.error('Background refresh failed:', error)
           }
         }, 2000)
       } else {
@@ -816,7 +814,6 @@ export function useMyEmojisState() {
         try {
           await refreshEmojiData()
         } catch (error) {
-          console.error('Background refresh failed:', error)
         }
       }, 2000)
     } catch (error) {
@@ -856,7 +853,6 @@ export function useMyEmojisState() {
       setProcessedEmoji(processed)
       setCurrentStep('completed')
     } catch (error) {
-      console.error('Failed to process file:', error)
       setProcessingError(error instanceof Error ? error.message : 'Unknown error')
       setCurrentStep('error')
     }
@@ -974,7 +970,6 @@ export function useMyEmojisState() {
         try {
           await refreshEmojiData()
         } catch (error) {
-          console.error('Background refresh failed:', error)
         }
       }, 2000)
     } catch (error) {
@@ -1131,7 +1126,6 @@ export function useMyEmojisState() {
         try {
           await refreshEmojiData()
         } catch (error) {
-          console.error('Background refresh failed:', error)
         }
       }, 2000)
     } catch (error) {
@@ -1210,9 +1204,7 @@ export function useMyEmojisState() {
       try {
         result = await response.json()
       } catch (jsonError) {
-        console.error("JSON parse error:", jsonError)
         const text = await response.text()
-        console.error("Response text:", text)
         throw new Error("Invalid response from server")
       }
 
@@ -1244,7 +1236,6 @@ export function useMyEmojisState() {
         try {
           await refreshEmojiData()
         } catch (error) {
-          console.error('Background refresh failed:', error)
         }
       }, 2000)
     } catch (error) {

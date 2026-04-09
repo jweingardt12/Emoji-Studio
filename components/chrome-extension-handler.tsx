@@ -40,7 +40,6 @@ export function ChromeExtensionHandler() {
     try {
       // Validate we have actual emoji data
       if (!data.emojiData || !Array.isArray(data.emojiData)) {
-        console.error('[ChromeExtensionHandler] Invalid emoji data received:', typeof data.emojiData);
         throw new Error('Invalid emoji data format');
       }
 
@@ -139,7 +138,6 @@ export function ChromeExtensionHandler() {
         setLoadingStage("");
       }, 1000);
     } catch (error) {
-      console.error('[ChromeExtensionHandler] Error processing synced data:', error)
       toast.error('Failed to process synced data', {
         description: error instanceof Error ? error.message : 'Unknown error',
       })
@@ -253,7 +251,6 @@ export function ChromeExtensionHandler() {
         let errorMessage = "Failed to fetch emoji data"
         try {
           const errorData = JSON.parse(responseText)
-          console.error("[ChromeExtensionHandler] API error response:", errorData)
           errorMessage = errorData.error || errorMessage
           
           track('chrome_extension_api_error', {
@@ -262,7 +259,6 @@ export function ChromeExtensionHandler() {
             workspace: workspace,
           })
         } catch {
-          console.error("[ChromeExtensionHandler] Failed to parse error response:", responseText)
         }
         throw new Error(`API error: ${errorMessage}`)
       }
@@ -274,12 +270,10 @@ export function ChromeExtensionHandler() {
       try {
         responseData = JSON.parse(responseText)
       } catch (parseError) {
-        console.error("[ChromeExtensionHandler] Failed to parse response:", responseText)
         throw new Error("Invalid response format from server")
       }
 
       if (!responseData.emojis || !Array.isArray(responseData.emojis)) {
-        console.error("[ChromeExtensionHandler] Invalid data format:", responseData)
         throw new Error("Invalid emoji data format")
       }
 
@@ -345,7 +339,6 @@ export function ChromeExtensionHandler() {
       }, 2000)
 
     } catch (error) {
-      console.error('[ChromeExtensionHandler] Error processing extension data:', error)
       setError(error instanceof Error ? error.message : "Unknown error occurred")
       setIsLoading(false)
       setLoadingStage("")
@@ -452,6 +445,7 @@ export function ChromeExtensionHandler() {
   // Listen for sync progress messages from the extension
   useEffect(() => {
     const handleSyncProgress = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
       if (event.data?.type === 'EMOJI_STUDIO_SYNC_PROGRESS') {
         const { status, workspace, emojiCount, error } = event.data;
         

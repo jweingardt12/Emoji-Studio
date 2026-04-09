@@ -47,7 +47,6 @@ export async function loadModule<T>(
     const module = await importFn()
     return module
   } catch (error) {
-    console.error('Failed to load module:', error)
     onError?.(error as Error)
     return null
   }

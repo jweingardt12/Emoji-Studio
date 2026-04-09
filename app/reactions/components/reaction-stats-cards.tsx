@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Activity, Hash, Crown, TrendingUp, TrendingDown } from "lucide-react"
+import { Activity, Hash, Crown, TrendingUp, TrendingDown, MessageSquare } from "lucide-react"
 import type { ReactionStats } from "@/lib/services/reaction-service"
 
 interface ReactionStatsCardsProps {
@@ -46,7 +46,7 @@ export function ReactionStatsCards({
   const trendPositive = weekTrend >= 0
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       {/* Total Reactions */}
       <Card>
         <CardHeader className="pb-1">
@@ -56,7 +56,7 @@ export function ReactionStatsCards({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.total_reactions.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums">{stats.total_reactions.toLocaleString()}</div>
           <CardDescription className="text-xs mt-0.5">
             from {stats.unique_users.toLocaleString()} users
           </CardDescription>
@@ -72,9 +72,29 @@ export function ReactionStatsCards({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.unique_emojis.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums">{stats.unique_emojis.toLocaleString()}</div>
           <CardDescription className="text-xs mt-0.5">
             distinct emoji used
+          </CardDescription>
+        </CardContent>
+      </Card>
+
+      {/* Reactions / Message */}
+      <Card>
+        <CardHeader className="pb-1">
+          <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Reactions / Message
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold tabular-nums">
+            {stats.messages_with_reactions > 0
+              ? (stats.total_reactions / stats.messages_with_reactions).toFixed(1)
+              : "—"}
+          </div>
+          <CardDescription className="text-xs mt-0.5">
+            across {stats.messages_with_reactions.toLocaleString()} messages
           </CardDescription>
         </CardContent>
       </Card>
@@ -102,7 +122,7 @@ export function ReactionStatsCards({
               </div>
             </div>
           ) : (
-            <span className="text-2xl font-bold">—</span>
+            <span className="text-2xl font-bold tabular-nums">—</span>
           )}
         </CardContent>
       </Card>
@@ -128,7 +148,7 @@ export function ReactionStatsCards({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{thisWeekCount.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums">{thisWeekCount.toLocaleString()}</div>
           <CardDescription className="text-xs mt-0.5">
             {PERIOD_LABELS[dateRange]?.previous ?? "vs last week"}
           </CardDescription>

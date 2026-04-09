@@ -92,7 +92,6 @@ export async function encodeFramesToMp4(
 
       return blob
     } catch (error) {
-      console.warn("[VideoEncoder] WebCodecs failed, falling back to FFmpeg:", error)
       // Fall through to FFmpeg
     }
   }

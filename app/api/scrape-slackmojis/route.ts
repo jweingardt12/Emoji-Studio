@@ -143,7 +143,6 @@ export async function GET(request: NextRequest) {
         const url = `https://slackmojis.com/emojis/search?query=${encodeURIComponent(query)}`
         emojis = await scrapeEmojis(url)
       } catch (error) {
-        console.error("Slackmojis search failed:", error)
         // Return empty array instead of erroring - the client will handle it
         emojis = []
       }
@@ -188,7 +187,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(emojis)
   } catch (error) {
-    console.error("Error scraping Slackmojis:", error)
     return NextResponse.json(
       { error: "Failed to fetch emojis" },
       { status: 500 }

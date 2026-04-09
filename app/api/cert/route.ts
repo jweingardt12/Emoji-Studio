@@ -17,7 +17,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('Failed to serve certificate:', error)
     return NextResponse.json(
       { error: 'Certificate not found' },
       { status: 404 }

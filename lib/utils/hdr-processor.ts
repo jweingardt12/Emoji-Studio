@@ -86,7 +86,6 @@ export class HDRProcessor {
             URL.revokeObjectURL(imageUrl)
             resolve(jpegBlob)
           } catch (error) {
-            console.error('Error creating Apple HDR:', error)
             reject(error)
           }
         }
@@ -99,7 +98,6 @@ export class HDRProcessor {
         img.src = imageUrl
       })
     } catch (error) {
-      console.error('Error in createAppleHDR:', error)
       return null
     }
   }
@@ -379,7 +377,6 @@ export class HDRProcessor {
       
       return false
     } catch (error) {
-      console.error('Error checking HDR data:', error)
       return false
     }
   }
@@ -434,7 +431,6 @@ export class HDRProcessor {
             URL.revokeObjectURL(imageUrl)
             resolve(outputBlob)
           } catch (error) {
-            console.error('Error enhancing HDR:', error)
             reject(error)
           }
         }
@@ -447,7 +443,6 @@ export class HDRProcessor {
         img.src = imageUrl
       })
     } catch (error) {
-      console.error('Error in enhanceExistingHDR:', error)
       return null
     }
   }

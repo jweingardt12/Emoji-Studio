@@ -31,7 +31,7 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                         <ChartContainer
                             config={{
                                 ...chartData.topCreatorNames.reduce((acc: Record<string, any>, name: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
+                                    const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
                                     acc[name] = {
                                         label: name,
                                         color: COLORS[index % COLORS.length],
@@ -64,7 +64,7 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <ChartLegend />
                                 {chartData.topCreatorNames.map((name: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
+                                    const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
                                     return (
                                         <Area
                                             key={name}
@@ -97,8 +97,8 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                     <CardContent>
                         <ChartContainer
                             config={{
-                                newCreators: { label: "New Creators", color: "#00E396" },
-                                returningCreators: { label: "Returning Creators", color: "#008FFB" },
+                                newCreators: { label: "New Creators", color: "var(--chart-1)" },
+                                returningCreators: { label: "Returning Creators", color: "var(--chart-3)" },
                             }}
                             className="h-[300px] w-full"
                         >
@@ -120,13 +120,13 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                                 <Bar
                                     dataKey="newCreators"
                                     stackId="creators"
-                                    fill="#00E396"
+                                    fill="var(--chart-1)"
                                     radius={[0, 0, 0, 0]}
                                 />
                                 <Bar
                                     dataKey="returningCreators"
                                     stackId="creators"
-                                    fill="#008FFB"
+                                    fill="var(--chart-3)"
                                     radius={[4, 4, 0, 0]}
                                 />
                             </BarChart>

@@ -47,7 +47,6 @@ export async function POST(request: Request) {
       try {
         blobData = await fetch(blob).then(res => res.blob())
       } catch (fetchError) {
-        console.error("[Slack Upload] Failed to fetch blob:", fetchError)
         return NextResponse.json(
           { error: "Failed to fetch blob from URL - ensure URL is accessible" },
           { status: 400 }
@@ -89,14 +88,13 @@ export async function POST(request: Request) {
     try {
       responseData = JSON.parse(responseText)
     } catch (e) {
-      console.error("Failed to parse Slack response as JSON:", responseText)
       responseData = { error: "Invalid response from Slack", responseText }
     }
 
     // Check if Slack returned an error
     if (!response.ok || responseData.error || responseData.ok === false) {
       const slackError = responseData.error || "Unknown error"
-      console.error("[Slack Upload] Slack API error:", slackError, responseData)
+
 
       return NextResponse.json(
         {
@@ -121,8 +119,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error) {
-    console.error("[Slack Upload] Upload error:", error)
-    console.error("[Slack Upload] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network')

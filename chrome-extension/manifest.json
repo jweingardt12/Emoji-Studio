@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Emoji Studio for Slack",
+  "version": "2.2.0",
+  "description": "Sync Slack emojis to Emoji Studio, create custom emojis from any image/video, and manage your workspace's emoji collection.",
+  "permissions": [
+    "storage",
+    "webRequest",
+    "tabs",
+    "scripting",
+    "alarms",
+    "contextMenus",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://slack.com/*",
+    "https://*.slack.com/*",
+    "https://app.emojistudio.xyz/*",
+    "https://emojistudio.xyz/*",
+    "https://*.slackmojis.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.slack.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://app.emojistudio.xyz/*", "https://emojistudio.xyz/*"],
+      "js": ["inject.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.slackmojis.com/*", "https://slackmojis.com/*"],
+      "js": ["slackmojis-content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["inject.js"],
+      "matches": ["https://*.slack.com/*"]
+    },
+    {
+      "resources": ["logo.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

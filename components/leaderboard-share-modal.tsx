@@ -191,7 +191,6 @@ export function LeaderboardShareModal({
           img.src = dataUrl
         }
       } catch (error) {
-        console.warn("Failed to convert image to data URL:", img.src, error)
       }
     })
 
@@ -359,7 +358,6 @@ export function LeaderboardShareModal({
 
         return { frames, delays, x, y, width, height }
       } catch (error) {
-        console.warn("Failed to extract GIF frames:", gifUrl, error)
         return null
       }
     })
@@ -497,7 +495,6 @@ export function LeaderboardShareModal({
         show_emojis: showEmojis,
       })
     } catch (error) {
-      console.error("Failed to copy:", error)
       if (isIOS() || isWebView()) {
         toast.error("Copying failed on this device. Use Share instead.", { duration: 4000 })
       } else {
@@ -551,7 +548,6 @@ export function LeaderboardShareModal({
         toast.error(downloadResult.message, { duration: 4000 })
       }
     } catch (error) {
-      console.error("Failed to download:", error)
       if (isIOS() || isWebView()) {
         toast.error("Download failed. Try using Share instead.", { duration: 4000 })
       } else {
@@ -612,7 +608,6 @@ export function LeaderboardShareModal({
       }
     } catch (error) {
       toast.error("Failed to share")
-      console.error(error)
     } finally {
       restoreImages?.()
       setIsGenerating(false)
@@ -641,7 +636,6 @@ export function LeaderboardShareModal({
       if (!copyResult.success) {
         // Fallback: download the image if clipboard fails
         const downloadResult = await downloadImage(blob, `${baseFilename}.png`)
-        console.warn("Clipboard copy failed, downloaded instead")
 
         if (downloadResult.success) {
           if (isIOS() || isWebView()) {
@@ -669,7 +663,6 @@ export function LeaderboardShareModal({
       })
     } catch (error) {
       toast.error("Failed to share to LinkedIn")
-      console.error(error)
     } finally {
       restoreImages?.()
       setIsGenerating(false)

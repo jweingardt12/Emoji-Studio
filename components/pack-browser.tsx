@@ -128,7 +128,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
         }
       }
     } catch (error) {
-      console.error('Failed to restore selections:', error)
     }
   }, [])
 
@@ -141,7 +140,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       }
       localStorage.setItem('pack-browser-selections', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save selections:', error)
     }
   }, [selectedIds, customNames])
 
@@ -196,7 +194,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
               return next
             })
           } catch (error) {
-            console.error(`Failed to check ${displayName}:`, error)
             if (cancelled) return
 
             setNameStatuses((prev) => {
@@ -238,7 +235,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       setPopularEmojis(popular)
     } catch (error) {
       toast.error("Failed to load emoji packs")
-      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -283,7 +279,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       }
     } catch (error) {
       toast.error(`Failed to load ${tab} pack`)
-      console.error(error)
     } finally {
       setLoading(false)
     }
@@ -297,7 +292,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
       setSearchResults(results || [])
     } catch (error) {
       toast.error("Search failed")
-      console.error(error)
       setSearchResults([]) // Set empty array on error
     } finally {
       setLoading(false)
@@ -393,7 +387,6 @@ export function usePackBrowser(maxSelection: number = 20, existingEmojis: any[] 
     try {
       localStorage.removeItem('pack-browser-selections')
     } catch (error) {
-      console.error('Failed to clear selections from localStorage:', error)
     }
   }
 

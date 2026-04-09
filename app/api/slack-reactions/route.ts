@@ -125,7 +125,6 @@ export async function POST(request: NextRequest) {
         : undefined,
     })
   } catch (err: unknown) {
-    console.error("Slack reactions proxy error:", err)
     const sanitized = sanitizeErrorResponse(err, "Reactions proxy request failed")
     return NextResponse.json({ error: sanitized.message }, { status: 500 })
   }

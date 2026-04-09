@@ -39,7 +39,7 @@ export const OverviewTab = memo(({
                         config={{
                             count: {
                                 label: "",
-                                color: "#4169E1"
+                                color: "var(--chart-1)"
                             },
                             label: {
                                 color: "var(--background)"
@@ -81,7 +81,7 @@ export const OverviewTab = memo(({
                             <Bar
                                 dataKey="count"
                                 layout="vertical"
-                                fill="#4169E1"
+                                fill="var(--chart-1)"
                                 radius={4}
                                 onClick={handleDateClick}
                                 style={{ cursor: 'pointer' }}
@@ -134,10 +134,7 @@ export const OverviewTab = memo(({
                         config={{
                             count: {
                                 label: "",
-                                theme: {
-                                    light: "#8884d8",
-                                    dark: "#8884d8"
-                                }
+                                color: "var(--chart-2)"
                             }
                         }}
                     >
@@ -177,9 +174,9 @@ export const OverviewTab = memo(({
                                 type="monotone"
                                 dataKey="count"
                                 strokeWidth={2}
-                                activeDot={{ r: 4, strokeWidth: 0, fill: "#008FFB" }}
-                                dot={{ r: 2, strokeWidth: 0, fill: "#008FFB" }}
-                                stroke="#008FFB"
+                                activeDot={{ r: 4, strokeWidth: 0, fill: "var(--chart-2)" }}
+                                dot={{ r: 2, strokeWidth: 0, fill: "var(--chart-2)" }}
+                                stroke="var(--chart-2)"
                                 isAnimationActive={false}
                             />
                         </LineChart>
@@ -215,7 +212,7 @@ export const OverviewTab = memo(({
                 <CardContent>
                     <ChartContainer
                         config={{
-                            count: { label: "Active Creators", color: "#06b6d4" },
+                            count: { label: "Active Creators", color: "var(--chart-3)" },
                         }}
                         className="h-[300px] w-full"
                     >
@@ -225,8 +222,8 @@ export const OverviewTab = memo(({
                         >
                             <defs>
                                 <linearGradient id="fillCreators" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1} />
+                                    <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0.1} />
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -249,7 +246,7 @@ export const OverviewTab = memo(({
                             <Area
                                 type="step"
                                 dataKey="count"
-                                stroke="#06b6d4"
+                                stroke="var(--chart-3)"
                                 fill="url(#fillCreators)"
                                 fillOpacity={1}
                             />

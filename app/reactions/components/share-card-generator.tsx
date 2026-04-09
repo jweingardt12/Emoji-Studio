@@ -368,7 +368,6 @@ export function ShareCardGenerator({
       toast.success("Card downloaded!")
       onDownload?.()
     } catch (err) {
-      console.error("Download error:", err)
       toast.error("Failed to generate card")
     } finally {
       setIsGenerating(false)
@@ -391,7 +390,6 @@ export function ShareCardGenerator({
       onCopy?.()
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error("Copy error:", err)
       toast.error("Copy failed — try Download instead")
     } finally {
       setIsGenerating(false)

@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(`Image proxy: Failed to fetch ${imageUrl}, status: ${response.status}`);
       return new NextResponse(`Failed to fetch image: ${response.status} ${response.statusText}`, {
         status: response.status,
       });
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest) {
     return new NextResponse(imageBlob, { status: 200, headers });
 
   } catch (error: unknown) {
-    console.error(`Image proxy error for URL ${imageUrl}:`, error);
     const sanitized = sanitizeErrorResponse(error, "Error fetching image")
     return new NextResponse(sanitized.message, { status: 500 });
   }

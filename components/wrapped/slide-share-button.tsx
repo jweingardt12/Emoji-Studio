@@ -65,7 +65,6 @@ export function SlideShareButton({
 
       return blob
     } catch (error) {
-      console.error("Failed to capture slide:", error)
       toast.error("Failed to capture slide")
       onCaptureEnd?.()
       return null
@@ -102,7 +101,6 @@ export function SlideShareButton({
         toast.error(result.message)
       }
     } catch (error) {
-      console.error("Failed to copy:", error)
       if (isIOS() || isWebView()) {
         toast.error("Copying failed on this device. Use Share instead.", { duration: 4000 })
       } else {
@@ -142,7 +140,6 @@ export function SlideShareButton({
         toast.error(result.message, { duration: 4000 })
       }
     } catch (error) {
-      console.error("Failed to download:", error)
       if (isIOS() || isWebView()) {
         toast.error("Download failed. Try using Share instead.", { duration: 4000 })
       } else {
@@ -182,7 +179,6 @@ export function SlideShareButton({
         toast.error(result.message, { duration: 4000 })
       }
     } catch (error) {
-      console.error("Failed to share:", error)
       toast.error("Failed to share")
     } finally {
       setIsGenerating(false)
@@ -211,7 +207,6 @@ export function SlideShareButton({
 
       toast.success("Image ready! Long-press to save.", { duration: 4000 })
     } catch (error) {
-      console.error("Failed to generate image:", error)
       toast.error("Failed to generate image")
     } finally {
       setIsGenerating(false)

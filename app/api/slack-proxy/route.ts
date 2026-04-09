@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
       headers: resHeaders,
     })
   } catch (err: unknown) {
-    console.error("Slack proxy error:", err)
     const sanitized = sanitizeErrorResponse(err, "Proxy request failed")
     return NextResponse.json({ error: sanitized.message }, { status: 500 })
   }

@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
     // Validate origin
     const origin = request.headers.get('origin')
     if (!isAllowedOrigin(origin)) {
-      console.warn(`[Sync API] Rejected request from unauthorized origin: ${origin}`)
       return NextResponse.json(
         { error: 'Unauthorized origin' },
         { status: 403 }
@@ -62,7 +61,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (invalidEmojis.length > 0) {
-      console.warn(`[Sync API] Found ${invalidEmojis.length} invalid emoji objects (missing name field)`)
     }
 
     // Note: This endpoint currently validates the data and returns success.
@@ -81,7 +79,7 @@ export async function POST(request: NextRequest) {
       invalidEmojis: invalidEmojis.length
     })
   } catch (error) {
-    console.error('[Sync API] Error processing sync request:', error)
+
 
     const sanitized = sanitizeErrorResponse(error, 'Failed to process sync request')
     return NextResponse.json(

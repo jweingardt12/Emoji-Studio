@@ -51,14 +51,6 @@ export class GifCanvasFrameExtractor {
         const imgHeight = img.naturalHeight || img.height || reader.height
         
         if (imgWidth === 0 || imgHeight === 0) {
-          console.error('[GifCanvasFrameExtractor] Invalid image dimensions for single frame:', { 
-            naturalWidth: img.naturalWidth, 
-            naturalHeight: img.naturalHeight,
-            width: img.width,
-            height: img.height,
-            readerWidth: reader.width,
-            readerHeight: reader.height
-          })
           throw new Error('Invalid image dimensions - cannot extract frame')
         }
         
@@ -116,14 +108,6 @@ export class GifCanvasFrameExtractor {
       const imgHeight = img.naturalHeight || img.height || reader.height
       
       if (imgWidth === 0 || imgHeight === 0) {
-        console.error('[GifCanvasFrameExtractor] Invalid image dimensions:', { 
-          naturalWidth: img.naturalWidth, 
-          naturalHeight: img.naturalHeight,
-          width: img.width,
-          height: img.height,
-          readerWidth: reader.width,
-          readerHeight: reader.height
-        })
         throw new Error('Invalid image dimensions - cannot extract frames')
       }
       
@@ -186,7 +170,6 @@ export class GifCanvasFrameExtractor {
       
       // If we only captured 1 frame but the GIF has multiple frames, this method failed
       if (frames.length <= 1 && reader.numFrames() > 1) {
-        console.warn('[GifCanvasFrameExtractor] Failed to capture animated frames - only got 1 unique frame')
         throw new Error('Canvas extraction failed to capture animated frames')
       }
       

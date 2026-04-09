@@ -33,7 +33,6 @@ export class GifFrameExtractor {
         return frames
       }
     } catch (error) {
-      console.warn('[GifFrameExtractor] Gifuct extraction failed:', error)
     }
     
     // Method 2: omggif as second option (faster than ImageDecoder)
@@ -44,7 +43,6 @@ export class GifFrameExtractor {
         return frames
       }
     } catch (error) {
-      console.warn('[GifFrameExtractor] Omggif extraction failed:', error)
     }
     
     // Method 3: Browser-native ImageDecoder as last resort (can be slow)
@@ -56,12 +54,10 @@ export class GifFrameExtractor {
           return frames
         }
       } catch (error) {
-        console.warn('[GifFrameExtractor] Native extraction failed:', error)
       }
     }
     
     // Last resort: single frame
-    console.warn('[GifFrameExtractor] All methods failed, extracting single frame')
     return await this.extractSingleFrame(file)
   }
   
@@ -244,7 +240,6 @@ export class GifFrameExtractor {
       onProgress?.(10 + (i / frames.length) * 80, `Processing frame ${i + 1} of ${frames.length}...`)
       
       if (!frame.patch || frame.patch.length === 0) {
-        console.warn(`Frame ${i} has no patch data`)
         continue
       }
       
@@ -490,7 +485,6 @@ export class GifFrameExtractor {
       // Extract frames
       const frames = await this.extractFrames(file)
       if (frames.length === 0) {
-        console.warn('[GifFrameExtractor] No frames extracted, returning original')
         return file
       }
       
@@ -508,7 +502,6 @@ export class GifFrameExtractor {
         (targetSize - scaledHeight) / 2
       )
     } catch (error) {
-      console.error('Failed to process animated GIF:', error)
       throw error
     }
   }
@@ -589,7 +582,6 @@ export class GifFrameExtractor {
       })
       
       gif.on('error' as any, (error: any) => {
-        console.error('GIF encoding error:', error)
         reject(error)
       })
       

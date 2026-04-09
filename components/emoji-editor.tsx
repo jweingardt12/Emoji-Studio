@@ -128,7 +128,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
     }
     
     img.onerror = (error) => {
-      console.error('Failed to load image:', error)
     }
     
     img.src = URL.createObjectURL(emoji.processedBlob || emoji.originalFile)
@@ -459,7 +458,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
         setAdjustmentError(null)
         applyAdjustments()
       } catch (err) {
-        console.error("Error applying adjustments:", err)
         setAdjustmentError(err instanceof Error ? err.message : "Failed to apply image adjustments")
         toast.error("Failed to apply image adjustments")
       }
@@ -511,7 +509,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
             })
           }
         } catch (hdrError) {
-          console.error('HDR processing error:', hdrError)
           toast("HDR processing error", {
             description: "Using enhanced standard format"
           })
@@ -550,7 +547,6 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
       })
       onClose()
     } catch (error) {
-      console.error("Failed to save edited emoji:", error)
       toast("Failed to save edited emoji", {
         description: error instanceof Error ? error.message : "Unknown error"
       })

@@ -29,7 +29,6 @@ export class AnimatedGifProcessor {
             return result
           }
         } catch (error) {
-          console.error(`Failed with quality ${settings.quality}:`, error)
         }
       }
 
@@ -40,7 +39,6 @@ export class AnimatedGifProcessor {
           return lastResort
         }
       } catch (error) {
-        console.error('Failed to create highly compressed GIF:', error)
       }
 
       // As a final fallback, just resize the original without re-encoding
@@ -156,7 +154,6 @@ export class AnimatedGifProcessor {
           }
         }
       } catch (error) {
-        console.warn('Failed to extract GIF frames, using static approach:', error)
         // Fallback: just add the same frame multiple times
         for (let i = 0; i < 10; i++) {
           ctx.fillStyle = 'white'

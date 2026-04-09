@@ -102,7 +102,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setDemoLoading(false)
         }
       } catch (error) {
-        console.error("Error loading demo data:", error)
         if (isMounted) {
           setDemoLoading(false)
         }
@@ -139,7 +138,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setDemoLeaderboard(leaderboard)
         }
       } catch (error) {
-        console.error("Error loading enhanced demo data:", error)
         // We already have the basic demo data loaded, so this is non-critical
       }
     }
@@ -166,7 +164,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setDemoChartData(chartData)
         }
       } catch (error) {
-        console.error("Error loading enhanced chart data:", error)
         // We already have basic chart data, so this is non-critical
       }
     }
@@ -215,7 +212,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setUseDemoData(false)
       }
     } catch (err) {
-      console.error("Error loading emoji data from storage:", err)
       setError(err instanceof Error ? err.message : "Failed to load emoji data")
       setHasRealData(false)
       setUseDemoData(false)
@@ -256,8 +252,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setLoading(false);
       } else {
         // WARNING: This should never happen - events must include data
-        console.error("[EmojiDataContext] emojiDataUpdated event missing data! This can cause stale data issues.");
-        console.error("[EmojiDataContext] Event detail:", customEvent.detail);
         // Do NOT reload from storage - this was causing the race condition
       }
     }
@@ -292,7 +286,6 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         })
         hasShownStorageWarningRef.current = true
       } else {
-        console.warn(`[EmojiDataContext] Storage warning repeated from ${source ?? "unknown"}: ${reason}`)
       }
     }
 

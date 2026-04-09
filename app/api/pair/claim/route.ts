@@ -27,7 +27,6 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ curl: result.curl })
   } catch (e: any) {
-    console.error("[/api/pair/claim] Internal error:", e)
     return NextResponse.json({ error: e?.message || "Internal error" }, { status: 500 })
   }
 }

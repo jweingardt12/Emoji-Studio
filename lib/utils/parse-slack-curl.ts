@@ -36,7 +36,6 @@ export function validateStructuredAuthData(authData: any) {
   )
 
   if (!isValidToken && token) {
-    console.warn('[Auth Validation] Token does not match expected Slack format (xoxc-, xoxd-, etc.)')
   }
 
   return {

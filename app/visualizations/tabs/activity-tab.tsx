@@ -67,7 +67,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                         {isClient && (
                             <ChartContainer
                                 config={{
-                                    count: { label: "Emojis Created", color: "#8b5cf6" }
+                                    count: { label: "Emojis Created", color: "var(--chart-4)" }
                                 }}
                                 className="mx-auto aspect-square max-h-[350px]"
                             >
@@ -116,8 +116,8 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                     <CardContent>
                         <ChartContainer
                             config={{
-                                images: { label: "Static Images", color: "#00E396" },
-                                gifs: { label: "Animated GIFs", color: "#FF4560" },
+                                images: { label: "Static Images", color: "var(--chart-1)" },
+                                gifs: { label: "Animated GIFs", color: "var(--chart-3)" },
                             }}
                             className="h-[300px] w-full"
                         >
@@ -127,12 +127,12 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                             >
                                 <defs>
                                     <linearGradient id="fillImages" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#00E396" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#00E396" stopOpacity={0.1} />
+                                        <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.1} />
                                     </linearGradient>
                                     <linearGradient id="fillGifs" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#FF4560" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#FF4560" stopOpacity={0.1} />
+                                        <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0.1} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -157,7 +157,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     type="monotone"
                                     dataKey="images"
                                     stackId="1"
-                                    stroke="#00E396"
+                                    stroke="var(--chart-1)"
                                     fill="url(#fillImages)"
                                     fillOpacity={1}
                                 />
@@ -165,7 +165,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     type="monotone"
                                     dataKey="gifs"
                                     stackId="1"
-                                    stroke="#FF4560"
+                                    stroke="var(--chart-3)"
                                     fill="url(#fillGifs)"
                                     fillOpacity={1}
                                 />
@@ -194,7 +194,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                         <ChartContainer
                             config={{
                                 ...chartData.seasonalYears.reduce((acc: Record<string, any>, year: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
+                                    const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
                                     acc[year] = {
                                         label: year,
                                         color: COLORS[index % COLORS.length],
@@ -219,7 +219,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                 <ChartTooltip content={<ChartTooltipContent />} />
                                 <ChartLegend />
                                 {chartData.seasonalYears.map((year: string, index: number) => {
-                                    const COLORS = ['#FF4560', '#00E396', '#FEB019', '#008FFB', '#775DD0', '#2E93FA', '#F9A3A4', '#26C6DA', '#64C2A6', '#AECB4F', '#EE6868', '#A86CE4'];
+                                    const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
                                     return (
                                         <Area
                                             key={year}
@@ -245,8 +245,8 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                     <CardContent>
                         <ChartContainer
                             config={{
-                                count: { label: "Emojis per Week", color: "#8b5cf6" },
-                                movingAvg: { label: "4-Week Average", color: "#06b6d4" },
+                                count: { label: "Emojis per Week", color: "var(--chart-1)" },
+                                movingAvg: { label: "4-Week Average", color: "var(--chart-4)" },
                             }}
                             className="h-[300px] w-full"
                         >
@@ -256,8 +256,8 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                             >
                                 <defs>
                                     <linearGradient id="fillVelocity" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
+                                        <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
+                                        <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.1} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -274,14 +274,14 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                 <Area
                                     type="monotone"
                                     dataKey="count"
-                                    stroke="#8b5cf6"
+                                    stroke="var(--chart-1)"
                                     fill="url(#fillVelocity)"
                                     fillOpacity={1}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="movingAvg"
-                                    stroke="#06b6d4"
+                                    stroke="var(--chart-4)"
                                     strokeWidth={2}
                                     dot={false}
                                 />

@@ -90,7 +90,6 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
       } else {
         // Modern API
         if (!videoRef.current) {
-          console.error("Video element not ready")
           // Wait a bit for video element to be ready
           await new Promise(resolve => setTimeout(resolve, 100))
           if (!videoRef.current) return
@@ -118,7 +117,6 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
       await new Promise((resolve) => {
         if (!videoRef.current) return resolve(undefined)
         videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().then(resolve).catch(console.error)
         }
       })
       
@@ -139,7 +137,6 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
               }
             }
           } catch (err) {
-            console.error("BarcodeDetector error:", err)
           }
           rafRef.current = requestAnimationFrame(tick)
         }
@@ -192,7 +189,6 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
               return
             }
           } catch (err) {
-            console.error("jsQR scanning error:", err)
           }
           rafRef.current = requestAnimationFrame(tick)
         }
@@ -203,7 +199,6 @@ export function QrScanDialog({ open, onOpenChange, onDetected }: {
         }, 500)
       }
     } catch (e: any) {
-      console.error("Camera error:", e)
       setCameraStatus('error')
       
       // Provide more helpful error messages

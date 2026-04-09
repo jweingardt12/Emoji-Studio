@@ -8,7 +8,7 @@ import dynamic from "next/dynamic"
 import { staggerContainer, fadeUp } from "@/lib/motion"
 const ChartAreaInteractive = dynamic(
   () => import("@/components/chart-area-interactive").then(mod => mod.ChartAreaInteractive),
-  { ssr: false, loading: () => <div className="h-[300px] rounded-xl border border-muted/40 bg-card/50 animate-pulse" /> }
+  { ssr: false, loading: () => <div className="h-[250px] rounded-xl border border-muted/40 bg-card/50 animate-pulse" /> }
 )
 import { SectionCards } from "@/components/section-cards"
 
@@ -30,6 +30,11 @@ import {
   EmptyStateEmojis,
 } from "@/components/dashboard-loading-states"
 import { DashboardUsageSummary } from "@/components/dashboard-usage-summary"
+import Leaderboard from "@/components/leaderboard"
+import EmojiGrid from "@/components/emoji-grid"
+import { Card } from "@/components/ui/card"
+import { Trophy, Clock, ArrowRight } from "lucide-react"
+import Link from "next/link"
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
@@ -42,6 +47,8 @@ function DashboardPage() {
   useEffect(() => {
     // Listen for Chrome extension messages to add emojis from Slackmojis
     const handleExtensionMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
+
       if (event.data.type === 'EMOJI_STUDIO_ADD_EMOJI') {
         const emojiData = event.data.data;
         if (!emojiData || !emojiData.url || !emojiData.name) {
@@ -59,7 +66,6 @@ function DashboardPage() {
           }));
           window.location.href = createUrl.toString();
         } catch (error) {
-          console.error("Failed to handle extension emoji:", error)
         }
       }
     };
@@ -172,7 +178,7 @@ function DashboardPage() {
   // Show loading skeletons while data is loading
   if (loading && !hasRealData && !useDemoData) {
     return (
-      <div className="flex flex-col gap-4 py-3 sm:gap-5 sm:py-4 md:gap-6 md:py-6">
+      <div className="flex flex-col gap-4 md:gap-5 py-3 sm:py-4">
         <div className="px-3 sm:px-4 lg:px-6">
           <DashboardHeroSkeleton />
         </div>
@@ -199,7 +205,7 @@ function DashboardPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-6 md:gap-8 w-full pb-8"
+      className="flex flex-col gap-4 md:gap-5 w-full pb-8"
       variants={staggerContainer()}
       initial="hidden"
       animate="show"
@@ -222,50 +228,92 @@ function DashboardPage() {
         <RefreshButton />
       </div>
 
-      {/* Hero Metrics */}
-      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-8">
+      {/* Row 1: Compact Metrics Strip */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 pt-2 md:pt-4">
         {loading && !showDemoData ? (
-          <div className="grid grid-cols-1 gap-4">
-            <div className="rounded-xl bg-card border border-border shadow-sm p-6">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-10 w-32 mb-2" />
-              <Skeleton className="h-3 w-40" />
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl bg-card border border-border shadow-sm p-4">
-                  <Skeleton className="h-3 w-20 mb-2" />
-                  <Skeleton className="h-6 w-16" />
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl bg-card border border-border shadow-sm p-3">
+                <Skeleton className="h-3 w-20 mb-2" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+            ))}
           </div>
         ) : (
           <SectionCards />
         )}
       </motion.div>
 
-      {/* Chart + Usage Summary -- Bento grid on desktop */}
+      {/* Main content: 2-column bento on desktop, stacked on mobile */}
       <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-          {loading && !showDemoData ? (
-            <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs p-4 sm:p-6 flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
-                <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
-                <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
+        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 lg:items-start">
+          {/* Left column: Chart + Usage Summary */}
+          <div className="flex flex-col gap-4">
+            {loading && !showDemoData ? (
+              <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs p-4 sm:p-6 flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
+                  <Skeleton className="h-5 sm:h-6 w-36 sm:w-48" />
+                  <Skeleton className="h-7 sm:h-8 w-28 sm:w-32" />
+                </div>
+                <div className="h-[200px] sm:h-[250px] w-full"><Skeleton className="h-full w-full" /></div>
               </div>
-              <Skeleton className="h-7 sm:h-8 w-32 sm:w-40 mb-2" />
-              <div className="h-[200px] sm:h-[250px] w-full"><Skeleton className="h-full w-full" /></div>
-            </div>
-          ) : (
-            <ChartAreaInteractive />
-          )}
-          <DashboardUsageSummary />
+            ) : (
+              <ChartAreaInteractive />
+            )}
+            <DashboardUsageSummary />
+          </div>
+
+          {/* Right column: Leaderboard + Recent Emojis (desktop only) */}
+          <div className="hidden lg:flex flex-col gap-4">
+            <Card className="overflow-hidden py-0 gap-0 rounded-xl">
+              <div className="px-4 py-3 border-b border-border/50 bg-muted/30 flex items-center justify-between">
+                <h2 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Leaderboard
+                </h2>
+                <Link href="/leaderboard" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 -mr-2 rounded-md">
+                  View all
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
+              </div>
+              <div className="p-0">
+                <Leaderboard
+                  leaderboard={filteredLeaderboard}
+                  dateRange={dateRange}
+                  setDateRange={setDateRange}
+                  searchQuery={searchQuery}
+                  showInactiveUsers={showInactiveUsers}
+                  setShowInactiveUsers={setShowInactiveUsers}
+                  onViewUser={onViewUser}
+                  variant="compact"
+                />
+              </div>
+            </Card>
+          </div>
         </div>
       </motion.div>
 
-      {/* Tabbed Content */}
-      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
+      {/* Recent Emojis — full width (desktop) */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 hidden lg:block">
+        <Card className="overflow-hidden py-0 gap-0 rounded-xl">
+          <div className="px-4 py-3 border-b border-border/50 bg-muted/30 flex items-center justify-between">
+            <h2 className="text-sm font-semibold tracking-tight flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+              Recent Emojis
+            </h2>
+            <Link href="/explorer?sort=newest" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 -mr-2 rounded-md">
+              View all
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="p-4">
+            <EmojiGrid limit={10} />
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Mobile: Tabbed Content (leaderboard + recent emojis) */}
+      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:hidden">
         <DashboardTabbedContent
           filteredLeaderboard={filteredLeaderboard}
           dateRange={dateRange}

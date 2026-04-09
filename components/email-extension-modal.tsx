@@ -91,12 +91,13 @@ export function EmailExtensionModal({ open, onClose }: EmailExtensionModalProps)
     track("email_extension_requested", { email, source: "wrapped-landing" })
 
     try {
-      const response = await fetch("https://cloud.activepieces.com/api/v1/webhooks/npaUNTnqNEkH05cg06hhx", {
+      const response = await fetch("/api/webhook-relay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          type: "email-capture",
           email,
           timestamp: new Date().toISOString(),
           source: "emoji-studio-wrapped-mobile",
@@ -117,7 +118,6 @@ export function EmailExtensionModal({ open, onClose }: EmailExtensionModalProps)
         handleClose()
       }, 5000)
     } catch (err) {
-      console.error("Error submitting email:", err)
       track("email_extension_error", { error: err instanceof Error ? err.message : "Unknown error" })
       toast.error("Failed to send email. Please try again.")
     } finally {

@@ -108,7 +108,6 @@ export class GifVideoProcessor {
           }
 
           // If all attempts fail, force create a very small GIF but still use max frames
-          console.warn('All quality settings exceeded size limit, creating minimal GIF...')
           const speedup = Math.ceil(duration * 10) / maxFrames
           const minimalResult = await this.tryCreateGif(
             video,

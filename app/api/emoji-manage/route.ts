@@ -168,7 +168,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Emoji management error:', error)
     const sanitized = sanitizeErrorResponse(error, 'Failed to manage emoji')
     return NextResponse.json({
       error: sanitized.message,

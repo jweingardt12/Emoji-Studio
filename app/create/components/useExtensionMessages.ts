@@ -20,6 +20,8 @@ export function useExtensionMessages({
   const track = useTrack()
 
   const handleExtensionMessage = useCallback(async (event: MessageEvent) => {
+    if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
+
     if (event.data.type === 'EMOJI_STUDIO_CART_DATA') {
       const cartData = event.data.data
       const emojis = cartData?.emojis || []
@@ -56,7 +58,6 @@ export function useExtensionMessages({
 
             files.push(file)
           } catch (error) {
-            console.error(`[Create Page] Failed to process emoji ${emoji.name}:`, error)
           }
         }
 
@@ -84,7 +85,6 @@ export function useExtensionMessages({
       const isHDR = event.data.isHDR || event.data.data?.isHDR
 
       if (!imageUrl) {
-        console.error('[Create Page] No image URL found in extension message')
         return
       }
 
@@ -150,7 +150,6 @@ export function useExtensionMessages({
             : imageUrl
           const response = await fetch(fetchUrl)
           if (!response.ok) {
-            console.error('[Create Page] Fetch failed with status:', response.status)
             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
           }
 
@@ -207,7 +206,6 @@ export function useExtensionMessages({
         }, 500)
 
       } catch (error) {
-        console.error('Failed to load image from extension:', error)
         toast.error("Failed to load image", {
           description: error instanceof Error ? error.message : "Unknown error occurred",
         })
@@ -255,10 +253,8 @@ export function useExtensionMessages({
             }
           })
           .catch(error => {
-            console.error('[Create Page] Error converting data URL to file:', error)
           })
       } catch (error) {
-        console.error('[Create Page] Failed to process pending file:', error)
       }
     }
 
@@ -285,7 +281,6 @@ export function useExtensionMessages({
             } as MessageEvent)
           }, 500)
         } catch (error) {
-          console.error('[Create Page] Failed to parse pending emoji data:', error)
         }
       }
     } else if (urlParams.get('from') === 'extension-cart') {

@@ -140,15 +140,15 @@ export function SectionCards() {
 
   if (loading && !useDemoData) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="border-muted/40 shadow-xs bg-card/50">
-            <CardHeader className="p-4">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-8 w-32" />
+          <Card key={i} className="border-muted/40 shadow-xs bg-card/50 py-2 gap-0 rounded-xl">
+            <CardHeader className="p-3">
+              <Skeleton className="h-3 w-20 mb-2" />
+              <Skeleton className="h-6 w-16" />
             </CardHeader>
-            <CardFooter className="p-4 pt-0">
-              <Skeleton className="h-4 w-full" />
+            <CardFooter className="p-3 pt-0">
+              <Skeleton className="h-3 w-full" />
             </CardFooter>
           </Card>
         ))}
@@ -172,15 +172,15 @@ export function SectionCards() {
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
   return (
-    <div className="space-y-4">
-      {/* Total Emojis -- Hero */}
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Total Emojis */}
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" aria-label={`Total Emojis: ${totalNonAliasEmojis.toLocaleString()} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Total Emojis</CardTitle>
+            <Card tabIndex={0} role="button" aria-label={`Total Emojis: ${totalNonAliasEmojis.toLocaleString()} — tap for details`} className="group relative overflow-hidden border-border shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full py-2 gap-0 rounded-xl">
+              <CardHeader className="p-3 pb-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total Emojis</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -203,11 +203,11 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <NumberTicker value={totalNonAliasEmojis} className="text-4xl sm:text-5xl font-bold tracking-tight" />
+                  <NumberTicker value={totalNonAliasEmojis} className="text-2xl sm:text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
-              <CardFooter className="p-4 pt-0">
-                <p className="text-xs text-muted-foreground">
+              <CardFooter className="p-3 pt-0">
+                <p className="text-[11px] text-muted-foreground">
                   {totalNonAliasEmojis > emojisLastYear.length ? "Up from" : "Down from"} {emojisLastYear.length.toLocaleString()} last year
                 </p>
               </CardFooter>
@@ -232,16 +232,14 @@ export function SectionCards() {
           </div>
         </InfoDrawerResponsive>
       </motion.div>
-      {/* Secondary metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {/* AEU */}
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" aria-label={`Active Uploaders: ${aeu} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Active Uploaders</CardTitle>
+            <Card tabIndex={0} role="button" aria-label={`Active Uploaders: ${aeu} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full py-2 gap-0 rounded-xl">
+              <CardHeader className="p-3 pb-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active Uploaders</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -254,16 +252,16 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <NumberTicker value={aeu} className="text-3xl font-bold tracking-tight" />
+                  <NumberTicker value={aeu} className="text-2xl sm:text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
-              <CardFooter className="p-4 pt-0">
-                <p className="text-xs text-muted-foreground">
+              <CardFooter className="p-3 pt-0">
+                <p className="text-[11px] text-muted-foreground">
                   {aeu === 0
-                    ? "No active uploaders this week"
+                    ? "No uploaders this week"
                     : aeuChange >= 0
-                      ? "Active community participation"
-                      : "Decrease in active uploaders"}
+                      ? "Active participation"
+                      : "Fewer uploaders"}
                 </p>
               </CardFooter>
             </Card>
@@ -284,8 +282,8 @@ export function SectionCards() {
             </ChartContainer>
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
-            <p><strong>What:</strong> Number of unique users who have added emojis in the last 7 days.</p>
-            <p><strong>Why:</strong> Shows team's engagement and participation.</p>
+            <p><strong>What:</strong> Unique users who added emojis in 7 days.</p>
+            <p><strong>Why:</strong> Shows team engagement.</p>
           </div>
         </InfoDrawerResponsive>
       </motion.div>
@@ -293,10 +291,10 @@ export function SectionCards() {
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" aria-label={`Emojis Per User: ${emojisPerUser.toFixed(1)} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per User</CardTitle>
+            <Card tabIndex={0} role="button" aria-label={`Emojis Per User: ${emojisPerUser.toFixed(1)} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full py-2 gap-0 rounded-xl">
+              <CardHeader className="p-3 pb-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Per User</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -317,16 +315,16 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <NumberTicker value={emojisPerUser} decimalPlaces={1} className="text-3xl font-bold tracking-tight" />
+                  <NumberTicker value={emojisPerUser} decimalPlaces={1} className="text-2xl sm:text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
-              <CardFooter className="p-4 pt-0">
-                <p className="text-xs text-muted-foreground">
+              <CardFooter className="p-3 pt-0">
+                <p className="text-[11px] text-muted-foreground">
                   {activeUsersCount === 0
                     ? "No activity this week"
                     : emojisPerUser > 10
-                      ? "Healthy engagement levels"
-                      : "Low engagement per user"}
+                      ? "Healthy engagement"
+                      : "Low engagement"}
                 </p>
               </CardFooter>
             </Card>
@@ -346,7 +344,7 @@ export function SectionCards() {
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Avg. emojis per active user in 7 days.</p>
-            <p><strong>Why:</strong> Shows how prolific your emoji creators are.</p>
+            <p><strong>Why:</strong> Shows creator prolificacy.</p>
           </div>
         </InfoDrawerResponsive>
       </motion.div>
@@ -354,10 +352,10 @@ export function SectionCards() {
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" aria-label={`Emojis Per Week: ${epw} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per Week</CardTitle>
+            <Card tabIndex={0} role="button" aria-label={`Emojis Per Week: ${epw} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full py-2 gap-0 rounded-xl">
+              <CardHeader className="p-3 pb-1.5">
+                <div className="flex items-center justify-between mb-1">
+                  <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Per Week</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
@@ -370,11 +368,11 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <NumberTicker value={epw} className="text-3xl font-bold tracking-tight" />
+                  <NumberTicker value={epw} className="text-2xl sm:text-3xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
-              <CardFooter className="p-4 pt-0">
-                <p className="text-xs text-muted-foreground">
+              <CardFooter className="p-3 pt-0">
+                <p className="text-[11px] text-muted-foreground">
                   {epw === 0
                     ? "No weekly activity"
                     : epwChange >= 0
@@ -399,11 +397,10 @@ export function SectionCards() {
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Avg. emojis per week in 4 weeks.</p>
-            <p><strong>Why:</strong> Shows team's emoji creation pace.</p>
+            <p><strong>Why:</strong> Shows creation pace.</p>
           </div>
         </InfoDrawerResponsive>
       </motion.div>
-      </div>
     </div>
 
   );

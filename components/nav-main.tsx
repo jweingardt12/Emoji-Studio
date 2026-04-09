@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { XCircle, ExternalLink } from "lucide-react"
+import { AnimatedShinyText } from "@/src/components/magicui/animated-shiny-text"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface NavMainProps {
@@ -17,6 +18,7 @@ interface NavMainProps {
     indicator?: "error" | "warning" | "success" | "info"
     external?: boolean
     badge?: string
+    shimmer?: boolean
   }[]
   onRefresh?: () => void
   refreshing?: boolean
@@ -24,9 +26,10 @@ interface NavMainProps {
   onNavigate?: (navItem?: { title: string; url: string; icon: any; action?: string; indicator?: "error" | "warning" | "success" | "info"; external?: boolean; badge?: string }) => void
   hasData?: boolean
   onFeedback?: () => void
+  onWhatsNew?: () => void
 }
 
-export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true, onFeedback }: NavMainProps) {
+export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate, hasData = true, onFeedback, onWhatsNew }: NavMainProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -37,8 +40,9 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         const isActive = pathname === item.url
         const isRefresh = item.action === "refresh"
         const isFeedback = item.action === "feedback"
+        const isWhatsNew = item.action === "whatsNew"
         const isSettings = item.url === "/settings"
-        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && item.url !== "/wrapped" && !item.external && !isFeedback)
+        const isDisabled = (isRefresh && refreshing) || (!hasData && !isSettings && item.url !== "/wrapped" && !item.external && !isFeedback && !isWhatsNew)
 
         // Handle refresh action
         const handleClick = (e: React.MouseEvent) => {
@@ -54,7 +58,12 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
           if (isFeedback) {
             e.preventDefault()
             onFeedback?.()
-            // Track navigation for feedback
+            onNavigate?.(item)
+            return
+          }
+          if (isWhatsNew) {
+            e.preventDefault()
+            onWhatsNew?.()
             onNavigate?.(item)
             return
           }
@@ -83,7 +92,7 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               <span className="truncate">{item.title}</span>
               {item.badge && (
-                <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground uppercase">
+                <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground uppercase tracking-wide">
                   {item.badge}
                 </span>
               )}
@@ -94,10 +103,14 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
         
         const linkContent = (
           <>
-            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
-            <span className="truncate">{item.title}</span>
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
+            {item.shimmer ? (
+              <AnimatedShinyText className="mx-0 text-sm font-medium truncate">{item.title}</AnimatedShinyText>
+            ) : (
+              <span className="truncate">{item.title}</span>
+            )}
             {item.badge && (
-              <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground uppercase">
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground uppercase tracking-wide">
                 {item.badge}
               </span>
             )}
@@ -115,13 +128,13 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             prefetch={true}
             className={cn(
               "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors duration-200 min-h-[44px]",
-              isActive && "bg-accent/50 text-foreground",
+              isActive && "bg-accent text-foreground",
               isDisabled && "pointer-events-none opacity-50",
             )}
             aria-current={isActive ? "page" : undefined}
           >
             {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--brand)]" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-primary" />
             )}
             {linkContent}
           </Link>

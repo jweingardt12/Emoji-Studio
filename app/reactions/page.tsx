@@ -28,6 +28,8 @@ const ShareCardGenerator = dynamic(
 import { TopCreators } from "./components/top-creators"
 import { TopReactors } from "./components/top-reactors"
 import { HowItWorksModal } from "./components/how-it-works-modal"
+import { ChannelOverlay } from "./components/channel-overlay"
+import { ShareOverlayButtons } from "./components/share-overlay-buttons"
 
 export default function ReactionsPage() {
   const isClient = useIsClient()
@@ -57,6 +59,8 @@ export default function ReactionsPage() {
   }, [emojiData])
 
   const [selectedEmoji, setSelectedEmoji] = useState<Emoji | null>(null)
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null)
+  const pageContentRef = useRef<HTMLDivElement>(null)
 
   const handleEmojiClick = useCallback((name: string) => {
     const emoji = emojiByName.get(name)
@@ -116,7 +120,7 @@ export default function ReactionsPage() {
 
   return (
     <motion.div
-      className="flex flex-col gap-6 md:gap-8 w-full pb-8"
+      className="flex flex-col gap-4 md:gap-5 w-full pb-8"
       variants={staggerContainer()}
       initial="hidden"
       animate="show"
@@ -125,9 +129,19 @@ export default function ReactionsPage() {
       <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6 pt-4 md:pt-6">
         <div className="flex flex-col gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold tracking-tight">Usage</h1>
-              <HowItWorksModal />
+              <div className="flex items-center gap-2">
+                <HowItWorksModal />
+                {hasData && (
+                  <ShareOverlayButtons
+                    contentRef={pageContentRef}
+                    filename={`emoji-usage-${state.dateRange}.png`}
+                    dateRange={state.dateRange}
+                    showLabels
+                  />
+                )}
+              </div>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               See how your workspace&apos;s emojis are being used across Slack.
@@ -234,46 +248,53 @@ export default function ReactionsPage() {
       {/* Data Sections */}
       {hasData && (
         <>
-          {/* Stats Cards */}
-          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} dateRange={state.dateRange} />
-          </motion.div>
+          {/* Shareable content area */}
+          <div ref={pageContentRef} className="flex flex-col gap-4 md:gap-5">
+            {/* Stats Cards */}
+            <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
+              <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} dateRange={state.dateRange} />
+            </motion.div>
 
-          {/* Top Reactions */}
-          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <TopReactionsChart
-              topReactions={state.topReactions}
-              emojiFilter={state.emojiFilter}
-              setEmojiFilter={(filter) => {
-                analytics.trackReactionsFilterChanged(filter)
-                state.setEmojiFilter(filter)
-              }}
-              customEmojiUrls={customEmojiUrls}
-              emojiData={emojiData}
-              onEmojiClick={handleEmojiClick}
-            />
-          </motion.div>
-
-          {/* Top Reactors + Top Creators (side by side on desktop) */}
-          <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <TopReactors
-                userStats={state.userStats}
-                userNameMap={userNameMap}
+            {/* Top Reactions */}
+            <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
+              <TopReactionsChart
+                topReactions={state.topReactions}
                 customEmojiUrls={customEmojiUrls}
+                emojiData={emojiData}
                 onEmojiClick={handleEmojiClick}
               />
-              <TopCreators
-                topReactions={state.topReactions}
-                emojiData={emojiData}
-                customEmojiUrls={customEmojiUrls}
-              />
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* Top Reactors + Top Creators (side by side on desktop) */}
+            <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                <TopReactors
+                  userStats={state.userStats}
+                  userNameMap={userNameMap}
+                  customEmojiUrls={customEmojiUrls}
+                  onEmojiClick={handleEmojiClick}
+                />
+                <TopCreators
+                  topReactions={state.topReactions}
+                  emojiData={emojiData}
+                  customEmojiUrls={customEmojiUrls}
+                  onEmojiClick={handleEmojiClick}
+                />
+              </div>
+            </motion.div>
+          </div>
 
           {/* Timeline */}
           <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <ReactionTimeline data={state.timelineData} />
+            <ReactionTimeline
+              data={state.timelineData}
+              reactionEvents={state.reactionEvents}
+              customEmojiUrls={customEmojiUrls}
+              channels={state.channels}
+              userNameMap={userNameMap}
+              onEmojiClick={handleEmojiClick}
+              dateRange={state.dateRange}
+            />
           </motion.div>
 
           {/* Your Emojis + Share Card */}
@@ -287,15 +308,6 @@ export default function ReactionsPage() {
                   onEmojiClick={handleEmojiClick}
                 />
               )}
-              <ShareCardGenerator
-                stats={state.stats}
-                topReactions={state.topReactions}
-                customEmojiUrls={customEmojiUrls}
-                channelNames={channelNames}
-                dateRange={state.dateRange}
-                onDownload={analytics.trackReactionsShareCardDownloaded}
-                onCopy={analytics.trackReactionsShareCardCopied}
-              />
             </div>
           </motion.div>
 
@@ -307,6 +319,7 @@ export default function ReactionsPage() {
               customEmojiUrls={customEmojiUrls}
               userNameMap={userNameMap}
               onEmojiClick={handleEmojiClick}
+              onChannelClick={setSelectedChannelId}
             />
           </motion.div>
         </>
@@ -315,6 +328,16 @@ export default function ReactionsPage() {
       <EmojiOverlay
         emoji={selectedEmoji}
         onClose={() => setSelectedEmoji(null)}
+      />
+      <ChannelOverlay
+        channel={selectedChannelId ? state.channels.find(c => c.id === selectedChannelId) ?? null : null}
+        breakdown={selectedChannelId ? state.channelBreakdown.find(b => b.channel_id === selectedChannelId) ?? null : null}
+        reactionEvents={state.reactionEvents}
+        customEmojiUrls={customEmojiUrls}
+        userNameMap={userNameMap}
+        onClose={() => setSelectedChannelId(null)}
+        onEmojiClick={handleEmojiClick}
+        dateRange={state.dateRange}
       />
     </motion.div>
   )

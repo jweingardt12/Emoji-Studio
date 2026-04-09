@@ -101,7 +101,6 @@ export function RefreshButton() {
       // Parse the response
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("Error response from API:", errorText)
         throw new Error(`Error from Slack API: ${errorText}`)
       }
       

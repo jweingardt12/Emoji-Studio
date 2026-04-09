@@ -20,7 +20,6 @@ export function ClearLocalStorageButton() {
         await idb.clear('settings')
         await idb.clear('cache')
       } catch (e) {
-        console.warn('[ClearData] Failed to clear IndexedDB stores:', e)
       }
 
       // Step 2: Close the IndexedDB connection after stores are cleared
@@ -56,11 +55,9 @@ export function ClearLocalStorageButton() {
             done()
           }
           deleteRequest.onerror = () => {
-            console.error('[ClearData] Failed to delete IndexedDB database')
             done()
           }
           deleteRequest.onblocked = () => {
-            console.warn('[ClearData] IndexedDB delete blocked, stores already cleared — continuing')
             // Don't resolve yet — wait for onsuccess. But set a timeout as fallback
             // in case the delete never completes (e.g. leaked connection in another tab).
             setTimeout(done, 2000)
@@ -111,7 +108,6 @@ export function ClearLocalStorageButton() {
         window.location.href = "/settings"
       }, 500)
     } catch (error) {
-      console.error("Error clearing app data:", error)
       toast.error("Failed to clear app data", {
         description: error instanceof Error ? error.message : "Unknown error occurred",
       })

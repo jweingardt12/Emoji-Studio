@@ -1,8 +1,14 @@
 "use client"
 
-import { Info, Shield, Globe, HardDrive, Zap } from "lucide-react"
+import { Info, Shield, Globe, HardDrive, Zap, CheckCircle2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { InfoDrawerResponsive } from "@/components/info-drawer-responsive"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 const SECTIONS = [
   {
@@ -60,30 +66,121 @@ const SECTIONS = [
   },
 ]
 
+const INCLUDED = [
+  "Emoji reactions on messages in selected channels",
+  "Reaction counts, trends, and leaderboards",
+  "Channel-by-channel breakdown of emoji usage",
+  "Who reacts the most and with which emojis",
+  "Which custom emojis get the most reactions",
+]
+
+const NOT_INCLUDED = [
+  "Message text, attachments, or file content",
+  "Direct messages or group DMs",
+  "Private channels you haven\u2019t selected",
+  "Who sent the original messages",
+  "Emoji used inline in message text (only reactions)",
+]
+
+const FAQ = [
+  {
+    question: "Why are my reaction counts different from what I see in Slack?",
+    answer:
+      "Emoji Studio counts reactions across all scanned messages in your selected channels and date range. Slack\u2019s own counts may differ because they include reactions from channels you didn\u2019t scan, or because messages were edited or deleted after reactions were added.",
+  },
+  {
+    question: "Can I scan private channels?",
+    answer:
+      "Yes, as long as your Slack session has access to the private channel. Only channels you are a member of will appear in the channel picker.",
+  },
+  {
+    question: "How far back can I scan?",
+    answer:
+      "You can scan up to 90 days of history. Longer ranges take more time due to the volume of messages and Slack\u2019s rate limits.",
+  },
+  {
+    question: "Does this work with Slack Enterprise Grid?",
+    answer:
+      "It works with any Slack workspace where your session token has access. Enterprise Grid organizations with multiple workspaces will need to connect each workspace separately.",
+  },
+  {
+    question: "Will scanning affect my Slack workspace?",
+    answer:
+      "No. Scanning is read-only \u2014 it only reads message reactions. It does not post messages, modify reactions, or change anything in your workspace.",
+  },
+]
+
 export function HowItWorksModal() {
   return (
     <InfoDrawerResponsive
       trigger={
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-          <Info className="h-4 w-4" />
-          <span className="sr-only">How this works</span>
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          How it works
         </Button>
       }
       title="How Usage Scanning Works"
       description="Understand how Emoji Studio scans your Slack workspace and keeps your data secure."
+      className="sm:max-w-6xl!"
     >
-      <div className="space-y-6 text-sm">
-        {SECTIONS.map((section) => (
-          <div key={section.title} className="flex gap-3">
-            <div className={`rounded-lg p-2 h-fit shrink-0 ${section.color}`}>
-              <section.icon className="h-4 w-4" />
+      <div className="space-y-8 text-sm">
+        {/* How it works sections */}
+        <div className="space-y-5">
+          {SECTIONS.map((section) => (
+            <div key={section.title} className="flex gap-3">
+              <div className={`rounded-lg p-2 h-fit shrink-0 ${section.color}`}>
+                <section.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-medium">{section.title}</p>
+                <p className="text-muted-foreground mt-1">{section.body}</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">{section.title}</p>
-              <p className="text-muted-foreground mt-1">{section.body}</p>
-            </div>
+          ))}
+        </div>
+
+        {/* What's included / not included */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <p className="font-medium text-sm">What&apos;s included</p>
+            <ul className="space-y-1.5">
+              {INCLUDED.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
+          <div className="space-y-2">
+            <p className="font-medium text-sm">What&apos;s not included</p>
+            <ul className="space-y-1.5">
+              {NOT_INCLUDED.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-muted-foreground">
+                  <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-destructive" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div>
+          <p className="font-medium text-sm mb-2">Frequently asked questions</p>
+          <Accordion type="single" collapsible className="w-full">
+            {FAQ.map((item, i) => (
+              <AccordionItem key={i} value={`faq-${i}`}>
+                <AccordionTrigger className="text-sm text-left">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
       </div>
     </InfoDrawerResponsive>
   )

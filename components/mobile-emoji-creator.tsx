@@ -152,7 +152,6 @@ export function MobileEmojiCreator({
       
       return processed
     } catch (error) {
-      console.error('[MobileEmojiCreator] Processing failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Failed to process file: ${errorMessage}`)
       setProcessingStatus('Processing failed')
@@ -218,7 +217,6 @@ export function MobileEmojiCreator({
         })
       }
     } catch (error) {
-      console.error('Slack upload error:', error)
       toast.error('Failed to upload to Slack')
     } finally {
       setIsUploadingToSlack(false)
@@ -275,7 +273,6 @@ export function MobileEmojiCreator({
       toast.success(`Video edits applied! Speed: ${videoAdjustments.speed}x`)
       
     } catch (error) {
-      console.error('Failed to apply video edits:', error)
       toast.error('Failed to apply video edits')
     } finally {
       setIsApplyingEdits(false)
@@ -309,7 +306,6 @@ export function MobileEmojiCreator({
           toast.dismiss('bg-removal')
           toast.success('Background removed!')
         } catch (bgError) {
-          console.error('Background removal failed:', bgError)
           toast.error('Background removal failed, applying other edits only')
           // Continue without background removal
           processedBlob = originalBlob
@@ -363,7 +359,6 @@ export function MobileEmojiCreator({
       toast.success(shouldRemoveBackground ? 'Edits applied with background removed!' : 'Edits applied!')
       
     } catch (error) {
-      console.error('Failed to apply edits:', error)
       toast.error('Failed to apply edits')
     } finally {
       setIsApplyingEdits(false)

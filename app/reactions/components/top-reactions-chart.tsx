@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
 import { Progress } from "@/components/ui/progress"
 import {
   Tooltip,
@@ -17,12 +17,8 @@ import {
 } from "@/components/ui/tooltip"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
-import type { EmojiFilter } from "@/app/reactions/hooks/use-reactions-state"
-
 interface TopReactionsChartProps {
   topReactions: AggregatedReaction[]
-  emojiFilter: EmojiFilter
-  setEmojiFilter: (filter: EmojiFilter) => void
   customEmojiUrls: Map<string, string>
   emojiData: Emoji[]
   onEmojiClick?: (name: string) => void
@@ -38,18 +34,13 @@ const BAR_COLORS = [
 
 export function TopReactionsChart({
   topReactions,
-  emojiFilter,
-  setEmojiFilter,
   customEmojiUrls,
   emojiData,
   onEmojiClick,
 }: TopReactionsChartProps) {
-  const filtered =
-    emojiFilter === "custom"
-      ? topReactions.filter((r) => customEmojiUrls.has(r.emoji_name))
-      : topReactions
-
-  const data = filtered.slice(0, 20)
+  const data = topReactions
+    .filter((r) => customEmojiUrls.has(r.emoji_name))
+    .slice(0, 20)
   const maxCount = data[0]?.total_count || 1
 
   const creatorMap = useMemo(() => {
@@ -64,28 +55,13 @@ export function TopReactionsChart({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-4">
+      <CardHeader className="pb-4">
         <CardTitle className="text-base">Top Reactions</CardTitle>
-        <ToggleGroup
-          type="single"
-          value={emojiFilter}
-          onValueChange={(v) => v && setEmojiFilter(v as EmojiFilter)}
-          className="border rounded-md"
-        >
-          <ToggleGroupItem value="all" className="text-xs px-2.5 h-7">
-            All
-          </ToggleGroupItem>
-          <ToggleGroupItem value="custom" className="text-xs px-2.5 h-7">
-            Custom Only
-          </ToggleGroupItem>
-        </ToggleGroup>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            {emojiFilter === "custom"
-              ? "No custom emoji found in scan results."
-              : "No data yet — run a scan first."}
+            No custom emoji reactions found yet — run a scan first.
           </p>
         ) : (
           <TooltipProvider delayDuration={200}>
@@ -151,7 +127,7 @@ export function TopReactionsChart({
                         {reaction.total_count.toLocaleString()} reactions from {reaction.unique_users} users
                       </p>
                       {creator && (
-                        <p className="text-xs text-muted-foreground">Created by {creator}</p>
+                        <p className="text-xs text-muted-foreground">Created by {creator.split(" ")[0]}</p>
                       )}
                     </TooltipContent>
                   </Tooltip>

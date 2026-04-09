@@ -1,35 +1,36 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Crown } from "lucide-react"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts"
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
 import type { AggregatedReaction } from "@/lib/services/reaction-service"
 import type { Emoji } from "@/lib/services/emoji-service"
+
+const BAR_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+]
 
 interface TopCreatorsProps {
   topReactions: AggregatedReaction[]
   emojiData: Emoji[]
   customEmojiUrls: Map<string, string>
+  onEmojiClick?: (name: string) => void
 }
 
-const chartConfig = {
-  reactions: { label: "Reactions", color: "var(--chart-2)" },
-} satisfies ChartConfig
+export function TopCreators({ topReactions, emojiData, customEmojiUrls, onEmojiClick }: TopCreatorsProps) {
+  const [expandedCreator, setExpandedCreator] = useState<string | null>(null)
 
-export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCreatorsProps) {
   const creators = useMemo(() => {
     const emojiCreatorMap = new Map<string, { user_id: string; user_display_name: string }>()
     for (const emoji of emojiData) {
@@ -78,7 +79,7 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
         emoji_count: data.emojis.length,
         top_emojis: data.emojis
           .sort((a, b) => b.reactions - a.reactions)
-          .slice(0, 5),
+          .slice(0, 10),
       }))
       .sort((a, b) => b.total_reactions - a.total_reactions)
       .slice(0, 8)
@@ -86,13 +87,7 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
 
   if (creators.length === 0) return null
 
-  // Transform for recharts: horizontal bar chart with creator names on Y axis
-  const chartData = creators.map((c) => ({
-    name: c.user_display_name.split(" ")[0],
-    reactions: c.total_reactions,
-    fullName: c.user_display_name,
-    emojiCount: c.emoji_count,
-  }))
+  const maxCount = creators[0].total_reactions
 
   return (
     <Card className="flex flex-col">
@@ -106,40 +101,89 @@ export function TopCreators({ topReactions, emojiData, customEmojiUrls }: TopCre
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
-          >
-            <CartesianGrid horizontal={false} stroke="var(--border)" strokeDasharray="3 3" />
-            <XAxis type="number" tickLine={false} axisLine={false} />
-            <YAxis
-              type="category"
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              width={72}
-              tick={{ fontSize: 12 }}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(_: any, payload: any) => {
-                    const item = payload?.[0]?.payload
-                    return item ? `${item.fullName} (${item.emojiCount} emoji${item.emojiCount === 1 ? "" : "s"})` : ""
-                  }}
-                />
-              }
-            />
-            <Bar
-              dataKey="reactions"
-              name="reactions"
-              fill="var(--color-reactions)"
-              radius={[0, 4, 4, 0]}
-            />
-          </BarChart>
-        </ChartContainer>
+        <TooltipProvider delayDuration={200}>
+          <div className="space-y-0.5">
+            {creators.map((creator, i) => {
+              const barPct = Math.max(3, (creator.total_reactions / maxCount) * 100)
+              const isExpanded = expandedCreator === creator.user_id
+
+              return (
+                <div key={creator.user_id}>
+                  <div
+                    className="flex items-center gap-2 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors cursor-pointer"
+                    onClick={() => setExpandedCreator(isExpanded ? null : creator.user_id)}
+                  >
+                    {/* Name */}
+                    <span className="text-sm font-medium truncate w-20 sm:w-28 shrink-0">
+                      {creator.user_display_name.split(" ")[0]}
+                    </span>
+
+                    {/* Bar */}
+                    <div className="flex-1 min-w-0">
+                      <Progress
+                        value={barPct}
+                        className="h-2.5 bg-muted/60"
+                        style={{ ["--progress-color" as string]: BAR_COLORS[i % BAR_COLORS.length] }}
+                      />
+                    </div>
+
+                    {/* Count */}
+                    <span className="text-xs font-semibold tabular-nums shrink-0 w-10 text-right">
+                      {creator.total_reactions.toLocaleString()}
+                    </span>
+
+                    {/* Top emojis preview — clicking these expands the row */}
+                    <div className="hidden md:flex items-center gap-0.5 shrink-0">
+                      {creator.top_emojis.slice(0, 3).map((emoji) => {
+                        if (!emoji.url) return null
+                        return (
+                          <Tooltip key={emoji.name}>
+                            <TooltipTrigger asChild>
+                              <img
+                                src={emoji.url}
+                                alt={emoji.name}
+                                className="h-4 w-4 object-contain"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              :{emoji.name}: ({emoji.reactions})
+                            </TooltipContent>
+                          </Tooltip>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Expanded emoji detail */}
+                  {isExpanded && creator.top_emojis.length > 0 && (
+                    <div className="ml-4 mr-2 mb-2 mt-1 flex flex-wrap gap-2 py-2 px-3 rounded-md bg-muted/30">
+                      {creator.top_emojis.map((emoji) => (
+                        <Tooltip key={emoji.name}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-background/60 border border-border/50 ${onEmojiClick ? "cursor-pointer hover:bg-muted/60" : ""}`}
+                              onClick={() => onEmojiClick?.(emoji.name)}
+                            >
+                              {emoji.url ? (
+                                <img src={emoji.url} alt={emoji.name} className="h-5 w-5 object-contain" />
+                              ) : (
+                                <span className="text-sm">:{emoji.name}:</span>
+                              )}
+                              <span className="text-xs text-muted-foreground">{emoji.reactions}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            :{emoji.name}: — {emoji.reactions} reaction{emoji.reactions !== 1 ? "s" : ""}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </TooltipProvider>
       </CardContent>
     </Card>
   )

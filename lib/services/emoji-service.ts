@@ -91,14 +91,12 @@ export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
     })
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-      console.error("fetchSlackEmojis: Error from API:", errorData)
       throw new Error(`Error from Slack API: ${errorData.error || response.statusText}`)
     }
 
     const data = await response.json()
 
     if (data.error) {
-      console.error("fetchSlackEmojis: Error in response data:", data.error)
     }
 
     if (!data.emoji || (Array.isArray(data.emoji) && data.emoji.length === 0)) {
@@ -132,7 +130,6 @@ export async function fetchSlackEmojis(curlCommand: string): Promise<Emoji[]> {
     // Use the emoji array directly
     return data.emoji as Emoji[]
   } catch (error) {
-    console.error("Error fetching emoji data:", error)
     throw error
   }
 }
@@ -277,7 +274,6 @@ export function parseCurlToRequest(curlCommand: string): SlackCurlRequest {
       data,
     };
   } catch (error) {
-    console.error("Error parsing curl command:", error);
     return {
       url: "",
       method: "GET",

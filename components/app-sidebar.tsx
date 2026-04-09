@@ -20,6 +20,7 @@ import {
   MessageSquareIcon,
   Smartphone,
   Gift,
+  Sparkles,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -45,6 +46,7 @@ import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { FeedbackModal } from "@/components/feedback-modal"
+import { WhatsNewModal } from "@/components/whats-new-modal"
 
 // Curl command modal using proper Dialog component
 function CurlCommandModal({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (curl: string) => void }) {
@@ -87,6 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [refreshing, setRefreshing] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false)
   const [hasCurl, setHasCurl] = useState<boolean>(false)
   const [slackLoaded, setSlackLoaded] = useState<boolean>(false)
   const { emojiData, hasRealData, workspace } = useEmojiData()
@@ -206,7 +209,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       // Parse the response
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("Error response from API:", errorText)
         throw new Error(`Error from Slack API: ${errorText}`)
       }
 
@@ -366,11 +368,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // GitHub nav item (separated visually)
   const githubNavItems = [
     {
+      title: "What's New",
+      url: "#whats-new",
+      icon: Sparkles,
+      action: "whatsNew",
+      shimmer: true,
+    },
+    {
       title: "Get the app",
       url: "https://www.emojistudio.xyz/mobile",
       icon: Smartphone,
       external: true,
-      badge: "NEW",
     },
     {
       title: "GitHub",
@@ -406,7 +414,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         // NavMain handles the actual navigation, we just track and close sidebar
       } catch (error) {
-        console.error('Error in navigation tracking:', error);
       }
     }
   };
@@ -424,12 +431,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           >
             <Image src="/logo.png" alt="Emoji Studio Logo" width={36} height={36} className="shrink-0 rounded-lg" priority />
             <div className="flex flex-col min-w-0">
-              <span className="text-base font-semibold leading-tight">Emoji Studio</span>
+              <span className="text-base font-bold leading-tight tracking-tight">Emoji Studio</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className={cn(
-                      "text-xs leading-tight truncate max-w-[140px]",
+                      "text-[11px] leading-tight truncate max-w-[140px] font-medium",
                       hasRealData ? "text-muted-foreground" : "text-destructive/70"
                     )}>
                       {hasRealData
@@ -466,7 +473,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
           <NavMain items={navItems} onRefresh={handleRefresh} refreshing={refreshing} slackLoaded={slackLoaded} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} />
           <hr className="my-3 border-sidebar-border" />
-          <NavMain items={githubNavItems} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} onFeedback={() => setFeedbackModalOpen(true)} />
+          <NavMain items={githubNavItems} onNavigate={handleNavigate} hasData={hasRealData || emojiData.length > 0} onFeedback={() => setFeedbackModalOpen(true)} onWhatsNew={() => setWhatsNewOpen(true)} />
         </div>
 
         <div className="mt-auto pt-4">
@@ -479,6 +486,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       {modalOpen && <CurlCommandModal open={modalOpen} onClose={handleModalClose} onSubmit={handleModalSubmit} />}
       {feedbackModalOpen && <FeedbackModal open={feedbackModalOpen} onClose={() => setFeedbackModalOpen(false)} />}
+      {whatsNewOpen && <WhatsNewModal open={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />}
     </Sidebar>
   );
 }

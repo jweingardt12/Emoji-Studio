@@ -85,7 +85,7 @@ function StatItem({ icon: Icon, label, value }: {
         <Icon className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>
-      <p className="text-xl font-bold tabular-nums tracking-tight">{value}</p>
+      <p className="text-xl font-bold tabular-nums tracking-tight text-foreground">{value}</p>
     </div>
   )
 }
@@ -106,7 +106,7 @@ export function DashboardUsageSummary() {
 
   if (loading) {
     return (
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden py-3 gap-0 rounded-xl">
         <CardHeader className="pb-3">
           <Skeleton className="h-5 w-28" />
         </CardHeader>
@@ -127,7 +127,7 @@ export function DashboardUsageSummary() {
 
   if (!hasData) {
     return (
-      <Card className="border-dashed border-muted-foreground/20 hover:border-muted-foreground/30 transition-colors">
+      <Card className="border-dashed border-muted-foreground/20 hover:border-muted-foreground/30 transition-colors py-0 gap-0 rounded-xl">
         <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-muted p-2.5">
@@ -155,8 +155,8 @@ export function DashboardUsageSummary() {
   const maxCount = topReactions[0]?.total_count ?? 1
 
   return (
-    <Card className="overflow-hidden group/card hover:shadow-md transition-shadow duration-300">
-      <CardHeader className="pb-3">
+    <Card className="overflow-hidden group/card hover:shadow-md transition-shadow duration-300 py-0 gap-0 rounded-xl">
+      <CardHeader className="pt-3 pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />

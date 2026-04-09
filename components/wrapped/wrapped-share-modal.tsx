@@ -182,7 +182,6 @@ export function WrappedShareModal({
         setVideoEncoderType(info.type)
       })
       preloadVideoEncoder().catch((error) => {
-        console.warn("Video encoder preload failed:", error)
       })
     }
   }, [open])
@@ -481,7 +480,6 @@ export function WrappedShareModal({
       if (error instanceof DOMException && error.name === "AbortError") {
         return
       }
-      console.error("Failed to generate preview:", error)
       toast.error("Failed to generate. Please try again.")
     } finally {
       setIsGenerating(false)
@@ -625,7 +623,6 @@ export function WrappedShareModal({
         toast.error(result.message)
       }
     } catch (error) {
-      console.error("Share failed:", error)
       toast.error("Failed to share. Try long-pressing the image to save.")
     } finally {
       setIsSharing(false)

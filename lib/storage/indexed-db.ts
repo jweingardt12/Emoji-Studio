@@ -70,7 +70,6 @@ class IndexedDBStorage {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = () => {
-        console.error('Failed to open IndexedDB:', request.error);
         this.initPromise = null; // Reset so we can retry
         reject(request.error);
       };
@@ -138,7 +137,6 @@ class IndexedDBStorage {
     try {
       await this.initWithTimeout(3000);
     } catch (error) {
-      console.warn('[IndexedDB] Init failed, falling back to localStorage:', error);
       return null;
     }
 
@@ -158,16 +156,13 @@ class IndexedDBStorage {
         };
 
         request.onerror = () => {
-          console.warn('[IndexedDB] getItem error:', request.error);
           resolve(null);
         };
 
         transaction.onerror = () => {
-          console.warn('[IndexedDB] Transaction error');
           resolve(null);
         };
       } catch (error) {
-        console.warn('[IndexedDB] Transaction creation failed:', error);
         // Reset connection for next attempt
         this.reset();
         resolve(null);
@@ -308,7 +303,6 @@ export const emojiStorage = {
       await idb.setItem('emojis', 'emoji_data', dataWithMeta);
       savedToIndexedDB = true;
     } catch (error) {
-      console.warn('[EmojiStorage] IndexedDB save failed, will fall back to localStorage:', error);
     }
 
     // Always save metadata to localStorage for quick access checks
@@ -320,7 +314,6 @@ export const emojiStorage = {
         storedIn: savedToIndexedDB ? 'indexeddb' : 'localStorage'
       }));
     } catch (error) {
-      console.warn('[EmojiStorage] Failed to save metadata to localStorage:', error);
     }
 
     // Fall back to localStorage for full data ONLY if IndexedDB failed
@@ -340,7 +333,6 @@ export const emojiStorage = {
           savedToLocalStorage = true;
         }
       } catch (error) {
-        console.error('[EmojiStorage] Failed to save to localStorage:', error);
         // Try safe persist as last resort
         const result = safePersistEmojiDataToLocalStorage(emojis as any, { source: 'direct-save-fallback' });
         if (result.saved) {
@@ -356,7 +348,6 @@ export const emojiStorage = {
     }
 
     if (!savedToIndexedDB && !savedToLocalStorage) {
-      console.error('[EmojiStorage] CRITICAL: Failed to save emojis to any storage!');
     }
   },
 
@@ -369,7 +360,6 @@ export const emojiStorage = {
         meta = JSON.parse(storedMeta);
       }
     } catch (error) {
-      console.warn('[EmojiStorage] Failed to read metadata:', error);
     }
 
     // Try IndexedDB FIRST (primary storage)
@@ -385,7 +375,6 @@ export const emojiStorage = {
         }
       }
     } catch (error) {
-      console.warn('[EmojiStorage] IndexedDB load failed, trying localStorage:', error);
     }
 
     // Fall back to localStorage
@@ -398,7 +387,6 @@ export const emojiStorage = {
         return { emojis, timestamp, version };
       }
     } catch (error) {
-      console.error('[EmojiStorage] Failed to load from localStorage:', error);
     }
 
     return null;
@@ -440,7 +428,6 @@ export const emojiStorage = {
     try {
       await idb.removeItem('emojis', 'emoji_data');
     } catch (error) {
-      console.error('[EmojiStorage] Failed to clear from IndexedDB:', error);
     }
     localStorage.removeItem('emojiData');
     localStorage.removeItem('emojiDataMeta');
@@ -456,7 +443,6 @@ export const settingsStorage = {
     try {
       await idb.setItem('settings', key, value);
     } catch (error) {
-      console.error('Failed to save setting to IndexedDB:', error);
     }
   },
 
@@ -466,7 +452,6 @@ export const settingsStorage = {
       const value = await idb.getItem('settings', key);
       if (value !== null) return value;
     } catch (error) {
-      console.error('Failed to load setting from IndexedDB:', error);
     }
     
     // Fallback to localStorage
@@ -488,7 +473,6 @@ export const settingsStorage = {
     try {
       await idb.removeItem('settings', key);
     } catch (error) {
-      console.error('Failed to clear setting from IndexedDB:', error);
     }
   }
 };

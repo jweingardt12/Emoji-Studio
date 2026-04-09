@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
     // PATCH: If method is GET, do not include body/formData/data (GET must not have a body)
     if (method === "GET") {
       if ((curlRequest.formData && Object.keys(curlRequest.formData).length > 0) || curlRequest.data) {
-        console.warn("[Proxy] GET request attempted with body/formData/data. This is not allowed by HTTP spec.")
         return NextResponse.json({ error: "Request with GET method cannot have body/formData/data. Please use POST for emoji endpoints." }, { status: 400 })
       }
       // Remove any accidental body
@@ -182,7 +181,6 @@ export async function POST(request: NextRequest) {
       try {
         data = JSON.parse(responseText)
       } catch (parseError) {
-        console.error("Error parsing JSON response:", parseError)
         return NextResponse.json(
           {
             error: "Failed to parse Slack API response as JSON",
@@ -193,7 +191,6 @@ export async function POST(request: NextRequest) {
       }
 
       if (!response.ok) {
-        console.error("Slack API error:", data)
         return NextResponse.json(
           { error: data.error || "Slack API error", slackResponse: data },
           { status: response.status },
@@ -261,7 +258,6 @@ export async function POST(request: NextRequest) {
         }
       } else if (data.ok === false) {
         // Handle error response
-        console.error("Slack API returned error:", data.error || "Unknown error")
         return NextResponse.json(
           {
             error: data.error || "Unknown Slack API error",
@@ -293,7 +289,6 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (fetchError) {
-      console.error("Fetch error:", fetchError)
       const sanitized = sanitizeErrorResponse(fetchError, "Error fetching from Slack API")
       return NextResponse.json(
         {
@@ -304,7 +299,6 @@ export async function POST(request: NextRequest) {
       )
     }
   } catch (error) {
-    console.error("Error processing Slack emoji request:", error)
     const sanitized = sanitizeErrorResponse(error, "Internal server error")
     return NextResponse.json(
       {

@@ -107,8 +107,8 @@ const DesktopLayout = memo(function DesktopLayout({
   return (
     <div className="hidden md:flex md:flex-col gap-6">
       <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-border/50 bg-muted/30 flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" aria-hidden="true" />
             <span>Leaderboard</span>
           </h2>
@@ -132,8 +132,8 @@ const DesktopLayout = memo(function DesktopLayout({
       </div>
 
       <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-border/50 bg-muted/30 flex items-center justify-between">
+          <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
             <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
             <span>Recent Emojis</span>
           </h2>

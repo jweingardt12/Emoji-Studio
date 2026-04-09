@@ -127,7 +127,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       // The useEffect will handle auto-play when frameDataUrls are ready
       
     } catch (error) {
-      console.error("Failed to extract frames:", error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to extract frames'
       setLoadError(errorMessage)
       
@@ -633,7 +632,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
 
       // If still over limit, try more aggressive strategies
       if (outputBlob.size > MAX_FILE_SIZE) {
-        console.warn(`First attempt ${outputBlob.size} bytes exceeds limit, trying more aggressive compression`)
         
         // Fallback strategies - PRIORITIZE SMOOTHNESS (more frames) over quality
         // Try to keep as many frames as possible for smooth animation
@@ -756,7 +754,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
         
         // Final check - if still too large, use extreme measures
         if (outputBlob.size > MAX_FILE_SIZE) {
-          console.warn(`Still over limit after all fallbacks. Trying extreme compression...`)
           
           // Last resort: Use only keyframes with maximum compression
           const extremeStrategies = [
@@ -842,7 +839,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
           
           // Absolute last resort: single frame
           if (outputBlob.size > MAX_FILE_SIZE) {
-            console.error(`Creating single frame as last resort`)
             const singleFrameGif = new ImprovedGIFEncoder({
               width: 128,
               height: 128,
@@ -887,7 +883,6 @@ export function GifFrameEditorCSS({ file, isOpen, onClose, onExport }: GifFrameE
       onExport(outputBlob, exportIndices, speedMultiplier)
       
     } catch (error) {
-      console.error('Failed to export GIF:', error)
       setLoadError('Failed to create GIF. Please try again.')
     } finally {
       setIsExporting(false)

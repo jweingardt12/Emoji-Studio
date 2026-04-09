@@ -24,7 +24,6 @@ export class VideoProcessor {
       
       this.isLoaded = true
     } catch (error) {
-      console.error('Failed to load FFmpeg:', error)
       this.isLoaded = false
       this.ffmpeg = null
       throw error
@@ -107,7 +106,6 @@ export class VideoProcessor {
         // Clean up for next attempt
         await this.ffmpeg.deleteFile(outputName)
       } catch (error) {
-        console.error('Error with quality setting:', settings, error)
       }
     }
 

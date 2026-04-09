@@ -45,7 +45,6 @@ export default function PairPage() {
           }
           await handleCurlImport(curl)
         } catch (error) {
-          console.error("Failed to process pairing data:", error)
           toast.error("Invalid QR code data")
           router.replace("/settings#connection")
         } finally {
@@ -64,7 +63,6 @@ export default function PairPage() {
         const curl = atob(decodeURIComponent(encodedCurl))
         handleCurlImport(curl)
       } catch (error) {
-        console.error("Failed to decode curl:", error)
         toast.error("Invalid QR code data")
         router.replace("/settings#connection")
       }
@@ -178,7 +176,6 @@ export default function PairPage() {
           })
           const retryData = await retryRes.json()
           if (!retryRes.ok) {
-            console.error("Pairing claim failed after retry:", retryData)
             throw new Error(retryData.error || "Pairing failed")
           }
           successfulClaim = true
@@ -231,7 +228,6 @@ export default function PairPage() {
           setScanOpen(false) // Close scanner
           handleCurlImport(curl)
         } catch (error) {
-          console.error("Failed to decode curl from QR:", error)
           toast.error("Invalid QR code data")
         }
         return

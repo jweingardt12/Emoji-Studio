@@ -66,7 +66,7 @@ const EmojiItem = memo<{
 
 EmojiItem.displayName = "EmojiItem"
 
-export default function EmojiGrid() {
+export default function EmojiGrid({ limit }: { limit?: number } = {}) {
   const { emojiData, loading } = useEmojiData()
   const analytics = useAnalytics()
   const [dataRefreshKey, setDataRefreshKey] = React.useState(0)
@@ -133,12 +133,12 @@ export default function EmojiGrid() {
 
   // Memoized display values
   const { displayEmojis, showSeeMore } = useMemo(() => {
-    const displayCount = 20
+    const displayCount = limit ?? 20
     return {
       displayEmojis: sorted.slice(0, displayCount),
       showSeeMore: sorted.length > displayCount
     }
-  }, [sorted])
+  }, [sorted, limit])
 
   // Memoized event handlers to prevent child re-renders
   const handleImageError = useCallback((emojiName: string) => {

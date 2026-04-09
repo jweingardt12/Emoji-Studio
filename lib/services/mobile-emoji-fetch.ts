@@ -58,7 +58,6 @@ async function clearStaleCaches(): Promise<void> {
       }
     }
   } catch (e) {
-    console.warn("[MobileFetch] Could not enumerate IndexedDB databases:", e)
   }
 }
 
@@ -113,7 +112,6 @@ export async function fetchEmojiDataWithMobileAuth(
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("[MobileFetch] API error:", response.status, errorText)
       throw new Error(`API error: ${response.status}`)
     }
 
@@ -151,7 +149,6 @@ export async function fetchEmojiDataWithMobileAuth(
 
     return emojis
   } catch (error) {
-    console.error("[MobileFetch] Error fetching emoji data:", error)
     throw error
   }
 }

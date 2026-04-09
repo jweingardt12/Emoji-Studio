@@ -260,7 +260,6 @@ export function ChartAreaInteractive() {
       setIsMonthView(monthly);
       setIsModalOpen(true);
     } catch (e) {
-      console.error("Date-selection error:", e);
     }
   };
 
@@ -269,7 +268,7 @@ export function ChartAreaInteractive() {
   /* -------------------------------------------------------------------- */
   if (!isClient || !now) {
     return (
-      <Card className="border-muted/40 shadow-xs bg-card/50">
+      <Card className="border-muted/40 shadow-xs bg-card/50 py-0 gap-0 rounded-xl">
         <CardHeader className="relative">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="mt-2 h-4 w-64" />
@@ -288,8 +287,8 @@ export function ChartAreaInteractive() {
   /*  Render chart                                                         */
   /* -------------------------------------------------------------------- */
   return (
-    <Card className="border-muted/40 shadow-xs bg-card/50 overflow-hidden">
-      <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-3 xs:py-4 sm:py-6">
+    <Card className="border-muted/40 shadow-xs bg-card/50 overflow-hidden py-0 gap-0 rounded-xl">
+      <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-2 xs:py-3 sm:py-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <LineChart className="h-5 w-5" aria-hidden="true" />
@@ -343,7 +342,7 @@ export function ChartAreaInteractive() {
       <CardContent className="px-0 sm:px-4 pb-4">
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[280px] xs:h-[300px] sm:h-[320px] w-full"
+          className="aspect-auto h-[200px] xs:h-[220px] sm:h-[250px] w-full"
           aria-label="Emoji creation trends chart showing emojis created and unique contributors over time"
         >
           <AreaChart

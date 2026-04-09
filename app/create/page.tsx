@@ -316,7 +316,6 @@ function EmojiCreatorContent() {
           updateProgressToast(`Downloaded ${completed}/${total} emojis`)
         }
       } catch (error) {
-        console.error(`[Download] Failed to download emoji ${emoji.name}:`, error)
       }
     }
 
@@ -354,7 +353,6 @@ function EmojiCreatorContent() {
         description: `Downloaded ${completed} emoji${completed > 1 ? 's' : ''} as zip file`,
       })
     } catch (error) {
-      console.error('Failed to create zip:', error)
       toast.dismiss(progressToastId)
       setDownloadProgress(null)
       toast.error("Failed to create zip", {
@@ -413,7 +411,6 @@ function EmojiCreatorContent() {
         updateUploadToast(`${completed}/${total} (${percentage}%) - ${successCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ''}`)
       } catch (error) {
         const effectiveName = packBrowser.getEffectiveName(emoji)
-        console.error(`Failed to upload ${effectiveName}:`, error)
         failedCount++
         errors.push(`${effectiveName}: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
@@ -431,7 +428,6 @@ function EmojiCreatorContent() {
     }
 
     if (failedCount > 0) {
-      console.error('Upload errors:', errors)
       toast.error(`${failedCount} upload${failedCount > 1 ? 's' : ''} failed`, {
         description: errors[0] || 'Unknown error',
       })

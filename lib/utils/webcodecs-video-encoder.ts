@@ -100,7 +100,6 @@ export async function encodeWithWebCodecs(
       })
     },
     error: (error) => {
-      console.error("[WebCodecs] Encoder error:", error)
       throw error
     },
   })

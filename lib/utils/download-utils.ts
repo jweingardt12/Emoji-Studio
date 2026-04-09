@@ -49,7 +49,6 @@ async function fetchEmojiImage(
     if (error instanceof Error && error.name === 'AbortError') {
       throw error // Re-throw abort errors
     }
-    console.error(`Failed to download ${emoji.name}:`, error)
     return null
   }
 }

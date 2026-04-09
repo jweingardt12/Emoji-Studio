@@ -47,11 +47,9 @@ export const safePersistEmojiDataToLocalStorage = (
       try {
         localStorage.removeItem("emojiData")
       } catch (removeError) {
-        console.warn("[EmojiStorage] Failed to clear oversized emojiData from localStorage:", removeError)
       }
 
       const reason = `Emoji data payload (${formatBytes(byteSize)}) exceeds the in-browser storage limit (${formatBytes(limit)}).`
-      console.warn(`[EmojiStorage] ${reason} Skipping localStorage persistence for ${source}.`)
       dispatchWarning({ reason, source, byteSize, limit })
       return { saved: false, reason, byteSize }
     }
@@ -60,12 +58,10 @@ export const safePersistEmojiDataToLocalStorage = (
     return { saved: true, byteSize }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    console.warn(`[EmojiStorage] Failed to persist emoji data for ${source}:`, message)
     dispatchWarning({ reason: message, source })
     try {
       localStorage.removeItem("emojiData")
     } catch (removeError) {
-      console.warn("[EmojiStorage] Failed to clear emojiData after persistence error:", removeError)
     }
     return { saved: false, reason: message }
   }

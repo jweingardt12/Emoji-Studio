@@ -168,7 +168,7 @@ function LeaderboardPage() {
           // Mobile: No card wrapper
           <>
             <div className="px-3 pt-4 pb-3 flex items-center justify-between">
-              <h1 className="text-2xl font-bold tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 Leaderboard
               </h1>
               <div className="flex items-center gap-2">

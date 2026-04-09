@@ -9,6 +9,8 @@ export function ExtensionClearDataListener() {
   useEffect(() => {
     // Listen for clear data messages from the extension
     const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin && !event.origin.startsWith('chrome-extension://')) return;
+
       if (event.data.type === 'EMOJI_STUDIO_CLEAR_DATA_FROM_EXTENSION') {
         // Clear all data
         localStorage.clear()

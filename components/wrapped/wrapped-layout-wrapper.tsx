@@ -18,13 +18,8 @@ export function WrappedLayoutWrapper({ children }: WrappedLayoutWrapperProps) {
     // Set to dark mode
     setTheme("dark")
 
-    // Cleanup: optionally restore the original theme when leaving wrapped
-    // For now, we'll keep it dark since the whole wrapped experience is dark-themed
     return () => {
-      // If you want to restore the original theme when leaving:
-      // if (originalTheme && originalTheme !== "dark") {
-      //   setTheme(originalTheme)
-      // }
+      // Dark mode is kept after leaving wrapped
     }
   }, [setTheme])
 

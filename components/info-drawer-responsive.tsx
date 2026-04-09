@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
   Drawer,
   DrawerTrigger,
@@ -27,20 +28,27 @@ interface InfoDrawerResponsiveProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function InfoDrawerResponsive({ trigger, title, description, children }: InfoDrawerResponsiveProps) {
-  const [open, setOpen] = React.useState(false);
+export function InfoDrawerResponsive({ trigger, title, description, children, className, defaultOpen, onOpenChange }: InfoDrawerResponsiveProps) {
+  const [open, setOpen] = React.useState(defaultOpen ?? false);
+  const handleOpenChange = React.useCallback((v: boolean) => {
+    setOpen(v);
+    onOpenChange?.(v);
+  }, [onOpenChange]);
   const isMobile = useIsMobile();
   const isDesktop = !isMobile;
 
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           {trigger}
         </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={cn("max-w-2xl max-h-[90vh] overflow-y-auto", className)}>
           <DialogHeader>
             {title && <DialogTitle>{title}</DialogTitle>}
             {description && <DialogDescription>{description}</DialogDescription>}
@@ -57,7 +65,7 @@ export function InfoDrawerResponsive({ trigger, title, description, children }: 
   }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen}>
+    <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>
         {trigger}
       </DrawerTrigger>

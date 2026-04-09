@@ -90,7 +90,6 @@ export function DashboardOverlay() {
         }
       }
     } catch (error) {
-      console.error("DashboardOverlay: Error parsing emojiData from localStorage", error);
       localStorage.removeItem("emojiData");
       hasData = false;
     }
@@ -200,7 +199,6 @@ export function DashboardOverlay() {
       // Redirect to dashboard
       router.push("/app")
     } catch (error) {
-      console.error("Error importing demo data:", error)
       setImportError(error instanceof Error ? error.message : "Failed to import demo data")
     } finally {
       setIsImporting(false)

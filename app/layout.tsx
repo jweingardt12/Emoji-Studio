@@ -15,7 +15,6 @@ import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
 import { ErrorBoundary } from "@/components/error-boundary"
-import { WhatsNewModal } from "@/components/whats-new-modal";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +104,6 @@ export default function RootLayout({
                 <GlobalExtensionListener />
                 <NotificationManager />
               </PWALayoutWrapper>
-              <WhatsNewModal />
             </EmojiDataProvider>
             <Toaster
               position="bottom-right"

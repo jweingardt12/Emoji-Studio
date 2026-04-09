@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Sun, Moon, Monitor } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -65,6 +65,14 @@ function SettingRow({ label, description, children, className }: {
   )
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pt-1 pb-0">
+      {children}
+    </p>
+  )
+}
+
 interface PreferencesSectionProps {
   notificationsEnabled: boolean
   setNotificationsEnabled: (enabled: boolean) => void
@@ -91,26 +99,18 @@ export function PreferencesSection({
   hasUserInteractedRef,
 }: PreferencesSectionProps) {
   return (
-    <div className="space-y-4">
-      {/* Appearance */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Appearance</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <Card size="sm" className="py-3">
+      <CardContent className="p-0 divide-y divide-border/50">
+        {/* Appearance */}
+        <div className="px-5 py-1">
           <SettingRow label="Theme" description="Choose your color scheme">
             <ThemeSelector />
           </SettingRow>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Notifications */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Notifications</CardTitle>
-          <CardDescription>Get alerts when new emojis are added</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-0 divide-y">
+        {/* Notifications */}
+        <div className="px-5 py-1">
+          <SectionLabel>Notifications</SectionLabel>
           <SettingRow label="Enable notifications" description="Browser notifications for new emojis">
             <Switch
               checked={notificationsEnabled}
@@ -148,21 +148,15 @@ export function PreferencesSection({
           )}
 
           {!hasExtension && notificationsEnabled && (
-            <div className="py-3">
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Install the Chrome extension for background notifications
-              </p>
-            </div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 pb-2">
+              Install the Chrome extension for background notifications
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Leaderboard */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Leaderboard</CardTitle>
-        </CardHeader>
-        <CardContent>
+        {/* Leaderboard */}
+        <div className="px-5 py-1">
+          <SectionLabel>Leaderboard</SectionLabel>
           <SettingRow
             label="Inactive threshold"
             description="Hide users inactive for this many months"
@@ -175,8 +169,8 @@ export function PreferencesSection({
               className="w-20 h-8"
             />
           </SettingRow>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

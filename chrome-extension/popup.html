@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emoji Studio for Slack</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <img src="logo.png" alt="Emoji Studio" class="logo-img" width="24" height="24">
+      </div>
+      <h1 class="title">Emoji Studio</h1>
+      <button class="qr-button" id="qrButton" title="Pair to mobile app" aria-haspopup="dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+          <rect x="3" y="3" width="8" height="8" rx="1"/>
+          <rect x="13" y="3" width="8" height="8" rx="1"/>
+          <rect x="3" y="13" width="8" height="8" rx="1"/>
+          <rect x="13" y="13" width="8" height="8" rx="1"/>
+          <rect x="5" y="5" width="4" height="4" fill="var(--background)"/>
+          <rect x="15" y="5" width="4" height="4" fill="var(--background)"/>
+          <rect x="5" y="15" width="4" height="4" fill="var(--background)"/>
+          <rect x="15" y="15" width="4" height="4" fill="var(--background)"/>
+        </svg>
+        <span class="qr-button-label">Pair to mobile app</span>
+      </button>
+    </header>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation" role="tablist" aria-label="Emoji Studio Tabs">
+      <button class="tab-button active" data-tab="sync" id="tab-sync" role="tab" aria-selected="true" aria-controls="syncTab" tabindex="0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 0 1 9-9"/>
+        </svg>
+        Sync
+      </button>
+      <button class="tab-button" data-tab="create" id="tab-create" role="tab" aria-selected="false" aria-controls="createTab" tabindex="-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+        Create
+      </button>
+      <button class="tab-button" data-tab="settings" id="tab-settings" role="tab" aria-selected="false" aria-controls="settingsTab" tabindex="-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        Settings
+      </button>
+    </div>
+
+    <!-- Sync Tab Content -->
+    <div class="tab-content active" id="syncTab" role="tabpanel" aria-labelledby="tab-sync" tabindex="0">
+      <div class="sync-container">
+        <!-- Connected State -->
+        <div class="sync-card" id="connectedState" style="display: none;">
+          <!-- Workspace Info -->
+          <div class="sync-card-header">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="workspace-icon" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span class="workspace-name" id="workspaceName">workspace</span>
+          </div>
+
+          <!-- Sync Status -->
+          <div class="sync-status-text" id="syncStatusText">Last synced just now</div>
+
+          <!-- Auto-sync Controls -->
+          <div class="sync-controls">
+            <label class="sync-toggle">
+              <input type="checkbox" id="autoSyncToggle" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Auto-sync</span>
+            </label>
+
+            <select id="syncInterval" class="interval-select">
+              <option value="60">Every hour</option>
+              <option value="120">Every 2 hours</option>
+              <option value="240">Every 4 hours</option>
+              <option value="360">Every 6 hours</option>
+              <option value="720">Every 12 hours</option>
+              <option value="1440">Every 24 hours</option>
+            </select>
+          </div>
+
+          <!-- Status Message -->
+          <div class="sync-status-message-area" id="syncStatus" role="status" aria-live="polite" aria-atomic="true">
+            <span class="sync-status-indicator" id="syncStatusIndicator" style="display: none;"></span>
+            <span class="sync-status-message" id="syncStatusMessage"></span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="sync-card-actions">
+            <button class="button button-primary full-width" id="openEmojiStudio">
+              <span>Open Emoji Studio</span>
+              <svg class="button-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button class="button button-secondary full-width" id="refreshData" disabled>
+              <svg class="button-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>Refresh Data</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state-card" id="emptyState">
+          <div class="empty-state-illustration">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">Connect Your Workspace</h3>
+          <p class="empty-state-description">Connect > Sync > Create. Start by opening Slack's emoji customization page.</p>
+          <ol class="onboarding-steps" aria-label="Quick start">
+            <li class="onboarding-step" data-step="connect">
+              <span class="step-index">1</span>
+              Connect your workspace
+            </li>
+            <li class="onboarding-step" data-step="sync">
+              <span class="step-index">2</span>
+              Sync your emoji list
+            </li>
+            <li class="onboarding-step" data-step="create">
+              <span class="step-index">3</span>
+              Create or upload emojis
+            </li>
+          </ol>
+          <a href="https://slack.com/customize/emoji" target="_blank" rel="noopener noreferrer" class="button button-primary full-width empty-state-cta">
+            <svg class="button-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            Open Slack Emojis
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Tab Content -->
+    <div class="tab-content" id="createTab" role="tabpanel" aria-labelledby="tab-create" tabindex="0">
+      <div class="create-section">
+        <div class="create-card">
+          <!-- Create Header -->
+          <div class="create-header">
+            <h3>Create Emojis</h3>
+            <div class="header-actions">
+              <label for="fileInput" class="button button-text" style="cursor: pointer;" title="Upload images or videos">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Upload
+              </label>
+              <input type="file" id="fileInput" accept="image/*,video/*" multiple style="display: none;">
+              <button class="button button-text" id="clearAllButton" style="display: none;" title="Remove all emojis">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <div class="drop-hint" id="dropHint">Drop files here or paste an image</div>
+
+          <!-- Emoji List -->
+          <div class="emoji-items" id="emojiItems">
+            <div class="empty-state" id="createEmptyState">
+              <div class="empty-state-icon">✨</div>
+              <p class="empty-state-text">No emojis added yet</p>
+              <p class="empty-state-subtext">Drop images/videos here or add from slackmojis.com</p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="create-actions" id="createActions" style="display: none;">
+            <div class="emoji-summary">
+              <span id="emojiSummary">0 emojis selected</span>
+            </div>
+            <button class="button button-primary full-width" id="sendToSlack">
+              Send to Slack
+            </button>
+          </div>
+        </div>
+
+        <!-- Messages - Outside the card -->
+        <div class="success-message" id="createSuccessMessage" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span id="createSuccessText"></span>
+        </div>
+
+        <div class="error-message" id="createErrorMessage" style="display: none;" role="status" aria-live="polite" aria-atomic="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="createErrorText"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab Content -->
+    <div class="tab-content" id="settingsTab" role="tabpanel" aria-labelledby="tab-settings" tabindex="0">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Slack Web App</h3>
+        <p class="settings-section-subtitle">Configure how the extension behaves in the Slack web app</p>
+
+        <div class="settings-group">
+          <label class="sync-toggle">
+            <input type="checkbox" id="emojiTooltipToggle" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Emoji details on hover</span>
+          </label>
+          <p class="settings-description">Show creator name and date when hovering over emoji reactions</p>
+        </div>
+
+        <div class="settings-group">
+          <label class="sync-toggle">
+            <input type="checkbox" id="bulkReactToggle" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Bulk emoji reactions</span>
+          </label>
+          <p class="settings-description">Add ⚡ button to quickly react with multiple emojis</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Modal Overlay -->
+    <div class="qr-modal" id="qrModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle" aria-describedby="qrModalSubtitle" aria-hidden="true">
+      <div class="qr-modal-backdrop" id="qrModalBackdrop"></div>
+      <div class="qr-modal-content">
+        <button class="qr-modal-close" id="qrModalClose" aria-label="Close QR code modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <h3 class="qr-modal-title" id="qrModalTitle">Connect to Mobile App</h3>
+        <p class="qr-modal-subtitle" id="qrModalSubtitle">Scan this QR code with the Emoji Studio mobile app</p>
+
+        <!-- QR Code Display -->
+        <div class="qr-display-container" id="qrDisplayContainer">
+          <div class="qr-placeholder" id="qrPlaceholder">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="5" y="5" width="3" height="3"/>
+              <rect x="16" y="5" width="3" height="3"/>
+              <rect x="5" y="16" width="3" height="3"/>
+              <rect x="16" y="16" width="3" height="3"/>
+            </svg>
+            <p class="qr-placeholder-text">No workspace connected</p>
+            <p class="qr-placeholder-subtext">Connect to Slack first</p>
+          </div>
+          <div class="qr-code-wrapper" id="qrCodeWrapper" style="display: none;">
+            <div id="mobileQrCode"></div>
+          </div>
+        </div>
+
+        <a href="https://apps.apple.com/us/app/emoji-studio-for-slack/id6751079971" target="_blank" rel="noopener noreferrer" class="qr-app-store-link">
+          📱 Download on the App Store
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Version Info Footer -->
+  <div class="version-info">
+    <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="16" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </svg>
+    <span class="version-text">v<span id="extensionVersion">...</span></span>
+    <div class="version-tooltip">
+      Emoji Studio Extension
+      <br>
+      Version <span id="extensionVersionTooltip">...</span>
+    </div>
+  </div>
+
+  <script src="qrcode.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

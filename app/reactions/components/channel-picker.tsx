@@ -17,7 +17,13 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Hash, Lock, X, Scan, ChevronDown, Check, RefreshCw } from "lucide-react"
+import { Hash, Lock, X, Scan, ChevronDown, Check, RefreshCw, Info } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import type { SlackChannel, DateRange } from "@/app/reactions/hooks/use-reactions-state"
 
@@ -196,31 +202,27 @@ export function ChannelPicker({
         </Button>
       </div>
 
-      {/* Selected channel badges */}
+      {/* Selected channel summary */}
       {selectedChannelObjects.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selectedChannelObjects.map((channel) => (
-            <Badge
-              key={channel.id}
-              variant="secondary"
-              className="gap-1 pr-1"
-            >
-              {channel.is_private ? (
-                <Lock className="h-3 w-3" />
-              ) : (
-                <Hash className="h-3 w-3" />
-              )}
-              {channel.name}
-              <button
-                onClick={() => removeChannel(channel.id)}
-                className="ml-0.5 rounded-full hover:bg-muted transition-colors p-0.5"
-                aria-label={`Remove ${channel.name}`}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
+        <TooltipProvider delayDuration={200}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{selectedChannelObjects.length} channel{selectedChannelObjects.length !== 1 ? "s" : ""} selected</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px] text-center">
+              Only channels you&apos;re a member of are visible here
+            </TooltipContent>
+          </Tooltip>
+          <button
+            onClick={() => setSelectedChannels([])}
+            className="text-xs underline hover:text-foreground transition-colors"
+          >
+            Clear all
+          </button>
         </div>
+        </TooltipProvider>
       )}
     </div>
   )

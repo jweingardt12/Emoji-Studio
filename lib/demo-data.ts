@@ -246,10 +246,8 @@ export const generateDemoData = async (): Promise<Emoji[]> => {
     }
 
     // Return empty array if data is not in expected format
-    console.error('Demo emoji data not in expected format');
     return [];
   } catch (error) {
-    console.error('Error loading demo emoji data:', error);
     return [];
   }
 };
@@ -328,7 +326,6 @@ export const loadDemoLeaderboard = async () => {
       { user_id: "U05", user_display_name: "Emma Wilson", emoji_count: 24, most_recent_emoji_timestamp: 1716278000, oldest_emoji_timestamp: 1713686000, l4wepw: 6.1, l4wepwChange: 0.0 }
     ];
   } catch (err) {
-    console.error("Failed to load demo user data:", err);
     return [
       { user_id: "U01", user_display_name: "Sarah Johnson", emoji_count: 42, most_recent_emoji_timestamp: 1716278400, oldest_emoji_timestamp: 1713686400, l4wepw: 12.5, l4wepwChange: 5.2 },
       { user_id: "U02", user_display_name: "Michael Chen", emoji_count: 38, most_recent_emoji_timestamp: 1716278300, oldest_emoji_timestamp: 1713686300, l4wepw: 9.2, l4wepwChange: 3.1 }
@@ -457,7 +454,6 @@ export const loadDemoChartData = async (timeRange = "all") => {
     
     return chartData;
   } catch (err) {
-    console.error("Failed to load demo chart data:", err);
     
     // Fallback to generating data if loading fails
     const now = new Date();
@@ -580,7 +576,6 @@ export const loadDemoStats = async () => {
       weeklyEmojisChange,
     };
   } catch (err) {
-    console.error("Failed to load demo stats data:", err);
     
     // Fallback to default stats if loading fails
     return {

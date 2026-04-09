@@ -52,7 +52,7 @@ const VirtualizedEmojiItem = memo<{
       </span>
       <span
         className="mt-1 text-xs text-slate-400 text-center w-full max-w-[128px] truncate overflow-hidden whitespace-nowrap block"
-        title={emoji.user_display_name}
+        title={emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : ""}
       >
         {emoji.user_display_name ? emoji.user_display_name.split(" ")[0] : ""}
       </span>

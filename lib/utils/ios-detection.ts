@@ -74,7 +74,6 @@ export async function triggerNativeShare(data: {
       })
       return true
     } catch (error) {
-      console.error("Native share failed:", error)
       return false
     }
   }
@@ -106,7 +105,6 @@ export async function triggerNativeSave(data: {
       })
       return true
     } catch (error) {
-      console.error("Native save failed:", error)
       return false
     }
   }

@@ -165,7 +165,6 @@ export async function copyImageToClipboard(blob: Blob): Promise<ClipboardResult>
       message: "Copied to clipboard!",
     }
   } catch (error) {
-    console.error("Failed to copy image to clipboard:", error)
 
     // On iOS, even if the API exists, it may fail - suggest share
     if (isIOS() || isWebView()) {
@@ -237,7 +236,6 @@ export async function downloadImage(blob: Blob, filename: string): Promise<Downl
             message: "Share cancelled",
           }
         }
-        console.warn("Web Share failed, trying fallback:", error)
       }
     }
 
@@ -263,7 +261,6 @@ export async function downloadImage(blob: Blob, filename: string): Promise<Downl
         }
       }
     } catch (error) {
-      console.error("Failed to open image:", error)
       return {
         success: false,
         method: "none",
@@ -288,7 +285,6 @@ export async function downloadImage(blob: Blob, filename: string): Promise<Downl
       message: "Image downloaded!",
     }
   } catch (error) {
-    console.error("Download failed:", error)
     return {
       success: false,
       method: "none",
@@ -380,7 +376,6 @@ export async function shareImageWithResult(
           cancelled: true,
         }
       }
-      console.warn("Web Share with files failed, trying fallback:", error)
     }
 
     // Try sharing without files (just URL/text) as a fallback
@@ -408,7 +403,6 @@ export async function shareImageWithResult(
           cancelled: true,
         }
       }
-      console.warn("Web Share text-only also failed:", error)
     }
   }
 
@@ -549,7 +543,6 @@ export async function prefetchImagesToDataUrls(
 
         cache.set(src, dataUrl)
       } catch (e) {
-        console.warn("[prefetchImagesToDataUrls] Failed:", src, e)
       }
     })
   )
@@ -646,7 +639,6 @@ export async function downloadGif(blob: Blob, filename: string): Promise<Downloa
             message: "Share cancelled",
           }
         }
-        console.warn("Web Share failed for GIF, trying fallback:", error)
       }
     }
 
@@ -671,7 +663,6 @@ export async function downloadGif(blob: Blob, filename: string): Promise<Downloa
         }
       }
     } catch (error) {
-      console.error("Failed to open GIF:", error)
       return {
         success: false,
         method: "none",
@@ -696,7 +687,6 @@ export async function downloadGif(blob: Blob, filename: string): Promise<Downloa
       message: "GIF downloaded!",
     }
   } catch (error) {
-    console.error("GIF download failed:", error)
     return {
       success: false,
       method: "none",
@@ -774,7 +764,6 @@ export async function shareGifWithResult(
           cancelled: true,
         }
       }
-      console.warn("Web Share with GIF failed, trying fallback:", error)
     }
   }
 
@@ -885,7 +874,6 @@ export async function downloadVideo(blob: Blob, filename: string): Promise<Downl
             message: "Share cancelled",
           }
         }
-        console.warn("Web Share failed for video, trying fallback:", error)
       }
     }
 
@@ -910,7 +898,6 @@ export async function downloadVideo(blob: Blob, filename: string): Promise<Downl
         }
       }
     } catch (error) {
-      console.error("Failed to open video:", error)
       return {
         success: false,
         method: "none",
@@ -935,7 +922,6 @@ export async function downloadVideo(blob: Blob, filename: string): Promise<Downl
       message: "Video downloaded!",
     }
   } catch (error) {
-    console.error("Video download failed:", error)
     return {
       success: false,
       method: "none",
@@ -1013,7 +999,6 @@ export async function shareVideoWithResult(
           cancelled: true,
         }
       }
-      console.warn("Web Share with video failed, trying fallback:", error)
     }
   }
 

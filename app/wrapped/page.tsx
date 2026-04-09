@@ -93,7 +93,6 @@ function WrappedPageContent() {
         })
 
       } catch (error) {
-        console.error("[Wrapped] Mobile auth fetch failed:", error)
       } finally {
         setMobileAuthLoading(false)
       }

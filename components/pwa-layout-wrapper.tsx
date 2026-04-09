@@ -58,7 +58,6 @@ export function PWALayoutWrapper({ children }: { children: React.ReactNode }) {
           })
         })
         .catch((error) => {
-          console.warn('Service Worker registration failed:', error)
           track("PWA: Service Worker Registration Failed", {
             error: error.message
           })

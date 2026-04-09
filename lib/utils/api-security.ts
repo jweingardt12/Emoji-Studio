@@ -195,7 +195,6 @@ export function sanitizeError(error: unknown): { message: string; details?: any 
   // In production, return generic messages
   if (error instanceof Error) {
     // Log the full error server-side
-    console.error("API Error:", error)
     
     // Return sanitized message to client
     return {

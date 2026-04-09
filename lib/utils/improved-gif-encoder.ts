@@ -91,7 +91,6 @@ export class ImprovedGIFEncoder {
       })
       
       this.gif.on('error', (error: any) => {
-        console.error('[ImprovedGIFEncoder] Error rendering GIF:', error)
         reject(error)
       })
       

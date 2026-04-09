@@ -359,7 +359,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       });
       
     } catch (error) {
-      console.error('Processing failed:', error);
       toast.error(`Failed to process file: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setCurrentStep('select');
     }
@@ -530,7 +529,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
           const { removeBackgroundEnhanced } = await import('@/lib/utils/background-removal');
           processedBlob = await removeBackgroundEnhanced(resizedBlob);
         } catch (bgError) {
-          console.error('Background removal failed:', bgError);
           toast.error('Background removal failed, applying other edits only');
           processedBlob = selectedFile;
         }
@@ -610,7 +608,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
       toast.success('Edits applied successfully!');
       
     } catch (error) {
-      console.error('Failed to apply edits:', error);
       toast.error('Failed to apply edits');
     } finally {
       setIsApplyingEdits(false);
@@ -1101,7 +1098,6 @@ export function MobileEmojiDrawer({ children, isMobile }: MobileEmojiDrawerProps
                                         const url = URL.createObjectURL(result);
                                         setBackgroundRemovedPreview(url);
                                       } catch (error) {
-                                        console.error('Background removal failed:', error);
                                         toast.error('Failed to remove background');
                                         setShouldRemoveBackground(false);
                                       } finally {
