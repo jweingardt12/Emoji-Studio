@@ -456,9 +456,6 @@ function EmojiCreatorContent() {
         onDrop={handleDrop}
       >
         <div className="flex-1 flex flex-col min-h-0 p-4">
-          {/* Extension Banner */}
-          <ExtensionBanner hasSlack={hasSlack} loading={loading} />
-
           {/* Standalone header section */}
           <div className="flex-none mb-4">
             <div className="flex items-center justify-between gap-4">
@@ -520,6 +517,9 @@ function EmojiCreatorContent() {
               )}
             </div>
           </div>
+
+          {/* Extension Banner -- below header so upload zone is first thing users see */}
+          <ExtensionBanner hasSlack={hasSlack} loading={loading} />
 
           {/* Main content card */}
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden rounded-xl bg-card border border-border shadow-xs">

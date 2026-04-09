@@ -5,6 +5,7 @@ import { motion, useInView } from "framer-motion"
 import Link from "next/link"
 import { Activity, ArrowRight, BarChart3, Users, Hash } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { useReactionCache } from "@/lib/hooks/use-reaction-cache"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -30,7 +31,7 @@ function TopReactionBar({ name, count, maxCount, imageUrl, rank, animateIn }: {
 
   return (
     <motion.div
-      className="group flex items-center gap-3 rounded-lg px-1 -mx-1 transition-colors hover:bg-muted/50"
+      className="group flex items-center gap-3 rounded-lg px-2 py-1.5 -mx-2 transition-colors hover:bg-muted/50"
       whileHover={{ x: 2 }}
       transition={springGentle}
     >
@@ -45,7 +46,7 @@ function TopReactionBar({ name, count, maxCount, imageUrl, rank, animateIn }: {
             className="w-6 h-6 object-contain rounded-sm group-hover:scale-110 transition-transform duration-200"
           />
         ) : (
-          <span className="text-[10px] font-mono text-muted-foreground">:{name.slice(0, 3)}:</span>
+          <span className="text-[11px] font-mono text-muted-foreground">:{name.slice(0, 3)}:</span>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -103,7 +104,26 @@ export function DashboardUsageSummary() {
     return map
   }, [emojiData])
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3">
+          <Skeleton className="h-5 w-28" />
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-7 w-7 rounded-sm" />
+              <div className="flex-1">
+                <Skeleton className="h-3 w-full rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-10" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    )
+  }
 
   if (!hasData) {
     return (

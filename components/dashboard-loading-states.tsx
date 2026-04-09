@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Settings, Sparkles } from "lucide-react";
+import { Plus, RefreshCw, Settings, Sparkles, Trophy, Search, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export function DashboardHeroSkeleton() {
@@ -124,7 +124,7 @@ export function DashboardTabbedContentSkeleton() {
 export function EmptyStateEmojis() {
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center max-w-lg mx-auto">
-      <div className="mb-5 text-5xl">✨</div>
+      <div className="mb-5 rounded-full bg-primary/10 p-4"><Sparkles className="h-10 w-10 text-primary" aria-hidden="true" /></div>
       <h3 className="text-xl font-semibold mb-2">Welcome to Emoji Studio</h3>
       <p className="text-sm text-muted-foreground mb-8">
         Get started in three quick steps to unlock your workspace's emoji analytics.
@@ -176,7 +176,7 @@ export function EmptyStateEmojis() {
 export function EmptyStateLeaderboard() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 text-6xl">🏆</div>
+      <div className="mb-4 rounded-full bg-amber-500/10 p-4"><Trophy className="h-10 w-10 text-amber-500" aria-hidden="true" /></div>
       <h3 className="text-lg font-semibold mb-2">No Leaders Yet</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-4">
         Be the first to create emojis and claim the top spot on the leaderboard!
@@ -194,7 +194,7 @@ export function EmptyStateLeaderboard() {
 export function EmptyStateSearch({ onClearSearch }: { onClearSearch?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 text-6xl">🔍</div>
+      <div className="mb-4 rounded-full bg-muted p-4"><Search className="h-10 w-10 text-muted-foreground" aria-hidden="true" /></div>
       <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-4">
         Try adjusting your search or filters to find what you're looking for.
@@ -212,7 +212,7 @@ export function EmptyStateSearch({ onClearSearch }: { onClearSearch?: () => void
 export function ErrorState({ message = "Something went wrong", onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 text-6xl">⚠️</div>
+      <div className="mb-4 rounded-full bg-destructive/10 p-4"><AlertTriangle className="h-10 w-10 text-destructive" aria-hidden="true" /></div>
       <h3 className="text-lg font-semibold mb-2">Oops!</h3>
       <p className="text-sm text-muted-foreground max-w-sm mb-4">{message}</p>
       <Button

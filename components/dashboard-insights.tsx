@@ -123,9 +123,9 @@ export function DashboardInsights() {
           transition={{ duration: 0.3 }}
         >
           <Card className={cn(
-            "relative overflow-hidden border-l-4 transition-all",
-            sentiment === 'positive' && "border-l-green-500 bg-green-500/5",
-            sentiment === 'neutral' && "border-l-primary/50 bg-muted/50"
+            "relative overflow-hidden transition-all",
+            sentiment === 'positive' && "bg-green-500/5",
+            sentiment === 'neutral' && "bg-muted/50"
           )}>
             <CardContent className="p-4">
               <button

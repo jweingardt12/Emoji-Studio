@@ -16,12 +16,21 @@ interface ReactionStatsCardsProps {
   stats: ReactionStats
   customEmojiUrls: Map<string, string>
   onEmojiClick?: (name: string) => void
+  dateRange?: string
+}
+
+const PERIOD_LABELS: Record<string, { current: string; previous: string }> = {
+  "24h": { current: "Today", previous: "vs yesterday" },
+  "7d": { current: "This Week", previous: "vs last week" },
+  "30d": { current: "This Month", previous: "vs last month" },
+  "90d": { current: "Last 3 Months", previous: "vs previous 3 months" },
 }
 
 export function ReactionStatsCards({
   stats,
   customEmojiUrls,
   onEmojiClick,
+  dateRange = "7d",
 }: ReactionStatsCardsProps) {
   if (stats.total_reactions === 0) return null
 
@@ -104,12 +113,12 @@ export function ReactionStatsCards({
           <div className="flex items-center justify-between">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               {trendPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-              This Week
+              {PERIOD_LABELS[dateRange]?.current ?? "This Week"}
             </CardTitle>
             <Badge
               variant="secondary"
               className={cn(
-                "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                "font-mono text-[11px] px-1.5 py-0.5 h-5",
                 trendBadgeColors(trendPositive)
               )}
             >
@@ -121,7 +130,7 @@ export function ReactionStatsCards({
         <CardContent>
           <div className="text-2xl font-bold">{thisWeekCount.toLocaleString()}</div>
           <CardDescription className="text-xs mt-0.5">
-            vs last week
+            {PERIOD_LABELS[dateRange]?.previous ?? "vs last week"}
           </CardDescription>
         </CardContent>
       </Card>

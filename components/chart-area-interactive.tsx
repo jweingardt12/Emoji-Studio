@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import {
   Area,
   AreaChart,
@@ -291,13 +290,15 @@ export function ChartAreaInteractive() {
   return (
     <Card className="border-muted/40 shadow-xs bg-card/50 overflow-hidden">
       <CardHeader className="relative px-3 xs:px-4 sm:px-6 py-3 xs:py-4 sm:py-6">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <LineChart className="h-5 w-5" />
-          <Link href="/visualizations" className="focus:outline-hidden cursor-pointer hover:opacity-80">
-            <span className="border-b border-dotted border-muted-foreground">Emoji Trends</span>
-          </Link>
-        </h2>
-
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <LineChart className="h-5 w-5" aria-hidden="true" />
+            Emoji Trends
+          </h2>
+          {!isMobile && (
+            <p className="text-xs text-muted-foreground mt-1">Click any data point to see emojis from that period</p>
+          )}
+        </div>
 
         {/* time-range controls */}
         <div className="absolute right-2 xs:right-3 sm:right-4 top-3 xs:top-4 flex items-center gap-1 xs:gap-2">
@@ -343,6 +344,7 @@ export function ChartAreaInteractive() {
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[280px] xs:h-[300px] sm:h-[320px] w-full"
+          aria-label="Emoji creation trends chart showing emojis created and unique contributors over time"
         >
           <AreaChart
             data={chartData}
@@ -504,8 +506,8 @@ export function ChartAreaInteractive() {
                 x2="0"
                 y2="1"
               >
-                <stop offset="0%" stopColor="#FF00B8" stopOpacity={0.5} />
-                <stop offset="100%" stopColor="#FF00B8" stopOpacity={0.0} />
+                <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.5} />
+                <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.0} />
               </linearGradient>
             </defs>
 
@@ -533,14 +535,14 @@ export function ChartAreaInteractive() {
               type="monotone"
               dataKey="uniqueContributors"
               name="Unique Contributors"
-              stroke="#FF00B8"
+              stroke="var(--chart-2)"
               strokeWidth={2}
               fill="url(#contributorsGradient)"
               fillOpacity={0.3}
               dot={chartData.length <= 31 ? {
                 r: isMobile ? 2 : 3,
-                fill: "#FF00B8",
-                stroke: "#FF00B8",
+                fill: "var(--chart-2)",
+                stroke: "var(--chart-2)",
                 strokeWidth: isMobile ? 1 : 2,
                 style: { cursor: isMobile ? "default" : "pointer" },
               } : false}

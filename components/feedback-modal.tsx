@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
-import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { useAnalytics } from "@/lib/analytics"
 import { toast } from "sonner"
 import { X } from "lucide-react"
@@ -158,12 +157,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className={`relative bg-card rounded-xl shadow-lg w-full max-w-lg mx-4 transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        <ShineBorder
-          borderWidth={2}
-          duration={8}
-          shineColor={["#60a5fa", "#e879f9", "#60a5fa"]}
-        />
+      <div className={`relative bg-card rounded-xl border border-border shadow-lg w-full max-w-lg mx-4 transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
         <div className="relative p-6 max-h-[85vh] overflow-y-auto">
           <button
             onClick={handleClose}

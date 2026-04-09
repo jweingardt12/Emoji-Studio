@@ -163,19 +163,18 @@ export default function ReactionsPage() {
           channelsTotal={state.scanProgress.channels_total}
           reactionsFound={state.scanProgress.reactions_found}
           onCancel={state.cancelScan}
+          onRetry={state.startScan}
           scannedChannels={state.scanProgress.scanned_channels}
         />
       </motion.div>
 
-      {/* Empty State */}
-      {!hasData && state.scanProgress.status !== "scanning" && (
+      {/* Empty State -- ghost preview showing what scanning reveals */}
+      {!hasData && state.scanProgress.status !== "scanning" && state.scanProgress.status !== "complete" && (
         <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center gap-4 py-16">
-              <div className="rounded-full bg-muted p-4">
+          {!hasRealData ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
                 <Activity className="h-8 w-8 text-muted-foreground" />
-              </div>
-              {!hasRealData ? (
                 <div className="text-center space-y-2">
                   <p className="text-sm font-medium">Connect to Slack to get started</p>
                   <p className="text-sm text-muted-foreground max-w-sm">
@@ -189,27 +188,46 @@ export default function ReactionsPage() {
                     Go to Settings
                   </Link>
                 </div>
-              ) : (
-                <div className="text-center space-y-3">
-                  <p className="text-sm font-medium">Ready to scan</p>
-                  <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold">1</span>
-                      <span>Select channels above</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold">2</span>
-                      <span>Pick a date range</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold">3</span>
-                      <span>Click <strong>Scan Channels</strong> to see usage data</span>
-                    </div>
-                  </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="relative">
+              {/* Ghost preview of what data looks like */}
+              <div className="opacity-[0.08] pointer-events-none select-none" aria-hidden="true">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                  {["Total Reactions", "Unique Emojis", "Most Popular", "This Week"].map((label) => (
+                    <Card key={label}>
+                      <CardContent className="p-4">
+                        <p className="text-xs text-muted-foreground">{label}</p>
+                        <div className="h-8 w-20 rounded bg-foreground/20 mt-1" />
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      {[80, 65, 45, 30, 20].map((w, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className="h-6 w-6 rounded bg-foreground/20" />
+                          <div className="flex-1 h-2 rounded-full bg-foreground/20" style={{ width: `${w}%` }} />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              {/* Overlay CTA */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-3 bg-background/80 backdrop-blur-xs rounded-xl px-8 py-6">
+                  <p className="text-base font-semibold">Ready to scan</p>
+                  <p className="text-sm text-muted-foreground max-w-xs">
+                    Select channels above and click Scan to discover how your emojis are used.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -218,7 +236,7 @@ export default function ReactionsPage() {
         <>
           {/* Stats Cards */}
           <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} />
+            <ReactionStatsCards stats={state.stats} customEmojiUrls={customEmojiUrls} onEmojiClick={handleEmojiClick} dateRange={state.dateRange} />
           </motion.div>
 
           {/* Top Reactions */}
@@ -258,15 +276,17 @@ export default function ReactionsPage() {
             <ReactionTimeline data={state.timelineData} />
           </motion.div>
 
-          {/* Your Emojis + Share Card (1/2 + 1/2 on desktop) */}
+          {/* Your Emojis + Share Card */}
           <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <YourReactions
-                userStats={state.userStats}
-                currentUserId={currentUserId}
-                customEmojiUrls={customEmojiUrls}
-                onEmojiClick={handleEmojiClick}
-              />
+            <div className={`grid grid-cols-1 gap-4 lg:gap-6 ${currentUserId ? "lg:grid-cols-2" : ""}`}>
+              {currentUserId && (
+                <YourReactions
+                  userStats={state.userStats}
+                  currentUserId={currentUserId}
+                  customEmojiUrls={customEmojiUrls}
+                  onEmojiClick={handleEmojiClick}
+                />
+              )}
               <ShareCardGenerator
                 stats={state.stats}
                 topReactions={state.topReactions}

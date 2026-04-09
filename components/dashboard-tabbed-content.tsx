@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, memo } from "react";
-import { Trophy, Clock } from "lucide-react";
+import { Trophy, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Leaderboard from "@/components/leaderboard";
@@ -51,11 +51,11 @@ const MobileTabs = memo(function MobileTabs({
         <div className="sticky top-0 bg-background/95 backdrop-blur-xs z-10 pb-2 pt-1">
           <TabsList className="w-full">
             <TabsTrigger value="leaderboard">
-              <Trophy className="h-4 w-4" />
+              <Trophy className="h-4 w-4" aria-hidden="true" />
               <span>Leaderboard</span>
             </TabsTrigger>
             <TabsTrigger value="recent">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-4 w-4" aria-hidden="true" />
               <span>Recent</span>
             </TabsTrigger>
           </TabsList>
@@ -109,26 +109,12 @@ const DesktopLayout = memo(function DesktopLayout({
       <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            <span>Recent Emojis</span>
-          </h2>
-          <Link href="/explorer?sort=newest" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            View all &rarr;
-          </Link>
-        </div>
-        <div className="p-6">
-          <EmojiGrid />
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
+            <Trophy className="h-5 w-5 text-primary" aria-hidden="true" />
             <span>Leaderboard</span>
           </h2>
-          <Link href="/leaderboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            View all &rarr;
+          <Link href="/leaderboard" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 -mr-2 rounded-md min-h-[44px]">
+            View all
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </Link>
         </div>
         <div className="p-0">
@@ -142,6 +128,22 @@ const DesktopLayout = memo(function DesktopLayout({
             onViewUser={onViewUser}
             variant="compact"
           />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-muted/40 bg-card/50 shadow-xs overflow-hidden">
+        <div className="px-6 py-4 border-b border-border/50 bg-muted/20 flex items-center justify-between">
+          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" aria-hidden="true" />
+            <span>Recent Emojis</span>
+          </h2>
+          <Link href="/explorer?sort=newest" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 -mr-2 rounded-md min-h-[44px]">
+            View all
+            <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="p-6">
+          <EmojiGrid />
         </div>
       </div>
     </div>

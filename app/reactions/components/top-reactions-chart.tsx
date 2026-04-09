@@ -124,7 +124,7 @@ export function TopReactionsChart({
                             :{reaction.emoji_name}:
                           </p>
                           {creator && (
-                            <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                            <p className="text-[11px] text-muted-foreground truncate leading-tight">
                               by {creator.split(" ")[0]}
                             </p>
                           )}

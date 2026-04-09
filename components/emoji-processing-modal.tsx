@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ShineBorder } from "@/src/components/magicui/shine-border"
 import { Progress } from "@/components/ui/progress"
 import { CheckCircle2, Circle, Loader2, AlertCircle, Sparkles, FileImage, Download, Check, X, Send, XCircle, Pencil, Sliders, ListChecks, Save } from "lucide-react"
 import { ProcessedEmoji } from "@/lib/utils/emoji-processor"
@@ -15,7 +14,6 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { useTrack } from "@/lib/hooks/use-track"
 import { ChromeIcon } from "@/components/icons/chrome-icon"
-import { SparklesText } from "@/src/components/magicui/sparkles-text"
 import { isEmojiNameAvailable, type Emoji } from "@/lib/services/emoji-service"
 
 interface ProcessingStep {
@@ -305,36 +303,23 @@ export function EmojiProcessingModal({
     }
   }
 
+  const isDismissible = isProcessingComplete || error
+
   const modalContent = (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-out ${
         isOpen ? 'bg-black/80 backdrop-blur-xs' : 'bg-black/0 backdrop-blur-none'
       }`}
-      onClick={isProcessingComplete ? onClose : undefined}
+      onClick={isDismissible ? onClose : undefined}
     >
       <div
         className={`relative w-full max-w-2xl mx-2 sm:mx-4 transition-all duration-300 ease-out ${
           isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-        } ${isProcessingComplete ? 'bg-blue-500/30 p-[2px] rounded-xl' : ''}`}
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {isProcessingComplete && (
-          <div 
-            className="absolute inset-0 rounded-xl"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(147, 197, 253, 0.5) 20%, rgba(147, 197, 253, 0.8) 50%, rgba(147, 197, 253, 0.5) 80%, transparent 100%)',
-              backgroundSize: '200% 100%',
-              animation: 'shine-border 4s linear infinite',
-              maskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-              maskComposite: 'exclude',
-              WebkitMaskImage: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-              WebkitMaskComposite: 'xor',
-              padding: '2px'
-            }}
-          />
-        )}
-        <Card className={`relative ${isProcessingComplete ? 'border-0' : 'border-border/50'} shadow-2xl rounded-xl max-h-[85vh] sm:max-h-[90vh] flex flex-col bg-card overflow-hidden`}>
-          {isProcessingComplete && (
+        <Card className={`relative border-border/50 shadow-2xl rounded-xl max-h-[85vh] sm:max-h-[90vh] flex flex-col bg-card overflow-hidden ${isProcessingComplete ? 'border-green-500/30' : ''}`}>
+          {isDismissible && (
           <Button
             size="icon"
             variant="ghost"
@@ -347,8 +332,8 @@ export function EmojiProcessingModal({
         )}
         <CardHeader className="space-y-1 p-3 sm:p-4 pb-2 sm:pb-3 border-b bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 sm:p-2 rounded-full shrink-0 bg-linear-to-br from-sky-500/15 to-emerald-500/15">
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-sky-400" />
+            <div className="p-1.5 sm:p-2 rounded-full shrink-0 bg-primary/10">
+              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
             <div className="min-w-0 pr-6">
               <CardTitle className="text-base sm:text-lg truncate">
@@ -375,7 +360,7 @@ export function EmojiProcessingModal({
                 </div>
                 <div className="relative h-2 overflow-hidden rounded-full bg-muted">
                   <div className="absolute inset-0 animate-shimmer bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)] bg-size-[200%_100%]" />
-                  <div className="relative h-full rounded-full bg-linear-to-r from-sky-500 via-cyan-400 to-emerald-400 transition-all" style={{ width: `${progress}%` }} />
+                  <div className="relative h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
                 </div>
               </div>
 
@@ -434,7 +419,7 @@ export function EmojiProcessingModal({
                   const isSelected = selectedIndices.has(index)
                   return (
                   <div key={index} className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg transition-colors ${
-                    uploadingAll && uploadingIndex === index ? 'bg-sky-500/10 ring-1 sm:ring-2 ring-sky-400/20' :
+                    uploadingAll && uploadingIndex === index ? 'bg-primary/10 ring-1 sm:ring-2 ring-primary/20' :
                     isSelected ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-muted/50'
                   }`}>
                     {selectionMode && (
@@ -537,12 +522,12 @@ export function EmojiProcessingModal({
                               </span>
                             )}
                             {hasSlack && nameStatuses[index] === 'taken' && (
-                              <span className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                              <span className="text-[10px] sm:text-xs text-destructive flex items-center gap-1">
                                 • <AlertCircle className="h-2.5 w-2.5" /> Name already taken
                               </span>
                             )}
                             {hasSlack && nameStatuses[index] === 'available' && (
-                              <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                              <span className="text-[10px] sm:text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                                 • <CheckCircle2 className="h-2.5 w-2.5" /> Available
                               </span>
                             )}

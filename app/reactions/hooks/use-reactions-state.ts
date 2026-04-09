@@ -233,46 +233,63 @@ export function useReactionsState(curlCommand: string | null, customEmojiNames: 
     setReactionEvents([])
 
     const channelNames = new Map(channels.map(c => [c.id, c.name]))
+    let failedChannels = 0
 
-    for (let i = 0; i < selectedChannels.length; i++) {
-      if (controller.signal.aborted) break
+    try {
+      for (let i = 0; i < selectedChannels.length; i++) {
+        if (controller.signal.aborted) break
 
-      const channelId = selectedChannels[i]
-      const channelName = channelNames.get(channelId) || channelId
+        const channelId = selectedChannels[i]
+        const channelName = channelNames.get(channelId) || channelId
 
-      setScanProgress(prev => ({
-        ...prev,
-        current_channel: channelName,
-        channels_done: i,
-      }))
-
-      try {
-        const channelEvents = await scanChannel(channelId, channelName, controller.signal)
-        allEvents.push(...channelEvents)
-
-        setReactionEvents([...allEvents])
         setScanProgress(prev => ({
           ...prev,
-          channels_done: i + 1,
-          reactions_found: allEvents.length,
-          scanned_channels: [...prev.scanned_channels, channelName],
+          current_channel: channelName,
+          channels_done: i,
         }))
-      } catch (error) {
-        if ((error as Error).name === "AbortError") break
-        console.error(`Error scanning #${channelName}:`, error)
-      }
-    }
 
-    if (!controller.signal.aborted) {
-      setScanProgress(prev => ({ ...prev, status: "complete" }))
+        try {
+          const channelEvents = await scanChannel(channelId, channelName, controller.signal)
+          allEvents.push(...channelEvents)
 
-      const meta: ReactionScanMeta = {
-        channel_ids: selectedChannels,
-        scanned_at: Date.now(),
-        event_count: allEvents.length,
+          setReactionEvents([...allEvents])
+          setScanProgress(prev => ({
+            ...prev,
+            channels_done: i + 1,
+            reactions_found: allEvents.length,
+            scanned_channels: [...prev.scanned_channels, channelName],
+          }))
+        } catch (error) {
+          if ((error as Error).name === "AbortError") break
+          console.error(`Error scanning #${channelName}:`, error)
+          failedChannels++
+        }
       }
-      await reactionStorage.saveReactions(allEvents, meta)
-      toast.success(`Scan complete! Found ${allEvents.length} reactions.`)
+
+      if (!controller.signal.aborted) {
+        // If every channel failed, surface the error state
+        if (failedChannels === selectedChannels.length) {
+          setScanProgress(prev => ({ ...prev, status: "error" }))
+          toast.error("Scan failed", { description: "Could not scan any channels. Check your connection." })
+          return
+        }
+
+        setScanProgress(prev => ({ ...prev, status: "complete" }))
+
+        const meta: ReactionScanMeta = {
+          channel_ids: selectedChannels,
+          scanned_at: Date.now(),
+          event_count: allEvents.length,
+        }
+        await reactionStorage.saveReactions(allEvents, meta)
+        toast.success(`Scan complete! Found ${allEvents.length} reactions.`)
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        console.error("Scan failed:", error)
+        setScanProgress(prev => ({ ...prev, status: "error" }))
+        toast.error("Scan failed", { description: "An unexpected error occurred." })
+      }
     }
   }, [selectedChannels, token, channels, dateRange, scanChannel])
 

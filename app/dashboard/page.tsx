@@ -4,9 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { useIsClient } from "@/hooks/use-is-client"
 import Image from "next/image"
-import Link from "next/link"
 import dynamic from "next/dynamic"
-import { staggerContainer, fadeUp, pillHover } from "@/lib/motion"
+import { staggerContainer, fadeUp } from "@/lib/motion"
 const ChartAreaInteractive = dynamic(
   () => import("@/components/chart-area-interactive").then(mod => mod.ChartAreaInteractive),
   { ssr: false, loading: () => <div className="h-[300px] rounded-xl border border-muted/40 bg-card/50 animate-pulse" /> }
@@ -24,7 +23,6 @@ import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
 import { useTrack } from "@/lib/hooks/use-track"
-import { CirclePlus, Package, LayoutGrid } from "lucide-react"
 import {
   DashboardHeroSkeleton,
   DashboardChartSkeleton,
@@ -35,8 +33,6 @@ import { DashboardUsageSummary } from "@/components/dashboard-usage-summary"
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
-
-const MotionLink = motion.create(Link)
 
 function DashboardPage() {
   const isClient = useIsClient()
@@ -247,27 +243,6 @@ function DashboardPage() {
         ) : (
           <SectionCards />
         )}
-      </motion.div>
-
-      {/* Quick Actions */}
-      <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
-        <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { href: "/create", icon: CirclePlus, label: "Create Emoji" },
-            { href: "/create?tab=browse", icon: Package, label: "Browse Packs" },
-            { href: "/explorer", icon: LayoutGrid, label: "View All Emojis" },
-          ].map(({ href, icon: Icon, label }) => (
-            <MotionLink
-              key={href}
-              href={href}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-              {...pillHover}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </MotionLink>
-          ))}
-        </div>
       </motion.div>
 
       {/* Chart + Usage Summary -- Bento grid on desktop */}

@@ -172,20 +172,19 @@ export function SectionCards() {
   const totalNonAliasEmojis = nonAliasEmojis.length;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Total Emojis */}
+    <div className="space-y-4">
+      {/* Total Emojis -- Hero */}
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" aria-label={`Total Emojis: ${totalNonAliasEmojis.toLocaleString()} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Emojis</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                      "font-mono text-[11px] px-1.5 py-0.5 h-5",
                       trendBadgeColors(emojisLastYear.length > 0 ? totalNonAliasEmojis > emojisLastYear.length : true)
                     )}
                   >
@@ -204,7 +203,7 @@ export function SectionCards() {
                   </Badge>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <NumberTicker value={totalNonAliasEmojis} className="text-3xl font-bold tracking-tight" />
+                  <NumberTicker value={totalNonAliasEmojis} className="text-4xl sm:text-5xl font-bold tracking-tight" />
                 </div>
               </CardHeader>
               <CardFooter className="p-4 pt-0">
@@ -233,19 +232,20 @@ export function SectionCards() {
           </div>
         </InfoDrawerResponsive>
       </motion.div>
+      {/* Secondary metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {/* AEU */}
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" aria-label={`Active Uploaders: ${aeu} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Active Uploaders</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                      "font-mono text-[11px] px-1.5 py-0.5 h-5",
                       trendBadgeColors(aeuChange >= 0)
                     )}
                   >
@@ -268,7 +268,7 @@ export function SectionCards() {
               </CardFooter>
             </Card>
           }
-          title="AEU"
+          title="Active Uploaders (AEU)"
           description="Number of unique users who have added emojis in the last 7 days"
         >
           <div className="w-full aspect-2/1 mb-2">
@@ -293,15 +293,14 @@ export function SectionCards() {
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" aria-label={`Emojis Per User: ${emojisPerUser.toFixed(1)} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per User</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                      "font-mono text-[11px] px-1.5 py-0.5 h-5",
                       activeUsersCount === 0
                         ? "text-muted-foreground bg-muted"
                         : trendBadgeColors(epuChange >= 0)
@@ -332,7 +331,7 @@ export function SectionCards() {
               </CardFooter>
             </Card>
           }
-          title="EPU"
+          title="Emojis Per User (EPU)"
           description="Average number of emojis added per active user in the last 7 days"
         >
           <div className="w-full aspect-2/1 mb-2">
@@ -355,15 +354,14 @@ export function SectionCards() {
       <motion.div className="min-w-0" {...cardHover}>
         <InfoDrawerResponsive
           trigger={
-            <Card tabIndex={0} role="button" className="group relative overflow-hidden border-muted/40 bg-linear-to-br from-card to-card/50 hover:from-card hover:to-card hover:shadow-md transition-all duration-300 cursor-pointer h-full">
-              <div className="absolute inset-0 bg-linear-to-br from-chart-\1/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Card tabIndex={0} role="button" aria-label={`Emojis Per Week: ${epw} — tap for details`} className="group relative overflow-hidden border-muted/40 hover:shadow-md transition-all duration-300 cursor-pointer h-full">
               <CardHeader className="p-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Emojis Per Week</CardTitle>
                   <Badge
                     variant="secondary"
                     className={cn(
-                      "font-mono text-[10px] px-1.5 py-0.5 h-5",
+                      "font-mono text-[11px] px-1.5 py-0.5 h-5",
                       trendBadgeColors(epwChange >= 0)
                     )}
                   >
@@ -386,7 +384,7 @@ export function SectionCards() {
               </CardFooter>
             </Card>
           }
-          title="EPW"
+          title="Emojis Per Week (EPW)"
           description="Average number of emojis added per week in the last 4 weeks"
         >
           <div className="w-full aspect-2/1 mb-2">
@@ -405,6 +403,7 @@ export function SectionCards() {
           </div>
         </InfoDrawerResponsive>
       </motion.div>
+      </div>
     </div>
 
   );

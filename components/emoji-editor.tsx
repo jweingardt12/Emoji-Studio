@@ -54,6 +54,15 @@ const defaultAdjustments: ImageAdjustments = {
   sharpen: 0,
 }
 
+function SliderLabel({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between">
+      <Label className="text-sm">{label}</Label>
+      <span className="text-xs tabular-nums text-muted-foreground">{value}</span>
+    </div>
+  )
+}
+
 export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps) {
   const [adjustments, setAdjustments] = useState<ImageAdjustments>(defaultAdjustments)
   const [removeBackground, setRemoveBackground] = useState(false)
@@ -637,7 +646,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
               <TabsContent value="adjustments" className="space-y-4 mt-4">
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-sm">Brightness</Label>
+                    <SliderLabel label="Brightness" value={adjustments.brightness} />
                     <Slider
                       value={[adjustments.brightness]}
                       onValueChange={([value]) =>
@@ -652,7 +661,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                   </div>
 
                   <div>
-                    <Label className="text-sm">Contrast</Label>
+                    <SliderLabel label="Contrast" value={adjustments.contrast} />
                     <Slider
                       value={[adjustments.contrast]}
                       onValueChange={([value]) =>
@@ -667,7 +676,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                   </div>
 
                   <div>
-                    <Label className="text-sm">Saturation</Label>
+                    <SliderLabel label="Saturation" value={adjustments.saturation} />
                     <Slider
                       value={[adjustments.saturation]}
                       onValueChange={([value]) =>
@@ -682,7 +691,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                   </div>
 
                   <div>
-                    <Label className="text-sm">Hue</Label>
+                    <SliderLabel label="Hue" value={`${adjustments.hue > 0 ? '+' : ''}${adjustments.hue}°`} />
                     <Slider
                       value={[adjustments.hue]}
                       onValueChange={([value]) =>
@@ -701,7 +710,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
               <TabsContent value="effects" className="space-y-4 mt-4">
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-sm">Blur</Label>
+                    <SliderLabel label="Blur" value={adjustments.blur} />
                     <Slider
                       value={[adjustments.blur]}
                       onValueChange={([value]) =>
@@ -716,7 +725,7 @@ export function EmojiEditor({ emoji, isOpen, onClose, onSave }: EmojiEditorProps
                   </div>
 
                   <div>
-                    <Label className="text-sm">Sharpen</Label>
+                    <SliderLabel label="Sharpen" value={adjustments.sharpen} />
                     <Slider
                       value={[adjustments.sharpen]}
                       onValueChange={([value]) =>

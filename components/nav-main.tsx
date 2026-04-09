@@ -5,7 +5,7 @@ import type React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { XCircle } from "lucide-react"
+import { XCircle, ExternalLink } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface NavMainProps {
@@ -76,42 +76,28 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground min-h-[44px]",
                 isDisabled && "pointer-events-none opacity-50",
               )}
             >
               <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
               <span className="truncate">{item.title}</span>
               {item.badge && (
-                <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
+                <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground uppercase">
                   {item.badge}
                 </span>
               )}
-              {/* External link indicator */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="ml-auto h-3 w-3 text-muted-foreground"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
-                />
-              </svg>
+              <ExternalLink className="ml-auto h-3 w-3 text-muted-foreground" aria-hidden="true" />
             </a>
           )
         }
         
         const linkContent = (
           <>
-            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-[var(--brand)]" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors duration-200", isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground", isRefresh && refreshing && "animate-spin")} aria-hidden="true" />
             <span className="truncate">{item.title}</span>
             {item.badge && (
-              <span className="ml-1.5 inline-flex items-center rounded-full bg-green-700 px-2 py-0.5 text-xs font-medium text-white uppercase">
+              <span className="ml-1.5 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground uppercase">
                 {item.badge}
               </span>
             )}
@@ -128,8 +114,8 @@ export function NavMain({ items, onRefresh, refreshing, slackLoaded, onNavigate,
             onClick={handleClick}
             prefetch={true}
             className={cn(
-              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors duration-200",
-              isActive && "bg-accent text-accent-foreground",
+              "group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors duration-200 min-h-[44px]",
+              isActive && "bg-accent/50 text-foreground",
               isDisabled && "pointer-events-none opacity-50",
             )}
             aria-current={isActive ? "page" : undefined}

@@ -17,7 +17,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import { Hash, Lock, X, Scan, ChevronDown, Check } from "lucide-react"
+import { Hash, Lock, X, Scan, ChevronDown, Check, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { SlackChannel, DateRange } from "@/app/reactions/hooks/use-reactions-state"
 
@@ -99,9 +99,19 @@ export function ChannelPicker({
               <CommandInput placeholder="Search channels..." />
               <CommandList>
                 <CommandEmpty>
-                  {channels.length === 0
-                    ? "No channels loaded. Close and click again to load."
-                    : "No channels found."}
+                  {channelsLoading ? (
+                    <p className="text-sm text-muted-foreground py-2">Loading channels...</p>
+                  ) : channels.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 py-3">
+                      <p className="text-sm text-muted-foreground">No channels loaded</p>
+                      <Button variant="outline" size="sm" onClick={fetchChannels} className="gap-1.5">
+                        <RefreshCw className="h-3 w-3" />
+                        Load channels
+                      </Button>
+                    </div>
+                  ) : (
+                    "No channels found."
+                  )}
                 </CommandEmpty>
                 <CommandGroup>
                   {channels.map((channel) => {

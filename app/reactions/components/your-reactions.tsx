@@ -62,9 +62,6 @@ export function YourReactions({
         </div>
         {topFive.length > 0 && (
           <div>
-            <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wide font-medium">
-              Your top emojis
-            </p>
             <div className="grid grid-cols-5 gap-3">
               {topFive.map((name, i) => (
                 <div
