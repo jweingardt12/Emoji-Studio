@@ -21,7 +21,7 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
             </div>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
 
-                {/* Emojis by Day of Week */}
+                {/* Emojis by Day of Week - Radar */}
                 <Card className="md:col-span-1 lg:col-span-2">
                     <CardHeader>
                         <CardTitle>Emojis by Day of Week</CardTitle>
@@ -30,70 +30,28 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                     <CardContent>
                         <ChartContainer
                             config={{
-                                count: { label: "Emojis Created", color: "#008FFB" },
-                                label: { color: "hsl(var(--background))" }
+                                count: { label: "Emojis Created", color: "hsl(var(--chart-1))" },
                             }}
-                            className="w-full h-auto aspect-[3/2]"
+                            className="mx-auto aspect-square max-h-[300px]"
                         >
-                            <BarChart
-                                accessibilityLayer
-                                data={chartData.weekdayDistribution}
-                                layout="vertical"
-                                margin={{ top: 0, right: 16, bottom: 0, left: 0 }}
-                            >
-                                <CartesianGrid horizontal={false} />
-                                <YAxis
-                                    dataKey="day"
-                                    type="category"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    hide
-                                />
-                                <XAxis dataKey="count" type="number" hide />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <ChartTooltipContent>
-                                                    <div className="font-semibold">{payload[0].payload.day}</div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {payload[0].value} emojis
-                                                    </div>
-                                                </ChartTooltipContent>
-                                            )
-                                        }
-                                        return null
-                                    }}
-                                />
-                                <Bar
+                            <RadarChart data={chartData.weekdayDistribution}>
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <PolarAngleAxis dataKey="day" tick={{ fontSize: 12 }} />
+                                <PolarGrid />
+                                <Radar
                                     dataKey="count"
-                                    layout="vertical"
-                                    fill="#008FFB"
-                                    radius={4}
-                                >
-                                    <LabelList
-                                        dataKey="day"
-                                        position="insideLeft"
-                                        offset={8}
-                                        className="fill-[--color-label]"
-                                        fontSize={12}
-                                    />
-                                    <LabelList
-                                        dataKey="count"
-                                        position="right"
-                                        offset={8}
-                                        className="fill-foreground"
-                                        fontSize={12}
-                                    />
-                                </Bar>
-                            </BarChart>
+                                    fill="hsl(var(--chart-1))"
+                                    fillOpacity={0.3}
+                                    stroke="hsl(var(--chart-1))"
+                                    strokeWidth={2}
+                                    dot={{ r: 3, fill: "hsl(var(--chart-1))" }}
+                                />
+                            </RadarChart>
                         </ChartContainer>
                     </CardContent>
                     <CardFooter className="flex-col items-start gap-2 text-sm">
                         <div className="flex gap-2 font-medium leading-none">
-                            Most active day: {chartData.weekdayDistribution.sort((a: any, b: any) => b.count - a.count)[0]?.day}
+                            Most active: {[...chartData.weekdayDistribution].sort((a: any, b: any) => b.count - a.count)[0]?.day}
                             <TrendingUp className="h-4 w-4" />
                         </div>
                     </CardFooter>
@@ -120,16 +78,17 @@ export const ActivityTab = memo(({ chartData, isClient }: ActivityTabProps) => {
                                     <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                                     <PolarAngleAxis
                                         dataKey="timeOfDay"
-                                        tick={{ fill: '#a1a1aa' }}
-                                        axisLine={{ stroke: '#3f3f46' }}
+                                        tick={{ fontSize: 11 }}
                                     />
-                                    <PolarGrid stroke="#3f3f46" strokeDasharray="3 3" />
+                                    <PolarGrid />
                                     <Radar
                                         name="Emojis Created"
                                         dataKey="count"
-                                        fill="#8b5cf6"
-                                        stroke="#8b5cf6"
-                                        fillOpacity={0.6}
+                                        fill="hsl(var(--chart-4))"
+                                        stroke="hsl(var(--chart-4))"
+                                        fillOpacity={0.3}
+                                        strokeWidth={2}
+                                        dot={{ r: 2.5, fill: "hsl(var(--chart-4))" }}
                                     />
                                 </RadarChart>
                             </ChartContainer>

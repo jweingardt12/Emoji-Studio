@@ -14,7 +14,8 @@ import { NotificationManager } from "@/components/notification-manager";
 import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary } from "@/components/error-boundary"
+import { WhatsNewModal } from "@/components/whats-new-modal";
 
 export default function RootLayout({
   children,
@@ -99,6 +100,7 @@ export default function RootLayout({
                 <GlobalExtensionListener />
                 <NotificationManager />
               </PWALayoutWrapper>
+              <WhatsNewModal />
             </EmojiDataProvider>
             <Toaster
               position="bottom-right"

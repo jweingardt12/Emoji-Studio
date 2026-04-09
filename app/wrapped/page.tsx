@@ -6,8 +6,15 @@ import { useSearchParams } from "next/navigation"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useWrappedStats } from "@/lib/hooks/use-wrapped-stats"
 import { useTrack } from "@/lib/hooks/use-track"
-import { WrappedStory } from "@/components/wrapped/wrapped-story"
-import { WrappedShareModal } from "@/components/wrapped/wrapped-share-modal"
+import dynamic from "next/dynamic"
+const WrappedStory = dynamic(
+  () => import("@/components/wrapped/wrapped-story").then(mod => mod.WrappedStory),
+  { ssr: false }
+)
+const WrappedShareModal = dynamic(
+  () => import("@/components/wrapped/wrapped-share-modal").then(mod => mod.WrappedShareModal),
+  { ssr: false }
+)
 import { WrappedLanding } from "@/components/wrapped/wrapped-landing"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

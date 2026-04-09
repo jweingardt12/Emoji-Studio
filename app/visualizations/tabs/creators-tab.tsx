@@ -2,6 +2,7 @@ import React, { memo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts"
+import { DonutChart, DonutLegend, CHART_COLORS } from "@/components/charts/donut-chart"
 import { Users, Activity } from "lucide-react"
 
 interface CreatorsTabProps {
@@ -143,67 +144,20 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
                     </CardFooter>
                 </Card>
 
-                {/* Creator Productivity Distribution */}
+                {/* Creator Productivity Distribution - Pie */}
                 <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Creator Productivity Distribution</CardTitle>
-                        <CardDescription>Number of creators by emoji count</CardDescription>
+                        <CardTitle>Creator Productivity</CardTitle>
+                        <CardDescription>Distribution of creators by emoji count</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer
-                            config={{
-                                count: { label: "Creators", color: "#775DD0" },
-                            }}
-                            className="h-[300px] w-full"
-                        >
-                            <BarChart
-                                data={chartData.creatorProductivity || []}
-                                margin={{ left: 12, right: 12, top: 12 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis
-                                    dataKey="range"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    label={{ value: 'Emojis Created', position: 'insideBottom', offset: -5 }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    label={{ value: 'Number of Creators', angle: -90, position: 'insideLeft' }}
-                                />
-                                <ChartTooltip
-                                    content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <ChartTooltipContent>
-                                                    <div className="font-semibold">{payload[0].payload.range} emojis</div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {payload[0].value} creators
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Avg: {payload[0].payload.avgCount} emojis
-                                                    </div>
-                                                </ChartTooltipContent>
-                                            )
-                                        }
-                                        return null
-                                    }}
-                                />
-                                <Bar
-                                    dataKey="count"
-                                    fill="#775DD0"
-                                    radius={[4, 4, 0, 0]}
-                                />
-                            </BarChart>
-                        </ChartContainer>
+                        <CreatorProductivityDonut data={chartData.creatorProductivity} />
                     </CardContent>
                     <CardFooter className="flex-col items-start gap-2 text-sm">
-                        <div className="flex gap-2 font-medium leading-none">
-                            Total creators: {chartData.creatorProductivity?.reduce((sum: number, item: any) => sum + item.count, 0) || 0}
-                            <Activity className="h-4 w-4" />
-                        </div>
+                        <DonutLegend items={(chartData.creatorProductivity || []).map((item: any, i: number) => ({
+                            label: item.range,
+                            color: CHART_COLORS[i % CHART_COLORS.length],
+                        }))} />
                     </CardFooter>
                 </Card>
             </div>
@@ -212,3 +166,21 @@ export const CreatorsTab = memo(({ chartData }: CreatorsTabProps) => {
 })
 
 CreatorsTab.displayName = "CreatorsTab"
+
+import { useMemo } from "react"
+
+function CreatorProductivityDonut({ data: rawData }: { data: any[] | undefined }) {
+    const { pieData, total } = useMemo(() => {
+        const data = rawData || []
+        return {
+            pieData: data.map((item: any, i: number) => ({
+                name: `${item.range} emojis`,
+                value: item.count,
+                fill: CHART_COLORS[i % CHART_COLORS.length],
+            })),
+            total: data.reduce((sum: number, item: any) => sum + item.count, 0),
+        }
+    }, [rawData])
+
+    return <DonutChart data={pieData} centerValue={String(total)} centerLabel="creators" />
+}

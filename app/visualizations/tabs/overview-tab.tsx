@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, AreaChart, Area, LabelList, ResponsiveContainer } from "recharts"
 import { TrendingUp, Calendar } from "lucide-react"
+import { DonutChart, DonutLegend, CHART_COLORS } from "@/components/charts/donut-chart"
 import { TimeRange } from "../use-visualization-data"
 
 interface OverviewTabProps {
@@ -186,93 +187,23 @@ export const OverviewTab = memo(({
                 </CardContent>
             </Card>
 
-            {/* Image vs GIF Emojis - Interactive Chart */}
+            {/* Image vs GIF Emojis - Donut Chart */}
             <Card className="lg:col-span-2">
-                <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
-                    <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-                        <CardTitle>Image vs GIF Emojis</CardTitle>
-                        <CardDescription>
-                            Breakdown of emoji types {timeRange === "all" ? "over all time" : `over the ${timeRangeOptions.find(o => o.value === timeRange)?.label.toLowerCase() || ""}`}
-                        </CardDescription>
-                    </div>
-                    <div className="flex">
-                        {(["image", "gif"] as const).map((key) => {
-                            // Calculate total from the daily data for consistency
-                            const total = chartData.emojiTypes.reduce((acc: number, curr: any) => acc + curr[key], 0);
-                            const isActive = activeEmojiType === key;
-                            return (
-                                <button
-                                    key={key}
-                                    data-active={isActive}
-                                    className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
-                                    onClick={() => handleTypeChange(key)}
-                                >
-                                    <span className="text-xs text-muted-foreground">
-                                        {key === "image" ? "Static Images" : "Animated GIFs"}
-                                    </span>
-                                    <span className="text-lg font-bold leading-none sm:text-3xl">
-                                        {total.toLocaleString()}
-                                    </span>
-                                </button>
-                            )
-                        })}
-                    </div>
+                <CardHeader>
+                    <CardTitle>Image vs GIF Emojis</CardTitle>
+                    <CardDescription>
+                        Breakdown of emoji types {timeRange === "all" ? "over all time" : `over the ${timeRangeOptions.find(o => o.value === timeRange)?.label.toLowerCase() || ""}`}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="px-2 sm:p-6">
-                    <ChartContainer
-                        config={{
-                            views: { label: "Emoji Count" },
-                            image: { label: "Static Images", color: "#00E396" },
-                            gif: { label: "Animated GIFs", color: "#FF4560" },
-                        }}
-                        className="aspect-auto h-[250px] w-full"
-                    >
-                        <BarChart
-                            accessibilityLayer
-                            data={chartData.emojiTypes}
-                            margin={{ left: 12, right: 12 }}
-                        >
-                            <CartesianGrid vertical={false} />
-                            <XAxis
-                                dataKey="date"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                                minTickGap={32}
-                                tickFormatter={(value: string) => {
-                                    const date = new Date(value)
-                                    return date.toLocaleDateString("en-US", {
-                                        month: "short",
-                                        day: "numeric",
-                                    })
-                                }}
-                            />
-                            <ChartTooltip
-                                content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                                    if (active && payload && payload.length) {
-                                        const date = new Date(payload[0].payload.date);
-                                        return (
-                                            <ChartTooltipContent>
-                                                <div className="font-semibold">
-                                                    {date.toLocaleDateString("en-US", {
-                                                        month: "short",
-                                                        day: "numeric",
-                                                        year: "numeric",
-                                                    })}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {payload[0].value} {activeEmojiType === "image" ? "static images" : "animated GIFs"}
-                                                </div>
-                                            </ChartTooltipContent>
-                                        )
-                                    }
-                                    return null
-                                }}
-                            />
-                            <Bar dataKey={activeEmojiType} fill={activeEmojiType === "image" ? "#00E396" : "#FF4560"} radius={4} />
-                        </BarChart>
-                    </ChartContainer>
+                    <OverviewTypeDonut emojiTypes={chartData.emojiTypes} />
                 </CardContent>
+                <CardFooter className="flex-col items-start gap-2 text-sm">
+                    <DonutLegend items={[
+                        { label: "Images", color: CHART_COLORS[0] },
+                        { label: "GIFs", color: CHART_COLORS[4] },
+                    ]} />
+                </CardFooter>
             </Card>
 
             {/* Community Growth */}
@@ -341,3 +272,21 @@ export const OverviewTab = memo(({
 })
 
 OverviewTab.displayName = "OverviewTab"
+
+import { useMemo } from "react"
+
+function OverviewTypeDonut({ emojiTypes }: { emojiTypes: any[] }) {
+    const { pieData, total } = useMemo(() => {
+        const imageCount = emojiTypes.reduce((acc: number, curr: any) => acc + (curr.image || 0), 0)
+        const gifCount = emojiTypes.reduce((acc: number, curr: any) => acc + (curr.gif || 0), 0)
+        return {
+            pieData: [
+                { name: "Static Images", value: imageCount, fill: CHART_COLORS[0] },
+                { name: "Animated GIFs", value: gifCount, fill: CHART_COLORS[4] },
+            ],
+            total: imageCount + gifCount,
+        }
+    }, [emojiTypes])
+
+    return <DonutChart data={pieData} centerValue={total.toLocaleString()} centerLabel="total emojis" />
+}

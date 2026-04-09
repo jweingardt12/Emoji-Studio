@@ -641,7 +641,7 @@ export default function EmojiOverlay({ emoji, onClose, onEmojiClick, onUserClick
             ) : (
               <>
                 <div className="flex flex-row items-center gap-3 p-3 md:p-4 pb-2 mb-2">
-                  <img src="/logo.png" alt="Emoji Dashboard Logo" className="h-8 w-8 rounded-lg shadow-md" />
+                  <img src="/logo.png" alt="Emoji Dashboard Logo" width={32} height={32} className="h-8 w-8 rounded-lg shadow-md" />
                   <span className="text-lg font-semibold">Emoji Studio</span>
                   <span className="text-2xl font-light text-muted-foreground mx-2">|</span>
                   <span className="text-lg font-semibold font-mono">:{emoji.name}:</span>

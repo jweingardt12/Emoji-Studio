@@ -18,7 +18,11 @@ import { TopReactionsChart } from "./components/top-reactions-chart"
 import { ReactionTimeline } from "./components/reaction-timeline"
 import { YourReactions } from "./components/your-reactions"
 import { ChannelBreakdown } from "./components/channel-breakdown"
-import { ShareCardGenerator } from "./components/share-card-generator"
+import dynamic from "next/dynamic"
+const ShareCardGenerator = dynamic(
+  () => import("./components/share-card-generator").then(mod => mod.ShareCardGenerator),
+  { ssr: false }
+)
 import { TopCreators } from "./components/top-creators"
 import { TopReactors } from "./components/top-reactors"
 import { HowItWorksModal } from "./components/how-it-works-modal"

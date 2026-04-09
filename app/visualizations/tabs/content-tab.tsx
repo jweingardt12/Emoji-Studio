@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, Cell, LabelList } from "recharts"
 import { FileText, Activity, TrendingUp } from "lucide-react"
+import { DonutChart, DonutLegend, CHART_COLORS } from "@/components/charts/donut-chart"
 
 interface ContentTabProps {
     chartData: any
@@ -155,100 +156,20 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
                     </CardFooter>
                 </Card>
 
-                {/* Emoji Type Market Share */}
-                <Card className="lg:col-span-4">
+                {/* Emoji Type Market Share - Donut */}
+                <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle>Emoji Type Market Share</CardTitle>
-                        <CardDescription>GIF vs Image distribution over time (percentage)</CardDescription>
+                        <CardTitle>Emoji Type Breakdown</CardTitle>
+                        <CardDescription>Static images vs animated GIFs</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer
-                            config={{
-                                imagePercent: { label: "Static Images", color: "#00E396" },
-                                gifPercent: { label: "Animated GIFs", color: "#FF4560" },
-                            }}
-                            className="h-[300px] w-full"
-                        >
-                            <AreaChart
-                                data={chartData.typePercentages}
-                                margin={{ left: 12, right: 12, top: 12 }}
-                                stackOffset="expand"
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    minTickGap={32}
-                                    tickFormatter={(value: string) => {
-                                        const date = new Date(value);
-                                        return date.toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                        });
-                                    }}
-                                />
-                                <YAxis tickLine={false} axisLine={false} tickFormatter={(value: number) => `${Math.round(value * 100)}%`} />
-                                <ChartTooltip
-                                    content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                                        if (active && payload && payload.length) {
-                                            const date = new Date(payload[0].payload.date);
-                                            const imagePercent = payload[0].payload.imagePercent;
-                                            const gifPercent = payload[0].payload.gifPercent;
-                                            return (
-                                                <ChartTooltipContent>
-                                                    <div className="font-semibold">
-                                                        {date.toLocaleDateString("en-US", {
-                                                            month: "short",
-                                                            day: "numeric",
-                                                            year: "numeric",
-                                                        })}
-                                                    </div>
-                                                    <div className="text-xs space-y-1 mt-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#00E396" }} />
-                                                            <span className="text-muted-foreground">{imagePercent}% images</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: "#FF4560" }} />
-                                                            <span className="text-muted-foreground">{gifPercent}% GIFs</span>
-                                                        </div>
-                                                    </div>
-                                                </ChartTooltipContent>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="imagePercent"
-                                    stackId="1"
-                                    stroke="#00E396"
-                                    fill="#00E396"
-                                    fillOpacity={0.6}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="gifPercent"
-                                    stackId="1"
-                                    stroke="#FF4560"
-                                    fill="#FF4560"
-                                    fillOpacity={0.6}
-                                />
-                            </AreaChart>
-                        </ChartContainer>
+                        <ContentTypeDonut typePercentages={chartData.typePercentages} />
                     </CardContent>
                     <CardFooter className="flex-col items-start gap-2 text-sm">
-                        <div className="flex gap-2 font-medium leading-none">
-                            {chartData.typePercentages.length > 0 && (
-                                <>
-                                    Current: {chartData.typePercentages[chartData.typePercentages.length - 1]?.imagePercent || 0}% images, {chartData.typePercentages[chartData.typePercentages.length - 1]?.gifPercent || 0}% GIFs
-                                    <TrendingUp className="h-4 w-4" />
-                                </>
-                            )}
-                        </div>
+                        <DonutLegend items={[
+                            { label: "Images", color: CHART_COLORS[1] },
+                            { label: "GIFs", color: CHART_COLORS[4] },
+                        ]} />
                     </CardFooter>
                 </Card>
 
@@ -318,3 +239,22 @@ export const ContentTab = memo(({ chartData, handleNameLengthClick }: ContentTab
 })
 
 ContentTab.displayName = "ContentTab"
+
+import { useMemo } from "react"
+
+function ContentTypeDonut({ typePercentages }: { typePercentages: any[] }) {
+    const { pieData, imagePercent } = useMemo(() => {
+        const latest = typePercentages?.[typePercentages.length - 1]
+        const img = latest?.imagePercent ?? 0
+        const gif = latest?.gifPercent ?? 0
+        return {
+            pieData: [
+                { name: "Static Images", value: img, fill: CHART_COLORS[1] },
+                { name: "Animated GIFs", value: gif, fill: CHART_COLORS[4] },
+            ],
+            imagePercent: img,
+        }
+    }, [typePercentages])
+
+    return <DonutChart data={pieData} centerValue={`${imagePercent}%`} centerLabel="static images" />
+}

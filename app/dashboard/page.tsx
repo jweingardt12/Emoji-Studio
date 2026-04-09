@@ -4,7 +4,11 @@ import { useState, useEffect, useRef } from "react"
 import { useIsClient } from "@/hooks/use-is-client"
 import Image from "next/image"
 import Link from "next/link"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
+import dynamic from "next/dynamic"
+const ChartAreaInteractive = dynamic(
+  () => import("@/components/chart-area-interactive").then(mod => mod.ChartAreaInteractive),
+  { ssr: false, loading: () => <div className="h-[300px] rounded-xl border border-muted/40 bg-card/50 animate-pulse" /> }
+)
 import { SectionCards } from "@/components/section-cards"
 
 import { DashboardTabbedContent } from "@/components/dashboard-tabbed-content"
@@ -25,6 +29,7 @@ import {
   DashboardTabbedContentSkeleton,
   EmptyStateEmojis,
 } from "@/components/dashboard-loading-states"
+import { DashboardUsageSummary } from "@/components/dashboard-usage-summary"
 
 // Use a client-side only component to avoid hydration mismatches
 // Metadata moved to page.metadata.ts
@@ -301,6 +306,12 @@ function DashboardPage() {
           <ChartAreaInteractive />
         )}
       </div>
+      {/* Usage Summary - Staggered animation delay: 200ms */}
+      <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-200 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
+        }`}>
+        <DashboardUsageSummary />
+      </div>
+
       {/* Tabbed Content for Mobile, Side-by-side for Desktop - Staggered animation delay: 300ms */}
       <div className={`px-3 sm:px-4 lg:px-6 transition-all duration-500 ease-out delay-300 ${pageVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.98]'
         }`}>
