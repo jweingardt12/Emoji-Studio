@@ -1,15 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
+
+const emptySubscribe = () => () => {}
 
 export default function InstallCertPage() {
-  // Show the visitor's actual dev host instead of a hardcoded LAN IP.
-  const [devUrl, setDevUrl] = useState("https://<your-local-ip>:3001")
-  useEffect(() => {
-    if (window.location.hostname) {
-      setDevUrl(`https://${window.location.hostname}:3001`)
-    }
-  }, [])
+  // Show the visitor's actual dev host instead of a hardcoded LAN IP
+  // (server snapshot is null so the prerendered HTML stays generic).
+  const hostname = useSyncExternalStore(
+    emptySubscribe,
+    () => window.location.hostname,
+    () => null
+  )
+  const devUrl = hostname ? `https://${hostname}:3001` : "https://<your-local-ip>:3001"
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
@@ -20,7 +23,7 @@ export default function InstallCertPage() {
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-6">
           <p className="text-amber-600 dark:text-amber-400 text-sm">
-            ⚠️ This is the mkcert Root CA certificate for local development only. Only install if you're developing Emoji Studio.
+            ⚠️ This is the mkcert Root CA certificate for local development only. Only install if you&apos;re developing Emoji Studio.
           </p>
         </div>
 
@@ -62,7 +65,7 @@ export default function InstallCertPage() {
               <strong>Settings → General → VPN &amp; Device Management</strong>
             </p>
             <p className="text-sm text-muted-foreground ml-10 mt-2">
-              You'll see a downloaded profile. Tap it and install it.
+              You&apos;ll see a downloaded profile. Tap it and install it.
             </p>
           </div>
 
@@ -81,7 +84,7 @@ export default function InstallCertPage() {
               <strong>Settings → General → About → Certificate Trust Settings</strong>
             </p>
             <p className="text-sm text-muted-foreground ml-10 mt-2">
-              Toggle ON "Enable full trust" for the <strong>mkcert certificate from your development machine</strong>
+              Toggle ON &quot;Enable full trust&quot; for the <strong>mkcert certificate from your development machine</strong>
             </p>
           </div>
 
