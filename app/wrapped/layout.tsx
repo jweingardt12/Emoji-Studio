@@ -50,5 +50,30 @@ export default function WrappedLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <WrappedLayoutWrapper>{children}</WrappedLayoutWrapper>
+  return (
+    <>
+      {/* Wrapped Typography: Clash Display + General Sans from Fontshare.
+          Loaded here (not in the root layout) because only /wrapped uses
+          these families. React hoists link/script tags into <head>. */}
+      <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+      <link
+        id="fontshare-fonts"
+        href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap"
+        rel="stylesheet"
+        media="print"
+      />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `var e=document.getElementById('fontshare-fonts');if(e)e.media='all'`,
+        }}
+      />
+      <noscript>
+        <link
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap"
+          rel="stylesheet"
+        />
+      </noscript>
+      <WrappedLayoutWrapper>{children}</WrappedLayoutWrapper>
+    </>
+  )
 }

@@ -6,6 +6,21 @@ export function useEmojiNotifications() {
   const lastCheckRef = useRef<{ [key: string]: number }>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // The polling interval reads the latest data through a ref so it isn't
+  // torn down and recreated on every emojiData change.
+  const emojiDataRef = useRef(emojiData);
+  const checkFnRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const hadData = emojiDataRef.current && emojiDataRef.current.length > 0;
+    emojiDataRef.current = emojiData;
+    // Run a check as soon as data first arrives (e.g. after a sync) so the
+    // baseline snapshot is seeded without waiting for the next interval tick.
+    if (!hadData && emojiData && emojiData.length > 0) {
+      checkFnRef.current?.();
+    }
+  }, [emojiData]);
+
   useEffect(() => {
     // Check if notifications are enabled
     let notificationSettings: any;
@@ -16,7 +31,7 @@ export function useEmojiNotifications() {
     } catch (e) {
       return;
     }
-    
+
     if (!notificationSettings.enabled) return;
 
     // Check for notification permission
@@ -50,7 +65,8 @@ export function useEmojiNotifications() {
 
     // Function to check for new emojis
     const checkForNewEmojis = () => {
-      if (!emojiData || emojiData.length === 0) return;
+      const currentData = emojiDataRef.current;
+      if (!currentData || currentData.length === 0) return;
 
       // Get last known emoji state - only store names and timestamps
       let lastCheck: { [name: string]: number } = {};
@@ -62,10 +78,10 @@ export function useEmojiNotifications() {
       } catch (e) {
         localStorage.removeItem('lastEmojiCheck');
       }
-      
+
       // Create a lightweight map of current emojis (only names and timestamps)
       const currentEmojis: { [name: string]: number } = {};
-      emojiData.forEach(emoji => {
+      currentData.forEach(emoji => {
         currentEmojis[emoji.name] = emoji.created || 0;
       });
 
@@ -93,10 +109,10 @@ export function useEmojiNotifications() {
 
       // Show notification if new emojis found
       if (newEmojis.length > 0) {
-        const title = newEmojis.length === 1 
+        const title = newEmojis.length === 1
           ? `New emoji: :${newEmojis[0]}:`
           : `${newEmojis.length} new emojis added`;
-        
+
         const notification = new Notification('Emoji Studio', {
           body: title + '\nClick to view in Explorer',
           icon: '/logo-192.png',
@@ -118,13 +134,16 @@ export function useEmojiNotifications() {
       }
     };
 
+    checkFnRef.current = checkForNewEmojis;
+
     // Check immediately on mount
     checkForNewEmojis();
 
     // Set up interval based on frequency setting
     const frequency = notificationSettings.frequency || 'hourly';
     let intervalMs: number;
-    
+    let dailyTimeout: NodeJS.Timeout | null = null;
+
     switch (frequency) {
       case 'realtime':
         intervalMs = 15 * 60 * 1000; // 15 minutes
@@ -139,21 +158,26 @@ export function useEmojiNotifications() {
           const [hours, minutes] = notificationSettings.time.split(':').map(Number);
           const targetTime = new Date();
           targetTime.setHours(hours, minutes, 0, 0);
-          
+
           // If target time has passed today, set for tomorrow
           if (targetTime <= now) {
             targetTime.setDate(targetTime.getDate() + 1);
           }
-          
+
           // Set initial timeout to reach target time, then repeat daily
           const msUntilTarget = targetTime.getTime() - now.getTime();
-          setTimeout(() => {
+          dailyTimeout = setTimeout(() => {
             checkForNewEmojis();
             // Then check every 24 hours
             intervalRef.current = setInterval(checkForNewEmojis, 24 * 60 * 60 * 1000);
           }, msUntilTarget);
-          
-          return; // Exit early since we set up custom timing
+
+          // Exit early since we set up custom timing
+          return () => {
+            if (dailyTimeout) clearTimeout(dailyTimeout);
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            checkFnRef.current = null;
+          };
         } else {
           intervalMs = 24 * 60 * 60 * 1000; // Default to 24 hours if no time specified
         }
@@ -175,6 +199,7 @@ export function useEmojiNotifications() {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      checkFnRef.current = null;
     };
-  }, [emojiData]);
+  }, []);
 }

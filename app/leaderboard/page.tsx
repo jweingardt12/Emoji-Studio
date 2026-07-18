@@ -17,7 +17,13 @@ import { RefreshButton } from "@/components/refresh-button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Share2 } from "lucide-react"
-import { LeaderboardShareModal } from "@/components/leaderboard-share-modal"
+import dynamic from "next/dynamic"
+// Loaded on demand: the share modal pulls in image/GIF generation code that
+// isn't needed until the user actually opens it.
+const LeaderboardShareModal = dynamic(
+  () => import("@/components/leaderboard-share-modal").then((m) => m.LeaderboardShareModal),
+  { ssr: false }
+)
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 import { staggerContainer, fadeUp } from "@/lib/motion"
 
@@ -46,6 +52,13 @@ function LeaderboardPage() {
   const [showInactiveUsers, setShowInactiveUsersState] = useState<boolean>(true)
   const [inactivityThresholdMonths, setInactivityThresholdMonths] = useState<number>(3)
   const [showShareModal, setShowShareModal] = useState(false)
+  // Mount the modal lazily on first open so its chunk isn't fetched until needed,
+  // then keep it mounted to preserve state and exit animations.
+  const [hasOpenedShareModal, setHasOpenedShareModal] = useState(false)
+  const openShareModal = useCallback(() => {
+    setHasOpenedShareModal(true)
+    setShowShareModal(true)
+  }, [])
 
   useEffect(() => {
     setNow(new Date());
@@ -173,7 +186,7 @@ function LeaderboardPage() {
               </h1>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setShowShareModal(true)}
+                  onClick={openShareModal}
                   className="h-10 px-6 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-xs"
                   disabled={filteredLeaderboard.length === 0}
                 >
@@ -206,7 +219,7 @@ function LeaderboardPage() {
                 Leaderboard
               </h2>
               <Button
-                onClick={() => setShowShareModal(true)}
+                onClick={openShareModal}
                 className="h-10 px-12 gap-2 relative bg-background hover:bg-muted text-foreground border border-border shadow-xs"
                 disabled={filteredLeaderboard.length === 0}
               >
@@ -239,14 +252,16 @@ function LeaderboardPage() {
         />
       )}
 
-      <LeaderboardShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        users={filteredLeaderboard}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
-        workspaceName={workspaceName}
-      />
+      {hasOpenedShareModal && (
+        <LeaderboardShareModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          users={filteredLeaderboard}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          workspaceName={workspaceName}
+        />
+      )}
     </motion.div>
   )
 }

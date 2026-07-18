@@ -15,11 +15,7 @@ import { PWALayoutWrapper } from "@/components/pwa-layout-wrapper";
 import { PullToRefreshWrapper } from "@/components/pull-to-refresh-wrapper";
 import { MobilePageManager } from "@/components/mobile-page-manager";
 import { ErrorBoundary } from "@/components/error-boundary"
-import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
 
 export default function RootLayout({
   children,
@@ -27,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={cn("dark", GeistSans.variable, GeistMono.variable, "font-sans", geist.variable)} suppressHydrationWarning>
+    <html lang="en" className={cn(GeistSans.variable, GeistMono.variable, "font-sans")} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -43,22 +39,6 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="512x512" href="/pwa-icon-512.png" />
         <link rel="apple-touch-icon" sizes="1024x1024" href="/pwa-icon-1024.png" />
         <link rel="manifest" href="/manifest.json" />
-        {/* Wrapped Typography: Clash Display + General Sans from Fontshare - async loaded */}
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-        <link
-          id="fontshare-fonts"
-          href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap"
-          rel="stylesheet"
-          media="print"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `var e=document.getElementById('fontshare-fonts');if(e)e.media='all'`
-          }}
-        />
-        <noscript>
-          <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
-        </noscript>
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans bg-background text-foreground animate-fade-up overflow-hidden md:overflow-auto`}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-9999 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">

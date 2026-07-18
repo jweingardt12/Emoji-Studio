@@ -46,7 +46,6 @@ import {
   type ShareResult,
 } from "@/lib/utils/share-image"
 import { isIOS, isWebView, supportsClipboardWriteImage } from "@/lib/utils/ios-detection"
-import GIF from "gif.js"
 import { cn } from "@/lib/utils"
 
 interface LeaderboardShareModalProps {
@@ -211,6 +210,7 @@ export function LeaderboardShareModal({
   // Generate a static GIF from an element (single frame, GIF format)
   const generateStaticGif = useCallback(async (element: HTMLElement): Promise<Blob> => {
     const { toCanvas } = await import("html-to-image")
+    const { default: GIF } = await import("gif.js")
     const canvas = await toCanvas(element, { pixelRatio: 2, cacheBust: true })
 
     return new Promise((resolve, reject) => {
@@ -379,6 +379,7 @@ export function LeaderboardShareModal({
     const frameDelay = 33 // 30 FPS
     const outputFrameCount = Math.ceil(outputDuration / frameDelay)
 
+    const { default: GIF } = await import("gif.js")
     return new Promise((resolve, reject) => {
       try {
         const gif = new GIF({

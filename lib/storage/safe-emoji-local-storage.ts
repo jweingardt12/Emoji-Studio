@@ -41,7 +41,8 @@ export const safePersistEmojiDataToLocalStorage = (
 
   try {
     const serialized = JSON.stringify(emojis)
-    const byteSize = new Blob([serialized]).size
+    // UTF-8 byte length without materializing a multi-MB Blob just for .size
+    const byteSize = new TextEncoder().encode(serialized).length
 
     if (byteSize > limit) {
       try {

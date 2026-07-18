@@ -155,8 +155,9 @@ function ExplorerPage() {
     setImageErrors(prev => ({ ...prev, [emojiName]: true }));
   };
 
-  const getPlaceholderImage = (name: string) => {
-    return `https://via.placeholder.com/64x64/EAEAEA/999999?text=${name.slice(0, 2)}`;
+  const getPlaceholderImage = (_name: string) => {
+    // Local asset — the previously used via.placeholder.com service shut down.
+    return "/placeholder.svg";
   };
 
   // Copy actions

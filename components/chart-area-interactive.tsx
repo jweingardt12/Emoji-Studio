@@ -156,39 +156,63 @@ export function ChartAreaInteractive() {
           months.push(new Date(d));
           d.setMonth(d.getMonth() + 1);
         }
+        // Single pass over the data instead of one filter per month.
+        const first = months[0];
+        const last = months[months.length - 1];
+        const rangeStart = Math.floor(
+          new Date(first.getFullYear(), first.getMonth(), 1).getTime() / 1000,
+        );
+        const rangeEnd = Math.floor(
+          new Date(last.getFullYear(), last.getMonth() + 1, 0, 23, 59, 59, 999).getTime() / 1000,
+        );
+        const byMonth = new Map<string, { created: number; users: Set<string> }>();
+        for (const em of emojiData) {
+          if (em.created < rangeStart || em.created > rangeEnd) continue;
+          const key = formatDate(new Date(em.created * 1000), "yyyy-MM");
+          let bucket = byMonth.get(key);
+          if (!bucket) {
+            bucket = { created: 0, users: new Set() };
+            byMonth.set(key, bucket);
+          }
+          bucket.created += 1;
+          bucket.users.add(em.user_id);
+        }
         return months.map((mDate) => {
-          const mStart = new Date(mDate.getFullYear(), mDate.getMonth(), 1);
-          const mEnd = new Date(
-            mDate.getFullYear(),
-            mDate.getMonth() + 1,
-            0,
-            23,
-            59,
-            59,
-            999,
-          );
-          const s = Math.floor(mStart.getTime() / 1000);
-          const e = Math.floor(mEnd.getTime() / 1000);
-          const batch = emojiData.filter((em) => em.created >= s && em.created <= e);
+          const bucket = byMonth.get(formatDate(mDate, "yyyy-MM"));
           return {
             date: formatDate(mDate, "yyyy-MM"),
-            created: batch.length,
-            uniqueContributors: new Set(batch.map((x) => x.user_id)).size,
+            created: bucket?.created ?? 0,
+            uniqueContributors: bucket?.users.size ?? 0,
             isMonthly: true,
           };
         });
       }
     }
 
-    /** otherwise bucket by day */
-    return eachDayOfInterval({ start: startDate, end: todayEnd }).map((d) => {
-      const s = Math.floor(startOfDay(d).getTime() / 1000);
-      const e = Math.floor(endOfDay(d).getTime() / 1000);
-      const batch = emojiData.filter((em) => em.created >= s && em.created <= e);
+    /** otherwise bucket by day — single pass over the data instead of one
+     *  filter per day */
+    const days = eachDayOfInterval({ start: startDate, end: todayEnd });
+    const rangeStart = Math.floor(startOfDay(days[0]).getTime() / 1000);
+    const rangeEnd = Math.floor(endOfDay(days[days.length - 1]).getTime() / 1000);
+    const byDay = new Map<string, { created: number; users: Set<string> }>();
+    for (const em of emojiData) {
+      if (em.created < rangeStart || em.created > rangeEnd) continue;
+      const key = formatDate(new Date(em.created * 1000), "yyyy-MM-dd");
+      let bucket = byDay.get(key);
+      if (!bucket) {
+        bucket = { created: 0, users: new Set() };
+        byDay.set(key, bucket);
+      }
+      bucket.created += 1;
+      bucket.users.add(em.user_id);
+    }
+    return days.map((d) => {
+      const key = formatDate(d, "yyyy-MM-dd");
+      const bucket = byDay.get(key);
       return {
-        date: formatDate(d, "yyyy-MM-dd"),
-        created: batch.length,
-        uniqueContributors: new Set(batch.map((x) => x.user_id)).size,
+        date: key,
+        created: bucket?.created ?? 0,
+        uniqueContributors: bucket?.users.size ?? 0,
       };
     });
   }, [emojiData, now, timeRange, useDemoData, demoChartData]);

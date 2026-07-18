@@ -1,6 +1,6 @@
-import { toPng, toCanvas } from "html-to-image"
-import GIF from "gif.js"
-import { VideoProcessor } from "./video-processor"
+// html-to-image and gif.js are loaded on demand inside the generate
+// functions so they stay out of the route chunks that import this module
+// for its lightweight share/download helpers.
 import {
   encodeFramesToMp4,
   detectVideoEncoder,
@@ -61,6 +61,7 @@ export async function generateImage(element: HTMLElement, backgroundColor?: stri
   // Wait for all images to load before capturing
   await waitForImages(element)
 
+  const { toPng } = await import("html-to-image")
   const dataUrl = await toPng(element, {
     pixelRatio: 2, // 2x for retina quality
     // cacheBust removed - use browser cache to ensure consistent images
@@ -85,6 +86,7 @@ export async function generateImage(element: HTMLElement, backgroundColor?: stri
  * Generate a data URL from an HTML element
  */
 export async function generateImageDataUrl(element: HTMLElement): Promise<string> {
+  const { toPng } = await import("html-to-image")
   return toPng(element, {
     pixelRatio: 2,
     cacheBust: true,
@@ -456,6 +458,7 @@ export async function generateGif(
   captureInterval: number = 0,
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
+  const { default: GIF } = await import("gif.js")
   return new Promise(async (resolve, reject) => {
     try {
       // Capture first frame to get dimensions
@@ -578,6 +581,7 @@ export async function captureElementAsCanvas(
 
   try {
     // Capture with skipFonts to avoid CORS issues with remote stylesheets
+    const { toCanvas } = await import("html-to-image")
     return await toCanvas(element, {
       pixelRatio: 2,
       skipFonts: true,

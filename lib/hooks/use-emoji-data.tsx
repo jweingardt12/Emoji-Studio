@@ -314,21 +314,19 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return calculateEmojiStats(emojiData, currentTimestamp)
   }, [emojiData, useDemoData, demoStats, currentTimestamp])
 
-  // Calculate user leaderboard
-  const [userLeaderboard, setUserLeaderboard] = useState<ReturnType<typeof getUserLeaderboard>>([])
-  
-  // Update user leaderboard when emojiData or demoLeaderboard changes
-  useEffect(() => {
+  // Calculate user leaderboard. Derived with useMemo (rather than
+  // useEffect + state) so consumers don't get an extra render pass on every
+  // data change.
+  const userLeaderboard = useMemo<ReturnType<typeof getUserLeaderboard>>(() => {
     if (useDemoData) {
       // Use the demo leaderboard that's already loaded asynchronously
-      setUserLeaderboard(demoLeaderboard)
-    } else if (emojiData.length > 0) {
-      // Calculate leaderboard from real data using stable timestamp
-      const leaderboard = getUserLeaderboard(emojiData, currentTimestamp)
-      setUserLeaderboard(leaderboard)
-    } else {
-      setUserLeaderboard([])
+      return demoLeaderboard
     }
+    if (emojiData.length > 0) {
+      // Calculate leaderboard from real data using stable timestamp
+      return getUserLeaderboard(emojiData, currentTimestamp)
+    }
+    return []
   }, [emojiData, useDemoData, demoLeaderboard, currentTimestamp])
 
   // Create the context value with memoization to prevent unnecessary re-renders

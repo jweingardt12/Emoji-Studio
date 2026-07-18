@@ -12,12 +12,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InfoDrawerResponsive } from "@/components/info-drawer-responsive";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { cardHover } from "@/lib/motion";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { CartesianGrid, Line, LineChart, XAxis, LabelList } from "recharts";
+import dynamic from "next/dynamic";
+
+// The sparkline (and recharts with it) is only visible inside the metric info
+// drawers, so it loads on demand instead of in the dashboard's initial chunk.
+const MetricSparkline = dynamic(() => import("@/components/metric-sparkline"), {
+  ssr: false,
+  loading: () => <Skeleton className="w-full h-full" />,
+});
 
 export function SectionCards() {
   const { stats, loading, emojiData, userLeaderboard, useDemoData, hasRealData } = useEmojiData();
@@ -217,14 +219,7 @@ export function SectionCards() {
           description={`Total number of unique emojis in the workspace. Last year: ${emojisLastYear.length.toLocaleString()}`}
         >
           <div className="w-full aspect-2/1 mb-2">
-            <ChartContainer config={{ emojis: { label: "Emojis", color: "var(--chart-1)" } }} className="w-full h-full">
-              <LineChart data={totalEmojisChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="emojis" type="natural" stroke="var(--chart-1)" strokeWidth={1.5} dot={{ fill: "var(--chart-1)", r: 3 }} activeDot={{ r: 4 }} />
-              </LineChart>
-            </ChartContainer>
+            <MetricSparkline data={totalEmojisChartData} dataKey="emojis" label="Emojis" colorVar="--chart-1" />
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Total number of unique emojis.</p>
@@ -270,16 +265,7 @@ export function SectionCards() {
           description="Number of unique users who have added emojis in the last 7 days"
         >
           <div className="w-full aspect-2/1 mb-2">
-            <ChartContainer config={{ aeu: { label: "Active Users", color: "var(--chart-2)" } }} className="w-full h-full">
-              <LineChart data={aeuChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="aeu" type="natural" stroke="var(--chart-2)" strokeWidth={1.5} dot={{ fill: "var(--chart-2)", r: 3 }} activeDot={{ r: 4 }}>
-                  <LabelList position="top" offset={8} className="fill-foreground" fontSize={10} />
-                </Line>
-              </LineChart>
-            </ChartContainer>
+            <MetricSparkline data={aeuChartData} dataKey="aeu" label="Active Users" colorVar="--chart-2" showLabels />
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Unique users who added emojis in 7 days.</p>
@@ -333,14 +319,7 @@ export function SectionCards() {
           description="Average number of emojis added per active user in the last 7 days"
         >
           <div className="w-full aspect-2/1 mb-2">
-            <ChartContainer config={{ epu: { label: "EPU", color: "var(--chart-3)" } }} className="w-full h-full">
-              <LineChart data={epuChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="epu" type="natural" stroke="var(--chart-3)" strokeWidth={1.5} dot={{ fill: "var(--chart-3)", r: 3 }} activeDot={{ r: 4 }} />
-              </LineChart>
-            </ChartContainer>
+            <MetricSparkline data={epuChartData} dataKey="epu" label="EPU" colorVar="--chart-3" />
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Avg. emojis per active user in 7 days.</p>
@@ -386,14 +365,7 @@ export function SectionCards() {
           description="Average number of emojis added per week in the last 4 weeks"
         >
           <div className="w-full aspect-2/1 mb-2">
-            <ChartContainer config={{ epw: { label: "EPW", color: "var(--chart-4)" } }} className="w-full h-full">
-              <LineChart data={epwChartData} margin={{ top: 15, left: 8, right: 8, bottom: 5 }}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 10 }} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                <Line dataKey="epw" type="natural" stroke="var(--chart-4)" strokeWidth={1.5} dot={{ fill: "var(--chart-4)", r: 3 }} activeDot={{ r: 4 }} />
-              </LineChart>
-            </ChartContainer>
+            <MetricSparkline data={epwChartData} dataKey="epw" label="EPW" colorVar="--chart-4" />
           </div>
           <div className="space-y-1 text-xs text-muted-foreground">
             <p><strong>What:</strong> Avg. emojis per week in 4 weeks.</p>

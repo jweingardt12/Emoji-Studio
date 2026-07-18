@@ -5,13 +5,11 @@
  * - FFmpeg WASM as fallback for Firefox and older browsers
  */
 
-import { VideoProcessor } from "./video-processor"
-import {
-  supportsWebCodecsVideoEncoding,
-  encodeWithWebCodecs,
-  blobsToCanvases,
-  type EncodingProgress,
-} from "./webcodecs-video-encoder"
+// The encoder implementations are heavyweight (mediabunny for WebCodecs,
+// FFmpeg WASM for the fallback), so they are loaded on demand inside each
+// function. This keeps this module cheap enough to import statically from
+// route-level code.
+import type { EncodingProgress } from "./webcodecs-video-encoder"
 
 export type EncoderType = "webcodecs" | "ffmpeg"
 
@@ -33,6 +31,7 @@ export async function detectVideoEncoder(): Promise<EncoderInfo> {
     return cachedEncoderInfo
   }
 
+  const { supportsWebCodecsVideoEncoding } = await import("./webcodecs-video-encoder")
   const webCodecsSupported = await supportsWebCodecsVideoEncoding()
 
   if (webCodecsSupported) {
@@ -65,6 +64,8 @@ export async function encodeFramesToMp4(
 
   if (encoderInfo.type === "webcodecs") {
     try {
+      const { blobsToCanvases, encodeWithWebCodecs } = await import("./webcodecs-video-encoder")
+
       // Convert blobs to canvases (first 10% of progress)
       const canvases = await blobsToCanvases(frames, (p) => {
         onProgress?.(p * 0.1)
@@ -97,6 +98,7 @@ export async function encodeFramesToMp4(
   }
 
   // Fallback to FFmpeg WASM
+  const { VideoProcessor } = await import("./video-processor")
   return VideoProcessor.framesToMp4(frames, fps, onProgress)
 }
 
@@ -110,6 +112,7 @@ export async function preloadVideoEncoder(): Promise<void> {
 
   if (info.type === "ffmpeg") {
     // Preload FFmpeg WASM module
+    const { VideoProcessor } = await import("./video-processor")
     await VideoProcessor.loadFFmpeg()
   }
   // WebCodecs doesn't need preloading - it's built into the browser

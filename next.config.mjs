@@ -13,7 +13,7 @@ const nextConfig = {
 
   // Optimize barrel file imports for faster builds and smaller bundles
   experimental: {
-    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion', 'date-fns', '@hugeicons/core-free-icons'],
   },
 
   // Enable image optimization with remote patterns for Slack CDN
