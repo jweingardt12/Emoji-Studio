@@ -209,7 +209,7 @@ export function VirtualizedExplorerGrid({
                         )}
                         {emoji.created && (
                           <p className="text-[10px] sm:text-xs text-muted-foreground/70 text-center">
-                            {new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                            {new Date(emoji.created * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         )}
                       </div>

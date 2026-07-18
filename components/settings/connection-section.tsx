@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Zap, Link2, Terminal, ChevronRight, RefreshCw } from "lucide-react"
+import { Zap, Link2, Terminal, ChevronRight, RefreshCw, Sparkles, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import { PairToMobile } from "@/components/pair-to-mobile"
 import { toast } from "sonner"
 import { useTrack } from "@/lib/hooks/use-track"
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
+import { useDemoLoader } from "@/lib/hooks/use-demo-loader"
 
 interface ConnectionSectionProps {
   hasSlack: boolean
@@ -42,6 +43,7 @@ export function ConnectionSection({
 }: ConnectionSectionProps) {
   const [showManualSetup, setShowManualSetup] = useState(false)
   const track = useTrack()
+  const { loadDemoData, isLoadingDemo } = useDemoLoader({ source: "settings-connection-card" })
 
   return (
     <div className="space-y-4">
@@ -62,7 +64,7 @@ export function ConnectionSection({
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  {hasSlack ? "Connected" : "Not Connected"}
+                  {hasSlack ? "Connected" : "Not connected"}
                 </span>
                 {hasSlack && (
                   <Badge variant="secondary" className="text-xs">
@@ -77,7 +79,7 @@ export function ConnectionSection({
                 }
               </p>
             </div>
-            {hasSlack && (
+            {hasSlack ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -86,6 +88,20 @@ export function ConnectionSection({
               >
                 <RefreshCw className={cn("h-4 w-4 mr-1", refreshing && "animate-spin")} />
                 Sync
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadDemoData}
+                disabled={isLoadingDemo}
+              >
+                {isLoadingDemo ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1" />
+                )}
+                Try demo data
               </Button>
             )}
           </div>

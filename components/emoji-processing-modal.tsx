@@ -1,5 +1,6 @@
 "use client"
 
+import { celebrateUpload } from "@/lib/utils/celebrate"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -215,6 +216,7 @@ export function EmojiProcessingModal({
 
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack`)
+        celebrateUpload()
         setUploadStatuses(prev => ({ ...prev, [index]: 'success' }))
         
         track("Slack Upload: Success", {
@@ -730,6 +732,7 @@ export function EmojiProcessingModal({
                           
                           if (successCount === processedEmojis.length) {
                             toast.success(`Successfully uploaded ${successCount} emojis to Slack`)
+                            celebrateUpload()
                             
                             track("Slack Upload: Bulk Complete - Success", {
                               totalEmojis: processedEmojis.length,

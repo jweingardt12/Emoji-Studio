@@ -1,5 +1,6 @@
 "use client"
 
+import { celebrateUpload } from "@/lib/utils/celebrate"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
@@ -200,6 +201,7 @@ export function MobileEmojiCreator({
       
       if (result.success) {
         toast.success(`Emoji ":${result.emojiName}:" uploaded to Slack!`)
+        celebrateUpload()
         
         track("Mobile Emoji Creator: Slack Upload Success", {
           emojiName: result.emojiName,

@@ -1,5 +1,6 @@
 "use client"
 
+import { celebrateUpload } from "@/lib/utils/celebrate"
 import { useState, useEffect, useCallback, Suspense, lazy } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -432,6 +433,7 @@ function EmojiCreatorContent() {
         description: `Successfully uploaded ${successCount} emoji${successCount > 1 ? 's' : ''} to Slack${failedCount > 0 ? `. ${failedCount} failed.` : ''}`,
         duration: 8000,
       })
+      celebrateUpload()
     }
 
     if (failedCount > 0) {

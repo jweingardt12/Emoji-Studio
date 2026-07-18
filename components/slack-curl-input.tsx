@@ -463,7 +463,7 @@ export function SlackCurlInput() {
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                 <ClipboardIcon className="h-4 w-4 text-primary" />
-                <span>Paste your Slack curl command below:</span>
+                <span>Paste your Slack cURL command below:</span>
               </div>
               
               <div className="relative">
@@ -495,7 +495,7 @@ export function SlackCurlInput() {
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent side="left">
-                            <p>Copy original curl command</p>
+                            <p>Copy original cURL command</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>

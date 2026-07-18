@@ -1,5 +1,6 @@
 "use client"
 
+import { NumberTicker } from "@/components/ui/number-ticker"
 import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, startTransition } from "react"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
@@ -408,7 +409,7 @@ function ExplorerPage() {
           <div className="flex items-center gap-3">
             <div className="flex flex-col sm:items-end gap-1">
               <div className={`${isMobile ? 'text-base' : 'text-lg sm:text-xl'} font-semibold tabular-nums`}>
-                {nonAliasCount.toLocaleString()}
+                <NumberTicker value={nonAliasCount} />
               </div>
               <div className="text-xs sm:text-sm text-muted-foreground">
                 {nonAliasCount === 1 ? 'emoji' : 'emojis'}

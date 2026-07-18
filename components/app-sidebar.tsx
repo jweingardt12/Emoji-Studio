@@ -55,7 +55,7 @@ function CurlCommandModal({ open, onClose, onSubmit }: { open: boolean; onClose:
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enter Slack Curl Command</DialogTitle>
+          <DialogTitle>Enter Slack cURL Command</DialogTitle>
         </DialogHeader>
         <Textarea
           className="min-h-[120px] text-sm"

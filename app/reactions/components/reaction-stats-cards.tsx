@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Activity, Hash, Crown, TrendingUp, TrendingDown, MessageSquare } from "lucide-react"
 import type { ReactionStats } from "@/lib/services/reaction-service"
+import { NumberTicker } from "@/components/ui/number-ticker"
 
 interface ReactionStatsCardsProps {
   stats: ReactionStats
@@ -56,7 +57,7 @@ export function ReactionStatsCards({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold tabular-nums">{stats.total_reactions.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums"><NumberTicker value={stats.total_reactions} /></div>
           <CardDescription className="text-xs mt-0.5">
             from {stats.unique_users.toLocaleString()} users
           </CardDescription>
@@ -72,7 +73,7 @@ export function ReactionStatsCards({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold tabular-nums">{stats.unique_emojis.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums"><NumberTicker value={stats.unique_emojis} /></div>
           <CardDescription className="text-xs mt-0.5">
             distinct emoji used
           </CardDescription>
@@ -148,7 +149,7 @@ export function ReactionStatsCards({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold tabular-nums">{thisWeekCount.toLocaleString()}</div>
+          <div className="text-2xl font-bold tabular-nums"><NumberTicker value={thisWeekCount} /></div>
           <CardDescription className="text-xs mt-0.5">
             {PERIOD_LABELS[dateRange]?.previous ?? "vs last week"}
           </CardDescription>
