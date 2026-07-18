@@ -1,3 +1,26 @@
+import { toast } from "sonner"
+
+/**
+ * Celebrate the very first successful sync of a real Slack workspace —
+ * arguably an even bigger win than an upload. Fires once per browser
+ * (tracked in localStorage) and never for the demo workspace.
+ */
+export function maybeCelebrateFirstSync(emojiCount: number, workspaceName: string): void {
+  if (typeof window === "undefined") return
+  if (!workspaceName || workspaceName === "demo-workspace") return
+  try {
+    if (localStorage.getItem("hasCelebratedFirstSync")) return
+    localStorage.setItem("hasCelebratedFirstSync", "true")
+  } catch {
+    return
+  }
+  toast.success("Workspace connected! 🎉", {
+    description: `Synced ${emojiCount.toLocaleString()} emojis from ${workspaceName}. Your dashboard is ready.`,
+    duration: 6000,
+  })
+  celebrateUpload()
+}
+
 /**
  * Fire a short side-cannon confetti burst — used to celebrate successfully
  * uploading emoji to Slack, the app's core "win" moment.
@@ -7,7 +30,13 @@
  */
 export async function celebrateUpload(): Promise<void> {
   if (typeof window === "undefined") return
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+  // matchMedia can be missing in older embedded webviews (and jsdom)
+  if (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ) {
+    return
+  }
 
   try {
     const { default: confetti } = await import("canvas-confetti")

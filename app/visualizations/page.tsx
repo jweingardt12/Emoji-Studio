@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Activity, Calendar, ChartPieIcon, FileText, Users, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
 import { ConnectWorkspaceEmptyState } from "@/components/connect-workspace-empty-state"
+import { RefreshButton } from "@/components/refresh-button"
 import { useVisualizationData, TimeRange } from "./use-visualization-data"
 import { staggerContainer, fadeUp } from "@/lib/motion"
 
@@ -305,6 +306,7 @@ export default function VisualizationsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <RefreshButton />
               </div>
             </div>
           </div>

@@ -1250,6 +1250,10 @@ export function useMyEmojisState() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // The global command palette handles Cmd/Ctrl+K (capture phase) —
+      // don't also grab focus behind its dialog.
+      if (e.defaultPrevented) return
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         searchInputRef.current?.focus()

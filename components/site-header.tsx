@@ -5,8 +5,10 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { RefreshButton } from "@/components/refresh-button"
+import { openCommandPalette } from "@/components/command-palette"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
+import { Search } from "lucide-react"
 
 export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
   // Get sidebar state to check if it's expanded or collapsed
@@ -46,8 +48,28 @@ export function SiteHeader({ className, ...props }: React.HTMLAttributes<HTMLEle
           </div>
         </div>
 
-        {/* Refresh button and theme toggle on the right */}
+        {/* Search, refresh button and theme toggle on the right */}
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="hidden sm:inline-flex items-center gap-2 h-8 rounded-md border border-border bg-muted/40 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Open command palette"
+          >
+            <Search className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>Search</span>
+            <kbd className="pointer-events-none rounded border border-border bg-background px-1 font-mono text-[10px]">
+              ⌘K
+            </kbd>
+          </button>
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="sm:hidden inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground"
+            aria-label="Open command palette"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </button>
           <RefreshButton />
           <ThemeToggle />
         </div>

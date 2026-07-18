@@ -15,6 +15,7 @@ jest.mock('sonner', () => ({
   toast: {
     warning: jest.fn(),
     error: jest.fn(),
+    success: jest.fn(),
   },
 }))
 

@@ -15,6 +15,7 @@ import {
   generateDemoData
 } from "@/lib/demo-data"
 import { emojiStorage, settingsStorage } from "@/lib/storage/indexed-db"
+import { maybeCelebrateFirstSync } from "@/lib/utils/celebrate"
 
 // Define the context type
 interface EmojiDataContextType {
@@ -53,6 +54,13 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [workspaceDisplayNameInternal, setWorkspaceDisplayNameInternal] = useState<string>("")
   const previousWorkspaceRef = useRef<string>("")
   const hasShownStorageWarningRef = useRef(false)
+  // Tracks the current emoji count for the emojiDataUpdated handler (whose
+  // closure would otherwise see stale state) so a no-data → data transition
+  // can be detected for the one-time first-sync celebration.
+  const emojiCountRef = useRef(0)
+  useEffect(() => {
+    emojiCountRef.current = emojiData.length
+  }, [emojiData])
 
   // Wrapper for setWorkspace that clears display name when workspace changes
   const setWorkspace = useCallback((value: React.SetStateAction<string>) => {
@@ -243,11 +251,16 @@ export const EmojiDataProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (customEvent.detail && customEvent.detail.emojiData) {
         const { emojiData, workspace } = customEvent.detail;
 
+        const isFirstData = emojiCountRef.current === 0 && emojiData.length > 0;
         setEmojiData(emojiData);
         if (workspace) {
           setWorkspace(workspace);
           setHasRealData(true);
           setUseDemoData(false);
+          if (isFirstData) {
+            // First-ever sync of a real workspace — celebrate once.
+            maybeCelebrateFirstSync(emojiData.length, workspace);
+          }
         }
         setLoading(false);
       } else {
