@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Activity, Calendar, ChartPieIcon, FileText, Users, Loader2 } from "lucide-react"
 import EmojiOverlay from "@/components/emoji-overlay"
+import { ConnectWorkspaceEmptyState } from "@/components/connect-workspace-empty-state"
 import { useVisualizationData, TimeRange } from "./use-visualization-data"
 import { staggerContainer, fadeUp } from "@/lib/motion"
 
@@ -87,7 +88,7 @@ export default function VisualizationsPage() {
     }
   }, [isClient, activeTab, track])
 
-  const { emojiData } = useEmojiData()
+  const { emojiData, loading: emojiDataLoading } = useEmojiData()
 
   // Use the optimized hook for data processing
   const { filteredEmojiData, chartData } = useVisualizationData(emojiData, timeRange)
@@ -158,6 +159,22 @@ export default function VisualizationsPage() {
 
   // Only render when client-side to avoid hydration mismatches
   if (!isClient) return null
+
+  // Without data every chart would render empty — show a connect prompt instead.
+  if (!emojiDataLoading && emojiData.length === 0) {
+    return (
+      <div className="flex flex-col gap-4 py-4 md:py-6">
+        <div className="px-3 sm:px-4 lg:px-6">
+          <h1 className="text-2xl font-bold tracking-tight mb-4">Visualizations</h1>
+          <ConnectWorkspaceEmptyState
+            icon={ChartPieIcon}
+            description="Connect your Slack workspace to explore creation timelines, naming patterns, and contributor trends across your emoji library."
+            demoSource="visualizations-empty-state"
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <motion.div

@@ -2,14 +2,14 @@
 
 import { useMemo, useEffect, useRef, useState, useCallback } from "react"
 import { motion } from "framer-motion"
-import { Activity, Settings } from "lucide-react"
-import Link from "next/link"
+import { Activity } from "lucide-react"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useIsClient } from "@/hooks/use-is-client"
 import { useAnalytics } from "@/lib/analytics"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 import EmojiOverlay from "@/components/emoji-overlay"
+import { ConnectWorkspaceEmptyState } from "@/components/connect-workspace-empty-state"
 import type { Emoji } from "@/lib/services/emoji-service"
 import { useReactionsState } from "./hooks/use-reactions-state"
 import { ChannelPicker } from "./components/channel-picker"
@@ -186,24 +186,11 @@ export default function ReactionsPage() {
       {!hasData && state.scanProgress.status !== "scanning" && state.scanProgress.status !== "complete" && (
         <motion.div variants={fadeUp} className="px-3 sm:px-4 lg:px-6">
           {!hasRealData ? (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
-                <Activity className="h-8 w-8 text-muted-foreground" />
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-medium">Connect to Slack to get started</p>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    You&apos;ll need to connect your Slack workspace before scanning emoji usage.
-                  </p>
-                  <Link
-                    href="/settings"
-                    className="inline-flex items-center gap-1.5 mt-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                    Go to Settings
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+            <ConnectWorkspaceEmptyState
+              icon={Activity}
+              description="You'll need to connect your Slack workspace before scanning emoji usage."
+              demoSource="reactions-empty-state"
+            />
           ) : (
             <div className="relative">
               {/* Ghost preview of what data looks like */}

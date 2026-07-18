@@ -206,7 +206,9 @@ export function SlackCurlInput() {
     if (!curlCommand) return;
     try {
       await navigator.clipboard.writeText(curlCommand);
+      toast.success("Copied to clipboard");
     } catch (err) {
+      toast.error("Couldn't copy to clipboard");
     }
   };
 

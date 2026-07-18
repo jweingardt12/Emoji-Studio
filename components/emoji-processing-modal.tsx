@@ -596,17 +596,17 @@ export function EmojiProcessingModal({
                         </>
                       )}
                     </div>
+                    {/* Save-as-pack is not built yet — show it disabled instead
+                        of toasting a success message for a no-op. */}
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        // Save as pack functionality (placeholder)
-                        toast.success("Pack feature coming soon!")
-                      }}
+                      disabled
+                      title="Coming soon"
                       className="h-8"
                     >
                       <Save className="h-4 w-4 mr-1.5" />
-                      <span className="text-xs">Save as Pack</span>
+                      <span className="text-xs">Save as Pack (coming soon)</span>
                     </Button>
                   </div>
                 )}

@@ -19,6 +19,7 @@ import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { getUserLeaderboard, type Emoji } from "@/lib/services/emoji-service"
 import React, { useCallback } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { ChromeExtensionHandler } from "@/components/chrome-extension-handler"
 import { RefreshButton } from "@/components/refresh-button"
@@ -66,6 +67,7 @@ function DashboardPage() {
           }));
           window.location.href = createUrl.toString();
         } catch (error) {
+          toast.error("Couldn't open the emoji creator for that image")
         }
       }
     };

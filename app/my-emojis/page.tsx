@@ -2,7 +2,9 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Loader2 } from "lucide-react"
+import { Smile } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { ConnectWorkspaceEmptyState } from "@/components/connect-workspace-empty-state"
 import { getWorkspaceDisplayName } from "@/lib/utils/workspace"
 import { useMyEmojisState } from "./hooks/use-my-emojis-state"
 import { EmojiActionDialogs } from "./components/emoji-action-dialogs"
@@ -15,20 +17,50 @@ import { BulkOperationsBar } from "./components/bulk-operations-bar"
 function MyEmojisPage() {
   const state = useMyEmojisState()
 
-  // Show loading while checking authentication
+  // Show a page-shaped skeleton while checking authentication so the layout
+  // doesn't jump when content arrives (matches the other pages' loading states)
   if (state.isAuthChecking) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex flex-col gap-4 py-4 md:py-6" aria-busy="true" aria-label="Loading your emojis">
+        <div className="px-3 sm:px-4 lg:px-6">
+          <Skeleton className="h-8 w-40 mb-4" />
+          <div className="rounded-xl bg-card border border-border shadow-sm p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-4">
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-9 w-28" />
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-2">
+                  <Skeleton className="h-10 w-10 rounded" />
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-4 w-24 ml-auto" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (!state.isClient) return null
 
-  // Return null if no real data
+  // Without a connected workspace there is nothing to manage — show a
+  // connect prompt instead of a blank page.
   if (!state.hasRealData) {
-    return null
+    return (
+      <div className="flex flex-col gap-4 py-4 md:py-6">
+        <div className="px-3 sm:px-4 lg:px-6">
+          <h1 className="text-2xl font-bold tracking-tight mb-4">My Emojis</h1>
+          <ConnectWorkspaceEmptyState
+            icon={Smile}
+            description="Connect your Slack workspace to see and manage the emojis you've created — rename, replace, add aliases, or delete them."
+            demoSource="my-emojis-empty-state"
+          />
+        </div>
+      </div>
+    )
   }
 
   return (

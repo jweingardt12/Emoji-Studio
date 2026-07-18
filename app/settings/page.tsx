@@ -125,7 +125,8 @@ export default function SettingsPage() {
       checkWindow: notificationFrequency === "realtime" ? 900 : notificationFrequency === "hourly" ? 3600 : 86400,
     }
     localStorage.setItem("notificationSettings", JSON.stringify(settings))
-    toast.success("Settings saved")
+    // Stable id so rapid toggling updates one toast instead of stacking them
+    toast.success("Settings saved", { id: "notification-settings-saved" })
   }, [notificationsEnabled, notificationFrequency])
 
   // Single IntersectionObserver for sticky nav highlighting

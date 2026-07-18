@@ -1,6 +1,6 @@
 "use client"
 import { X, Download, Info, Link, Search, ArrowLeft } from "lucide-react"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Drawer, DrawerContent } from "@/components/ui/drawer"
@@ -385,13 +385,37 @@ export default function EmojiOverlay({ emoji: emojiProp, onClose, onEmojiClick, 
   }, [isDrawerOpen, isMobile, emojiProp, onClose])
 
   // Handle overlay close with animation
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false)
     setTimeout(() => {
       onClose()
     }, 300) // Match transition duration
-  }
-  
+  }, [onClose])
+
+  // Dialog accessibility for the custom desktop overlay: close on Escape,
+  // move focus into the panel on open, and restore it on close. (The mobile
+  // path uses a Radix Drawer, which handles this itself.)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (isMobile || !displayedEmoji) return
+    previousFocusRef.current = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        handleClose()
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      previousFocusRef.current?.focus?.()
+    }
+  }, [isMobile, displayedEmoji, handleClose])
+
+
   // Handle image load error
   const handleImageError = () => {
     setImageError(true);
@@ -624,7 +648,12 @@ export default function EmojiOverlay({ emoji: emojiProp, onClose, onEmojiClick, 
         )}
 
         <div
-          className={`bg-card border border-border shadow-lg w-full overflow-auto transition-all duration-300 ease-out ${
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={displayedEmoji ? `Emoji details: ${displayedEmoji.name}` : "Emoji details"}
+          tabIndex={-1}
+          className={`bg-card border border-border shadow-lg w-full overflow-auto outline-none transition-all duration-300 ease-out ${
             isMobile
               ? "absolute bottom-0 left-0 right-0 h-[85vh] rounded-t-xl"
               : "rounded-xl max-w-5xl max-h-[70vh]"

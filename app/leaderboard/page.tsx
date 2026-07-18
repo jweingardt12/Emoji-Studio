@@ -162,20 +162,6 @@ function LeaderboardPage() {
     >
       <ChromeExtensionHandler />
       
-      {/* Mobile Header - Only show on mobile */}
-      {!isMobile && (
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border">
-          <img
-            src="/logo.png"
-            alt="Emoji Studio"
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-lg shadow-xs"
-          />
-          <h1 className="text-lg font-semibold">Leaderboard</h1>
-        </div>
-      )}
-
       <div className={isMobile ? '' : 'px-3 sm:px-4 lg:px-6 pt-3 md:pt-6'}>
         {isMobile ? (
           // Mobile: No card wrapper

@@ -1,6 +1,6 @@
 "use client"
 import { X, TrendingUp, PieChart, Calendar, Info, ChartNoAxesCombined, ImageUp, ArrowLeft  } from "lucide-react"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer"
@@ -212,12 +212,35 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
   }, [isDrawerOpen, isMobile, user, onClose])
 
   // Handle overlay close with animation
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false)
     setTimeout(() => {
       onClose()
     }, 300) // Match transition duration
-  }
+  }, [onClose])
+
+  // Dialog accessibility for the custom desktop overlay: close on Escape,
+  // move focus into the panel on open, and restore it on close. (The mobile
+  // path uses a Radix Drawer, which handles this itself.)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (isMobile || !user) return
+    previousFocusRef.current = document.activeElement as HTMLElement | null
+    panelRef.current?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation()
+        handleClose()
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      previousFocusRef.current?.focus?.()
+    }
+  }, [isMobile, user, handleClose])
 
   if (!user) return null
   
@@ -622,7 +645,12 @@ export default function UserOverlay({ user, onClose, onEmojiClick }: UserOverlay
       onClick={handleClose}
     >
       <div
-        className={`bg-card border border-border shadow-lg w-full overflow-y-auto transition-all duration-300 ease-out rounded-xl max-w-5xl max-h-[85vh] ${
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${user.user_display_name}'s emojis`}
+        tabIndex={-1}
+        className={`bg-card border border-border shadow-lg w-full overflow-y-auto outline-none transition-all duration-300 ease-out rounded-xl max-w-5xl max-h-[85vh] ${
           isVisible ? "scale-100" : "scale-95"
         }`}
         onClick={(e) => e.stopPropagation()}

@@ -217,7 +217,14 @@ function EmojiCreatorContent() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-background">
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center gap-3 min-h-screen" aria-busy="true">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">Loading emoji creator…</p>
+            </div>
+          }
+        >
           <MobileEmojiCreator
             initialFile={pendingMobileFile || undefined}
             onCancel={() => setPendingMobileFile(null)}
