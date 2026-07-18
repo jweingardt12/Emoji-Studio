@@ -60,8 +60,6 @@ placeholder-*
 *.debug.*
 /app/pwa-test/
 /app/test-*/
-jest.config.js
-jest.setup.js
 TESTING_GUIDE.md
 
 # HTTPS/server setup files
