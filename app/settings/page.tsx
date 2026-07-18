@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { useEmojiData } from "@/lib/hooks/use-emoji-data"
 import { useTrack } from "@/lib/hooks/use-track"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { NOTIFICATION_SETTINGS_CHANGED_EVENT } from "@/hooks/use-emoji-notifications"
 import { hasSlackConnection } from "@/lib/utils/slack-upload"
 import { parseSlackCurl } from "@/lib/utils/parse-slack-curl"
 import { safePersistEmojiDataToLocalStorage } from "@/lib/storage/safe-emoji-local-storage"
@@ -125,6 +126,8 @@ export default function SettingsPage() {
       checkWindow: notificationFrequency === "realtime" ? 900 : notificationFrequency === "hourly" ? 3600 : 86400,
     }
     localStorage.setItem("notificationSettings", JSON.stringify(settings))
+    // Let the notification poller pick up the change without a reload
+    window.dispatchEvent(new CustomEvent(NOTIFICATION_SETTINGS_CHANGED_EVENT))
     // Stable id so rapid toggling updates one toast instead of stacking them
     toast.success("Settings saved", { id: "notification-settings-saved" })
   }, [notificationsEnabled, notificationFrequency])

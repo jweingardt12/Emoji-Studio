@@ -403,10 +403,12 @@ export default function EmojiOverlay({ emoji: emojiProp, onClose, onEmojiClick, 
     panelRef.current?.focus()
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation()
-        handleClose()
-      }
+      if (e.key !== "Escape") return
+      // Overlays can stack (e.g. user overlay opened from this one). Only the
+      // topmost open dialog — the last one in document order — should close.
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+      if (dialogs.length > 0 && dialogs[dialogs.length - 1] !== panelRef.current) return
+      handleClose()
     }
     document.addEventListener("keydown", onKeyDown)
     return () => {

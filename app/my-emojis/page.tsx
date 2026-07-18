@@ -17,9 +17,10 @@ import { BulkOperationsBar } from "./components/bulk-operations-bar"
 function MyEmojisPage() {
   const state = useMyEmojisState()
 
-  // Show a page-shaped skeleton while checking authentication so the layout
-  // doesn't jump when content arrives (matches the other pages' loading states)
-  if (state.isAuthChecking) {
+  // Show a page-shaped skeleton while checking authentication or while the
+  // provider is still loading cached data from IndexedDB, so connected users
+  // don't get a flash of the connect prompt (matches other pages' loading)
+  if (state.isAuthChecking || (state.loading && !state.hasRealData)) {
     return (
       <div className="flex flex-col gap-4 py-4 md:py-6" aria-busy="true" aria-label="Loading your emojis">
         <div className="px-3 sm:px-4 lg:px-6">
@@ -47,16 +48,24 @@ function MyEmojisPage() {
   if (!state.isClient) return null
 
   // Without a connected workspace there is nothing to manage — show a
-  // connect prompt instead of a blank page.
+  // connect prompt instead of a blank page. Demo data can't be managed
+  // either, so don't offer loading it again in that case.
   if (!state.hasRealData) {
+    const hasDemoData = state.emojiData.length > 0
     return (
       <div className="flex flex-col gap-4 py-4 md:py-6">
         <div className="px-3 sm:px-4 lg:px-6">
           <h1 className="text-2xl font-bold tracking-tight mb-4">My Emojis</h1>
           <ConnectWorkspaceEmptyState
             icon={Smile}
-            description="Connect your Slack workspace to see and manage the emojis you've created — rename, replace, add aliases, or delete them."
+            title={hasDemoData ? "Managing emojis needs a real connection" : undefined}
+            description={
+              hasDemoData
+                ? "You're browsing demo data. Connect your real Slack workspace to manage the emojis you've created — rename, replace, add aliases, or delete them."
+                : "Connect your Slack workspace to see and manage the emojis you've created — rename, replace, add aliases, or delete them."
+            }
             demoSource="my-emojis-empty-state"
+            showDemoAction={!hasDemoData}
           />
         </div>
       </div>

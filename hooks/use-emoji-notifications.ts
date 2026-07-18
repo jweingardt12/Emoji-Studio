@@ -1,5 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEmojiData } from '@/lib/hooks/use-emoji-data';
+
+/** Event dispatched by the settings page when notification settings change. */
+export const NOTIFICATION_SETTINGS_CHANGED_EVENT = 'notificationSettingsChanged';
 
 export function useEmojiNotifications() {
   const { emojiData } = useEmojiData();
@@ -10,6 +13,22 @@ export function useEmojiNotifications() {
   // torn down and recreated on every emojiData change.
   const emojiDataRef = useRef(emojiData);
   const checkFnRef = useRef<(() => void) | null>(null);
+
+  // Re-run the setup effect when settings change (same tab via custom event,
+  // other tabs via the storage event) so toggles apply without a reload.
+  const [settingsVersion, setSettingsVersion] = useState(0);
+  useEffect(() => {
+    const bump = () => setSettingsVersion((v) => v + 1);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'notificationSettings') bump();
+    };
+    window.addEventListener(NOTIFICATION_SETTINGS_CHANGED_EVENT, bump);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(NOTIFICATION_SETTINGS_CHANGED_EVENT, bump);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   useEffect(() => {
     const hadData = emojiDataRef.current && emojiDataRef.current.length > 0;
@@ -198,8 +217,9 @@ export function useEmojiNotifications() {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
       checkFnRef.current = null;
     };
-  }, []);
+  }, [settingsVersion]);
 }

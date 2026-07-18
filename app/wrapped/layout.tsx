@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { WrappedLayoutWrapper } from "@/components/wrapped/wrapped-layout-wrapper"
+import { FontshareLoader } from "@/components/wrapped/fontshare-loader"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://emojistudio.xyz"),
@@ -52,16 +53,11 @@ export default function WrappedLayout({
 }) {
   return (
     <>
-      {/* Wrapped Typography: Clash Display + General Sans from Fontshare.
-          Loaded here (not in the root layout) because only /wrapped uses
-          these families. The `precedence` prop makes React 19 hoist and
-          manage the stylesheet in <head> — no media-swap hack needed. */}
+      {/* Wrapped Typography: Clash Display + General Sans, loaded only for
+          /wrapped and injected client-side so the stylesheet never blocks
+          the route's first paint. */}
       <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-      <link
-        rel="stylesheet"
-        precedence="default"
-        href="https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap"
-      />
+      <FontshareLoader />
       <WrappedLayoutWrapper>{children}</WrappedLayoutWrapper>
     </>
   )

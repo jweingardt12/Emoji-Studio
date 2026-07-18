@@ -11,6 +11,8 @@ interface ConnectWorkspaceEmptyStateProps {
   description: string
   /** Analytics source for the "Try demo data" action. */
   demoSource: string
+  /** Hide the demo button, e.g. when demo data is already loaded. */
+  showDemoAction?: boolean
 }
 
 /**
@@ -23,6 +25,7 @@ export function ConnectWorkspaceEmptyState({
   title = "Connect to Slack to get started",
   description,
   demoSource,
+  showDemoAction = true,
 }: ConnectWorkspaceEmptyStateProps) {
   const { loadDemoData, isLoadingDemo } = useDemoLoader({ source: demoSource })
 
@@ -41,19 +44,21 @@ export function ConnectWorkspaceEmptyState({
               <Settings className="h-3.5 w-3.5" aria-hidden="true" />
               Go to Settings
             </Link>
-            <button
-              type="button"
-              onClick={loadDemoData}
-              disabled={isLoadingDemo}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors disabled:opacity-60"
-            >
-              {isLoadingDemo ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              )}
-              {isLoadingDemo ? "Loading demo…" : "Try demo data"}
-            </button>
+            {showDemoAction && (
+              <button
+                type="button"
+                onClick={loadDemoData}
+                disabled={isLoadingDemo}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors disabled:opacity-60"
+              >
+                {isLoadingDemo ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                )}
+                {isLoadingDemo ? "Loading demo…" : "Try demo data"}
+              </button>
+            )}
           </div>
         </div>
       </CardContent>
